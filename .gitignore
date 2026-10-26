@@ -1,0 +1,9 @@
+# Private notes: install paths, hashes, logs (AGENTS.md rule)
+local/
+
+# Game copy and third-party downloads are never committed
+game/
+vendor/
+
+__pycache__/
+*.pyc
