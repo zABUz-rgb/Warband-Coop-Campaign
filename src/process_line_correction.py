@@ -25,7 +25,7 @@ for line in lines:
   newlevel -= line.count("]", 0, acceptableindex)
   if (level_positive_change == 0):
     level = newlevel
-  for i in xrange(level):
+  for i in range(level):
     file.write("  ")
   level = newlevel
   file.write("%s\n"%line)

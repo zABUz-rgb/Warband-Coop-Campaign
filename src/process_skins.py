@@ -95,11 +95,11 @@ def export_skins(skins):
     ofile.write("%d\n"%(len(constraints)))
     for constraint in constraints:
       ofile.write("\n%f %d %d "%(constraint[0], constraint[1], (len(constraint) - 2)))
-      for i_pair in xrange(len(constraint)):
+      for i_pair in range(len(constraint)):
         if i_pair > 1:
           ofile.write(" %f %d"%(constraint[i_pair][0], constraint[i_pair][1]))
     ofile.write("\n")
   ofile.close()
 
-print "Exporting skins..."
+print("Exporting skins...")
 export_skins(skins)

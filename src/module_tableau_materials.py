@@ -114,12 +114,12 @@ tableaus = [
        (init_position, pos1),
        (position_set_y, pos1, 120),
        (cur_tableau_add_mesh, ":banner_mesh", pos1, 120, 0),
-	   
+           
        #(init_position, pos1),
        #(position_set_z, pos1, 10),
        #(cur_tableau_add_mesh, "mesh_troop_label_banner", pos1, 112, 0),
        ]),
-	   
+           
   ("round_shield_1", 0, "sample_shield_round_1", 512, 256, 0, 0, 0, 0,
    [
        (store_script_param, ":banner_mesh", 1),

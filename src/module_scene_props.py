@@ -370,7 +370,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
 
         (store_trigger_param_1, ":instance_no"),      
@@ -495,7 +495,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -659,7 +659,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -889,7 +889,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -954,7 +954,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -981,7 +981,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -1044,7 +1044,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -1578,8 +1578,8 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
-		
+                (neg|game_in_multiplayer_mode),
+                
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
 
@@ -1643,7 +1643,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -1754,7 +1754,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (prop_instance_get_position, pos1, ":instance_no"),
@@ -1875,7 +1875,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -2457,7 +2457,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -2520,7 +2520,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -2545,7 +2545,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -2608,7 +2608,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -2642,7 +2642,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -2705,7 +2705,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -2730,7 +2730,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -2793,7 +2793,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -2818,7 +2818,7 @@ scene_props = [
       
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (store_trigger_param_1, ":instance_no"),      
         (store_trigger_param_2, ":attacker_agent_no"),
@@ -2883,7 +2883,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -3041,7 +3041,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -3075,7 +3075,7 @@ scene_props = [
 
       (try_begin),
         (this_or_next|multiplayer_is_server),
-		(neg|game_in_multiplayer_mode),
+                (neg|game_in_multiplayer_mode),
 
         (particle_system_burst, "psys_dummy_smoke", pos1, 3),
         (particle_system_burst, "psys_dummy_straw", pos1, 10),
@@ -3083,7 +3083,7 @@ scene_props = [
       (try_end),        
     ]),    
  ]), # added blank prop_hit trigger so hit point bar is displayed
-	
+        
   ("multiplayer_coop_item_drop", sokf_moveable|sokf_type_player_limiter|spr_use_time(1), "package", "bobaggage", [
   
    (ti_on_scene_prop_use,

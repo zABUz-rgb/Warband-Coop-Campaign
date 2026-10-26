@@ -53,7 +53,7 @@ presentations = [
           (this_or_next|key_clicked, key_left_mouse_button),
           (this_or_next|key_clicked, key_right_mouse_button),
           (this_or_next|key_clicked, key_xbox_ltrigger),
-		  (key_clicked, key_xbox_rtrigger),
+                  (key_clicked, key_xbox_rtrigger),
           (presentation_set_duration, 0),
         (try_end),
         (try_begin),
@@ -1670,7 +1670,7 @@ presentations = [
      [
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (presentation_set_duration, 0),
       (else_try),
         (key_clicked, key_right_mouse_button),
@@ -1745,49 +1745,49 @@ presentations = [
      [(set_fixed_point_multiplier, 1000),
 #INVASION MODE START
 #This code is necessary for presentation objects that are present in some modes but not others
-	  (assign, "$g_presentation_obj_admin_panel_1", -1),
-	  (assign, "$g_presentation_obj_admin_panel_2", -1),
-	  (assign, "$g_presentation_obj_admin_panel_3", -1),
-	  (assign, "$g_presentation_obj_admin_panel_4", -1),
-	  (assign, "$g_presentation_obj_admin_panel_5", -1),
-	  (assign, "$g_presentation_obj_admin_panel_6", -1),
-	  (assign, "$g_presentation_obj_admin_panel_7", -1),
-	  (assign, "$g_presentation_obj_admin_panel_8", -1),
-	  (assign, "$g_presentation_obj_admin_panel_9", -1),
-	  (assign, "$g_presentation_obj_admin_panel_10", -1),
-	  (assign, "$g_presentation_obj_admin_panel_11", -1),
-	  (assign, "$g_presentation_obj_admin_panel_12", -1),
-	  (assign, "$g_presentation_obj_admin_panel_13", -1),
-	  (assign, "$g_presentation_obj_admin_panel_14", -1),
-	  (assign, "$g_presentation_obj_admin_panel_15", -1),
-	  (assign, "$g_presentation_obj_admin_panel_16", -1),
-	  (assign, "$g_presentation_obj_admin_panel_17", -1),
-	  (assign, "$g_presentation_obj_admin_panel_18", -1),
-	  (assign, "$g_presentation_obj_admin_panel_19", -1),
-	  (assign, "$g_presentation_obj_admin_panel_20", -1),
-	  (assign, "$g_presentation_obj_admin_panel_21", -1),
-	  (assign, "$g_presentation_obj_admin_panel_22", -1),
-	  (assign, "$g_presentation_obj_admin_panel_23", -1),
-	  (assign, "$g_presentation_obj_admin_panel_24", -1),
-	  (assign, "$g_presentation_obj_admin_panel_25", -1),
-	  (assign, "$g_presentation_obj_admin_panel_26", -1),
-	  (assign, "$g_presentation_obj_admin_panel_27", -1),
-	  (assign, "$g_presentation_obj_admin_panel_28", -1),
-	  (assign, "$g_presentation_obj_admin_panel_29", -1),
-	  (assign, "$g_presentation_obj_admin_panel_30", -1),
-	  (assign, "$g_presentation_obj_admin_panel_31", -1),
-	  (assign, "$g_presentation_obj_admin_panel_32", -1),
-	  (assign, "$g_presentation_obj_admin_panel_33", -1),
-	  (assign, "$g_presentation_obj_admin_panel_34", -1),
-	  (assign, "$g_presentation_obj_admin_panel_35", -1),
-	  (assign, "$g_presentation_obj_admin_panel_36", -1),
-	  (assign, "$g_presentation_obj_admin_panel_37", -1),
-	  (assign, "$g_presentation_obj_admin_panel_38", -1),
-	  (assign, "$g_presentation_obj_admin_panel_39", -1),
-	  (assign, "$g_presentation_obj_admin_panel_40", -1),
-	  (assign, "$g_presentation_obj_admin_panel_41", -1),
-	  (assign, "$g_presentation_obj_admin_panel_42", -1),
-	  (assign, "$g_presentation_obj_admin_panel_43", -1),
+          (assign, "$g_presentation_obj_admin_panel_1", -1),
+          (assign, "$g_presentation_obj_admin_panel_2", -1),
+          (assign, "$g_presentation_obj_admin_panel_3", -1),
+          (assign, "$g_presentation_obj_admin_panel_4", -1),
+          (assign, "$g_presentation_obj_admin_panel_5", -1),
+          (assign, "$g_presentation_obj_admin_panel_6", -1),
+          (assign, "$g_presentation_obj_admin_panel_7", -1),
+          (assign, "$g_presentation_obj_admin_panel_8", -1),
+          (assign, "$g_presentation_obj_admin_panel_9", -1),
+          (assign, "$g_presentation_obj_admin_panel_10", -1),
+          (assign, "$g_presentation_obj_admin_panel_11", -1),
+          (assign, "$g_presentation_obj_admin_panel_12", -1),
+          (assign, "$g_presentation_obj_admin_panel_13", -1),
+          (assign, "$g_presentation_obj_admin_panel_14", -1),
+          (assign, "$g_presentation_obj_admin_panel_15", -1),
+          (assign, "$g_presentation_obj_admin_panel_16", -1),
+          (assign, "$g_presentation_obj_admin_panel_17", -1),
+          (assign, "$g_presentation_obj_admin_panel_18", -1),
+          (assign, "$g_presentation_obj_admin_panel_19", -1),
+          (assign, "$g_presentation_obj_admin_panel_20", -1),
+          (assign, "$g_presentation_obj_admin_panel_21", -1),
+          (assign, "$g_presentation_obj_admin_panel_22", -1),
+          (assign, "$g_presentation_obj_admin_panel_23", -1),
+          (assign, "$g_presentation_obj_admin_panel_24", -1),
+          (assign, "$g_presentation_obj_admin_panel_25", -1),
+          (assign, "$g_presentation_obj_admin_panel_26", -1),
+          (assign, "$g_presentation_obj_admin_panel_27", -1),
+          (assign, "$g_presentation_obj_admin_panel_28", -1),
+          (assign, "$g_presentation_obj_admin_panel_29", -1),
+          (assign, "$g_presentation_obj_admin_panel_30", -1),
+          (assign, "$g_presentation_obj_admin_panel_31", -1),
+          (assign, "$g_presentation_obj_admin_panel_32", -1),
+          (assign, "$g_presentation_obj_admin_panel_33", -1),
+          (assign, "$g_presentation_obj_admin_panel_34", -1),
+          (assign, "$g_presentation_obj_admin_panel_35", -1),
+          (assign, "$g_presentation_obj_admin_panel_36", -1),
+          (assign, "$g_presentation_obj_admin_panel_37", -1),
+          (assign, "$g_presentation_obj_admin_panel_38", -1),
+          (assign, "$g_presentation_obj_admin_panel_39", -1),
+          (assign, "$g_presentation_obj_admin_panel_40", -1),
+          (assign, "$g_presentation_obj_admin_panel_41", -1),
+          (assign, "$g_presentation_obj_admin_panel_42", -1),
+          (assign, "$g_presentation_obj_admin_panel_43", -1),
 #INVASION MODE END
       (try_begin),
         (eq, "$g_multiplayer_selected_map", "scn_multi_scene_1"),
@@ -1907,17 +1907,17 @@ presentations = [
         (val_add, ":cur_y", ":cur_y_adder"), #one more option for these mods
       (try_end),
       #INVASION MODE start
-	  (try_begin),
-		(eq, "$g_multiplayer_is_game_type_captain", 1),
-		(val_sub, ":cur_y", ":cur_y_adder"), #-2 options but +2
-	  (try_end),
-	  (try_begin),
-		# decrease for removed options in captain coop
-	    (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-		(val_sub, ":cur_y", ":cur_y_adder"),
-		(val_sub, ":cur_y", ":cur_y_adder"),
-		(val_sub, ":cur_y", ":cur_y_adder"),
-	  (try_end),
+          (try_begin),
+                (eq, "$g_multiplayer_is_game_type_captain", 1),
+                (val_sub, ":cur_y", ":cur_y_adder"), #-2 options but +2
+          (try_end),
+          (try_begin),
+                # decrease for removed options in captain coop
+            (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                (val_sub, ":cur_y", ":cur_y_adder"),
+                (val_sub, ":cur_y", ":cur_y_adder"),
+                (val_sub, ":cur_y", ":cur_y_adder"),
+          (try_end),
       #INVASION MODE END
       (str_clear, s0),
       (create_text_overlay, "$g_presentation_obj_admin_panel_container", s0, tf_scrollable),
@@ -2132,25 +2132,25 @@ presentations = [
 
       (val_sub, ":cur_y", ":cur_y_adder"),
       #INVASION MODE START
-	  (try_begin),
-		#(neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-		(assign, reg1, 2),
-		(create_text_overlay, reg0, "str_team_reg1_faction", 0),
-		(position_set_x, pos1, 0),
-		(position_set_y, pos1, ":cur_y"),
-		(overlay_set_position, reg0, pos1),
+          (try_begin),
+                #(neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                (assign, reg1, 2),
+                (create_text_overlay, reg0, "str_team_reg1_faction", 0),
+                (position_set_x, pos1, 0),
+                (position_set_y, pos1, ":cur_y"),
+                (overlay_set_position, reg0, pos1),
 
-		(create_combo_button_overlay, "$g_presentation_obj_admin_panel_12"),
-		(position_set_x, pos1, 800),
-		(position_set_y, pos1, 800),
-		(overlay_set_size, "$g_presentation_obj_admin_panel_12", pos1),
-		(position_set_x, pos1, 490),
-		(position_set_y, pos1, ":cur_y"),
-		(overlay_set_position, "$g_presentation_obj_admin_panel_12", pos1),
-		(call_script, "script_multiplayer_fill_available_factions_combo_button", "$g_presentation_obj_admin_panel_12", "$g_multiplayer_next_team_2_faction", "$g_multiplayer_next_team_1_faction"),
+                (create_combo_button_overlay, "$g_presentation_obj_admin_panel_12"),
+                (position_set_x, pos1, 800),
+                (position_set_y, pos1, 800),
+                (overlay_set_size, "$g_presentation_obj_admin_panel_12", pos1),
+                (position_set_x, pos1, 490),
+                (position_set_y, pos1, ":cur_y"),
+                (overlay_set_position, "$g_presentation_obj_admin_panel_12", pos1),
+                (call_script, "script_multiplayer_fill_available_factions_combo_button", "$g_presentation_obj_admin_panel_12", "$g_multiplayer_next_team_2_faction", "$g_multiplayer_next_team_1_faction"),
 
-		(val_sub, ":cur_y", ":cur_y_adder"),
-	  (try_end),
+                (val_sub, ":cur_y", ":cur_y_adder"),
+          (try_end),
       #INVASION MODE END
       (assign, reg1, 1),
       (create_text_overlay, reg0, "str_max_number_of_players", 0),
@@ -2159,18 +2159,18 @@ presentations = [
       (overlay_set_position, reg0, pos1),
 
       #INVASION MODE START
-	  (try_begin),
-		(eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+          (try_begin),
+                (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
         (store_add, ":coop_max_number_players_high_range", ccoop_max_num_players, 1),
-		(create_number_box_overlay, "$g_presentation_obj_admin_panel_21", 2, ":coop_max_number_players_high_range"), # range is [2,8] for ccoop
-		# clamp max_num_players
-		(try_begin),
-		  (server_get_max_num_players, ":max_num_players"),
-		  (gt, ":max_num_players", ccoop_max_num_players),
+                (create_number_box_overlay, "$g_presentation_obj_admin_panel_21", 2, ":coop_max_number_players_high_range"), # range is [2,8] for ccoop
+                # clamp max_num_players
+                (try_begin),
+                  (server_get_max_num_players, ":max_num_players"),
+                  (gt, ":max_num_players", ccoop_max_num_players),
           (multiplayer_send_int_to_server, multiplayer_event_admin_set_max_num_players, ccoop_max_num_players),
-	    (try_end),
-	  (else_try),
-		(create_number_box_overlay, "$g_presentation_obj_admin_panel_21", 2, 201), # default range is [2,200]
+            (try_end),
+          (else_try),
+                (create_number_box_overlay, "$g_presentation_obj_admin_panel_21", 2, 201), # default range is [2,200]
       (try_end),
       #INVASION MODE END
 
@@ -2181,9 +2181,9 @@ presentations = [
       (overlay_set_val, "$g_presentation_obj_admin_panel_21", ":max_players"),
 
       #INVASION MODE START
-	  (try_begin),
-		(neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop), 
-		(val_sub, ":cur_y", ":cur_y_adder"),
+          (try_begin),
+                (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop), 
+                (val_sub, ":cur_y", ":cur_y_adder"),
         (assign, reg1, 1),
         (create_text_overlay, reg0, "str_number_of_bots_in_team_reg1", 0),
         (position_set_x, pos1, 0),
@@ -2209,7 +2209,7 @@ presentations = [
         (position_set_y, pos1, ":cur_y"),
         (overlay_set_position, "$g_presentation_obj_admin_panel_4", pos1),
         (overlay_set_val, "$g_presentation_obj_admin_panel_4", "$g_multiplayer_num_bots_team_2"),
-	  (try_end), 	
+          (try_end), 	
       #INVASION MODE END
 
       (try_begin),
@@ -2437,8 +2437,8 @@ presentations = [
       (try_end),
       
       #INVASION MODE START
-	  (try_begin), # team point limit
-	    (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+          (try_begin), # team point limit
+            (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
         (val_sub, ":cur_y", ":cur_y_adder"),
         
         (create_text_overlay, reg0, "str_team_points_limit", 0),
@@ -2451,7 +2451,7 @@ presentations = [
         (position_set_y, pos1, ":cur_y"),
         (overlay_set_position, "$g_presentation_obj_admin_panel_8", pos1),
         (overlay_set_val, "$g_presentation_obj_admin_panel_8", "$g_multiplayer_game_max_points"),
-	  (try_end),
+          (try_end),
       #INVASION MODE END
 
       (try_begin),
@@ -2493,9 +2493,9 @@ presentations = [
       (try_end),
       
       #INVASION MODE START
-	  (try_begin), #ccoop
-		(neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-		(val_sub, ":cur_y", ":cur_y_adder"),
+          (try_begin), #ccoop
+                (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                (val_sub, ":cur_y", ":cur_y_adder"),
         (create_text_overlay, reg0, "str_respawn_period", 0),
         (position_set_x, pos1, 0),
         (position_set_y, pos1, ":cur_y"),
@@ -2612,15 +2612,15 @@ presentations = [
       (overlay_set_val, "$g_presentation_obj_admin_panel_23", "$g_multiplayer_factions_voteable"),
 
       #INVASION MODE START
-	  (try_begin), #ccoop bot count limit for polls
-	    (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-		
-		(val_sub, ":cur_y", ":cur_y_adder"),
+          (try_begin), #ccoop bot count limit for polls
+            (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                
+                (val_sub, ":cur_y", ":cur_y_adder"),
         (create_text_overlay, reg0, "str_bots_upper_limit_for_votes", 0),
         (position_set_x, pos1, 0),
         (position_set_y, pos1, ":cur_y"),
         (overlay_set_position, reg0, pos1),
-	    
+            
         (assign, ":upper_limit", 51),
         (val_min, ":upper_limit", "$g_multiplayer_max_num_bots"),
         (create_number_box_overlay, "$g_presentation_obj_admin_panel_22", 0, ":upper_limit"),
@@ -2628,7 +2628,7 @@ presentations = [
         (position_set_y, pos1, ":cur_y"),
         (overlay_set_position, "$g_presentation_obj_admin_panel_22", pos1),
         (overlay_set_val, "$g_presentation_obj_admin_panel_22", "$g_multiplayer_num_bots_voteable"),
-	  (try_end),
+          (try_end),
       #INVASION MODE END
 
       (val_sub, ":cur_y", ":cur_y_adder"),
@@ -2645,16 +2645,16 @@ presentations = [
       (overlay_set_val, "$g_presentation_obj_admin_panel_30", "$g_multiplayer_valid_vote_ratio"),
 
       #INVASION MODE START
-	  (try_begin), # auto team balance
-	    (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+          (try_begin), # auto team balance
+            (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
 
-	    (val_sub, ":cur_y", ":cur_y_adder"),
-	    
+            (val_sub, ":cur_y", ":cur_y_adder"),
+            
         (create_text_overlay, reg0, "str_auto_team_balance_limit", 0),
         (position_set_x, pos1, 0),
         (position_set_y, pos1, ":cur_y"),
         (overlay_set_position, reg0, pos1),
-		  
+                  
         (create_combo_button_overlay, "$g_presentation_obj_admin_panel_31"),
         (position_set_x, pos1, 800),
         (position_set_y, pos1, 800),
@@ -2680,8 +2680,8 @@ presentations = [
           (store_sub, ":set_value", 7, "$g_multiplayer_auto_team_balance_limit"),
           (overlay_set_val, "$g_presentation_obj_admin_panel_31", ":set_value"),
         (try_end),
-    	
-	  (try_end),
+        
+          (try_end),
       #INVASION MODE END
 
       (val_sub, ":cur_y", ":cur_y_adder"),
@@ -2791,20 +2791,20 @@ presentations = [
         (eq, ":object", "$g_presentation_obj_admin_panel_10"),
         (assign, "$g_multiplayer_game_type", ":value"),
         #INVASION MODE START
-		(call_script, "script_multiplayer_set_g_multiplayer_is_game_type_captain"),
-		#(tutorial_message, -1), 
-		(try_begin),
-			(eq, "$g_multiplayer_is_game_type_captain", 1),
-			
-			(try_begin),
-				(eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-				#(tutorial_message, "str_warning_max_players_count_text2"), 
-			(try_end), 
-		(else_try), 
+                (call_script, "script_multiplayer_set_g_multiplayer_is_game_type_captain"),
+                #(tutorial_message, -1), 
+                (try_begin),
+                        (eq, "$g_multiplayer_is_game_type_captain", 1),
+                        
+                        (try_begin),
+                                (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                                #(tutorial_message, "str_warning_max_players_count_text2"), 
+                        (try_end), 
+                (else_try), 
           (ge, "$g_multiplayer_next_team_2_faction", kingdoms_end),
           (assign, "$g_multiplayer_next_team_2_faction", "fac_kingdom_2"),
           (multiplayer_send_2_int_to_server, multiplayer_event_admin_set_team_faction, 2, "$g_multiplayer_next_team_2_faction"),
-		(try_end), 
+                (try_end), 
         #INVASION END 
         (presentation_set_duration, 0),
         (start_presentation, "prsnt_game_multiplayer_admin_panel"),
@@ -2866,15 +2866,15 @@ presentations = [
         (eq, ":object", "$g_presentation_obj_admin_panel_21"),
         (multiplayer_send_int_to_server, multiplayer_event_admin_set_max_num_players, ":value"),
         #INVASION MODE START
-		#(tutorial_message, -1),
-		(try_begin),
-			(eq, "$g_multiplayer_is_game_type_captain", 1),
-			
-			(try_begin),
-				(eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-				#(tutorial_message, "str_warning_max_players_count_text2"), 
-			(try_end),
-		(try_end), 		
+                #(tutorial_message, -1),
+                (try_begin),
+                        (eq, "$g_multiplayer_is_game_type_captain", 1),
+                        
+                        (try_begin),
+                                (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                                #(tutorial_message, "str_warning_max_players_count_text2"), 
+                        (try_end),
+                (try_end), 		
         #INVASION MODE END
       (else_try),
         (eq, ":object", "$g_presentation_obj_admin_panel_22"),
@@ -2960,7 +2960,7 @@ presentations = [
      [
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (presentation_set_duration, 0),
       (try_end),
       ]),
@@ -3205,11 +3205,11 @@ presentations = [
 
 
       #INVASION MODE START
-	  (try_begin), ##ccoop
-	    (team_get_faction, ":faction_no", 1),
+          (try_begin), ##ccoop
+            (team_get_faction, ":faction_no", 1),
         (str_store_faction_name, s0, ":faction_no"),
         (try_begin),
-	      (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+              (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
           (create_button_overlay, "$g_presentation_obj_team_select_2", s0, 0),
         (else_try),
           (assign, "$g_presentation_obj_team_select_2", -1),
@@ -3217,26 +3217,26 @@ presentations = [
         (try_begin),
           (call_script, "script_cf_multiplayer_team_is_available", ":my_player_no", 1),
           (try_begin),
-	        (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
             (overlay_set_color, "$g_presentation_obj_team_select_2", 0xFFFFFF),
             (overlay_set_hilight_color, "$g_presentation_obj_team_select_2", 0x55FF50),
           (try_end),
           (assign, "$g_multiplayer_team_select_2_available", 1),
         (else_try),
           (try_begin),
-	        (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
             (overlay_set_color, "$g_presentation_obj_team_select_2", 0x888888),
             (overlay_set_hilight_color, "$g_presentation_obj_team_select_2", 0x888888),
           (try_end),
           (assign, "$g_multiplayer_team_select_2_available", 0),
         (try_end),
         (try_begin),
-	      (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+              (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
           (overlay_set_position, "$g_presentation_obj_team_select_2", pos1),
           (val_sub, ":cur_y", escape_menu_item_height),
           (position_set_y, pos1, ":cur_y"),
         (try_end),
-	  (try_end),
+          (try_end),
       #INVASION MODE END
 
       (create_button_overlay, "$g_presentation_obj_team_select_3", "str_spectator", 0),
@@ -3263,12 +3263,12 @@ presentations = [
               (assign, "$g_confirmation_result", 0),
 
               #INVASION MODE START
-			  (try_begin),
-				(neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-				(neq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
-				(neq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
-				(assign, "$g_waiting_for_confirmation_to_terminate", 1),
-			  (try_end),
+                          (try_begin),
+                                (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                                (neq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
+                                (neq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
+                                (assign, "$g_waiting_for_confirmation_to_terminate", 1),
+                          (try_end),
               #INVASION MODE END
 
               (player_get_troop_id, "$g_confirmation_troop_backup", ":my_player_no"),
@@ -3278,14 +3278,14 @@ presentations = [
               (player_set_team_no, ":my_player_no", 0),
 
               #INVASION MODE START
-			  (call_script, "script_mp_set_player_team_no", ":my_player_no", 0, 1),
-			  (try_begin),
-				(this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-				(this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
-				(eq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
-				(presentation_set_duration, 0),
+                          (call_script, "script_mp_set_player_team_no", ":my_player_no", 0, 1),
+                          (try_begin),
+                                (this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                                (this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
+                                (eq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
+                                (presentation_set_duration, 0),
                 (start_presentation, "prsnt_multiplayer_troop_select"),
-			  (try_end),
+                          (try_end),
               #INVASION MODE END
 
             (else_try),
@@ -3303,11 +3303,11 @@ presentations = [
               (assign, "$g_confirmation_result", 0),
               #INVASION MODE START
               (try_begin),
-				(neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-				(neq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
-				(neq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
-				(assign, "$g_waiting_for_confirmation_to_terminate", 1),
-			  (try_end),
+                                (neq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                                (neq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
+                                (neq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
+                                (assign, "$g_waiting_for_confirmation_to_terminate", 1),
+                          (try_end),
               #INVASION MODE END
               (player_get_troop_id, "$g_confirmation_troop_backup", ":my_player_no"),
               (player_get_team_no, "$g_confirmation_team_backup", ":my_player_no"),
@@ -3315,14 +3315,14 @@ presentations = [
               (multiplayer_send_int_to_server, multiplayer_event_change_team_no, 1),
               (player_set_team_no, ":my_player_no", 1),
               #INVASION MODE START
-			  (call_script, "script_mp_set_player_team_no", ":my_player_no", 1, 1),
-			  (try_begin),
-				(this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-				(this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
-				(eq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
-				(presentation_set_duration, 0),
+                          (call_script, "script_mp_set_player_team_no", ":my_player_no", 1, 1),
+                          (try_begin),
+                                (this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                                (this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_deathmatch),
+                                (eq, "$g_multiplayer_game_type", multiplayer_game_type_duel),
+                                (presentation_set_duration, 0),
                 (start_presentation, "prsnt_multiplayer_troop_select"),
-			  (try_end),
+                          (try_end),
               #INVASION MODE END
             (else_try),
               (presentation_set_duration, 0),
@@ -3344,7 +3344,7 @@ presentations = [
       (multiplayer_get_my_player, ":my_player_no"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (eq, "$g_waiting_for_confirmation_to_terminate", 0),
         (multiplayer_get_my_team, ":my_team"),
         (try_begin),
@@ -3494,11 +3494,11 @@ presentations = [
         (presentation_set_duration, 0),
         (assign, "$g_presentation_state", 0),
         #INVASION MODE START
-		(try_begin),
-		  # open squad panel by default if player can buy squads
-		  (call_script, "script_cf_multiplayer_can_buy_squad"),
-		  (assign, "$g_presentation_state", 10),
-		(try_end),
+                (try_begin),
+                  # open squad panel by default if player can buy squads
+                  (call_script, "script_cf_multiplayer_can_buy_squad"),
+                  (assign, "$g_presentation_state", 10),
+                (try_end),
         #INVASION MODE END
         (start_presentation, "prsnt_multiplayer_item_select"),
         (assign, ":end_cond", 0), #break
@@ -3508,7 +3508,7 @@ presentations = [
      [
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (multiplayer_get_my_player, ":my_player_no"),
         (is_between, ":my_player_no", 0, multiplayer_max_possible_player_id),
         (multiplayer_get_my_troop, ":my_troop"),
@@ -3516,7 +3516,7 @@ presentations = [
         #INVASION MODE START
           (eq, "$g_multiplayer_is_game_type_captain", 1),
           (neg|is_between, ":my_troop", multiplayer_troops_begin, multiplayer_troops_end),
-		  (call_script, "script_mp_set_player_team_no", ":my_player_no", multi_team_spectator, 1),
+                  (call_script, "script_mp_set_player_team_no", ":my_player_no", multi_team_spectator, 1),
         (else_try),
         #INVASION MODE END
           (neg|is_between, ":my_troop", multiplayer_troops_begin, multiplayer_troops_end),
@@ -3775,19 +3775,19 @@ presentations = [
       (assign, ":has_bots", 0),
       #INVASION MODE START
       (try_begin),
-	    (call_script, "script_cf_multiplayer_can_buy_squad"),
+            (call_script, "script_cf_multiplayer_can_buy_squad"),
         (assign, ":has_bots", 1),
-	  (else_try),
-	    (neq, "$g_multiplayer_is_game_type_captain", 1),
+          (else_try),
+            (neq, "$g_multiplayer_is_game_type_captain", 1),
         (eq, ":my_team_no", 0),
-	    (gt, "$g_multiplayer_num_bots_team_1", 0),
-	    (assign, ":has_bots", 1),
-	  (else_try),
-	    (neq, "$g_multiplayer_is_game_type_captain", 1),
+            (gt, "$g_multiplayer_num_bots_team_1", 0),
+            (assign, ":has_bots", 1),
+          (else_try),
+            (neq, "$g_multiplayer_is_game_type_captain", 1),
         (eq, ":my_team_no", 1),
-	    (gt, "$g_multiplayer_num_bots_team_2", 0),
-	    (assign, ":has_bots", 1),
-	  (try_end),
+            (gt, "$g_multiplayer_num_bots_team_2", 0),
+            (assign, ":has_bots", 1),
+          (try_end),
       #INVASION MODE END
       (team_get_faction, ":my_faction_no", ":my_team_no"),
 
@@ -4572,7 +4572,7 @@ presentations = [
           #INVASION MODE START
           (multiplayer_get_my_player, ":my_player_no"),
           (call_script, "script_mp_set_coop_companions", ":my_player_no"),
-		  (call_script, "script_multiplayer_send_item_selections"),
+                  (call_script, "script_multiplayer_send_item_selections"),
           #INVASION MODE END
           (presentation_set_duration, 0),
         (try_end),
@@ -4659,7 +4659,7 @@ presentations = [
             (troop_get_slot, ":item_no", "trp_multiplayer_data", ":cur_slot"),
 
             
-			(try_begin),
+                        (try_begin),
               (store_add, ":player_slot_index", slot_player_selected_item_indices_begin, "$g_presentation_state"),
               (val_sub, ":player_slot_index", 1),
               (player_set_slot, ":my_player_no", ":player_slot_index", ":item_no"),
@@ -4973,7 +4973,7 @@ presentations = [
       (else_try),
         (assign, "$g_close_equipment_selection", 0),
         #INVASION MODE START
-	    (call_script, "script_multiplayer_send_item_selections"),
+            (call_script, "script_multiplayer_send_item_selections"),
         #INVASION MODE END
         (presentation_set_duration, 0),
       (try_end),
@@ -5069,7 +5069,7 @@ presentations = [
       (else_try),
         (assign, "$g_close_equipment_selection", 0),
         #INVASION MODE START
-		(call_script, "script_multiplayer_send_item_selections"),
+                (call_script, "script_multiplayer_send_item_selections"),
         #INVASION MODE END
         (presentation_set_duration, 0),
       (try_end),      
@@ -5093,7 +5093,7 @@ presentations = [
         (eq, "$g_close_equipment_selection", 0),
         (try_begin),
           (this_or_next|key_clicked, key_escape),
-		  (key_clicked, key_xbox_start),
+                  (key_clicked, key_xbox_start),
           (try_begin),
             (neq, "$g_current_opened_item_details", -1),
             (close_item_details),
@@ -6684,12 +6684,12 @@ presentations = [
 
             (str_store_player_username, s1, ":max_score_plus_death_player_no"),
             #INVASION MODE START
-			(try_begin),
-		      (eq, "$g_multiplayer_is_game_type_captain", 1),
-			  (create_text_overlay, reg0, "str_s1_team", 0),
-			(else_try),
-		      (create_text_overlay, reg0, s1, 0),
-			(try_end), 
+                        (try_begin),
+                      (eq, "$g_multiplayer_is_game_type_captain", 1),
+                          (create_text_overlay, reg0, "str_s1_team", 0),
+                        (else_try),
+                      (create_text_overlay, reg0, s1, 0),
+                        (try_end), 
             #INVASION MODE END
             (overlay_set_color, reg0, ":font_color"),
             (position_set_x, pos1, 750),
@@ -7053,22 +7053,22 @@ presentations = [
       (assign, ":cur_x", 42),
 
       #INVASION MODE START
-	  (try_begin),
-		# if captain coop mode
-		(eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-		
-		# hide it if every player is spectator
-		(assign, ":has_player_in_team", 0),
-		(get_max_players, ":num_players"),
+          (try_begin),
+                # if captain coop mode
+                (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                
+                # hide it if every player is spectator
+                (assign, ":has_player_in_team", 0),
+                (get_max_players, ":num_players"),
         (try_for_range, ":player_no", 0, ":num_players"),
           (player_is_active, ":player_no"),
           (player_get_team_no, ":team_no", ":player_no"),
           (eq, ":team_no", 0),
-		  (assign, ":has_player_in_team", 1),
+                  (assign, ":has_player_in_team", 1),
         (try_end),
-		(eq, ":has_player_in_team", 1),
-		
-		(assign, ":cur_x",  40),
+                (eq, ":has_player_in_team", 1),
+                
+                (assign, ":cur_x",  40),
         (val_sub, ":cur_y", 50),
 
         #"ZITATS" text		
@@ -7080,21 +7080,21 @@ presentations = [
         (position_set_x, pos1, 850),
         (position_set_y, pos1, 850),
         (overlay_set_size, reg0, pos1),
-		
-		(val_sub, ":cur_y", 22),
+                
+                (val_sub, ":cur_y", 22),
 
-		(try_begin),
-		  (gt, "$g_multiplayer_ccoop_wave_no", 0),
-		  (assign, ":font_color", 0xF0F0F0),
-		  (store_sub, reg1, "$g_multiplayer_ccoop_wave_no", "$g_mp_coop_last_king_wave"),
-		  (try_begin),
-		    (ge, "$g_mp_coop_king_waves", 1), # wave++
-		    (create_text_overlay, reg0, "str_elite_wave_no_reg1", 0),
+                (try_begin),
+                  (gt, "$g_multiplayer_ccoop_wave_no", 0),
+                  (assign, ":font_color", 0xF0F0F0),
+                  (store_sub, reg1, "$g_multiplayer_ccoop_wave_no", "$g_mp_coop_last_king_wave"),
+                  (try_begin),
+                    (ge, "$g_mp_coop_king_waves", 1), # wave++
+                    (create_text_overlay, reg0, "str_elite_wave_no_reg1", 0),
 
-		  (else_try),
-		    (create_text_overlay, reg0, "str_wave_no_reg1", 0),
-		  (try_end),
-		  
+                  (else_try),
+                    (create_text_overlay, reg0, "str_wave_no_reg1", 0),
+                  (try_end),
+                  
           (overlay_set_color, reg0, ":font_color"),
           (position_set_x, pos1, ":cur_x"),
           (position_set_y, pos1, ":cur_y"),
@@ -7102,163 +7102,163 @@ presentations = [
           (position_set_x, pos1, 750),
           (position_set_y, pos1, 750),
           (overlay_set_size, reg0, pos1),
-		  (val_sub, ":cur_y", 22),
-		(try_end),
-		
-		(call_script, "script_multiplayer_ccoop_get_alive_enemy_count"),
-		(assign, ":total_alive_enemy_count", reg0),
-		
-		(try_begin),
-			(le, "$g_multiplayer_ccoop_enemy_respawn_secs", 10000),
-			(this_or_next|gt, "$g_multiplayer_ccoop_enemy_respawn_secs", 31),
-			(gt, ":total_alive_enemy_count", 0),
-			(eq, "$g_round_ended", 0),
-			(assign, reg1, "$g_multiplayer_ccoop_enemy_respawn_secs"),
-			(try_begin),
-			  (ge, reg1, 60),
-			  (store_div, reg2, reg1, 60),
-			  (val_mod, reg1, 60),
-			  (create_text_overlay, reg0, "str_time_left_reg2_mins_reg1_secs", 0),
-			(else_try),
-			  (create_text_overlay, reg0, "str_time_left_reg1_secs", 0),
-			(try_end),
-			(overlay_set_color, reg0, ":font_color"),
-			(position_set_x, pos1, ":cur_x"),
-			(position_set_y, pos1, ":cur_y"),
-			(overlay_set_position, reg0, pos1),
-			(position_set_x, pos1, 750),
-			(position_set_y, pos1, 750),
-			(overlay_set_size, reg0, pos1),
-			(val_sub, ":cur_y", 22),
-		(try_end),
-		
-		(assign, ":total_arriving_enemy_count", 0),
-		(troop_get_slot, ":num_bot_types", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin),
-		(try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
-			(store_mul, ":cur_slot", ":cur_bot_type", 3),			
-			(val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 2),			
-			(troop_get_slot, ":bot_count", "trp_multiplayer_data", ":cur_slot"),
-			(val_add, ":total_arriving_enemy_count", ":bot_count"),
-		(try_end),
-					
-		(assign, ":enemies_caption_printed", 0),		
-		(try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
-			(store_mul, ":cur_slot", ":cur_bot_type", 3),
-			(val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 1),
-			(troop_get_slot, ":bot_type", "trp_multiplayer_data", ":cur_slot"),	
+                  (val_sub, ":cur_y", 22),
+                (try_end),
+                
+                (call_script, "script_multiplayer_ccoop_get_alive_enemy_count"),
+                (assign, ":total_alive_enemy_count", reg0),
+                
+                (try_begin),
+                        (le, "$g_multiplayer_ccoop_enemy_respawn_secs", 10000),
+                        (this_or_next|gt, "$g_multiplayer_ccoop_enemy_respawn_secs", 31),
+                        (gt, ":total_alive_enemy_count", 0),
+                        (eq, "$g_round_ended", 0),
+                        (assign, reg1, "$g_multiplayer_ccoop_enemy_respawn_secs"),
+                        (try_begin),
+                          (ge, reg1, 60),
+                          (store_div, reg2, reg1, 60),
+                          (val_mod, reg1, 60),
+                          (create_text_overlay, reg0, "str_time_left_reg2_mins_reg1_secs", 0),
+                        (else_try),
+                          (create_text_overlay, reg0, "str_time_left_reg1_secs", 0),
+                        (try_end),
+                        (overlay_set_color, reg0, ":font_color"),
+                        (position_set_x, pos1, ":cur_x"),
+                        (position_set_y, pos1, ":cur_y"),
+                        (overlay_set_position, reg0, pos1),
+                        (position_set_x, pos1, 750),
+                        (position_set_y, pos1, 750),
+                        (overlay_set_size, reg0, pos1),
+                        (val_sub, ":cur_y", 22),
+                (try_end),
+                
+                (assign, ":total_arriving_enemy_count", 0),
+                (troop_get_slot, ":num_bot_types", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin),
+                (try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
+                        (store_mul, ":cur_slot", ":cur_bot_type", 3),			
+                        (val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 2),			
+                        (troop_get_slot, ":bot_count", "trp_multiplayer_data", ":cur_slot"),
+                        (val_add, ":total_arriving_enemy_count", ":bot_count"),
+                (try_end),
+                                        
+                (assign, ":enemies_caption_printed", 0),		
+                (try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
+                        (store_mul, ":cur_slot", ":cur_bot_type", 3),
+                        (val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 1),
+                        (troop_get_slot, ":bot_type", "trp_multiplayer_data", ":cur_slot"),	
 
-			# check if current bot type has already written
-			(assign, ":already_printed", 0),
-			(try_for_range, ":cur_bot_type2", 0, ":cur_bot_type"),
-				(eq, ":already_printed", 0), # break condition
-				(store_mul, ":cur_slot2", ":cur_bot_type2", 3),
-				(val_add, ":cur_slot2", multi_data_ccoop_wave_spawn_data_begin + 1),
-				(troop_get_slot, ":bot_type2", "trp_multiplayer_data", ":cur_slot2"),
-				(try_begin),
-					(eq, ":bot_type", ":bot_type2"),
-					(assign, ":already_printed", 1),
-				(try_end),
-			(try_end),
-			
-			(try_begin),
-				(eq, ":already_printed", 0),
-				
-				(val_add, ":cur_slot", 1),
-				(troop_get_slot, ":bot_count", "trp_multiplayer_data", ":cur_slot"),
-				
-				# now check forward for same bot type
-				(store_add, ":cur_bot_type_plus_1", ":cur_bot_type", 1),				
-				(try_for_range, ":cur_bot_type2", ":cur_bot_type_plus_1", ":num_bot_types"),					
-					(store_mul, ":cur_slot2", ":cur_bot_type2", 3),
-					(val_add, ":cur_slot2", multi_data_ccoop_wave_spawn_data_begin + 1),
-					(troop_get_slot, ":bot_type2", "trp_multiplayer_data", ":cur_slot2"),
-					
-					(try_begin),
-						(eq, ":bot_type", ":bot_type2"),
-						(val_add, ":cur_slot2", 1),
-						(troop_get_slot, ":bot_count2", "trp_multiplayer_data", ":cur_slot2"),
-						(val_add, ":bot_count", ":bot_count2"),
-					(try_end),
-				(try_end),
-						
-				
-				# count alive troops
-				(assign, ":alive_enemy_count", 0),
-				(try_for_agents, ":cur_agent"),
-					(try_begin),
-						(agent_is_human, ":cur_agent"),
-						(agent_is_alive, ":cur_agent"),
-						(agent_get_team, ":cur_agent_team", ":cur_agent"),
-						(eq, ":cur_agent_team", 1),
-						(agent_get_troop_id, ":cur_agent_troop_id", ":cur_agent"),
-						(eq, ":cur_agent_troop_id", ":bot_type"),
-						(val_add, ":alive_enemy_count", 1),
-					(try_end),
-				(try_end),
-										
-				(try_begin),
-					(this_or_next|gt, ":bot_count", 0),
-					(gt, ":alive_enemy_count", 0),
-					
-					(try_begin),
-						(eq, ":enemies_caption_printed", 0),					
-						(assign, ":enemies_caption_printed", 1),
-						
-						(assign, reg1, ":total_alive_enemy_count"),
-						(assign, reg2, ":total_arriving_enemy_count"),
-						(create_text_overlay, reg0, "str_enemies_reg1_total_reg2_arriving", 0),
-						(overlay_set_color, reg0, ":font_color"),
-						(position_set_x, pos1, ":cur_x"),
-						(position_set_y, pos1, ":cur_y"),
-						(overlay_set_position, reg0, pos1),
-						(position_set_x, pos1, 750),
-						(position_set_y, pos1, 750),
-						(overlay_set_size, reg0, pos1),
-						(val_sub, ":cur_y", 20),
-					(try_end),
-									
-					(try_begin),
+                        # check if current bot type has already written
+                        (assign, ":already_printed", 0),
+                        (try_for_range, ":cur_bot_type2", 0, ":cur_bot_type"),
+                                (eq, ":already_printed", 0), # break condition
+                                (store_mul, ":cur_slot2", ":cur_bot_type2", 3),
+                                (val_add, ":cur_slot2", multi_data_ccoop_wave_spawn_data_begin + 1),
+                                (troop_get_slot, ":bot_type2", "trp_multiplayer_data", ":cur_slot2"),
+                                (try_begin),
+                                        (eq, ":bot_type", ":bot_type2"),
+                                        (assign, ":already_printed", 1),
+                                (try_end),
+                        (try_end),
+                        
+                        (try_begin),
+                                (eq, ":already_printed", 0),
+                                
+                                (val_add, ":cur_slot", 1),
+                                (troop_get_slot, ":bot_count", "trp_multiplayer_data", ":cur_slot"),
+                                
+                                # now check forward for same bot type
+                                (store_add, ":cur_bot_type_plus_1", ":cur_bot_type", 1),				
+                                (try_for_range, ":cur_bot_type2", ":cur_bot_type_plus_1", ":num_bot_types"),					
+                                        (store_mul, ":cur_slot2", ":cur_bot_type2", 3),
+                                        (val_add, ":cur_slot2", multi_data_ccoop_wave_spawn_data_begin + 1),
+                                        (troop_get_slot, ":bot_type2", "trp_multiplayer_data", ":cur_slot2"),
+                                        
+                                        (try_begin),
+                                                (eq, ":bot_type", ":bot_type2"),
+                                                (val_add, ":cur_slot2", 1),
+                                                (troop_get_slot, ":bot_count2", "trp_multiplayer_data", ":cur_slot2"),
+                                                (val_add, ":bot_count", ":bot_count2"),
+                                        (try_end),
+                                (try_end),
+                                                
+                                
+                                # count alive troops
+                                (assign, ":alive_enemy_count", 0),
+                                (try_for_agents, ":cur_agent"),
+                                        (try_begin),
+                                                (agent_is_human, ":cur_agent"),
+                                                (agent_is_alive, ":cur_agent"),
+                                                (agent_get_team, ":cur_agent_team", ":cur_agent"),
+                                                (eq, ":cur_agent_team", 1),
+                                                (agent_get_troop_id, ":cur_agent_troop_id", ":cur_agent"),
+                                                (eq, ":cur_agent_troop_id", ":bot_type"),
+                                                (val_add, ":alive_enemy_count", 1),
+                                        (try_end),
+                                (try_end),
+                                                                                
+                                (try_begin),
+                                        (this_or_next|gt, ":bot_count", 0),
+                                        (gt, ":alive_enemy_count", 0),
+                                        
+                                        (try_begin),
+                                                (eq, ":enemies_caption_printed", 0),					
+                                                (assign, ":enemies_caption_printed", 1),
+                                                
+                                                (assign, reg1, ":total_alive_enemy_count"),
+                                                (assign, reg2, ":total_arriving_enemy_count"),
+                                                (create_text_overlay, reg0, "str_enemies_reg1_total_reg2_arriving", 0),
+                                                (overlay_set_color, reg0, ":font_color"),
+                                                (position_set_x, pos1, ":cur_x"),
+                                                (position_set_y, pos1, ":cur_y"),
+                                                (overlay_set_position, reg0, pos1),
+                                                (position_set_x, pos1, 750),
+                                                (position_set_y, pos1, 750),
+                                                (overlay_set_size, reg0, pos1),
+                                                (val_sub, ":cur_y", 20),
+                                        (try_end),
+                                                                        
+                                        (try_begin),
                       (this_or_next|eq, ":alive_enemy_count", 1),
                       (this_or_next|is_between, ":bot_type", lords_begin, lords_end),
                       (is_between, ":bot_type", kings_begin, kings_end),
                       #(is_between, ":bot_type", quick_battle_troops_begin, quick_battle_troops_end),
-					  (str_store_troop_name, s0, ":bot_type"),							
-					(else_try),
-					  (str_store_troop_name_plural, s0, ":bot_type"),							
-					(try_end),
-					(assign, reg3, ":bot_count"),
-					(assign, reg4, ":alive_enemy_count"),
-					(create_text_overlay, reg0, "str_ccoop_enemy_info", 0),
-					(overlay_set_color, reg0, ":font_color"),
-					(position_set_x, pos1, ":cur_x"),
-					(position_set_y, pos1, ":cur_y"),
-					(overlay_set_position, reg0, pos1),
-					(position_set_x, pos1, 750),
-					(position_set_y, pos1, 750),
-					(overlay_set_size, reg0, pos1),
-					(val_sub, ":cur_y", 18),
-				(try_end),
-			(try_end),
-		(try_end),
+                                          (str_store_troop_name, s0, ":bot_type"),							
+                                        (else_try),
+                                          (str_store_troop_name_plural, s0, ":bot_type"),							
+                                        (try_end),
+                                        (assign, reg3, ":bot_count"),
+                                        (assign, reg4, ":alive_enemy_count"),
+                                        (create_text_overlay, reg0, "str_ccoop_enemy_info", 0),
+                                        (overlay_set_color, reg0, ":font_color"),
+                                        (position_set_x, pos1, ":cur_x"),
+                                        (position_set_y, pos1, ":cur_y"),
+                                        (overlay_set_position, reg0, pos1),
+                                        (position_set_x, pos1, 750),
+                                        (position_set_y, pos1, 750),
+                                        (overlay_set_size, reg0, pos1),
+                                        (val_sub, ":cur_y", 18),
+                                (try_end),
+                        (try_end),
+                (try_end),
 
-		
-		(assign, ":cur_x", 42),
-		
-		#white line between playing players and spectators
-		(create_mesh_overlay, reg0, "mesh_white_plane"),
-		(overlay_set_color, reg0, 0xFFFFFF),
-		(overlay_set_alpha, reg0, 0xD0),
-		(store_add, ":sub_cur_x", ":cur_x", 0),
-		(position_set_x, pos1, ":sub_cur_x"),
-		(store_add, ":sub_cur_y", ":cur_y", 10),
-		(position_set_y, pos1, ":sub_cur_y"),
-		(overlay_set_position, reg0, pos1),
-		(position_set_x, pos1, 15250),
-		(position_set_y, pos1, 50),
-		(overlay_set_size, reg0, pos1), 	
-	  (try_end),
-	  
-	  (val_sub, ":cur_y", 13),
+                
+                (assign, ":cur_x", 42),
+                
+                #white line between playing players and spectators
+                (create_mesh_overlay, reg0, "mesh_white_plane"),
+                (overlay_set_color, reg0, 0xFFFFFF),
+                (overlay_set_alpha, reg0, 0xD0),
+                (store_add, ":sub_cur_x", ":cur_x", 0),
+                (position_set_x, pos1, ":sub_cur_x"),
+                (store_add, ":sub_cur_y", ":cur_y", 10),
+                (position_set_y, pos1, ":sub_cur_y"),
+                (overlay_set_position, reg0, pos1),
+                (position_set_x, pos1, 15250),
+                (position_set_y, pos1, 50),
+                (overlay_set_size, reg0, pos1), 	
+          (try_end),
+          
+          (val_sub, ":cur_y", 13),
       #INVASION MODE END
       (create_text_overlay, reg0, "str_player_name", 0),
       (overlay_set_color, reg0, 0xFFFFFF),
@@ -7358,30 +7358,30 @@ presentations = [
 
           #INVASION MODE START
           (assign, ":font_color", 0xFFFFFF),
-		  (try_begin),
-			(eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-			
-			(player_get_agent_id, ":max_score_plus_death_agent_id", ":max_kills_player_no"),
-			(this_or_next|lt, ":max_score_plus_death_agent_id", 0),
-			(neg|agent_is_alive, ":max_score_plus_death_agent_id"),
-			(assign, ":font_color", 0xFF0000),
-			(create_text_overlay, reg0, "str_dead", 0),
-			(overlay_set_color, reg0, ":font_color"),
-			(position_set_x, pos1, 750),
-			(position_set_y, pos1, 750),
-			(overlay_set_size, reg0, pos1),
-			(store_add, ":sub_cur_x", ":cur_x", 130),
-			(position_set_x, pos1, ":sub_cur_x"),
-			(position_set_y, pos1, ":cur_y"),
-			(overlay_set_position, reg0, pos1),
-		  (try_end),
-		  (try_begin),
-			(eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-			(create_text_overlay, reg0, "str_s1_team", 0),
-		  (else_try),
-		    (create_text_overlay, reg0, s1, 0),
-		  (try_end),
-		  (overlay_set_color, reg0, ":font_color"),
+                  (try_begin),
+                        (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                        
+                        (player_get_agent_id, ":max_score_plus_death_agent_id", ":max_kills_player_no"),
+                        (this_or_next|lt, ":max_score_plus_death_agent_id", 0),
+                        (neg|agent_is_alive, ":max_score_plus_death_agent_id"),
+                        (assign, ":font_color", 0xFF0000),
+                        (create_text_overlay, reg0, "str_dead", 0),
+                        (overlay_set_color, reg0, ":font_color"),
+                        (position_set_x, pos1, 750),
+                        (position_set_y, pos1, 750),
+                        (overlay_set_size, reg0, pos1),
+                        (store_add, ":sub_cur_x", ":cur_x", 130),
+                        (position_set_x, pos1, ":sub_cur_x"),
+                        (position_set_y, pos1, ":cur_y"),
+                        (overlay_set_position, reg0, pos1),
+                  (try_end),
+                  (try_begin),
+                        (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+                        (create_text_overlay, reg0, "str_s1_team", 0),
+                  (else_try),
+                    (create_text_overlay, reg0, s1, 0),
+                  (try_end),
+                  (overlay_set_color, reg0, ":font_color"),
           #INVASION MODE END
 
           (position_set_x, pos1, 750),
@@ -7862,7 +7862,7 @@ presentations = [
      [(store_trigger_param_1, ":cur_time"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (gt, ":cur_time", 200),
         (presentation_set_duration, 0),
       (try_end),
@@ -7981,7 +7981,7 @@ presentations = [
      [(store_trigger_param_1, ":cur_time"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (gt, ":cur_time", 200),
         (presentation_set_duration, 0),
       (try_end),
@@ -8122,7 +8122,7 @@ presentations = [
      [(store_trigger_param_1, ":cur_time"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (gt, ":cur_time", 200),
         (presentation_set_duration, 0),
       (try_end),
@@ -8214,7 +8214,7 @@ presentations = [
      [(store_trigger_param_1, ":cur_time"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (gt, ":cur_time", 200),
         (presentation_set_duration, 0),
       (try_end),
@@ -8309,7 +8309,7 @@ presentations = [
      [(store_trigger_param_1, ":cur_time"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (gt, ":cur_time", 200),
         (presentation_set_duration, 0),
       (try_end),
@@ -8414,7 +8414,7 @@ presentations = [
      [(store_trigger_param_1, ":cur_time"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(key_clicked, key_xbox_start),
+                (key_clicked, key_xbox_start),
         (gt, ":cur_time", 200),
         (presentation_set_duration, 0),
       (try_end),
@@ -8498,7 +8498,7 @@ presentations = [
      [(store_trigger_param_1, ":cur_time"),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-		(this_or_next|key_clicked, key_xbox_start),
+                (this_or_next|key_clicked, key_xbox_start),
         (key_clicked, key_2),
         (gt, ":cur_time", 500),
         (multiplayer_send_int_to_server, multiplayer_event_answer_to_poll, 0),
@@ -8722,7 +8722,7 @@ presentations = [
           (this_or_next|key_clicked, key_enter),
           (this_or_next|key_clicked, key_escape),
           (this_or_next|key_clicked, key_back_space),
-		  (this_or_next|key_clicked, key_xbox_ltrigger),
+                  (this_or_next|key_clicked, key_xbox_ltrigger),
           (key_clicked, key_xbox_rtrigger),
           (presentation_set_duration, 0),
         (try_end),
@@ -12406,11 +12406,11 @@ presentations = [
       (assign, ":all_centers_accumulated_total", 0),
       (assign, ":all_centers_accumulated_taxes_and_rents", 0),
       (try_for_range, ":center_no", centers_begin, centers_end),	  
-	    (try_begin),
-		  (party_slot_ge, ":center_no", slot_center_player_enterprise, 1),		  
-		  (val_add, ":num_lines", 1),
-	    (try_end),	  
-	  
+            (try_begin),
+                  (party_slot_ge, ":center_no", slot_center_player_enterprise, 1),		  
+                  (val_add, ":num_lines", 1),
+            (try_end),	  
+          
         (party_slot_eq, ":center_no", slot_town_lord, "trp_player"),
         (val_add, ":num_lines", 1),
         (val_add, ":num_owned_center_values_for_tax_efficiency", 1),
@@ -12436,21 +12436,21 @@ presentations = [
         (assign, ":garrison_troop", 0),
         (try_begin),
           (this_or_next|party_slot_eq, ":party_no", slot_party_type, spt_town),
-			(party_slot_eq, ":party_no", slot_party_type, spt_castle),
+                        (party_slot_eq, ":party_no", slot_party_type, spt_castle),
           (party_slot_eq, ":party_no", slot_town_lord, "trp_player"),
           (assign, ":garrison_troop", 1),
         (else_try),
           (this_or_next|party_slot_eq, ":party_no", slot_party_type, spt_town),
-			(party_slot_eq, ":party_no", slot_party_type, spt_castle),
+                        (party_slot_eq, ":party_no", slot_party_type, spt_castle),
           (neg|party_slot_ge, ":party_no", slot_town_lord, 1), #unassigned
-		  (store_faction_of_party, ":center_faction", ":party_no"),
-		  (eq, ":center_faction", "fac_player_supporters_faction"),
-		  (faction_slot_eq, "fac_player_supporters_faction", slot_faction_leader, "trp_player"),
+                  (store_faction_of_party, ":center_faction", ":party_no"),
+                  (eq, ":center_faction", "fac_player_supporters_faction"),
+                  (faction_slot_eq, "fac_player_supporters_faction", slot_faction_leader, "trp_player"),
           (assign, ":garrison_troop", 1),		  
-		(try_end),
-		
+                (try_end),
+                
         (this_or_next|eq, ":party_no", "p_main_party"),
-			(eq, ":garrison_troop", 1),
+                        (eq, ":garrison_troop", 1),
         (val_add, ":num_lines", 1), #include empty towns/castles
       (try_end),
       (try_begin),
@@ -12461,146 +12461,146 @@ presentations = [
       (store_mul, ":cur_y", 27, ":num_lines"),
       (assign, ":net_change", 0), #this is the amount added
       (try_for_range, ":center_no", centers_begin, centers_end),		
-		#Enterprise
+                #Enterprise
         (try_begin),
-		  (party_get_slot, ":enterprise_output", ":center_no", slot_center_player_enterprise),
-		  (gt, ":enterprise_output", 1),
-		  (neg|party_slot_ge, ":center_no", slot_center_player_enterprise_days_until_complete, 1),
-		  
+                  (party_get_slot, ":enterprise_output", ":center_no", slot_center_player_enterprise),
+                  (gt, ":enterprise_output", 1),
+                  (neg|party_slot_ge, ":center_no", slot_center_player_enterprise_days_until_complete, 1),
+                  
           (str_store_party_name, s0, ":center_no"),
-		  
-		  (call_script, "script_process_player_enterprise", ":enterprise_output", ":center_no"),
-		  (assign, ":net_profit", reg0),
-		  (assign, ":price_of_single_output", reg4),
-		  (assign, ":price_of_single_input", reg5),
-		  (assign, ":price_of_secondary_input", reg10),
-		  
-		  (store_sub, ":town_order", ":center_no", towns_begin),
-		  (store_add, ":craftsman_troop", ":town_order", "trp_town_1_master_craftsman"),
+                  
+                  (call_script, "script_process_player_enterprise", ":enterprise_output", ":center_no"),
+                  (assign, ":net_profit", reg0),
+                  (assign, ":price_of_single_output", reg4),
+                  (assign, ":price_of_single_input", reg5),
+                  (assign, ":price_of_secondary_input", reg10),
+                  
+                  (store_sub, ":town_order", ":center_no", towns_begin),
+                  (store_add, ":craftsman_troop", ":town_order", "trp_town_1_master_craftsman"),
 
-		  (item_get_slot, ":outputs_added_to_market", ":enterprise_output", slot_item_output_per_run),
-		  (assign, ":outputs_added_to_warehouse", 0),
-		  
-		  #Enterprise impact of outputs
-		  (try_begin),
-		    #output placed in inventory: deduct selling price and add one good
-			(party_slot_eq, ":center_no", slot_center_player_enterprise_production_order, 1),
-			
-			#Count empty slots
-			(assign, ":empty_slots", 0),
-			(troop_get_inventory_capacity, ":total_capacity", ":craftsman_troop"),
-			(try_for_range, ":capacity_iterator", 0, ":total_capacity"),
-				(troop_get_inventory_slot, ":slot", ":craftsman_troop", ":capacity_iterator"),
-				(lt, ":slot", 1),
-				(val_add, ":empty_slots", 1),
-			(try_end),
-			
-			(assign, ":outputs_added_to_warehouse", ":outputs_added_to_market"),
-			(val_min, ":outputs_added_to_warehouse",  ":empty_slots"),
-			(gt, ":outputs_added_to_warehouse", 0),
-			
-			(store_mul, ":cancelled_sales", ":price_of_single_output", ":outputs_added_to_warehouse"),
-			(val_sub, ":net_profit", ":cancelled_sales"),
-			(val_sub, ":outputs_added_to_market", ":outputs_added_to_warehouse"),
-		  (try_end),
-		  
-		  #If the transaction is for real, and not just a budget check
-		  (try_begin),
-		    (eq, "$g_apply_budget_report_to_gold", 1),
-			(troop_add_items, ":craftsman_troop", ":enterprise_output", ":outputs_added_to_warehouse"),
+                  (item_get_slot, ":outputs_added_to_market", ":enterprise_output", slot_item_output_per_run),
+                  (assign, ":outputs_added_to_warehouse", 0),
+                  
+                  #Enterprise impact of outputs
+                  (try_begin),
+                    #output placed in inventory: deduct selling price and add one good
+                        (party_slot_eq, ":center_no", slot_center_player_enterprise_production_order, 1),
+                        
+                        #Count empty slots
+                        (assign, ":empty_slots", 0),
+                        (troop_get_inventory_capacity, ":total_capacity", ":craftsman_troop"),
+                        (try_for_range, ":capacity_iterator", 0, ":total_capacity"),
+                                (troop_get_inventory_slot, ":slot", ":craftsman_troop", ":capacity_iterator"),
+                                (lt, ":slot", 1),
+                                (val_add, ":empty_slots", 1),
+                        (try_end),
+                        
+                        (assign, ":outputs_added_to_warehouse", ":outputs_added_to_market"),
+                        (val_min, ":outputs_added_to_warehouse",  ":empty_slots"),
+                        (gt, ":outputs_added_to_warehouse", 0),
+                        
+                        (store_mul, ":cancelled_sales", ":price_of_single_output", ":outputs_added_to_warehouse"),
+                        (val_sub, ":net_profit", ":cancelled_sales"),
+                        (val_sub, ":outputs_added_to_market", ":outputs_added_to_warehouse"),
+                  (try_end),
+                  
+                  #If the transaction is for real, and not just a budget check
+                  (try_begin),
+                    (eq, "$g_apply_budget_report_to_gold", 1),
+                        (troop_add_items, ":craftsman_troop", ":enterprise_output", ":outputs_added_to_warehouse"),
 
-			#Affect prices by outputs added to market
-			(store_sub, ":item_slot_no", ":enterprise_output", trade_goods_begin),
-			(val_add, ":item_slot_no", slot_town_trade_good_prices_begin),
-			(party_get_slot, ":current_index", ":center_no", ":item_slot_no"),			
-			(store_mul, ":impact_on_price", ":outputs_added_to_market", 15),
-			(val_sub, ":current_index", ":impact_on_price"),
-			(party_set_slot, ":center_no", ":item_slot_no",":current_index"),			
-						
-			(gt, "$cheat_mode", 0),
-			(str_store_troop_name, s3, ":craftsman_troop"),
-			(assign, reg3, ":outputs_added_to_warehouse"),
-			(display_message, "@{!}DEBUG -- Adding {reg3} items to {s3}"),
-		  (try_end),
-		  
-		  #Enterprise impact of outputs
-		  (item_get_slot, ":inputs_taken_from_market", ":enterprise_output", slot_item_input_number),		  
-		  (try_begin),
-			(item_slot_ge, ":enterprise_output", slot_item_secondary_raw_material, 1),
-		    (assign, ":2ary_inputs_taken_from_market", ":inputs_taken_from_market"),
-		  (else_try),
-		    (assign, ":2ary_inputs_taken_from_market", 0),
-		  (try_end),
-		  
-		  (assign, ":inputs_taken_from_warehouse", 0),
-		  (assign, ":2ary_inputs_taken_from_warehouse", 0),
-		  
-		  (try_begin),
-		    #input present in inventory: reimburse for input cost and remove one good
-			(troop_get_inventory_capacity, ":total_capacity", ":craftsman_troop"),
-			(try_for_range, ":capacity_iterator", 0, ":total_capacity"),
-				(troop_get_inventory_slot, ":item_in_slot", ":craftsman_troop", ":capacity_iterator"),
-			
-				(lt, ":inputs_taken_from_warehouse", ":inputs_taken_from_market"),
-				(item_slot_eq, ":enterprise_output", slot_item_primary_raw_material, ":item_in_slot"),
+                        #Affect prices by outputs added to market
+                        (store_sub, ":item_slot_no", ":enterprise_output", trade_goods_begin),
+                        (val_add, ":item_slot_no", slot_town_trade_good_prices_begin),
+                        (party_get_slot, ":current_index", ":center_no", ":item_slot_no"),			
+                        (store_mul, ":impact_on_price", ":outputs_added_to_market", 15),
+                        (val_sub, ":current_index", ":impact_on_price"),
+                        (party_set_slot, ":center_no", ":item_slot_no",":current_index"),			
+                                                
+                        (gt, "$cheat_mode", 0),
+                        (str_store_troop_name, s3, ":craftsman_troop"),
+                        (assign, reg3, ":outputs_added_to_warehouse"),
+                        (display_message, "@{!}DEBUG -- Adding {reg3} items to {s3}"),
+                  (try_end),
+                  
+                  #Enterprise impact of outputs
+                  (item_get_slot, ":inputs_taken_from_market", ":enterprise_output", slot_item_input_number),		  
+                  (try_begin),
+                        (item_slot_ge, ":enterprise_output", slot_item_secondary_raw_material, 1),
+                    (assign, ":2ary_inputs_taken_from_market", ":inputs_taken_from_market"),
+                  (else_try),
+                    (assign, ":2ary_inputs_taken_from_market", 0),
+                  (try_end),
+                  
+                  (assign, ":inputs_taken_from_warehouse", 0),
+                  (assign, ":2ary_inputs_taken_from_warehouse", 0),
+                  
+                  (try_begin),
+                    #input present in inventory: reimburse for input cost and remove one good
+                        (troop_get_inventory_capacity, ":total_capacity", ":craftsman_troop"),
+                        (try_for_range, ":capacity_iterator", 0, ":total_capacity"),
+                                (troop_get_inventory_slot, ":item_in_slot", ":craftsman_troop", ":capacity_iterator"),
+                        
+                                (lt, ":inputs_taken_from_warehouse", ":inputs_taken_from_market"),
+                                (item_slot_eq, ":enterprise_output", slot_item_primary_raw_material, ":item_in_slot"),
                 #(troop_inventory_slot_get_item_amount, ":item_ammo", ":craftsman_troop", ":capacity_iterator"),
                 #(troop_inventory_slot_get_item_max_amount, ":item_max_ammo", ":craftsman_troop", ":capacity_iterator"),
                 #(eq, ":item_ammo", ":item_max_ammo"),
-				
-				(val_add, ":inputs_taken_from_warehouse", 1),
-			(else_try),	
-				(lt, ":2ary_inputs_taken_from_warehouse", ":2ary_inputs_taken_from_market"),
-				(item_slot_eq, ":enterprise_output", slot_item_secondary_raw_material, ":item_in_slot"),
+                                
+                                (val_add, ":inputs_taken_from_warehouse", 1),
+                        (else_try),	
+                                (lt, ":2ary_inputs_taken_from_warehouse", ":2ary_inputs_taken_from_market"),
+                                (item_slot_eq, ":enterprise_output", slot_item_secondary_raw_material, ":item_in_slot"),
                 #(troop_inventory_slot_get_item_amount, ":item_ammo", ":craftsman_troop", ":capacity_iterator"),
                 #(troop_inventory_slot_get_item_max_amount, ":item_max_ammo", ":craftsman_troop", ":capacity_iterator"),
                 #(eq, ":item_ammo", ":item_max_ammo"),
 
-				(val_add, ":2ary_inputs_taken_from_warehouse", 1),
-			(try_end),
-		  
-		    (try_begin),
-				(gt, ":inputs_taken_from_warehouse", 0),
-				(val_sub, ":inputs_taken_from_market", ":inputs_taken_from_warehouse"),
-				(store_mul, ":savings_from_warehoused_inputs",	":price_of_single_input", ":inputs_taken_from_warehouse"),
-				(val_add, ":net_profit", ":savings_from_warehoused_inputs"),
-			(try_end),	
-		    (try_begin),
-				(gt, ":2ary_inputs_taken_from_warehouse", 0),
-				(val_sub, ":2ary_inputs_taken_from_market", ":2ary_inputs_taken_from_warehouse"),
-				(assign, ":savings_from_warehoused_inputs",	":price_of_secondary_input"),
-				(val_add, ":net_profit", ":savings_from_warehoused_inputs"),
-			(try_end),					
-		  (try_end),
-		  
-		  #If the transaction is for real, and not just a budget check
-		  (try_begin),
-		    (eq, "$g_apply_budget_report_to_gold", 1),
-			(item_get_slot, ":raw_material", ":enterprise_output", slot_item_primary_raw_material),
-			(troop_remove_items, ":craftsman_troop", ":raw_material", ":inputs_taken_from_warehouse"),
-			(item_get_slot, ":secondary_raw_material", ":enterprise_output", slot_item_secondary_raw_material),
-			(troop_remove_items, ":craftsman_troop", ":secondary_raw_material", ":2ary_inputs_taken_from_warehouse"),
-			
-			#Affect prices by intputs added to market
-			(store_sub, ":item_slot_no", ":raw_material", trade_goods_begin),
-			(val_add, ":item_slot_no", slot_town_trade_good_prices_begin),
-			(party_get_slot, ":current_index", ":center_no", ":item_slot_no"),			
-			(store_mul, ":impact_on_price", ":outputs_added_to_market", 15),
-			(val_add, ":current_index", ":impact_on_price"),
-			(party_set_slot, ":center_no", ":item_slot_no",":current_index"),			
-			
-			(try_begin),
-				(gt, ":2ary_inputs_taken_from_market", 0),
-				(store_sub, ":item_slot_no", ":secondary_raw_material", trade_goods_begin),
-				(val_add, ":item_slot_no", slot_town_trade_good_prices_begin),
-				(party_get_slot, ":current_index", ":center_no", ":item_slot_no"),			
-				(val_add, ":current_index", 15),
-				(party_set_slot, ":center_no", ":item_slot_no",":current_index"),			
-			(try_end),
-		  (try_end),		  
-		  		  
-		  (call_script, "script_get_enterprise_name", ":enterprise_output"),
-		  (str_store_string, s5, reg0),
-		  
+                                (val_add, ":2ary_inputs_taken_from_warehouse", 1),
+                        (try_end),
+                  
+                    (try_begin),
+                                (gt, ":inputs_taken_from_warehouse", 0),
+                                (val_sub, ":inputs_taken_from_market", ":inputs_taken_from_warehouse"),
+                                (store_mul, ":savings_from_warehoused_inputs",	":price_of_single_input", ":inputs_taken_from_warehouse"),
+                                (val_add, ":net_profit", ":savings_from_warehoused_inputs"),
+                        (try_end),	
+                    (try_begin),
+                                (gt, ":2ary_inputs_taken_from_warehouse", 0),
+                                (val_sub, ":2ary_inputs_taken_from_market", ":2ary_inputs_taken_from_warehouse"),
+                                (assign, ":savings_from_warehoused_inputs",	":price_of_secondary_input"),
+                                (val_add, ":net_profit", ":savings_from_warehoused_inputs"),
+                        (try_end),					
+                  (try_end),
+                  
+                  #If the transaction is for real, and not just a budget check
+                  (try_begin),
+                    (eq, "$g_apply_budget_report_to_gold", 1),
+                        (item_get_slot, ":raw_material", ":enterprise_output", slot_item_primary_raw_material),
+                        (troop_remove_items, ":craftsman_troop", ":raw_material", ":inputs_taken_from_warehouse"),
+                        (item_get_slot, ":secondary_raw_material", ":enterprise_output", slot_item_secondary_raw_material),
+                        (troop_remove_items, ":craftsman_troop", ":secondary_raw_material", ":2ary_inputs_taken_from_warehouse"),
+                        
+                        #Affect prices by intputs added to market
+                        (store_sub, ":item_slot_no", ":raw_material", trade_goods_begin),
+                        (val_add, ":item_slot_no", slot_town_trade_good_prices_begin),
+                        (party_get_slot, ":current_index", ":center_no", ":item_slot_no"),			
+                        (store_mul, ":impact_on_price", ":outputs_added_to_market", 15),
+                        (val_add, ":current_index", ":impact_on_price"),
+                        (party_set_slot, ":center_no", ":item_slot_no",":current_index"),			
+                        
+                        (try_begin),
+                                (gt, ":2ary_inputs_taken_from_market", 0),
+                                (store_sub, ":item_slot_no", ":secondary_raw_material", trade_goods_begin),
+                                (val_add, ":item_slot_no", slot_town_trade_good_prices_begin),
+                                (party_get_slot, ":current_index", ":center_no", ":item_slot_no"),			
+                                (val_add, ":current_index", 15),
+                                (party_set_slot, ":center_no", ":item_slot_no",":current_index"),			
+                        (try_end),
+                  (try_end),		  
+                                  
+                  (call_script, "script_get_enterprise_name", ":enterprise_output"),
+                  (str_store_string, s5, reg0),
+                  
           (create_text_overlay, reg1, "str_enterprise_s5_at_s0", 0),
           (position_set_x, pos1, 900),
           (position_set_y, pos1, 900),
@@ -12608,31 +12608,31 @@ presentations = [
           (position_set_x, pos1, 25),
           (position_set_y, pos1, ":cur_y"),
           (overlay_set_position, reg1, pos1),
-		  
+                  
           (assign, reg0, ":net_profit"),
-		  
-		  #Enterprise revenue strings
+                  
+                  #Enterprise revenue strings
           (try_begin),
-     	    (store_faction_of_party, ":faction_no", ":center_no"),
-		    (store_relation, ":relation", ":faction_no", "$players_kingdom"),
-		    (lt, ":relation", 0),
-		    (assign, reg0, 0), 
-		    (assign, ":net_profit", 0), 
-		  
+            (store_faction_of_party, ":faction_no", ":center_no"),
+                    (store_relation, ":relation", ":faction_no", "$players_kingdom"),
+                    (lt, ":relation", 0),
+                    (assign, reg0, 0), 
+                    (assign, ":net_profit", 0), 
+                  
             (create_text_overlay, reg1, "str_under_sequestration", tf_right_align|tf_single_line),
             (overlay_set_color, reg1, 0xFF0000),		  
-		  (else_try),
-		    (ge, reg0, 0), 
+                  (else_try),
+                    (ge, reg0, 0), 
             (create_text_overlay, reg1, "@{!}{reg0}", tf_right_align|tf_single_line),
             (overlay_set_color, reg1, 0x00AA00),
           (else_try),
             (create_text_overlay, reg1, "@{!}{reg0}", tf_right_align|tf_single_line),
             (overlay_set_color, reg1, 0xFF0000),
           (try_end),
-		  
+                  
           (val_add, ":all_centers_accumulated_total", ":net_profit"),
           (val_add, ":net_change", ":net_profit"),		  
-		  
+                  
           (position_set_x, pos1, 900),
           (position_set_y, pos1, 900),
           (overlay_set_size, reg1, pos1),
@@ -12642,11 +12642,11 @@ presentations = [
           (val_sub, ":cur_y", 27),
         (try_end),
 
-		#Enterprise ends, taxes begin
+                #Enterprise ends, taxes begin
         (party_slot_eq, ":center_no", slot_town_lord, "trp_player"),
         (party_get_slot, ":accumulated_rents", ":center_no", slot_center_accumulated_rents),
         (party_get_slot, ":accumulated_tariffs", ":center_no", slot_center_accumulated_tariffs),
-		
+                
         (store_add, ":accumulated_total", ":accumulated_rents", ":accumulated_tariffs"),
         (val_add, ":all_centers_accumulated_total", ":accumulated_total"),
         (val_add, ":all_centers_accumulated_taxes_and_rents", ":accumulated_total"),
@@ -12674,7 +12674,7 @@ presentations = [
         (position_set_y, pos1, ":cur_y"),
         (overlay_set_position, reg1, pos1),
         (val_sub, ":cur_y", 27),
-		
+                
         (try_begin),
           (is_between, ":center_no", towns_begin, towns_end),
           (create_text_overlay, reg1, "str_tariffs_from_s0", 0),
@@ -12769,18 +12769,18 @@ presentations = [
           (party_slot_eq, ":party_no", slot_party_type, spt_castle),
           (party_slot_eq, ":party_no", slot_town_lord, "trp_player"),
           (assign, ":garrison_troop", 1),
-		(else_try),  
+                (else_try),  
           (this_or_next|party_slot_eq, ":party_no", slot_party_type, spt_town),
-			(party_slot_eq, ":party_no", slot_party_type, spt_castle),
+                        (party_slot_eq, ":party_no", slot_party_type, spt_castle),
           (neg|party_slot_ge, ":party_no", slot_town_lord, 1), #unassigned
-		  (store_faction_of_party, ":center_faction", ":party_no"),
-		  (eq, ":center_faction", "fac_player_supporters_faction"),
-		  (faction_slot_eq, "fac_player_supporters_faction", slot_faction_leader, "trp_player"),
+                  (store_faction_of_party, ":center_faction", ":party_no"),
+                  (eq, ":center_faction", "fac_player_supporters_faction"),
+                  (faction_slot_eq, "fac_player_supporters_faction", slot_faction_leader, "trp_player"),
           (assign, ":garrison_troop", 1),			  
         (try_end),
-		
+                
         (this_or_next|eq, ":party_no", "p_main_party"),
-			(eq, ":garrison_troop", 1),
+                        (eq, ":garrison_troop", 1),
         (assign, ":total_wage", 0),
         (party_get_num_companion_stacks, ":num_stacks", ":party_no"),
         (try_for_range, ":i_stack", 0, ":num_stacks"),
@@ -13071,7 +13071,7 @@ presentations = [
     ]),
 
     #INVASION MODE START
-	("multiplayer_flag_projection_display_ccoop", prsntf_read_only|prsntf_manual_end_only, 0, [
+        ("multiplayer_flag_projection_display_ccoop", prsntf_read_only|prsntf_manual_end_only, 0, [
       (ti_on_presentation_load, 
       [
         (set_fixed_point_multiplier, 1000),
@@ -13087,157 +13087,157 @@ presentations = [
         
       (ti_on_presentation_run,
       [
-	    (try_begin),
-	    
-	  	  # hide flag
-	      (overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 0),
-	  	
-	  	  # if prison cart is visible
-	  	  #(scene_prop_get_instance, ":prison_cart", "spr_prison_cart", 0),
-	  	  #(scene_prop_get_visibility, ":is_prison_cart_visible", ":prison_cart"),
-	  	  #(eq, ":is_prison_cart_visible", 1),
-		  (gt, "$g_prison_cart_point", 0), # if prison cart visible
-	  	  
-		  # get the avarage position of two cart doors
-		  (scene_prop_get_instance, ":prison_cart_door_left", "spr_prison_cart_door_left", 0),
-	  	  (scene_prop_get_instance, ":prison_cart_door_right", "spr_prison_cart_door_right", 0),
-	  	  (prop_instance_get_position, pos1, ":prison_cart_door_left"),
-	  	  (prop_instance_get_position, pos2, ":prison_cart_door_right"),
-		  (call_script, "script_avarage_of_two_points"),
-		  (position_move_z, pos1, 50, 1),
-	  	  
-	  	  #(prop_instance_get_position, pos1, ":prison_cart"),
-	  	  #(position_move_z, pos1, 200, 1),
-	  	  (position_get_screen_projection, pos3, pos1),
+            (try_begin),
+            
+                  # hide flag
+              (overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 0),
+                
+                  # if prison cart is visible
+                  #(scene_prop_get_instance, ":prison_cart", "spr_prison_cart", 0),
+                  #(scene_prop_get_visibility, ":is_prison_cart_visible", ":prison_cart"),
+                  #(eq, ":is_prison_cart_visible", 1),
+                  (gt, "$g_prison_cart_point", 0), # if prison cart visible
+                  
+                  # get the avarage position of two cart doors
+                  (scene_prop_get_instance, ":prison_cart_door_left", "spr_prison_cart_door_left", 0),
+                  (scene_prop_get_instance, ":prison_cart_door_right", "spr_prison_cart_door_right", 0),
+                  (prop_instance_get_position, pos1, ":prison_cart_door_left"),
+                  (prop_instance_get_position, pos2, ":prison_cart_door_right"),
+                  (call_script, "script_avarage_of_two_points"),
+                  (position_move_z, pos1, 50, 1),
+                  
+                  #(prop_instance_get_position, pos1, ":prison_cart"),
+                  #(position_move_z, pos1, 200, 1),
+                  (position_get_screen_projection, pos3, pos1),
           (position_get_x, ":x_pos", pos3),
           (position_get_y, ":y_pos", pos3),
           (try_begin),
             (is_between, ":x_pos", -100, 1100),
             (is_between, ":y_pos", -100, 850),
-	  	  
-	  	    # show flag if its on screen
-	  	    (overlay_set_position, "$g_presentation_obj_flag_projection_display_1", pos3),
-	  	    (overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 1),
-	  	  (try_end),
-	  	
-	    (try_end),
+                  
+                    # show flag if its on screen
+                    (overlay_set_position, "$g_presentation_obj_flag_projection_display_1", pos3),
+                    (overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 1),
+                  (try_end),
+                
+            (try_end),
       
         ]),
       ]),
-	  
-	  
-	# MCA  display flag over wave spawn points
-	("multiplayer_flag_projection_display_ccoop_wave", prsntf_read_only|prsntf_manual_end_only, 0, 
-	[
-		(ti_on_presentation_load, 
-		[
-			(set_fixed_point_multiplier, 1000),
-			
-			(assign, ":enemy_spawn_entry_point_1", -1),
-			(assign, ":enemy_spawn_entry_point_2", -1),
-			
-			(troop_get_slot, ":num_bot_types", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin),
-			(try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
-				(store_mul, ":cur_slot", ":cur_bot_type", 3),
-				(val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 2),
-				(troop_get_slot, ":cur_bot_spawn_amount", "trp_multiplayer_data", ":cur_slot"),
-				(val_add, ":cur_slot", 1),
-				(troop_get_slot, ":cur_bot_entry_point", "trp_multiplayer_data", ":cur_slot"),
-				(gt, ":cur_bot_spawn_amount", 0),
-				(try_begin),
-					(neq, ":enemy_spawn_entry_point_1", -1),
-					(neq, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
-					(assign, ":enemy_spawn_entry_point_2", ":cur_bot_entry_point"),
-				(else_try),
-					(assign, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
-				(try_end),
-			(try_end),
+          
+          
+        # MCA  display flag over wave spawn points
+        ("multiplayer_flag_projection_display_ccoop_wave", prsntf_read_only|prsntf_manual_end_only, 0, 
+        [
+                (ti_on_presentation_load, 
+                [
+                        (set_fixed_point_multiplier, 1000),
+                        
+                        (assign, ":enemy_spawn_entry_point_1", -1),
+                        (assign, ":enemy_spawn_entry_point_2", -1),
+                        
+                        (troop_get_slot, ":num_bot_types", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin),
+                        (try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
+                                (store_mul, ":cur_slot", ":cur_bot_type", 3),
+                                (val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 2),
+                                (troop_get_slot, ":cur_bot_spawn_amount", "trp_multiplayer_data", ":cur_slot"),
+                                (val_add, ":cur_slot", 1),
+                                (troop_get_slot, ":cur_bot_entry_point", "trp_multiplayer_data", ":cur_slot"),
+                                (gt, ":cur_bot_spawn_amount", 0),
+                                (try_begin),
+                                        (neq, ":enemy_spawn_entry_point_1", -1),
+                                        (neq, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
+                                        (assign, ":enemy_spawn_entry_point_2", ":cur_bot_entry_point"),
+                                (else_try),
+                                        (assign, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
+                                (try_end),
+                        (try_end),
 
-			(try_begin),
-				(gt, ":enemy_spawn_entry_point_1", 0),
-				(create_mesh_overlay, "$g_presentation_obj_flag_projection_display_1", "mesh_incoming_enemy"),
-				(position_set_x, pos1, 250),
-				(position_set_y, pos1, 250),
-				(overlay_set_size, "$g_presentation_obj_flag_projection_display_1", pos1),
-				(overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 0),
-			(try_end),
-			
-			(try_begin),
-				(gt, ":enemy_spawn_entry_point_2", 0),
-				(create_mesh_overlay, "$g_presentation_obj_flag_projection_display_2", "mesh_incoming_enemy"),
-				(position_set_x, pos1, 250),
-				(position_set_y, pos1, 250),
-				(overlay_set_size, "$g_presentation_obj_flag_projection_display_2", pos1),
-				(overlay_set_display, "$g_presentation_obj_flag_projection_display_2", 0),
-			(try_end),
-			
-			(presentation_set_duration, 999999),			
-		]),
+                        (try_begin),
+                                (gt, ":enemy_spawn_entry_point_1", 0),
+                                (create_mesh_overlay, "$g_presentation_obj_flag_projection_display_1", "mesh_incoming_enemy"),
+                                (position_set_x, pos1, 250),
+                                (position_set_y, pos1, 250),
+                                (overlay_set_size, "$g_presentation_obj_flag_projection_display_1", pos1),
+                                (overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 0),
+                        (try_end),
+                        
+                        (try_begin),
+                                (gt, ":enemy_spawn_entry_point_2", 0),
+                                (create_mesh_overlay, "$g_presentation_obj_flag_projection_display_2", "mesh_incoming_enemy"),
+                                (position_set_x, pos1, 250),
+                                (position_set_y, pos1, 250),
+                                (overlay_set_size, "$g_presentation_obj_flag_projection_display_2", pos1),
+                                (overlay_set_display, "$g_presentation_obj_flag_projection_display_2", 0),
+                        (try_end),
+                        
+                        (presentation_set_duration, 999999),			
+                ]),
 
-		(ti_on_presentation_run,
-		[
-			(assign, ":enemy_spawn_entry_point_1", -1),
-			(assign, ":enemy_spawn_entry_point_2", -1),
-			
-			(troop_get_slot, ":num_bot_types", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin),
-			(try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
-				(store_mul, ":cur_slot", ":cur_bot_type", 3),
-				(val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 2),
-				(troop_get_slot, ":cur_bot_spawn_amount", "trp_multiplayer_data", ":cur_slot"),
-				(val_add, ":cur_slot", 1),
-				(troop_get_slot, ":cur_bot_entry_point", "trp_multiplayer_data", ":cur_slot"),
-				(gt, ":cur_bot_spawn_amount", 0),
-				(try_begin),
-					(neq, ":enemy_spawn_entry_point_1", -1),
-					(neq, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
-					(assign, ":enemy_spawn_entry_point_2", ":cur_bot_entry_point"),
-				(else_try),
-					(assign, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
-				(try_end),
-			(try_end),
-			
-			(try_begin),
-				(this_or_next|gt, ":enemy_spawn_entry_point_1", 0),
-				(gt, ":enemy_spawn_entry_point_2", 0),
-				
-				(try_begin),
-					(gt, ":enemy_spawn_entry_point_1", 0),
-					(overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 0),			
-					
-					(entry_point_get_position, pos1, ":enemy_spawn_entry_point_1"),	
-					(position_move_z, pos1, 150, 1),
-					(position_get_screen_projection, pos3, pos1),
-					(position_get_x, ":x_pos", pos3),
-					(position_get_y, ":y_pos", pos3),
-					(is_between, ":x_pos", -100, 1100),
-					(is_between, ":y_pos", -100, 850),
+                (ti_on_presentation_run,
+                [
+                        (assign, ":enemy_spawn_entry_point_1", -1),
+                        (assign, ":enemy_spawn_entry_point_2", -1),
+                        
+                        (troop_get_slot, ":num_bot_types", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin),
+                        (try_for_range, ":cur_bot_type", 0, ":num_bot_types"),
+                                (store_mul, ":cur_slot", ":cur_bot_type", 3),
+                                (val_add, ":cur_slot", multi_data_ccoop_wave_spawn_data_begin + 2),
+                                (troop_get_slot, ":cur_bot_spawn_amount", "trp_multiplayer_data", ":cur_slot"),
+                                (val_add, ":cur_slot", 1),
+                                (troop_get_slot, ":cur_bot_entry_point", "trp_multiplayer_data", ":cur_slot"),
+                                (gt, ":cur_bot_spawn_amount", 0),
+                                (try_begin),
+                                        (neq, ":enemy_spawn_entry_point_1", -1),
+                                        (neq, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
+                                        (assign, ":enemy_spawn_entry_point_2", ":cur_bot_entry_point"),
+                                (else_try),
+                                        (assign, ":enemy_spawn_entry_point_1", ":cur_bot_entry_point"),
+                                (try_end),
+                        (try_end),
+                        
+                        (try_begin),
+                                (this_or_next|gt, ":enemy_spawn_entry_point_1", 0),
+                                (gt, ":enemy_spawn_entry_point_2", 0),
+                                
+                                (try_begin),
+                                        (gt, ":enemy_spawn_entry_point_1", 0),
+                                        (overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 0),			
+                                        
+                                        (entry_point_get_position, pos1, ":enemy_spawn_entry_point_1"),	
+                                        (position_move_z, pos1, 150, 1),
+                                        (position_get_screen_projection, pos3, pos1),
+                                        (position_get_x, ":x_pos", pos3),
+                                        (position_get_y, ":y_pos", pos3),
+                                        (is_between, ":x_pos", -100, 1100),
+                                        (is_between, ":y_pos", -100, 850),
 
-					# show flag if its on screen
-					(overlay_set_position, "$g_presentation_obj_flag_projection_display_1", pos3),
-					(overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 1),
-				(try_end),
-				
-				(try_begin),
-					(gt, ":enemy_spawn_entry_point_2", 0),
-					(overlay_set_display, "$g_presentation_obj_flag_projection_display_2", 0),
-					
-					(entry_point_get_position, pos1, ":enemy_spawn_entry_point_2"),
-					(position_move_z, pos1, 50, 1),
-					(position_get_screen_projection, pos3, pos1),
-					(position_get_x, ":x_pos", pos3),
-					(position_get_y, ":y_pos", pos3),
-					
-					(is_between, ":x_pos", -100, 1100),
-					(is_between, ":y_pos", -100, 850),
+                                        # show flag if its on screen
+                                        (overlay_set_position, "$g_presentation_obj_flag_projection_display_1", pos3),
+                                        (overlay_set_display, "$g_presentation_obj_flag_projection_display_1", 1),
+                                (try_end),
+                                
+                                (try_begin),
+                                        (gt, ":enemy_spawn_entry_point_2", 0),
+                                        (overlay_set_display, "$g_presentation_obj_flag_projection_display_2", 0),
+                                        
+                                        (entry_point_get_position, pos1, ":enemy_spawn_entry_point_2"),
+                                        (position_move_z, pos1, 50, 1),
+                                        (position_get_screen_projection, pos3, pos1),
+                                        (position_get_x, ":x_pos", pos3),
+                                        (position_get_y, ":y_pos", pos3),
+                                        
+                                        (is_between, ":x_pos", -100, 1100),
+                                        (is_between, ":y_pos", -100, 850),
 
-					# show flag if its on screen
-					(overlay_set_position, "$g_presentation_obj_flag_projection_display_2", pos3),
-					(overlay_set_display, "$g_presentation_obj_flag_projection_display_2", 1),
-				(try_end),
-			(else_try),
-				(presentation_set_duration, 0),
-			(try_end),
-		]),
+                                        # show flag if its on screen
+                                        (overlay_set_position, "$g_presentation_obj_flag_projection_display_2", pos3),
+                                        (overlay_set_display, "$g_presentation_obj_flag_projection_display_2", 1),
+                                (try_end),
+                        (else_try),
+                                (presentation_set_duration, 0),
+                        (try_end),
+                ]),
     ]),	
 
   ("coop_assign_drop_to_group_member", prsntf_manual_end_only, 0, [
@@ -13421,7 +13421,7 @@ presentations = [
       (overlay_set_position, "$g_presentation_obj_coop_assign_drop_noone", pos1),
       (presentation_set_duration, 999999),
       
-		]),
+                ]),
         
       
     (ti_on_presentation_event_state_change,
@@ -13450,7 +13450,7 @@ presentations = [
       (close_item_details),
       (try_begin),
         (this_or_next|key_clicked, key_escape),
-	    (key_clicked, key_xbox_start),
+            (key_clicked, key_xbox_start),
         (gt, ":cur_time", 200),
         (presentation_set_duration, 0),
         (multiplayer_send_2_int_to_server, multiplayer_event_other_events, multiplayer_event_coop_send_drop_assignment_to_server, -1),
@@ -13459,9 +13459,9 @@ presentations = [
     ]),	
     #INVASION MODE END
     #INVASION MODE START
-	#MCA: ccoop next wave counter presentation 
-	
-	("multiplayer_ccoop_next_wave_time_counter", prsntf_read_only|prsntf_manual_end_only, 0, [
+        #MCA: ccoop next wave counter presentation 
+        
+        ("multiplayer_ccoop_next_wave_time_counter", prsntf_read_only|prsntf_manual_end_only, 0, [
     (ti_on_presentation_load, [      
       (set_fixed_point_multiplier, 1000),
 
@@ -13488,8 +13488,8 @@ presentations = [
       (position_set_x, pos1, 1400),
       (position_set_y, pos1, 1400),
       (overlay_set_size, "$g_multiplayer_respawn_remained_overlay", pos1),
-	  
-	  (str_clear, s0),
+          
+          (str_clear, s0),
       (create_text_overlay, "$g_multiplayer_respawn_wave_hint_overlay", s0, tf_center_justify|tf_with_outline),
       (overlay_set_color, "$g_multiplayer_respawn_wave_hint_overlay", 0xFFFFFF),
       (position_set_x, pos1, 500),
@@ -13508,63 +13508,63 @@ presentations = [
       (store_sub, ":seconds_left_in_respawn", "$g_multiplayer_ccoop_next_wave_start_time", ":current_time"),
       (try_begin),            
         (gt, ":seconds_left_in_respawn", 0),
-		(gt, "$g_multiplayer_ccoop_wave_no", 0),
+                (gt, "$g_multiplayer_ccoop_wave_no", 0),
         (assign, reg0, ":seconds_left_in_respawn"),
-		(store_sub, reg1, "$g_multiplayer_ccoop_wave_no", "$g_mp_coop_last_king_wave"),
-		
-		(str_store_string, s1, "str_blank_string"),
-		(try_begin),
-		  (troop_get_slot, ":wave_leader_id", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin + 1),
-		  (try_begin),         
-		    (this_or_next|is_between, ":wave_leader_id", lords_begin, lords_end),
-		    (is_between, ":wave_leader_id", quick_battle_troops_begin, quick_battle_troops_end),
+                (store_sub, reg1, "$g_multiplayer_ccoop_wave_no", "$g_mp_coop_last_king_wave"),
+                
+                (str_store_string, s1, "str_blank_string"),
+                (try_begin),
+                  (troop_get_slot, ":wave_leader_id", "trp_multiplayer_data", multi_data_ccoop_wave_spawn_data_begin + 1),
+                  (try_begin),         
+                    (this_or_next|is_between, ":wave_leader_id", lords_begin, lords_end),
+                    (is_between, ":wave_leader_id", quick_battle_troops_begin, quick_battle_troops_end),
 
-		    (str_store_troop_name, s0, ":wave_leader_id"),
-		    (str_store_string, s1, "str_ccoop_lord_s0_wave_hint"),
-		  (else_try),
-		    (is_between, ":wave_leader_id", kings_begin, kings_end),
+                    (str_store_troop_name, s0, ":wave_leader_id"),
+                    (str_store_string, s1, "str_ccoop_lord_s0_wave_hint"),
+                  (else_try),
+                    (is_between, ":wave_leader_id", kings_begin, kings_end),
 
-		    (str_store_troop_name, s0, ":wave_leader_id"),
-		    (str_store_string, s1, "str_ccoop_king_s0_wave_hint"),
-		  (try_end),
-		  (str_store_string, s0, "str_ccoop_wave_reg1_is_coming_in_reg0_seconds"),
-		(else_try),
-		  (ge, "$g_mp_coop_king_waves", 1), # wave++
+                    (str_store_troop_name, s0, ":wave_leader_id"),
+                    (str_store_string, s1, "str_ccoop_king_s0_wave_hint"),
+                  (try_end),
+                  (str_store_string, s0, "str_ccoop_wave_reg1_is_coming_in_reg0_seconds"),
+                (else_try),
+                  (ge, "$g_mp_coop_king_waves", 1), # wave++
           (assign, reg2, "$g_mp_coop_king_waves"),
-		  (str_store_string, s0, "str_ccoop_elite_wave_reg1_is_coming_in_reg0_seconds"),
-		  (try_begin),         
-		    (gt, reg1, 0),
-		    (lt, reg1, 4),
-		    (str_store_string, s1, "str_elite_wave_hint"),
-		  (try_end),
-		(try_end),
-		
+                  (str_store_string, s0, "str_ccoop_elite_wave_reg1_is_coming_in_reg0_seconds"),
+                  (try_begin),         
+                    (gt, reg1, 0),
+                    (lt, reg1, 4),
+                    (str_store_string, s1, "str_elite_wave_hint"),
+                  (try_end),
+                (try_end),
+                
         (overlay_set_text, "$g_multiplayer_respawn_counter_overlay", s0),#TODO SARI, bunu sadece bu fonkda setle
-		(overlay_set_text, "$g_multiplayer_respawn_wave_hint_overlay", s1),
-	  (else_try),
-	    (multiplayer_get_my_player, ":cur_player"),
-	    (player_is_active, ":cur_player"),
-		(player_get_agent_id, ":player_agent", ":cur_player"),
-		(ge, ":player_agent", 0),
-		(agent_get_team, ":player_team", ":player_agent"),
-		(lt, ":player_team", multi_team_spectator),
-		(neg|agent_is_alive, ":player_agent"), #if agent is dead
-		
-		(player_get_slot, ":player_first_spawn", ":cur_player", slot_player_first_spawn),
-		(try_begin),
-		  (ge, ":player_first_spawn", 0),
-		  (str_store_string, s0, "str_ask_for_help_to_respawn_hint"),
-		(else_try),
-		  (str_store_string, s0, "str_wait_for_next_turn_to_respawn_hint"),
-		(try_end),
-	    (overlay_set_text, "$g_multiplayer_respawn_counter_overlay", s0),
-	  (else_try),
-	    (presentation_set_duration, 0),
+                (overlay_set_text, "$g_multiplayer_respawn_wave_hint_overlay", s1),
+          (else_try),
+            (multiplayer_get_my_player, ":cur_player"),
+            (player_is_active, ":cur_player"),
+                (player_get_agent_id, ":player_agent", ":cur_player"),
+                (ge, ":player_agent", 0),
+                (agent_get_team, ":player_team", ":player_agent"),
+                (lt, ":player_team", multi_team_spectator),
+                (neg|agent_is_alive, ":player_agent"), #if agent is dead
+                
+                (player_get_slot, ":player_first_spawn", ":cur_player", slot_player_first_spawn),
+                (try_begin),
+                  (ge, ":player_first_spawn", 0),
+                  (str_store_string, s0, "str_ask_for_help_to_respawn_hint"),
+                (else_try),
+                  (str_store_string, s0, "str_wait_for_next_turn_to_respawn_hint"),
+                (try_end),
+            (overlay_set_text, "$g_multiplayer_respawn_counter_overlay", s0),
+          (else_try),
+            (presentation_set_duration, 0),
       (try_end),     
       ]),
     ]),
     
-	("multiplayer_ccoop_victory_message", prsntf_read_only|prsntf_manual_end_only, 0, [
+        ("multiplayer_ccoop_victory_message", prsntf_read_only|prsntf_manual_end_only, 0, [
     (ti_on_presentation_load, [      
       (set_fixed_point_multiplier, 1000),
 
@@ -13598,7 +13598,7 @@ presentations = [
       (position_set_x, pos1, 2000),
       (position_set_y, pos1, 2000),
       (overlay_set_size, "$g_multiplayer_ccoop_victory_overlay", pos1),
-	  
+          
       (create_text_overlay, "$g_multiplayer_ccoop_victory_subtitle_overlay", s2, tf_center_justify|tf_with_outline),
       (overlay_set_color, "$g_multiplayer_ccoop_victory_subtitle_overlay", 0x68eb4e),
       (position_set_x, pos1, 500),

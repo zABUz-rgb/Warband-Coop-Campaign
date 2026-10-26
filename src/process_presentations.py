@@ -20,11 +20,11 @@ def save_presentations(variable_list,variable_uses,tag_uses,quick_strings):
 
 def save_python_header():
   file = open("./ID_presentations.py","w")
-  for i_presentation in xrange(len(presentations)):
+  for i_presentation in range(len(presentations)):
     file.write("prsnt_%s = %d\n"%(presentations[i_presentation][0],i_presentation))
   file.close()
 
-print "Exporting presentations..."
+print("Exporting presentations...")
 save_python_header()
 variable_uses = []
 variables = load_variables(export_dir,variable_uses)

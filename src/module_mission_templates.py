@@ -543,13 +543,13 @@ multiplayer_server_check_end_map = (
     #checking for restarting the map
     (assign, ":end_map", 0),
 #INVASION MODE START
-	(try_begin),
-	  (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
-	  (try_begin),
-		(eq, "$g_round_ended", 1),
-		(assign, ":end_map", 1),
-	  (try_end),
-	(else_try),
+        (try_begin),
+          (eq, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),
+          (try_begin),
+                (eq, "$g_round_ended", 1),
+                (assign, ":end_map", 1),
+          (try_end),
+        (else_try),
 #INVASION MODE END
       (this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_battle),
       (this_or_next|eq, "$g_multiplayer_game_type", multiplayer_game_type_destroy),
@@ -1324,12 +1324,12 @@ mission_templates = [
           (call_script, "script_music_set_situation_with_culture", mtf_sit_town),
         (try_end),
       ]),
-	  		  	        
+                                        
       (ti_before_mission_start, 0, 0, [], 
       [
         (call_script, "script_change_banners_and_chest"),
         (call_script, "script_initialize_tavern_variables"),
-	  ]),
+          ]),
 
       (ti_inventory_key_pressed, 0, 0, 
       [
@@ -1358,165 +1358,165 @@ mission_templates = [
         (try_end),  
       ], []),
 
-	  #tavern brawl triggers - drunk
+          #tavern brawl triggers - drunk
       (2, 0, 0, 
       [
-	    (neg|conversation_screen_is_active),
+            (neg|conversation_screen_is_active),
 
-		(eq, "$talk_context", tc_tavern_talk),
-		
-		(neg|troop_slot_eq, "trp_hired_assassin", slot_troop_cur_center, "$g_encountered_party"),		
-		(troop_slot_eq, "trp_belligerent_drunk", slot_troop_cur_center, "$g_encountered_party"),		
-		(eq, "$drunks_dont_pick_fights", 0),		
-	  ], 
-	  [	  
-	    (try_begin),
-	      (eq, "$g_start_belligerent_drunk_fight", 0),
-	      (assign, "$g_start_belligerent_drunk_fight", 1),
-	      
-	      (try_for_agents, ":cur_agent"),
-	        (agent_get_troop_id, ":cur_agent_troop", ":cur_agent"),
-	        (eq, ":cur_agent_troop", "trp_belligerent_drunk"),
-	        (assign, "$g_belligerent_drunk", ":cur_agent"),
-	      (try_end),
-	    (else_try),
-	      (eq, "$g_start_belligerent_drunk_fight", 1),	 
-	           
-	      (agent_is_active, "$g_belligerent_drunk"),
-	      (agent_is_alive, "$g_belligerent_drunk"),
-	      (get_player_agent_no, ":player_agent"),
-	      (agent_get_position, pos0, ":player_agent"),
-	      (agent_get_position, pos1, "$g_belligerent_drunk"),
-	      (get_distance_between_positions, ":dist", pos0, pos1),
-	      (position_get_z, ":pos0_z", pos0),
-	      (position_get_z, ":pos1_z", pos1),
-	      (store_sub, ":z_difference", ":pos1_z", ":pos0_z"),
-	      (try_begin),
-	        (le, ":z_difference", 0),
-	        (val_mul, ":z_difference", -1),
-	      (try_end),
-	      (store_mul, ":z_difference_mul_3", ":z_difference", 3),
-	      (val_add, ":dist", ":z_difference_mul_3"),
-	      (store_random_in_range, ":random_value", 0, 200),
-	      (store_add, ":400_plus_random_200", 400, ":random_value"),
-	      (le, ":dist", ":400_plus_random_200"),
-	      
- 		  (call_script, "script_activate_tavern_attackers"),
-  		  (start_mission_conversation, "trp_belligerent_drunk"),
-  		  (assign, "$g_start_belligerent_drunk_fight", 2),
-	    (try_end),  
-	  ]),
-	  	  
-	  #tavern brawl triggers - assassin
+                (eq, "$talk_context", tc_tavern_talk),
+                
+                (neg|troop_slot_eq, "trp_hired_assassin", slot_troop_cur_center, "$g_encountered_party"),		
+                (troop_slot_eq, "trp_belligerent_drunk", slot_troop_cur_center, "$g_encountered_party"),		
+                (eq, "$drunks_dont_pick_fights", 0),		
+          ], 
+          [	  
+            (try_begin),
+              (eq, "$g_start_belligerent_drunk_fight", 0),
+              (assign, "$g_start_belligerent_drunk_fight", 1),
+              
+              (try_for_agents, ":cur_agent"),
+                (agent_get_troop_id, ":cur_agent_troop", ":cur_agent"),
+                (eq, ":cur_agent_troop", "trp_belligerent_drunk"),
+                (assign, "$g_belligerent_drunk", ":cur_agent"),
+              (try_end),
+            (else_try),
+              (eq, "$g_start_belligerent_drunk_fight", 1),	 
+                   
+              (agent_is_active, "$g_belligerent_drunk"),
+              (agent_is_alive, "$g_belligerent_drunk"),
+              (get_player_agent_no, ":player_agent"),
+              (agent_get_position, pos0, ":player_agent"),
+              (agent_get_position, pos1, "$g_belligerent_drunk"),
+              (get_distance_between_positions, ":dist", pos0, pos1),
+              (position_get_z, ":pos0_z", pos0),
+              (position_get_z, ":pos1_z", pos1),
+              (store_sub, ":z_difference", ":pos1_z", ":pos0_z"),
+              (try_begin),
+                (le, ":z_difference", 0),
+                (val_mul, ":z_difference", -1),
+              (try_end),
+              (store_mul, ":z_difference_mul_3", ":z_difference", 3),
+              (val_add, ":dist", ":z_difference_mul_3"),
+              (store_random_in_range, ":random_value", 0, 200),
+              (store_add, ":400_plus_random_200", 400, ":random_value"),
+              (le, ":dist", ":400_plus_random_200"),
+              
+                  (call_script, "script_activate_tavern_attackers"),
+                  (start_mission_conversation, "trp_belligerent_drunk"),
+                  (assign, "$g_start_belligerent_drunk_fight", 2),
+            (try_end),  
+          ]),
+                  
+          #tavern brawl triggers - assassin
       (2, 0, 0, [
-	    (neg|conversation_screen_is_active),
-		(eq, "$talk_context", tc_tavern_talk),
-		(troop_slot_eq, "trp_hired_assassin", slot_troop_cur_center, "$g_encountered_party"),		
-	  ], 
-	  [
-	    (try_begin),
-	      (eq, "$g_start_hired_assassin_fight", 0),
-	      (assign, "$g_start_hired_assassin_fight", 1),
-	      
-	      (try_for_agents, ":cur_agent"),
-	        (agent_get_troop_id, ":cur_agent_troop", ":cur_agent"),
-	        (eq, ":cur_agent_troop", "trp_hired_assassin"),
-	        (assign, "$g_hired_assassin", ":cur_agent"),
-	      (try_end),	      
-	    (else_try),  
-	      (eq, "$g_start_hired_assassin_fight", 1),
+            (neg|conversation_screen_is_active),
+                (eq, "$talk_context", tc_tavern_talk),
+                (troop_slot_eq, "trp_hired_assassin", slot_troop_cur_center, "$g_encountered_party"),		
+          ], 
+          [
+            (try_begin),
+              (eq, "$g_start_hired_assassin_fight", 0),
+              (assign, "$g_start_hired_assassin_fight", 1),
+              
+              (try_for_agents, ":cur_agent"),
+                (agent_get_troop_id, ":cur_agent_troop", ":cur_agent"),
+                (eq, ":cur_agent_troop", "trp_hired_assassin"),
+                (assign, "$g_hired_assassin", ":cur_agent"),
+              (try_end),	      
+            (else_try),  
+              (eq, "$g_start_hired_assassin_fight", 1),
 
-	      (agent_is_active, "$g_hired_assassin"),
-	      (agent_is_alive, "$g_hired_assassin"),
-	      (get_player_agent_no, ":player_agent"),
-	      (agent_get_position, pos0, ":player_agent"),
-	      (agent_get_position, pos1, "$g_hired_assassin"),
-	      (get_distance_between_positions, ":dist", pos0, pos1),
-	      (position_get_z, ":pos0_z", pos0),
-	      (position_get_z, ":pos1_z", pos1),
-	      (store_sub, ":z_difference", ":pos1_z", ":pos0_z"),
-	      (try_begin),
-	        (le, ":z_difference", 0),
-	        (val_mul, ":z_difference", -1),
-	      (try_end),
-	      (store_mul, ":z_difference_mul_3", ":z_difference", 3),
-	      (val_add, ":dist", ":z_difference_mul_3"),
-	      (store_random_in_range, ":random_value", 0, 200),
-	      (store_add, ":400_plus_random_200", 400, ":random_value"),
-	      (le, ":dist", ":400_plus_random_200"),
+              (agent_is_active, "$g_hired_assassin"),
+              (agent_is_alive, "$g_hired_assassin"),
+              (get_player_agent_no, ":player_agent"),
+              (agent_get_position, pos0, ":player_agent"),
+              (agent_get_position, pos1, "$g_hired_assassin"),
+              (get_distance_between_positions, ":dist", pos0, pos1),
+              (position_get_z, ":pos0_z", pos0),
+              (position_get_z, ":pos1_z", pos1),
+              (store_sub, ":z_difference", ":pos1_z", ":pos0_z"),
+              (try_begin),
+                (le, ":z_difference", 0),
+                (val_mul, ":z_difference", -1),
+              (try_end),
+              (store_mul, ":z_difference_mul_3", ":z_difference", 3),
+              (val_add, ":dist", ":z_difference_mul_3"),
+              (store_random_in_range, ":random_value", 0, 200),
+              (store_add, ":400_plus_random_200", 400, ":random_value"),
+              (le, ":dist", ":400_plus_random_200"),
 
-		  (call_script, "script_activate_tavern_attackers"),
-		  (assign, "$g_start_hired_assassin_fight", 2),
-		(try_end),  
-	  ]),
-	  	  
-	  #Aftermath talks
+                  (call_script, "script_activate_tavern_attackers"),
+                  (assign, "$g_start_hired_assassin_fight", 2),
+                (try_end),  
+          ]),
+                  
+          #Aftermath talks
       (3, 0, ti_once, 
       [
-	    (neg|conversation_screen_is_active),
-		(eq, "$talk_context", tc_tavern_talk),
-		(gt, "$g_main_attacker_agent", 0),
-				
-		(this_or_next|neg|agent_is_alive, "$g_main_attacker_agent"),
-		(agent_is_wounded, "$g_main_attacker_agent"),
+            (neg|conversation_screen_is_active),
+                (eq, "$talk_context", tc_tavern_talk),
+                (gt, "$g_main_attacker_agent", 0),
+                                
+                (this_or_next|neg|agent_is_alive, "$g_main_attacker_agent"),
+                (agent_is_wounded, "$g_main_attacker_agent"),
       ],
       [
         (mission_enable_talk),
       
-		(try_for_agents, ":agent"),
-		  (agent_is_alive, ":agent"),
-		  (agent_get_position, pos4, ":agent"),
-		  (agent_set_scripted_destination, ":agent", pos4),
-		(try_end),
-		
-		(party_get_slot, ":tavernkeeper", "$g_encountered_party", slot_town_tavernkeeper),
-		(start_mission_conversation, ":tavernkeeper"),	 
-	  ]),
+                (try_for_agents, ":agent"),
+                  (agent_is_alive, ":agent"),
+                  (agent_get_position, pos4, ":agent"),
+                  (agent_set_scripted_destination, ":agent", pos4),
+                (try_end),
+                
+                (party_get_slot, ":tavernkeeper", "$g_encountered_party", slot_town_tavernkeeper),
+                (start_mission_conversation, ":tavernkeeper"),	 
+          ]),
 
-	  
-	  #Aftermath talks
+          
+          #Aftermath talks
       (3, 0, ti_once, 
       [
-	    (neg|conversation_screen_is_active),
-		(eq, "$talk_context", tc_tavern_talk),
-		(gt, "$g_main_attacker_agent", 0),
-		(main_hero_fallen),		
+            (neg|conversation_screen_is_active),
+                (eq, "$talk_context", tc_tavern_talk),
+                (gt, "$g_main_attacker_agent", 0),
+                (main_hero_fallen),		
       ],
       [
-	  (jump_to_menu, "mnu_lost_tavern_duel"),
-	  (finish_mission,0)
-	  
-	  ]),	  
-	  
-	  
-	  #No shooting in the tavern
+          (jump_to_menu, "mnu_lost_tavern_duel"),
+          (finish_mission,0)
+          
+          ]),	  
+          
+          
+          #No shooting in the tavern
       (1, 0, 0, 
       [
-	    (neg|conversation_screen_is_active),
-		(eq, "$talk_context", tc_tavern_talk),
-		(gt, "$g_main_attacker_agent", 0),
-		
-		(get_player_agent_no, ":player_agent"),
-		(agent_is_alive, ":player_agent"),
-		
-		(agent_get_wielded_item, ":wielded_item", ":player_agent", 0),
-		(is_between, ":wielded_item", "itm_darts", "itm_torch"),
-		(neq, ":wielded_item", "itm_javelin_melee"),
-		(neq, ":wielded_item", "itm_throwing_spear_melee"),
-		(neq, ":wielded_item", "itm_jarid_melee"),
-		(neq, ":wielded_item", "itm_light_throwing_axes_melee"),
-		(neq, ":wielded_item", "itm_throwing_axes_melee"),
-		(neq, ":wielded_item", "itm_heavy_throwing_axes_melee"),
+            (neg|conversation_screen_is_active),
+                (eq, "$talk_context", tc_tavern_talk),
+                (gt, "$g_main_attacker_agent", 0),
+                
+                (get_player_agent_no, ":player_agent"),
+                (agent_is_alive, ":player_agent"),
+                
+                (agent_get_wielded_item, ":wielded_item", ":player_agent", 0),
+                (is_between, ":wielded_item", "itm_darts", "itm_torch"),
+                (neq, ":wielded_item", "itm_javelin_melee"),
+                (neq, ":wielded_item", "itm_throwing_spear_melee"),
+                (neq, ":wielded_item", "itm_jarid_melee"),
+                (neq, ":wielded_item", "itm_light_throwing_axes_melee"),
+                (neq, ":wielded_item", "itm_throwing_axes_melee"),
+                (neq, ":wielded_item", "itm_heavy_throwing_axes_melee"),
       ], 
       [
-		(party_get_slot, ":tavernkeeper", "$g_encountered_party", slot_town_tavernkeeper),
-		(start_mission_conversation, ":tavernkeeper"),	 
-	  ]),
-	  	  	  
-	  #Check for weapon in hand of attacker, also, everyone gets out of the way
+                (party_get_slot, ":tavernkeeper", "$g_encountered_party", slot_town_tavernkeeper),
+                (start_mission_conversation, ":tavernkeeper"),	 
+          ]),
+                          
+          #Check for weapon in hand of attacker, also, everyone gets out of the way
       (1, 0, 0, 
       [
-		(gt, "$g_main_attacker_agent", 0),	
+                (gt, "$g_main_attacker_agent", 0),	
       ],
       [
         (agent_get_wielded_item, ":wielded_item", "$g_main_attacker_agent", 0),
@@ -1563,31 +1563,31 @@ mission_templates = [
      (8,mtef_visitor_source,af_override_horse,0,1,[]),
      (9,mtef_visitor_source,af_override_horse,0,1,[]),(10,mtef_visitor_source,af_override_horse,0,1,[]),(11,mtef_visitor_source,af_override_horse,0,1,[]),(12,mtef_visitor_source,af_override_horse,0,1,[]),(13,mtef_visitor_source,0,0,1,[]),(14,mtef_scene_source,0,0,1,[]),(15,mtef_scene_source,0,0,1,[]),
      (16,mtef_visitor_source,af_override_horse,0,1,[]),(17,mtef_visitor_source,af_override_horse,0,1,[]),(18,mtef_visitor_source,af_override_horse,0,1,[]),(19,mtef_visitor_source,af_override_horse,0,1,[]),(20,mtef_visitor_source,af_override_horse,0,1,[]),(21,mtef_visitor_source,af_override_horse,0,1,[]),(22,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (23,mtef_visitor_source,af_override_horse,0,1,[]), #guard
+         (23,mtef_visitor_source,af_override_horse,0,1,[]), #guard
      (24,mtef_visitor_source,af_override_horse,0,1,[]), #guard
-	 (25,mtef_visitor_source,af_override_horse,0,1,[]), #guard
-	 (26,mtef_visitor_source,af_override_horse,0,1,[]), #guard
-	 (27,mtef_visitor_source,af_override_horse,0,1,[]), #guard
-	 (28,mtef_visitor_source,af_override_horse,0,1,[]), #guard
-	 (29,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (30,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (31,mtef_visitor_source,af_override_horse,0,1,[]),
+         (25,mtef_visitor_source,af_override_horse,0,1,[]), #guard
+         (26,mtef_visitor_source,af_override_horse,0,1,[]), #guard
+         (27,mtef_visitor_source,af_override_horse,0,1,[]), #guard
+         (28,mtef_visitor_source,af_override_horse,0,1,[]), #guard
+         (29,mtef_visitor_source,af_override_horse,0,1,[]),
+         (30,mtef_visitor_source,af_override_horse,0,1,[]),
+         (31,mtef_visitor_source,af_override_horse,0,1,[]),
      (32,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (33,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (34,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (35,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (36,mtef_visitor_source,af_override_horse,0,1,[]), #town walker point
-	 (37,mtef_visitor_source,af_override_horse,0,1,[]), #town walker point
-	 (38,mtef_visitor_source,af_override_horse,0,1,[]),
-	 (39,mtef_visitor_source,af_override_horse,0,1,[]),
+         (33,mtef_visitor_source,af_override_horse,0,1,[]),
+         (34,mtef_visitor_source,af_override_horse,0,1,[]),
+         (35,mtef_visitor_source,af_override_horse,0,1,[]),
+         (36,mtef_visitor_source,af_override_horse,0,1,[]), #town walker point
+         (37,mtef_visitor_source,af_override_horse,0,1,[]), #town walker point
+         (38,mtef_visitor_source,af_override_horse,0,1,[]),
+         (39,mtef_visitor_source,af_override_horse,0,1,[]),
      (40,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
-	 (41,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
-	 (42,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
-	 (43,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
+         (41,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
+         (42,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
+         (43,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
      (44,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
-	 (45,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
-	 (46,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
-	 (47,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
+         (45,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
+         (46,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
+         (47,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
      ],
     [
       (ti_on_agent_spawn, 0, 0, [],
@@ -1613,8 +1613,8 @@ mission_templates = [
       (ti_before_mission_start, 0, 0, [],
       [
         (assign, "$g_main_attacker_agent", 0),
-	  ]),
-		 
+          ]),
+                 
       (1, 0, ti_once, 
       [],
       [
@@ -1697,54 +1697,54 @@ mission_templates = [
        (try_end),
      ]),
 
-	(3, 0, 0, 
-	[
-	  (call_script, "script_tick_town_walkers")
-	], 
-	[]),
-	
+        (3, 0, 0, 
+        [
+          (call_script, "script_tick_town_walkers")
+        ], 
+        []),
+        
     (2, 0, 0, 
     [
       (call_script, "script_center_ambiance_sounds")
     ], 
     []),
-		
-	#JAILBREAK TRIGGERS 
-	#Civilians get out of the way
+                
+        #JAILBREAK TRIGGERS 
+        #Civilians get out of the way
     (1, 0, 0,
-	[
-	  (this_or_next|eq, "$talk_context", tc_prison_break),
+        [
+          (this_or_next|eq, "$talk_context", tc_prison_break),
       (eq, "$talk_context", tc_escape),		
-	],
-	[
-	  #(agent_get_team, ":prisoner_agent", 0),
-	  (call_script, "script_neutral_behavior_in_fight"),
-	  (mission_disable_talk),	  	  
-	]),
+        ],
+        [
+          #(agent_get_team, ":prisoner_agent", 0),
+          (call_script, "script_neutral_behavior_in_fight"),
+          (mission_disable_talk),	  	  
+        ]),
 
-	#The game begins with the town alerted
+        #The game begins with the town alerted
     (1, 0, ti_once, 
       [
         #If I set this to 1, 0, ti_once, then the prisoner spawns twice
         (eq, "$talk_context", tc_escape),
-	  ],	  
-	  [
-		(get_player_agent_no, ":player_agent"),
-	    (assign, reg6, ":player_agent"),
-		(call_script, "script_activate_town_guard"),		
-		
-		(get_player_agent_no, ":player_agent"),
-		(agent_get_position, pos4, ":player_agent"),
-		
-		(try_for_range, ":prisoner", active_npcs_begin, kingdom_ladies_end),		
-		  (troop_slot_ge, ":prisoner", slot_troop_mission_participation, mp_prison_break_fight),
+          ],	  
+          [
+                (get_player_agent_no, ":player_agent"),
+            (assign, reg6, ":player_agent"),
+                (call_script, "script_activate_town_guard"),		
+                
+                (get_player_agent_no, ":player_agent"),
+                (agent_get_position, pos4, ":player_agent"),
+                
+                (try_for_range, ":prisoner", active_npcs_begin, kingdom_ladies_end),		
+                  (troop_slot_ge, ":prisoner", slot_troop_mission_participation, mp_prison_break_fight),
 
-		  (str_store_troop_name, s4, ":prisoner"),
-		  (display_message, "str_s4_joins_prison_break"),
-			
-		  (store_current_scene, ":cur_scene"), #this might be a better option?
-		  (modify_visitors_at_site, ":cur_scene"),
-			            
+                  (str_store_troop_name, s4, ":prisoner"),
+                  (display_message, "str_s4_joins_prison_break"),
+                        
+                  (store_current_scene, ":cur_scene"), #this might be a better option?
+                  (modify_visitors_at_site, ":cur_scene"),
+                                    
           #<entry_no>,<troop_id>,<number_of_troops>, <team_no>, <group_no>), 
           #team no and group no are used in multiplayer mode only. default team in entry is used in single player mode            
           (store_current_scene, ":cur_scene"),
@@ -1752,8 +1752,8 @@ mission_templates = [
           (add_visitors_to_current_scene, 24, ":prisoner", 1, 0, 0),
           (troop_set_slot, ":prisoner", slot_troop_will_join_prison_break, 1),					          
         (try_end),
-	  ]),
-	
+          ]),
+        
    (3, 0, 0, 
    [     
      (main_hero_fallen, 0),
@@ -1764,33 +1764,33 @@ mission_templates = [
        (eq, "$talk_context", tc_escape),
        
        (call_script, "script_deduct_casualties_from_garrison"),
-	   (jump_to_menu,"mnu_captivity_start_castle_defeat"), 
-	 
-	   (assign, ":end_cond", kingdom_ladies_end),
+           (jump_to_menu,"mnu_captivity_start_castle_defeat"), 
+         
+           (assign, ":end_cond", kingdom_ladies_end),
        (try_for_range, ":prisoner", active_npcs_begin, ":end_cond"),
-  	     (troop_set_slot, ":prisoner", slot_troop_mission_participation, 0), #new	  
-  	   (try_end),  
-	 
-	   (mission_enable_talk),
-	   (finish_mission, 0),
-	 (else_try),  
-	   (set_trigger_result,1),
-	 (try_end),	 	 
+             (troop_set_slot, ":prisoner", slot_troop_mission_participation, 0), #new	  
+           (try_end),  
+         
+           (mission_enable_talk),
+           (finish_mission, 0),
+         (else_try),  
+           (set_trigger_result,1),
+         (try_end),	 	 
    ]),
-		
+                
    (3, 0, 0, 
    [
      (eq, "$talk_context", tc_escape),
-	 (neg|main_hero_fallen,0),
+         (neg|main_hero_fallen,0),
      (store_mission_timer_a, ":time"),
      (ge, ":time", 10),
-		
+                
      (all_enemies_defeated), #1 is default enemy team for in-town battles
    ],	  
    [
      (call_script, "script_deduct_casualties_from_garrison"),
-	 (try_for_agents, ":agent"),
-	 (agent_get_troop_id, ":troop", ":agent"),
+         (try_for_agents, ":agent"),
+         (agent_get_troop_id, ":troop", ":agent"),
        (troop_slot_ge, ":troop", slot_troop_mission_participation, mp_prison_break_fight),
        (try_begin),
          (agent_is_alive, ":agent"),
@@ -2068,23 +2068,23 @@ mission_templates = [
       [
         (set_trigger_result,1)
       ], []),
-	  
-	  #adjust for prison break
+          
+          #adjust for prison break
       (ti_tab_pressed, 0, 0,
-	  [
-	    (neq, "$talk_context", tc_prison_break),
-	    (set_trigger_result,1)
-	  ], []),
-	  
+          [
+            (neq, "$talk_context", tc_prison_break),
+            (set_trigger_result,1)
+          ], []),
+          
       (ti_on_leave_area, 0, 0,
       [
- 	    (eq, "$talk_context", tc_prison_break),
- 	  ], 
-	  [
-	    (display_message, "str_leaving_area_during_prison_break"),
-	    (set_jump_mission, "mt_sneak_caught_fight"),
-	  ]),
-	 	  
+            (eq, "$talk_context", tc_prison_break),
+          ], 
+          [
+            (display_message, "str_leaving_area_during_prison_break"),
+            (set_jump_mission, "mt_sneak_caught_fight"),
+          ]),
+                  
       (0, 0, ti_once, [], [
         #(set_fog_distance, 150, 0xFF736252)
         (try_begin),
@@ -2103,7 +2103,7 @@ mission_templates = [
     ],
   ),
 
-		  
+                  
   (
     "back_alley_kill_local_merchant",mtf_battle_mode,-1,
     "You enter the back alley",
@@ -2251,7 +2251,7 @@ mission_templates = [
          ]),
 
       common_battle_init_banner,
-		 
+                 
       (ti_on_agent_killed_or_wounded, 0, 0, [],
        [
         (store_trigger_param_1, ":dead_agent_no"),
@@ -3278,7 +3278,7 @@ mission_templates = [
           (add_visitors_to_current_scene, ":nearest_entry_no", ":prisoner", 1, 0, 0),
           (troop_set_slot, ":prisoner", slot_troop_will_join_prison_break, 1),          
         (try_end),
-	  ]),
+          ]),
 
       (ti_tab_pressed, 0, 0,
       [
@@ -3313,19 +3313,19 @@ mission_templates = [
           (eq, "$talk_context", tc_escape),
        
           (call_script, "script_deduct_casualties_from_garrison"),
-	      (jump_to_menu,"mnu_captivity_start_castle_defeat"), 
-	 
-	      (assign, ":end_cond", kingdom_ladies_end),
+              (jump_to_menu,"mnu_captivity_start_castle_defeat"), 
+         
+              (assign, ":end_cond", kingdom_ladies_end),
           (try_for_range, ":prisoner", active_npcs_begin, ":end_cond"),
-  	        (troop_set_slot, ":prisoner", slot_troop_mission_participation, 0), #new	  
-  	      (try_end),  
-	 
-	      (mission_enable_talk),
-	      (finish_mission, 0),
-	    (else_try),  
-	      (mission_enable_talk),
-	      (finish_mission, 0),
-	      (set_trigger_result, 1),
+                (troop_set_slot, ":prisoner", slot_troop_mission_participation, 0), #new	  
+              (try_end),  
+         
+              (mission_enable_talk),
+              (finish_mission, 0),
+            (else_try),  
+              (mission_enable_talk),
+              (finish_mission, 0),
+              (set_trigger_result, 1),
         (try_end),	 	 
       ]),
       
@@ -3828,9 +3828,9 @@ mission_templates = [
        
       (1, 0, 0, [], 
        [
-	    (get_player_agent_no, ":player_agent"),
-	    (agent_get_position, pos0, ":player_agent"),
-	    	    
+            (get_player_agent_no, ":player_agent"),
+            (agent_get_position, pos0, ":player_agent"),
+                    
         (try_for_agents, ":agent_no"),
           (neq, ":agent_no", ":player_agent"),
           (agent_is_alive, ":agent_no"),
@@ -3850,21 +3850,21 @@ mission_templates = [
         (try_end),                  	      
        ]), 
 
-	   (5, 1, ti_once, 
-	   [
-	     (num_active_teams_le,1),
-	     (neg|main_hero_fallen),
+           (5, 1, ti_once, 
+           [
+             (num_active_teams_le,1),
+             (neg|main_hero_fallen),
 
          (store_mission_timer_a,":cur_time"),
          (ge, ":cur_time", 5),
-	   ],
+           ],
        [
          (assign,"$auto_menu",-1),
          (jump_to_menu,"mnu_sneak_into_town_caught_dispersed_guards"),
          (finish_mission,1),
        ]),
        
-	   (ti_on_leave_area, 0, ti_once, [],
+           (ti_on_leave_area, 0, ti_once, [],
        [(assign,"$auto_menu",-1),(jump_to_menu,"mnu_sneak_into_town_caught_ran_away"),(finish_mission,0)]),
 
       (ti_inventory_key_pressed, 0, 0, [(display_message,"str_cant_use_inventory_arena")], []),
@@ -4006,52 +4006,52 @@ mission_templates = [
          (call_script, "script_music_set_situation_with_culture", mtf_sit_arena),
          ]),
 
-		 
-	#NOTE -- THIS IS A VESTIGIAL SCRIPT. FOR LORD DUELS, USE THE NEXT SCRIPT DOWN 	 
+                 
+        #NOTE -- THIS IS A VESTIGIAL SCRIPT. FOR LORD DUELS, USE THE NEXT SCRIPT DOWN 	 
       (1, 4, ti_once, [
-	  (this_or_next|main_hero_fallen),
-		(num_active_teams_le,1)],
+          (this_or_next|main_hero_fallen),
+                (num_active_teams_le,1)],
        [
            (try_begin),
              (main_hero_fallen),
-			 (check_quest_active, "qst_duel_for_lady"),
-			 (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_for_lady"),
+                         (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_duel_for_lady"),
            (else_try),
-			 (check_quest_active, "qst_duel_for_lady"),
-			 (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_for_lady"),
+                         (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_duel_for_lady"),
-		   (else_try),
+                   (else_try),
              (main_hero_fallen),
-			 (check_quest_active, "qst_duel_courtship_rival"),
-			 (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_courtship_rival"),
+                         (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_duel_courtship_rival"),
            (else_try),
-			 (check_quest_active, "qst_duel_courtship_rival"),
-			 (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_courtship_rival"),
+                         (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_duel_courtship_rival"),
-		   (else_try),	 
+                   (else_try),	 
              (main_hero_fallen),
-			 (check_quest_active, "qst_duel_avenge_insult"),
-			 (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_avenge_insult"),
+                         (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_duel_avenge_insult"),
            (else_try),
-			 (check_quest_active, "qst_duel_avenge_insult"),
-			 (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_avenge_insult"),
+                         (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_duel_avenge_insult"),
-		   (else_try),	 
+                   (else_try),	 
              (main_hero_fallen),
-			 (check_quest_active, "qst_denounce_lord"),
-			 (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_denounce_lord"),
+                         (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_denounce_lord"),
            (else_try),
-			 (check_quest_active, "qst_denounce_lord"),
-			 (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_denounce_lord"),
+                         (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_denounce_lord"),
-		   (else_try),
-			 (quest_get_slot, ":target_troop", "qst_denounce_lord", slot_quest_target_troop),
-		     (str_store_troop_name, s4, ":target_troop"),
-		   (try_end),
+                   (else_try),
+                         (quest_get_slot, ":target_troop", "qst_denounce_lord", slot_quest_target_troop),
+                     (str_store_troop_name, s4, ":target_troop"),
+                   (try_end),
            (finish_mission),
            ]),
     ],
@@ -4061,8 +4061,8 @@ mission_templates = [
     "duel_with_lord",mtf_arena_fight|mtf_commit_casualties,-1,
     "You enter a melee fight in the arena.",
     [    
-	  (0, mtef_visitor_source|mtef_team_0,af_override_all,aif_start_alarmed,1,[itm_sword_medieval_a,itm_arena_tunic_blue]),
-	  (16, mtef_visitor_source|mtef_team_1,af_override_all,aif_start_alarmed,1,[itm_sword_medieval_a,itm_arena_tunic_blue]),
+          (0, mtef_visitor_source|mtef_team_0,af_override_all,aif_start_alarmed,1,[itm_sword_medieval_a,itm_arena_tunic_blue]),
+          (16, mtef_visitor_source|mtef_team_1,af_override_all,aif_start_alarmed,1,[itm_sword_medieval_a,itm_arena_tunic_blue]),
     ],
     [
       common_inventory_not_available,
@@ -4076,49 +4076,49 @@ mission_templates = [
 
 
       (1, 4, ti_once, [
-	  (this_or_next|main_hero_fallen),
-		(num_active_teams_le,1)],
+          (this_or_next|main_hero_fallen),
+                (num_active_teams_le,1)],
        [
            (try_begin),
              (main_hero_fallen),
-			 (check_quest_active, "qst_duel_for_lady"),
-			 (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_for_lady"),
+                         (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_duel_for_lady"),
            (else_try),
-			 (check_quest_active, "qst_duel_for_lady"),
-			 (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_for_lady"),
+                         (quest_slot_eq, "qst_duel_for_lady", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_duel_for_lady"),
-		   (else_try),
+                   (else_try),
              (main_hero_fallen),
-			 (check_quest_active, "qst_duel_courtship_rival"),
-			 (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_courtship_rival"),
+                         (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_duel_courtship_rival"),
            (else_try),
-			 (check_quest_active, "qst_duel_courtship_rival"),
-			 (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_courtship_rival"),
+                         (quest_slot_eq, "qst_duel_courtship_rival", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_duel_courtship_rival"),
-		   (else_try),	 
+                   (else_try),	 
              (main_hero_fallen),
-			 (check_quest_active, "qst_duel_avenge_insult"),
-			 (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_avenge_insult"),
+                         (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_duel_avenge_insult"),
            (else_try),
-			 (check_quest_active, "qst_duel_avenge_insult"),
-			 (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_duel_avenge_insult"),
+                         (quest_slot_eq, "qst_duel_avenge_insult", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_duel_avenge_insult"),
-		   (else_try),	 
+                   (else_try),	 
              (main_hero_fallen),
-			 (check_quest_active, "qst_denounce_lord"),
-			 (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_denounce_lord"),
+                         (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_fail_quest", "qst_denounce_lord"),
            (else_try),
-			 (check_quest_active, "qst_denounce_lord"),
-			 (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
+                         (check_quest_active, "qst_denounce_lord"),
+                         (quest_slot_eq, "qst_denounce_lord", slot_quest_target_troop, "$g_duel_troop"),
              (call_script, "script_succeed_quest", "qst_denounce_lord"),
-		   (else_try),
-			 (quest_get_slot, ":target_troop", "qst_denounce_lord", slot_quest_target_troop),
-		     (str_store_troop_name, s4, ":target_troop"),
-		   (try_end),
+                   (else_try),
+                         (quest_get_slot, ":target_troop", "qst_denounce_lord", slot_quest_target_troop),
+                     (str_store_troop_name, s4, ":target_troop"),
+                   (try_end),
            (finish_mission),
            ]),
     ],
@@ -6305,8 +6305,8 @@ mission_templates = [
       (ti_inventory_key_pressed, 0, 0, [(display_message, "str_cant_use_inventory_tutorial")], []),
 
       (0, 0, ti_once, [
-      	               (tutorial_message_set_size, 17, 17),
-	               (tutorial_message_set_position, 500, 650),
+                       (tutorial_message_set_size, 17, 17),
+                       (tutorial_message_set_position, 500, 650),
                        (tutorial_message_set_center_justify, 0),
 
                        (assign, "$tutorial_1_state", 0),
@@ -6521,10 +6521,10 @@ mission_templates = [
         ], []),
 
       (0, 0, ti_once, [
-      	               (tutorial_message_set_size, 17, 17),
-	                   (tutorial_message_set_position, 500, 650),
+                       (tutorial_message_set_size, 17, 17),
+                           (tutorial_message_set_position, 500, 650),
                        (tutorial_message_set_center_justify, 0),
-		               
+                               
                        (assign, "$tutorial_2_state", 0),
                        (assign, "$tutorial_2_msg_1_displayed", 0),
                        (assign, "$tutorial_2_msg_2_displayed", 0),
@@ -6807,8 +6807,8 @@ mission_templates = [
         ], []),
 
       (0, 0, ti_once, [
-      	               (tutorial_message_set_size, 17, 17),
-	                   (tutorial_message_set_position, 500, 650),
+                       (tutorial_message_set_size, 17, 17),
+                           (tutorial_message_set_position, 500, 650),
                        (tutorial_message_set_center_justify, 0),
 
                        (assign, "$tutorial_3_state", 0),
@@ -7065,8 +7065,8 @@ mission_templates = [
 
 
       (0, 0, ti_once, [
-      	               (tutorial_message_set_size, 17, 17),
-	                   (tutorial_message_set_position, 500, 650),
+                       (tutorial_message_set_size, 17, 17),
+                           (tutorial_message_set_position, 500, 650),
                        (tutorial_message_set_center_justify, 0),
 
                        (assign, "$tutorial_3_state", 0),
@@ -7214,8 +7214,8 @@ mission_templates = [
          ]),
 
       (0, 0, ti_once, [
-      	               (tutorial_message_set_size, 17, 17),
-	                   (tutorial_message_set_position, 500, 650),
+                       (tutorial_message_set_size, 17, 17),
+                           (tutorial_message_set_position, 500, 650),
                        (tutorial_message_set_center_justify, 0),
 
                        (assign, "$tutorial_4_state", 0),
@@ -7443,8 +7443,8 @@ mission_templates = [
         ], []),
 
       (0, 0, ti_once, [
-      	               (tutorial_message_set_size, 17, 17),
-	                   (tutorial_message_set_position, 500, 650),
+                       (tutorial_message_set_size, 17, 17),
+                           (tutorial_message_set_position, 500, 650),
                        (tutorial_message_set_center_justify, 0),
 
                        (assign, "$tutorial_5_state", 0),
@@ -11335,7 +11335,7 @@ mission_templates = [
          #Equipment cost fix
          (agent_set_slot, ":agent_no", slot_agent_bought_horse, -1),
          (try_begin),
-		     (multiplayer_is_server),
+                     (multiplayer_is_server),
              (neg|agent_is_human, ":agent_no"),  #Spawned agent is horse
              (agent_get_rider, ":rider_agent_id", ":agent_no"),
              (agent_is_active, ":rider_agent_id"),
@@ -12107,7 +12107,7 @@ mission_templates = [
          (get_max_players, ":num_players"),
          (try_for_range, ":player_no", 0, ":num_players"),
            (player_is_active, ":player_no"),		   
-		   (player_slot_eq, ":player_no", slot_player_spawned_this_round, 1),
+                   (player_slot_eq, ":player_no", slot_player_spawned_this_round, 1),
 
            (player_get_gold, ":player_gold", ":player_no"),
            (player_get_team_no, ":player_team", ":player_no"),
@@ -12129,7 +12129,7 @@ mission_templates = [
            (try_end),
            #new money system addition end
            #(get_max_players, ":num_players"),
-	       #(try_for_range, ":player_no", 0, ":num_players"),
+               #(try_for_range, ":player_no", 0, ":num_players"),
            #  (neq, ":player_no", -1), ##
            #  (player_is_active, ":player_no"),
            #  (player_set_slot, ":player_no", slot_player_spawned_this_round, 0),
@@ -12955,7 +12955,7 @@ mission_templates = [
              (player_is_active, ":player_no"),
              (multiplayer_send_2_int_to_player, ":player_no", multiplayer_event_set_team_score, 1, ":team_2_score"),             
            (try_end),
-	
+        
            (call_script, "script_show_multiplayer_message", multiplayer_message_type_round_result_in_battle_mode, 0), #0 is winner team     
            (call_script, "script_check_achievement_last_man_standing", "$g_winner_team"),    
 
@@ -13179,7 +13179,7 @@ mission_templates = [
 
          (try_for_range, ":player_no", 0, ":num_players"),
            (player_is_active, ":player_no"),
-		   (player_slot_eq, ":player_no", slot_player_spawned_this_round, 1),
+                   (player_slot_eq, ":player_no", slot_player_spawned_this_round, 1),
            (player_get_gold, ":player_gold", ":player_no"),
            (player_get_team_no, ":player_team", ":player_no"),           
            (val_add, ":player_gold", ":per_round_gold_addition"), #standard           
@@ -13406,163 +13406,163 @@ mission_templates = [
   ###############################################
   
   
-	( 	"multiplayer_ccoop",mtf_battle_mode,-1, #captain_coop mode, aka "Invasion"
-		"You lead your men to battle.",
+        ( 	"multiplayer_ccoop",mtf_battle_mode,-1, #captain_coop mode, aka "Invasion"
+                "You lead your men to battle.",
     [
-		  (0,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (1,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (2,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (3,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (4,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (5,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (6,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (7,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (0,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (1,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (2,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (3,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (4,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (5,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (6,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (7,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
           
-		  (8,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (9,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (10,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (11,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (12,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (13,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (14,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (15,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (8,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (9,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (10,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (11,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (12,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (13,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (14,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (15,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
           
-		  (16,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (17,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (18,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (19,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (20,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (21,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (22,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (23,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (16,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (17,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (18,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (19,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (20,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (21,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (22,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (23,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
           
-		  (24,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (25,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (26,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (27,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (28,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (29,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (30,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
-		  (31,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (24,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (25,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (26,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (27,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (28,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (29,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (30,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
+                  (31,mtef_visitor_source|mtef_team_0,0,aif_start_alarmed,1,[]),
           
-		  (32,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (33,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (34,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (35,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (36,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (37,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (38,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (39,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (32,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (33,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (34,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (35,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (36,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (37,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (38,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (39,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
           
-		  (40,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (41,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (42,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (43,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (44,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (45,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (46,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (47,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (40,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (41,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (42,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (43,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (44,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (45,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (46,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (47,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
           
-		  (48,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (49,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (50,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (51,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (52,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (53,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (54,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (55,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (48,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (49,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (50,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (51,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (52,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (53,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (54,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (55,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
           
-		  (56,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (57,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (58,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (59,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (60,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (61,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (62,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (63,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  
-		  
-		  (64,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (65,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (66,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (67,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (68,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (69,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  
-		  # prison cart entry points
-		  (70,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (71,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (72,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (73,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (74,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),	
+                  (56,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (57,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (58,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (59,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (60,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (61,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (62,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (63,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  
+                  
+                  (64,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (65,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (66,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (67,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (68,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (69,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  
+                  # prison cart entry points
+                  (70,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (71,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (72,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (73,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (74,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),	
           
-		  # empty slots
-		  (75,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (76,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (77,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (78,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (79,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  
-		  # enemy wave spawn points
-		  (80,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (81,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (82,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (83,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (84,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),	
-		  (85,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (86,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
-		  (87,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),	
-	],
-	
+                  # empty slots
+                  (75,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (76,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (77,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (78,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (79,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  
+                  # enemy wave spawn points
+                  (80,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (81,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (82,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (83,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (84,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),	
+                  (85,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (86,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),
+                  (87,mtef_visitor_source|mtef_team_1,0,aif_start_alarmed,1,[]),	
+        ],
+        
     [      
-		common_battle_init_banner,
+                common_battle_init_banner,
 
-		multiplayer_server_check_polls,
+                multiplayer_server_check_polls,
 
-		(ti_on_agent_spawn, 0, 0, [],
-		[
-			(store_trigger_param_1, ":agent_no"),
-			(call_script, "script_multiplayer_server_on_agent_spawn_common", ":agent_no"),
-			##check team and multipliers to enemies after certain wave
-			(agent_get_team, ":agent_team_no", ":agent_no"),
+                (ti_on_agent_spawn, 0, 0, [],
+                [
+                        (store_trigger_param_1, ":agent_no"),
+                        (call_script, "script_multiplayer_server_on_agent_spawn_common", ":agent_no"),
+                        ##check team and multipliers to enemies after certain wave
+                        (agent_get_team, ":agent_team_no", ":agent_no"),
             #(try_begin),
             #  (eq, "$g_mp_coop_last_king_wave", "$g_multiplayer_ccoop_wave_no"),
             #  (store_sub, ":elite_checker", "$g_mp_coop_king_waves", 1),
             #(else_try),
             #  (assign, ":elite_checker", "$g_mp_coop_king_waves"),
             #(try_end),
-			(try_begin),
+                        (try_begin),
                 (multiplayer_is_server),
-			#	(eq, ":agent_team_no", 1), # enemies
-			#	(agent_set_max_hit_points, ":agent_no", 1),
-			#	(agent_set_damage_modifier, ":agent_no", 1),
+                        #	(eq, ":agent_team_no", 1), # enemies
+                        #	(agent_set_max_hit_points, ":agent_no", 1),
+                        #	(agent_set_damage_modifier, ":agent_no", 1),
             #
             #(else_try),
-				(eq, ":agent_team_no", 1), # enemies
+                                (eq, ":agent_team_no", 1), # enemies
                 (try_begin),
                   (eq, "$g_multiplayer_ccoop_difficulty", 0),
                   (assign, ":hp_boost", 50),
                   (assign, ":dmg_boost", 50),
-				  (agent_set_max_hit_points, ":agent_no", ":hp_boost"),
-				  (agent_set_damage_modifier, ":agent_no", ":dmg_boost"),
+                                  (agent_set_max_hit_points, ":agent_no", ":hp_boost"),
+                                  (agent_set_damage_modifier, ":agent_no", ":dmg_boost"),
                 (else_try),
-				  (ge, "$g_mp_coop_king_waves", 1), # wave++
-				  #(neq, "$g_mp_coop_last_king_wave", "$g_multiplayer_ccoop_wave_no"), # wave++
+                                  (ge, "$g_mp_coop_king_waves", 1), # wave++
+                                  #(neq, "$g_mp_coop_last_king_wave", "$g_multiplayer_ccoop_wave_no"), # wave++
                   (store_mul, ":hp_boost", "$g_mp_coop_king_waves", 35),
                   (val_add, ":hp_boost", 100),
                   (store_mul, ":dmg_boost", "$g_mp_coop_king_waves", 25),
                   (val_add, ":dmg_boost", 100),
-				  (agent_set_max_hit_points, ":agent_no", ":hp_boost"),
-				  (agent_set_damage_modifier, ":agent_no", ":dmg_boost"),
-				  #(agent_set_max_hit_points, ":agent_no", 10),
-				  #(agent_set_damage_modifier, ":agent_no", 10),
+                                  (agent_set_max_hit_points, ":agent_no", ":hp_boost"),
+                                  (agent_set_damage_modifier, ":agent_no", ":dmg_boost"),
+                                  #(agent_set_max_hit_points, ":agent_no", 10),
+                                  #(agent_set_damage_modifier, ":agent_no", 10),
                 (try_end),
-			#(else_try),
-			#	(eq, ":agent_team_no", 1), # enemies
-			#	(gt, "$g_multiplayer_ccoop_wave_no", 10), # wave+
-			#	(agent_set_max_hit_points, ":agent_no", 175),
-			#	(agent_set_damage_modifier, ":agent_no", 150),
-			(try_end),
+                        #(else_try),
+                        #	(eq, ":agent_team_no", 1), # enemies
+                        #	(gt, "$g_multiplayer_ccoop_wave_no", 10), # wave+
+                        #	(agent_set_max_hit_points, ":agent_no", 175),
+                        #	(agent_set_damage_modifier, ":agent_no", 150),
+                        (try_end),
             
             (try_begin),
               (multiplayer_is_server),
@@ -13605,34 +13605,34 @@ mission_templates = [
                 
             (try_end),
 
-		]),
+                ]),
 
-		(ti_server_player_joined, 0, 0, [],
-		[
-			(store_trigger_param_1, ":player_no"),
-			(call_script, "script_multiplayer_server_player_joined_common", ":player_no"),
-			
-			# player has to wait for next round to respawn (make it -1 instead of 0 to prevent the player from spawning from prison cart this round)
-			(player_set_slot, ":player_no", slot_player_first_spawn, -1),
+                (ti_server_player_joined, 0, 0, [],
+                [
+                        (store_trigger_param_1, ":player_no"),
+                        (call_script, "script_multiplayer_server_player_joined_common", ":player_no"),
+                        
+                        # player has to wait for next round to respawn (make it -1 instead of 0 to prevent the player from spawning from prison cart this round)
+                        (player_set_slot, ":player_no", slot_player_first_spawn, -1),
             #(player_get_slot, ":player_spawn_status", ":player_no", slot_player_first_spawn),
             (player_set_slot, ":player_no", slot_player_companion_ids_locked, 0),
             (multiplayer_send_2_int_to_player, ":player_no", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_lock_companions, 0),
 
-			# clear squad info
-			#(call_script, "script_mp_clear_squad_info", ":player_no"),
-			
-			(call_script, "script_multiplayer_ccoop_send_troop_data_to_client", ":player_no"),
-			
-			(try_begin),
-				(gt, "$g_multiplayer_ccoop_game_started", 0),
-				
-				(try_begin),
-					(le, "$g_multiplayer_ccoop_enemy_respawn_secs", 45), # if 45 secs left to respawn
-					(multiplayer_send_3_int_to_player, ":player_no", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_count_down_visible, "$g_multiplayer_ccoop_enemy_respawn_secs", "$g_multiplayer_ccoop_wave_no"),
-				(else_try),
-					(multiplayer_send_3_int_to_player, ":player_no", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_count_down_invisible, "$g_multiplayer_ccoop_enemy_respawn_secs", "$g_multiplayer_ccoop_wave_no"),
-				(try_end),
-			(try_end),			
+                        # clear squad info
+                        #(call_script, "script_mp_clear_squad_info", ":player_no"),
+                        
+                        (call_script, "script_multiplayer_ccoop_send_troop_data_to_client", ":player_no"),
+                        
+                        (try_begin),
+                                (gt, "$g_multiplayer_ccoop_game_started", 0),
+                                
+                                (try_begin),
+                                        (le, "$g_multiplayer_ccoop_enemy_respawn_secs", 45), # if 45 secs left to respawn
+                                        (multiplayer_send_3_int_to_player, ":player_no", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_count_down_visible, "$g_multiplayer_ccoop_enemy_respawn_secs", "$g_multiplayer_ccoop_wave_no"),
+                                (else_try),
+                                        (multiplayer_send_3_int_to_player, ":player_no", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_count_down_invisible, "$g_multiplayer_ccoop_enemy_respawn_secs", "$g_multiplayer_ccoop_wave_no"),
+                                (try_end),
+                        (try_end),			
             
             #Frank
             (try_begin),
@@ -13648,11 +13648,11 @@ mission_templates = [
                 (player_set_slot, ":player_no", ":cur_slot", 0),
               (try_end),
             (try_end),
-		]),
+                ]),
 
-		(ti_before_mission_start, 0, 0, [],
-		[
-			(assign, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),	
+                (ti_before_mission_start, 0, 0, [],
+                [
+                        (assign, "$g_multiplayer_game_type", multiplayer_game_type_captain_coop),	
             
             
             (store_current_scene, ":cur_scene"),
@@ -13668,21 +13668,21 @@ mission_templates = [
               (try_end),
             (try_end),
             
-			(call_script, "script_multiplayer_server_before_mission_start_common"),
+                        (call_script, "script_multiplayer_server_before_mission_start_common"),
 
-			(call_script, "script_multiplayer_init_mission_variables"),
-			(call_script, "script_multiplayer_remove_destroy_mod_targets"),
-			(call_script, "script_multiplayer_remove_headquarters_flags"),
-		]),
+                        (call_script, "script_multiplayer_init_mission_variables"),
+                        (call_script, "script_multiplayer_remove_destroy_mod_targets"),
+                        (call_script, "script_multiplayer_remove_headquarters_flags"),
+                ]),
 
-		(ti_after_mission_start, 0, 0, [], 
-		[
-			(set_spawn_effector_scene_prop_kind, 0, -1), #during this mission, agents of "team 0" will try to spawn around scene props with kind equal to -1(no effector for this mod)
-			(set_spawn_effector_scene_prop_kind, 1, -1), #during this mission, agents of "team 1" will try to spawn around scene props with kind equal to -1(no effector for this mod)
+                (ti_after_mission_start, 0, 0, [], 
+                [
+                        (set_spawn_effector_scene_prop_kind, 0, -1), #during this mission, agents of "team 0" will try to spawn around scene props with kind equal to -1(no effector for this mod)
+                        (set_spawn_effector_scene_prop_kind, 1, -1), #during this mission, agents of "team 1" will try to spawn around scene props with kind equal to -1(no effector for this mod)
 
-			(call_script, "script_initialize_all_scene_prop_slots"),         
-			(call_script, "script_multiplayer_move_moveable_objects_initial_positions"),
-			
+                        (call_script, "script_initialize_all_scene_prop_slots"),         
+                        (call_script, "script_multiplayer_move_moveable_objects_initial_positions"),
+                        
             (store_random_in_range, "$g_presentation_obj_coop_companion_0", multiplayer_coop_companion_equipment_sets_begin, multiplayer_coop_companion_first_equipment_sets_end),
             (store_random_in_range, "$g_presentation_obj_coop_companion_1", multiplayer_coop_companion_equipment_sets_begin, multiplayer_coop_companion_first_equipment_sets_end),
             (try_begin),
@@ -13720,9 +13720,9 @@ mission_templates = [
             #Frank
             (try_begin),
               (multiplayer_is_server),
-			  (get_max_players, ":max_players"),
-			  (try_for_range, ":cur_player", 0, ":max_players"),
-			  	(player_is_active, ":cur_player"),
+                          (get_max_players, ":max_players"),
+                          (try_for_range, ":cur_player", 0, ":max_players"),
+                                (player_is_active, ":cur_player"),
                   #Frank
                   #Reset levels for player companions
                   (try_for_range, ":cur_slot", slot_player_companion_levels_begin, slot_player_companion_levels_end),
@@ -13734,68 +13734,68 @@ mission_templates = [
                   (try_for_range, ":cur_slot", slot_player_coop_opened_chests_begin, slot_player_coop_opened_chests_end),
                     (player_set_slot, ":cur_player", ":cur_slot", 0),
                   (try_end),
-		      (try_end),
+                      (try_end),
             (try_end),
             
 
             
-			(try_begin),
-				(multiplayer_is_server),
+                        (try_begin),
+                                (multiplayer_is_server),
 
-				#(assign, "$g_multiplayer_ccoop_enemy_respawn_secs", multi_captain_coop_round_duration_in_sec), #count down time: 10mins
-				(assign, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0),
-				(assign, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 0),
-				(assign, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots", -1),
+                                #(assign, "$g_multiplayer_ccoop_enemy_respawn_secs", multi_captain_coop_round_duration_in_sec), #count down time: 10mins
+                                (assign, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0),
+                                (assign, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 0),
+                                (assign, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots", -1),
                 
-			(try_end),
-			
-			(assign, "$g_multiplayer_ccoop_wave_no", 0),
-			(assign, "$g_multiplayer_ccoop_game_started", 0),
-			(assign, "$g_multiplayer_ccoop_enable_count_down", 0),
-			(assign, "$g_multiplayer_ccoop_change_map", 0),
-			(assign, "$g_round_ended", 0),
+                        (try_end),
+                        
+                        (assign, "$g_multiplayer_ccoop_wave_no", 0),
+                        (assign, "$g_multiplayer_ccoop_game_started", 0),
+                        (assign, "$g_multiplayer_ccoop_enable_count_down", 0),
+                        (assign, "$g_multiplayer_ccoop_change_map", 0),
+                        (assign, "$g_round_ended", 0),
 
-			# destroy prison cart (since it is invisible when mission starts)
-			(call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
+                        # destroy prison cart (since it is invisible when mission starts)
+                        (call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
             
             (get_max_players, ":max_players"),
             (try_for_range, ":cur_player", 0, ":max_players"),
                 (player_is_active, ":cur_player"),
                 (player_set_slot, ":cur_player", slot_player_companion_ids_locked, 0),
                 (multiplayer_send_2_int_to_player, ":cur_player", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_lock_companions, 0),
-			(try_end),
+                        (try_end),
                 
            
-		]),
+                ]),
 
-		(ti_on_multiplayer_mission_end, 0, 0, [],
-		[
-			# disable count down
-			(assign, "$g_multiplayer_ccoop_enable_count_down", 0),
-			(assign, "$g_multiplayer_ccoop_enemy_respawn_secs", 100000),
-			(assign, "$g_multiplayer_ccoop_game_started", 0),
-			
-			
-			(assign, "$g_multiplayer_stats_chart_opened_manually", 0),
-			(start_presentation, "prsnt_multiplayer_stats_chart_deathmatch"),			
-		]),
-		
-		(ti_on_player_exit, 0, 0, [],
-		[
-			# force kill all squad agents of the exiting player
-			(store_trigger_param_1, ":exiting_player_no"),
-			(call_script, "script_cf_multiplayer_event_team_change", ":exiting_player_no"),
-		]),
+                (ti_on_multiplayer_mission_end, 0, 0, [],
+                [
+                        # disable count down
+                        (assign, "$g_multiplayer_ccoop_enable_count_down", 0),
+                        (assign, "$g_multiplayer_ccoop_enemy_respawn_secs", 100000),
+                        (assign, "$g_multiplayer_ccoop_game_started", 0),
+                        
+                        
+                        (assign, "$g_multiplayer_stats_chart_opened_manually", 0),
+                        (start_presentation, "prsnt_multiplayer_stats_chart_deathmatch"),			
+                ]),
+                
+                (ti_on_player_exit, 0, 0, [],
+                [
+                        # force kill all squad agents of the exiting player
+                        (store_trigger_param_1, ":exiting_player_no"),
+                        (call_script, "script_cf_multiplayer_event_team_change", ":exiting_player_no"),
+                ]),
 
-		(ti_on_agent_killed_or_wounded, 0, 0, [],
-		[
-			(store_trigger_param_1, ":dead_agent_no"), 
-			(store_trigger_param_2, ":killer_agent_no"), 
+                (ti_on_agent_killed_or_wounded, 0, 0, [],
+                [
+                        (store_trigger_param_1, ":dead_agent_no"), 
+                        (store_trigger_param_2, ":killer_agent_no"), 
             
             
-			(call_script, "script_multiplayer_server_on_agent_killed_or_wounded_common", ":dead_agent_no", ":killer_agent_no"),
-			
-			(agent_get_team, ":dead_agent_team", ":dead_agent_no"),			
+                        (call_script, "script_multiplayer_server_on_agent_killed_or_wounded_common", ":dead_agent_no", ":killer_agent_no"),
+                        
+                        (agent_get_team, ":dead_agent_team", ":dead_agent_no"),			
             
             #Frank 
             #level down dead companions                    
@@ -13888,27 +13888,27 @@ mission_templates = [
                 #(prop_instance_set_position, reg0, pos0),
               (try_end),
             (try_end),
-			
-			#add 1 score points to killer agent's team.
-			(try_begin),
-				(ge, ":killer_agent_no", 0),
-				(agent_is_human, ":dead_agent_no"),
-				(agent_is_human, ":killer_agent_no"),
-				(agent_get_team, ":killer_agent_team", ":killer_agent_no"),
-				(le, ":killer_agent_team", 1), #0 or 1 is ok
-				(team_get_score, ":team_score", ":killer_agent_team"),
-				(neq, ":killer_agent_team", ":dead_agent_team"),
-				(val_add, ":team_score", 1),
-				(team_set_score, ":killer_agent_team", ":team_score"),
-			(try_end),
-			 
-			# if dead agent is in wave team
-			(try_begin),
-				(multiplayer_is_server),				
-				(eq, ":dead_agent_team", 1),  # enemy (wave) side
-				
-				#(call_script, "script_multiplayer_ccoop_check_reinforcement"),
-				
+                        
+                        #add 1 score points to killer agent's team.
+                        (try_begin),
+                                (ge, ":killer_agent_no", 0),
+                                (agent_is_human, ":dead_agent_no"),
+                                (agent_is_human, ":killer_agent_no"),
+                                (agent_get_team, ":killer_agent_team", ":killer_agent_no"),
+                                (le, ":killer_agent_team", 1), #0 or 1 is ok
+                                (team_get_score, ":team_score", ":killer_agent_team"),
+                                (neq, ":killer_agent_team", ":dead_agent_team"),
+                                (val_add, ":team_score", 1),
+                                (team_set_score, ":killer_agent_team", ":team_score"),
+                        (try_end),
+                         
+                        # if dead agent is in wave team
+                        (try_begin),
+                                (multiplayer_is_server),				
+                                (eq, ":dead_agent_team", 1),  # enemy (wave) side
+                                
+                                #(call_script, "script_multiplayer_ccoop_check_reinforcement"),
+                                
                 
                 
                 (assign, ":has_agents", 0),
@@ -13924,12 +13924,12 @@ mission_templates = [
                 (try_end),				
                 
                 (eq, ":has_agents", 0), # if all enemies are dead
-				
+                                
                 (try_begin),
                     (agent_is_human, ":dead_agent_no"),
                     (play_sound, "snd_team_scored_a_point"), # play victory sound
                 (try_end),				
-			    
+                            
                 
                 (try_begin),
                     (neq, "$g_multiplayer_ccoop_difficulty", 2),
@@ -13955,7 +13955,7 @@ mission_templates = [
                       (multiplayer_send_int_to_player, ":cur_player", multiplayer_event_ccoop_victory_message, ":difficulty_string_i"),
                     (try_end),
                 (else_try),
-				
+                                
                     # round cleared
                     (assign, "$g_multiplayer_ccoop_enemy_respawn_secs", 32), # set 32 secs left for next wave
                     
@@ -14034,82 +14034,82 @@ mission_templates = [
                         (try_end),
                     (try_end),
                 (try_end),
-				
-			(else_try),				
-				(multiplayer_is_server),
-				(eq, ":dead_agent_team", 0),  # players side
-				
-				#(display_debug_message, "@{!}dead agent is on our team!"),
-				
-				(assign, ":has_agents", 0),
-				(try_for_agents, ":cur_agent"),
-					(try_begin),
-						(agent_is_human, ":cur_agent"),
-						(agent_is_alive, ":cur_agent"),
-						(agent_get_team, ":cur_agent_team", ":cur_agent"),
-						(eq, ":cur_agent_team", 0),
-						(val_add, ":has_agents", 1),						
-					(try_end),
-					(gt, ":has_agents", 0), #break
-				(try_end),
-				
-				(eq, ":has_agents", 0),  # no player and bots left alive		
+                                
+                        (else_try),				
+                                (multiplayer_is_server),
+                                (eq, ":dead_agent_team", 0),  # players side
+                                
+                                #(display_debug_message, "@{!}dead agent is on our team!"),
+                                
+                                (assign, ":has_agents", 0),
+                                (try_for_agents, ":cur_agent"),
+                                        (try_begin),
+                                                (agent_is_human, ":cur_agent"),
+                                                (agent_is_alive, ":cur_agent"),
+                                                (agent_get_team, ":cur_agent_team", ":cur_agent"),
+                                                (eq, ":cur_agent_team", 0),
+                                                (val_add, ":has_agents", 1),						
+                                        (try_end),
+                                        (gt, ":has_agents", 0), #break
+                                (try_end),
+                                
+                                (eq, ":has_agents", 0),  # no player and bots left alive		
 
-				
-				(assign, "$g_multiplayer_ccoop_change_map", 5), #5 secs
+                                
+                                (assign, "$g_multiplayer_ccoop_change_map", 5), #5 secs
                 (set_cheer_at_no_enemy, 1),
-				
-			(else_try),	
-				(neg|multiplayer_is_server), # client side
-				
-				(eq, ":dead_agent_team", 1),
+                                
+                        (else_try),	
+                                (neg|multiplayer_is_server), # client side
+                                
+                                (eq, ":dead_agent_team", 1),
                 (agent_is_human, ":dead_agent_no"),
                 
-				(assign, ":has_agents", 0),
-				(try_for_agents, ":cur_agent"),
-					(try_begin),
-						(agent_is_human, ":cur_agent"),
-						(agent_is_alive, ":cur_agent"),
-						(agent_get_team, ":cur_agent_team", ":cur_agent"),
-						(eq, ":cur_agent_team", 1),
-						(val_add, ":has_agents", 1),
-					(try_end),
-					(gt, ":has_agents", 0), # break
-				(try_end),				
-				
-				(eq, ":has_agents", 0), # if all enemies are dead
-				
+                                (assign, ":has_agents", 0),
+                                (try_for_agents, ":cur_agent"),
+                                        (try_begin),
+                                                (agent_is_human, ":cur_agent"),
+                                                (agent_is_alive, ":cur_agent"),
+                                                (agent_get_team, ":cur_agent_team", ":cur_agent"),
+                                                (eq, ":cur_agent_team", 1),
+                                                (val_add, ":has_agents", 1),
+                                        (try_end),
+                                        (gt, ":has_agents", 0), # break
+                                (try_end),				
+                                
+                                (eq, ":has_agents", 0), # if all enemies are dead
+                                
                 (play_sound, "snd_team_scored_a_point"), # play victory sound
-				
-			(try_end),
-		]),
-		 
-		# one time execute
-		(0, 0, ti_once, [],
-		[
-			(set_cheer_at_no_enemy, 0), # no cheer after all enemies are dead
-		]),
+                                
+                        (try_end),
+                ]),
+                 
+                # one time execute
+                (0, 0, ti_once, [],
+                [
+                        (set_cheer_at_no_enemy, 0), # no cheer after all enemies are dead
+                ]),
 
-		# if count down is enabled
-		(1, 0, 0, [(gt, "$g_multiplayer_ccoop_enable_count_down", 0)],
-		[
-			(try_begin),
-				(gt, "$g_multiplayer_ccoop_change_map", 0),
-				
-				(try_begin),
-					(eq, "$g_multiplayer_ccoop_change_map", 4),
-					(call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
-				(try_end),
-				
-				(val_sub, "$g_multiplayer_ccoop_change_map", 1),
-				(eq, "$g_multiplayer_ccoop_change_map", 0),				
-				(assign, "$g_multiplayer_ccoop_enable_count_down", 0),
-				(assign, "$g_round_ended", 1),
+                # if count down is enabled
+                (1, 0, 0, [(gt, "$g_multiplayer_ccoop_enable_count_down", 0)],
+                [
+                        (try_begin),
+                                (gt, "$g_multiplayer_ccoop_change_map", 0),
+                                
+                                (try_begin),
+                                        (eq, "$g_multiplayer_ccoop_change_map", 4),
+                                        (call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
+                                (try_end),
+                                
+                                (val_sub, "$g_multiplayer_ccoop_change_map", 1),
+                                (eq, "$g_multiplayer_ccoop_change_map", 0),				
+                                (assign, "$g_multiplayer_ccoop_enable_count_down", 0),
+                                (assign, "$g_round_ended", 1),
                 
                 # #Frank
-				#(get_max_players, ":max_players"),
-				#(try_for_range, ":cur_player", 0, ":max_players"),
-				#	(player_is_active, ":cur_player"),
+                                #(get_max_players, ":max_players"),
+                                #(try_for_range, ":cur_player", 0, ":max_players"),
+                                #	(player_is_active, ":cur_player"),
                 #    #Frank
                 #    #Reset levels for player companions
                 #    (try_for_range, ":cur_slot", slot_player_companion_levels_begin, slot_player_companion_levels_end),
@@ -14122,328 +14122,328 @@ mission_templates = [
                 #    (try_for_range, ":cur_slot", slot_player_coop_opened_chests_begin, slot_player_coop_opened_chests_end),
                 #      (player_set_slot, ":cur_player", ":cur_slot", 0),
                 #    (try_end),
-			    #(try_end),
+                            #(try_end),
                 
-			(else_try),
-				(gt, "$g_multiplayer_ccoop_enemy_respawn_secs", 0),
-				(val_sub, "$g_multiplayer_ccoop_enemy_respawn_secs", 1),
+                        (else_try),
+                                (gt, "$g_multiplayer_ccoop_enemy_respawn_secs", 0),
+                                (val_sub, "$g_multiplayer_ccoop_enemy_respawn_secs", 1),
 
-				(try_begin),
-					(gt, "$g_multiplayer_ccoop_enemy_respawn_secs", 59),
-					(store_mod, ":mod", "$g_multiplayer_ccoop_enemy_respawn_secs", 60),
-					(eq, ":mod", 0),
-					(store_div, reg0, "$g_multiplayer_ccoop_enemy_respawn_secs", 60),
-					(neg|multiplayer_is_dedicated_server),
-					(display_message, "str_next_wave_in_reg0_mins", 0xFFDE6300),
-				(try_end),
-				
-				(try_begin),
-					(eq, "$g_multiplayer_ccoop_enemy_respawn_secs", 30), #if 30secs left to next wave
-					(multiplayer_is_server),
-
-					# give round bonus gold at the start of each wave (whether the previous wave is cleared or it is timed out)
-					(call_script, "script_multiplayer_ccoop_give_round_bonus_gold"),
-					
-					(val_add, "$g_multiplayer_ccoop_wave_no", 1), # increment wave no
-
-					#(try_begin),
-					#	(eq, "$g_multiplayer_ccoop_wave_no", 31),
-					#	# game end win condition
-					#	# initiate round end/change map duration
-					#	(assign, "$g_multiplayer_ccoop_change_map", 5), #5 secs
-                    #    (set_cheer_at_no_enemy, 1),
-					#(try_end),
-					
-					# destroy prison cart (since current wave is timed out and next wave is coming in 30 seconds) or
-					# destroy prison cart (since round is cleared and everyone will respawn automatically)
-					(call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
-					
-					# respawn all dead players (with some delay)
-					(call_script, "script_multiplayer_ccoop_start_player_and_squad_respawn_period", 1),
-										
-					# sync clients count down counter
-					(get_max_players, ":max_players"),
-					(store_sub, ":respawn_secs", "$g_multiplayer_ccoop_enemy_respawn_secs", 1), # send to clients as 1 sec decreased					
-					(try_for_range, ":cur_player", 1, ":max_players"),						
-						(player_is_active, ":cur_player"),
-						(multiplayer_send_3_int_to_player, ":cur_player", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_count_down_visible, ":respawn_secs", "$g_multiplayer_ccoop_wave_no"),
-					(try_end),
-					
-					(call_script, "script_multiplayer_ccoop_prepare_spawn_wave"),
-					
-					(store_mission_timer_a, "$g_multiplayer_ccoop_next_wave_start_time"),
-					(val_add, "$g_multiplayer_ccoop_next_wave_start_time", "$g_multiplayer_ccoop_enemy_respawn_secs"),
-					(start_presentation, "prsnt_multiplayer_ccoop_next_wave_time_counter"),
-					(start_presentation, "prsnt_multiplayer_flag_projection_display_ccoop_wave"),
-				(else_try),
-					(lt, "$g_multiplayer_ccoop_enemy_respawn_secs", 1),
-					(multiplayer_is_server),
-					
-					# generate count down
-					(call_script, "script_multiplayer_ccoop_calculate_round_duration"),
-					
-					# spawn wave
-					(call_script, "script_multiplayer_ccoop_spawn_wave", 1000),
-				(try_end),
-				
-			(try_end),
-		]),
-				
-		# prison cart and player&bot spawn management
-		(1, 0, 0, [(multiplayer_is_server),],		
-		[
-			(get_max_players, ":max_players"),
-			
-			# prison cart management
-			(try_begin),
-				# if move underground is initiated
-				(gt, "$g_multiplayer_ccoop_move_prison_cart", 0),  
-					
-				(store_mission_timer_a, ":current_time"),
-				(store_sub, ":time_left", "$g_multiplayer_ccoop_move_prison_cart", ":current_time"),
-				
-				(try_begin),
-					(le, ":time_left", 0),
-					
-					(display_debug_message, "@{!}sending prisoner cart 6 feet underground!"),
-					
-					(set_fixed_point_multiplier, 100), 
-					
-					(scene_prop_get_instance, ":prison_cart", "spr_prison_cart", 0),
-					(scene_prop_get_instance, ":prison_cart_door_left", "spr_prison_cart_door_left", 0),
-					(scene_prop_get_instance, ":prison_cart_door_right", "spr_prison_cart_door_right", 0),
-					
-					(prop_instance_get_position, pos1, ":prison_cart"),
-					(position_set_z, pos1, -4000), #40m down
-					(prop_instance_set_position, ":prison_cart", pos1),	
-					(prop_instance_set_position, ":prison_cart_door_left", pos1),
-					(prop_instance_set_position, ":prison_cart_door_right", pos1),
-					
-					(assign, "$g_multiplayer_ccoop_move_prison_cart", 0),
-				(try_end),
-			
-			(else_try),
-				(gt, "$g_prison_cart_point", 0), # if visible				
-				
-				(scene_prop_get_instance, ":prison_cart_door_left", "spr_prison_cart_door_left", 0),
-				(scene_prop_get_hit_points, ":left_door", ":prison_cart_door_left"),
-				
-				(scene_prop_get_instance, ":prison_cart_door_right", "spr_prison_cart_door_right", 0),
-				(scene_prop_get_hit_points, ":right_door", ":prison_cart_door_right"),
-					
-				(try_begin),
-					(this_or_next|lt, ":left_door", 1),  # left door's broken
-					(lt, ":right_door", 1),  # right door's broken
-										
-					# destroy prison cart (since doors are cracked)
-					(call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
-					
-					# respawn all dead players (with some delay)
-					(call_script, "script_multiplayer_ccoop_start_player_and_squad_respawn_period", 0),
-					
-				(try_end),
-				
-				# check if prison cart is spawned and there is no dead player (may occur if dead players quit the game or change their faction to spectator)
-				(assign, ":is_anyone_dead", 0),
-				(try_for_range, ":cur_player", 0, ":max_players"),
-					(eq, ":is_anyone_dead", 0),
-					(player_is_active, ":cur_player"),
-					(player_get_team_no, ":player_team", ":cur_player"),
-					(eq, ":player_team", 0),
-					(player_get_agent_id, ":player_agent", ":cur_player"),
-					(try_begin),
-						(ge, ":player_agent", 0),
-						(try_begin),
-							(neg|agent_is_alive, ":player_agent"),
-							(assign, ":is_anyone_dead", 1),
-						(try_end),
-					(else_try),
-						(assign, ":is_anyone_dead", 1),
-					(end_try),
-				(try_end),
-				(try_begin),
-					(eq, ":is_anyone_dead", 0),
-					# destroy prison cart (since there is no dead player left in the game)
-					(call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
-				(try_end),
-				
-			(else_try),
-			
-				# if prison cart is not spawned and there is a dead player, then spawn the prison cart
-				(assign, ":is_anyone_dead", 0),
-				(try_for_range, ":cur_player", 0, ":max_players"),
-					(eq, ":is_anyone_dead", 0),				
-					(player_is_active, ":cur_player"),
-					(player_get_team_no, ":player_team", ":cur_player"),
-					(eq, ":player_team", 0),
-					(player_get_agent_id, ":player_agent", ":cur_player"),
-					(ge, ":player_agent", 0),
-					(neg|agent_is_alive, ":player_agent"),
-					(assign, ":is_anyone_dead", 1),
-				(try_end),
-				(try_begin),
-					(eq, ":is_anyone_dead", 1),
-					(eq, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots", 1), # if cart is not spawned before in this round, otherwise that value would be 0
-					# spawn prison cart with 5 second delay
-					(le, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 0), # if not in player spawn period
-					(eq, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0), # if not in prison cart spawn period
-					(assign, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 5),
-					(display_debug_message, "@{!}spawn prison cart 5 secs initiated!"),
-				(try_end),
-				
-				(try_begin),
-					(gt, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0),
-					(val_sub, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 1),
-					(display_debug_message, "@{!}spawn prison cart!"),
-					(try_begin),
-						(eq, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0),
-						(call_script, "script_multiplayer_ccoop_spawn_prison_cart"),
-					(try_end),
-				(try_end),
-				
-			(try_end),
-			
-			# player&bot spawn management
-			(try_begin),
-				(multiplayer_is_server),
-				(gt, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 0),
-				(val_sub, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 1),
-				(try_begin),
-					(lt, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 25),
-					
-					# respawn all dead players
-					(get_max_players, ":max_players"),
-					(try_for_range, ":cur_player", 0, ":max_players"),
-						(player_is_active, ":cur_player"),
-						(player_get_team_no, ":player_team", ":cur_player"), # if player is not spectator
-						(lt, ":player_team", multi_team_spectator),
-						(player_get_agent_id, ":player_agent", ":cur_player"),
-						
-						(try_begin),
-							(this_or_next|lt, ":player_agent", 0), #if not spawned or
-							(neg|agent_is_alive, ":player_agent"), #if agent is dead
-							
-							(try_begin),
-								# if first spawn this round
-								(player_get_slot, ":player_first_spawn", ":cur_player", slot_player_first_spawn),
-								(eq, ":player_first_spawn", 1),
+                                (try_begin),
+                                        (gt, "$g_multiplayer_ccoop_enemy_respawn_secs", 59),
+                                        (store_mod, ":mod", "$g_multiplayer_ccoop_enemy_respawn_secs", 60),
+                                        (eq, ":mod", 0),
+                                        (store_div, reg0, "$g_multiplayer_ccoop_enemy_respawn_secs", 60),
+                                        (neg|multiplayer_is_dedicated_server),
+                                        (display_message, "str_next_wave_in_reg0_mins", 0xFFDE6300),
+                                (try_end),
                                 
-								
-								(call_script, "script_multiplayer_ccoop_spawn_player_and_bots", ":cur_player"),
-								
-								# if spawned
-								(try_begin),
-									(eq, reg0, 1),
-									(player_set_slot, ":cur_player", slot_player_first_spawn, 0),
-								(try_end),
-								
-							(try_end),
-							
-						(else_try),
-							(assign, reg0, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots"),
-							(display_debug_message, "@{!}g_multiplayer_ccoop_spawn_alive_player_squad: {reg0}"),
-						
-							(eq, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots", 1),
-							(neg|player_is_busy_with_menus, ":cur_player"), # if player is not busy with menus
-							(player_get_troop_id, ":player_troop", ":cur_player"), # if troop is not selected do not spawn his bots	
-							(ge, ":player_troop", 0),
-							
-							# buy squads of alive player
-							(call_script, "script_multiplayer_spawn_player_bot_squad_at_point", ":cur_player", 0, reg0),
-							(call_script, "script_multiplayer_upgrade_player_equipment", ":cur_player"),
+                                (try_begin),
+                                        (eq, "$g_multiplayer_ccoop_enemy_respawn_secs", 30), #if 30secs left to next wave
+                                        (multiplayer_is_server),
+
+                                        # give round bonus gold at the start of each wave (whether the previous wave is cleared or it is timed out)
+                                        (call_script, "script_multiplayer_ccoop_give_round_bonus_gold"),
+                                        
+                                        (val_add, "$g_multiplayer_ccoop_wave_no", 1), # increment wave no
+
+                                        #(try_begin),
+                                        #	(eq, "$g_multiplayer_ccoop_wave_no", 31),
+                                        #	# game end win condition
+                                        #	# initiate round end/change map duration
+                                        #	(assign, "$g_multiplayer_ccoop_change_map", 5), #5 secs
+                    #    (set_cheer_at_no_enemy, 1),
+                                        #(try_end),
+                                        
+                                        # destroy prison cart (since current wave is timed out and next wave is coming in 30 seconds) or
+                                        # destroy prison cart (since round is cleared and everyone will respawn automatically)
+                                        (call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
+                                        
+                                        # respawn all dead players (with some delay)
+                                        (call_script, "script_multiplayer_ccoop_start_player_and_squad_respawn_period", 1),
+                                                                                
+                                        # sync clients count down counter
+                                        (get_max_players, ":max_players"),
+                                        (store_sub, ":respawn_secs", "$g_multiplayer_ccoop_enemy_respawn_secs", 1), # send to clients as 1 sec decreased					
+                                        (try_for_range, ":cur_player", 1, ":max_players"),						
+                                                (player_is_active, ":cur_player"),
+                                                (multiplayer_send_3_int_to_player, ":cur_player", multiplayer_event_other_events, multiplayer_event_other_event_ccoop_count_down_visible, ":respawn_secs", "$g_multiplayer_ccoop_wave_no"),
+                                        (try_end),
+                                        
+                                        (call_script, "script_multiplayer_ccoop_prepare_spawn_wave"),
+                                        
+                                        (store_mission_timer_a, "$g_multiplayer_ccoop_next_wave_start_time"),
+                                        (val_add, "$g_multiplayer_ccoop_next_wave_start_time", "$g_multiplayer_ccoop_enemy_respawn_secs"),
+                                        (start_presentation, "prsnt_multiplayer_ccoop_next_wave_time_counter"),
+                                        (start_presentation, "prsnt_multiplayer_flag_projection_display_ccoop_wave"),
+                                (else_try),
+                                        (lt, "$g_multiplayer_ccoop_enemy_respawn_secs", 1),
+                                        (multiplayer_is_server),
+                                        
+                                        # generate count down
+                                        (call_script, "script_multiplayer_ccoop_calculate_round_duration"),
+                                        
+                                        # spawn wave
+                                        (call_script, "script_multiplayer_ccoop_spawn_wave", 1000),
+                                (try_end),
+                                
+                        (try_end),
+                ]),
+                                
+                # prison cart and player&bot spawn management
+                (1, 0, 0, [(multiplayer_is_server),],		
+                [
+                        (get_max_players, ":max_players"),
+                        
+                        # prison cart management
+                        (try_begin),
+                                # if move underground is initiated
+                                (gt, "$g_multiplayer_ccoop_move_prison_cart", 0),  
+                                        
+                                (store_mission_timer_a, ":current_time"),
+                                (store_sub, ":time_left", "$g_multiplayer_ccoop_move_prison_cart", ":current_time"),
+                                
+                                (try_begin),
+                                        (le, ":time_left", 0),
+                                        
+                                        (display_debug_message, "@{!}sending prisoner cart 6 feet underground!"),
+                                        
+                                        (set_fixed_point_multiplier, 100), 
+                                        
+                                        (scene_prop_get_instance, ":prison_cart", "spr_prison_cart", 0),
+                                        (scene_prop_get_instance, ":prison_cart_door_left", "spr_prison_cart_door_left", 0),
+                                        (scene_prop_get_instance, ":prison_cart_door_right", "spr_prison_cart_door_right", 0),
+                                        
+                                        (prop_instance_get_position, pos1, ":prison_cart"),
+                                        (position_set_z, pos1, -4000), #40m down
+                                        (prop_instance_set_position, ":prison_cart", pos1),	
+                                        (prop_instance_set_position, ":prison_cart_door_left", pos1),
+                                        (prop_instance_set_position, ":prison_cart_door_right", pos1),
+                                        
+                                        (assign, "$g_multiplayer_ccoop_move_prison_cart", 0),
+                                (try_end),
+                        
+                        (else_try),
+                                (gt, "$g_prison_cart_point", 0), # if visible				
+                                
+                                (scene_prop_get_instance, ":prison_cart_door_left", "spr_prison_cart_door_left", 0),
+                                (scene_prop_get_hit_points, ":left_door", ":prison_cart_door_left"),
+                                
+                                (scene_prop_get_instance, ":prison_cart_door_right", "spr_prison_cart_door_right", 0),
+                                (scene_prop_get_hit_points, ":right_door", ":prison_cart_door_right"),
+                                        
+                                (try_begin),
+                                        (this_or_next|lt, ":left_door", 1),  # left door's broken
+                                        (lt, ":right_door", 1),  # right door's broken
+                                                                                
+                                        # destroy prison cart (since doors are cracked)
+                                        (call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
+                                        
+                                        # respawn all dead players (with some delay)
+                                        (call_script, "script_multiplayer_ccoop_start_player_and_squad_respawn_period", 0),
+                                        
+                                (try_end),
+                                
+                                # check if prison cart is spawned and there is no dead player (may occur if dead players quit the game or change their faction to spectator)
+                                (assign, ":is_anyone_dead", 0),
+                                (try_for_range, ":cur_player", 0, ":max_players"),
+                                        (eq, ":is_anyone_dead", 0),
+                                        (player_is_active, ":cur_player"),
+                                        (player_get_team_no, ":player_team", ":cur_player"),
+                                        (eq, ":player_team", 0),
+                                        (player_get_agent_id, ":player_agent", ":cur_player"),
+                                        (try_begin),
+                                                (ge, ":player_agent", 0),
+                                                (try_begin),
+                                                        (neg|agent_is_alive, ":player_agent"),
+                                                        (assign, ":is_anyone_dead", 1),
+                                                (try_end),
+                                        (else_try),
+                                                (assign, ":is_anyone_dead", 1),
+                                        (end_try),
+                                (try_end),
+                                (try_begin),
+                                        (eq, ":is_anyone_dead", 0),
+                                        # destroy prison cart (since there is no dead player left in the game)
+                                        (call_script, "script_multiplayer_ccoop_destroy_prison_cart"),
+                                (try_end),
+                                
+                        (else_try),
+                        
+                                # if prison cart is not spawned and there is a dead player, then spawn the prison cart
+                                (assign, ":is_anyone_dead", 0),
+                                (try_for_range, ":cur_player", 0, ":max_players"),
+                                        (eq, ":is_anyone_dead", 0),				
+                                        (player_is_active, ":cur_player"),
+                                        (player_get_team_no, ":player_team", ":cur_player"),
+                                        (eq, ":player_team", 0),
+                                        (player_get_agent_id, ":player_agent", ":cur_player"),
+                                        (ge, ":player_agent", 0),
+                                        (neg|agent_is_alive, ":player_agent"),
+                                        (assign, ":is_anyone_dead", 1),
+                                (try_end),
+                                (try_begin),
+                                        (eq, ":is_anyone_dead", 1),
+                                        (eq, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots", 1), # if cart is not spawned before in this round, otherwise that value would be 0
+                                        # spawn prison cart with 5 second delay
+                                        (le, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 0), # if not in player spawn period
+                                        (eq, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0), # if not in prison cart spawn period
+                                        (assign, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 5),
+                                        (display_debug_message, "@{!}spawn prison cart 5 secs initiated!"),
+                                (try_end),
+                                
+                                (try_begin),
+                                        (gt, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0),
+                                        (val_sub, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 1),
+                                        (display_debug_message, "@{!}spawn prison cart!"),
+                                        (try_begin),
+                                                (eq, "$g_multiplayer_ccoop_spawn_prison_cart_counter", 0),
+                                                (call_script, "script_multiplayer_ccoop_spawn_prison_cart"),
+                                        (try_end),
+                                (try_end),
+                                
+                        (try_end),
+                        
+                        # player&bot spawn management
+                        (try_begin),
+                                (multiplayer_is_server),
+                                (gt, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 0),
+                                (val_sub, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 1),
+                                (try_begin),
+                                        (lt, "$g_multiplayer_ccoop_spawn_player_and_squad_counter", 25),
+                                        
+                                        # respawn all dead players
+                                        (get_max_players, ":max_players"),
+                                        (try_for_range, ":cur_player", 0, ":max_players"),
+                                                (player_is_active, ":cur_player"),
+                                                (player_get_team_no, ":player_team", ":cur_player"), # if player is not spectator
+                                                (lt, ":player_team", multi_team_spectator),
+                                                (player_get_agent_id, ":player_agent", ":cur_player"),
+                                                
+                                                (try_begin),
+                                                        (this_or_next|lt, ":player_agent", 0), #if not spawned or
+                                                        (neg|agent_is_alive, ":player_agent"), #if agent is dead
+                                                        
+                                                        (try_begin),
+                                                                # if first spawn this round
+                                                                (player_get_slot, ":player_first_spawn", ":cur_player", slot_player_first_spawn),
+                                                                (eq, ":player_first_spawn", 1),
+                                
+                                                                
+                                                                (call_script, "script_multiplayer_ccoop_spawn_player_and_bots", ":cur_player"),
+                                                                
+                                                                # if spawned
+                                                                (try_begin),
+                                                                        (eq, reg0, 1),
+                                                                        (player_set_slot, ":cur_player", slot_player_first_spawn, 0),
+                                                                (try_end),
+                                                                
+                                                        (try_end),
+                                                        
+                                                (else_try),
+                                                        (assign, reg0, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots"),
+                                                        (display_debug_message, "@{!}g_multiplayer_ccoop_spawn_alive_player_squad: {reg0}"),
+                                                
+                                                        (eq, "$g_multiplayer_ccoop_spawn_alive_player_squad_and_minus_one_first_spawn_slots_and_minus_one_first_spawn_slots", 1),
+                                                        (neg|player_is_busy_with_menus, ":cur_player"), # if player is not busy with menus
+                                                        (player_get_troop_id, ":player_troop", ":cur_player"), # if troop is not selected do not spawn his bots	
+                                                        (ge, ":player_troop", 0),
+                                                        
+                                                        # buy squads of alive player
+                                                        (call_script, "script_multiplayer_spawn_player_bot_squad_at_point", ":cur_player", 0, reg0),
+                                                        (call_script, "script_multiplayer_upgrade_player_equipment", ":cur_player"),
                             (try_for_agents, ":cur_agent"),
                               (agent_is_active, ":cur_agent"),
                               (agent_is_alive, ":cur_agent"),
                               (agent_is_non_player, ":cur_agent"),
                               (agent_get_group, ":cur_agent_group", ":cur_agent"),
                               (eq, ":cur_agent_group", ":cur_player"),
-							  (call_script, "script_cf_multiplayer_upgrade_companion_equipment", ":cur_agent"),
+                                                          (call_script, "script_cf_multiplayer_upgrade_companion_equipment", ":cur_agent"),
                             (try_end),
-							#(call_script, "script_multiplayer_get_spawn_point_close_to_bots", ":cur_player"),
-							(call_script, "script_multiplayer_get_spawn_point_close_to_player", ":cur_player"),
-						(try_end),
-						
-						
-					(try_end),
-					
-					
-					
-				(try_end),
-				
-			(try_end),
-		]),
+                                                        #(call_script, "script_multiplayer_get_spawn_point_close_to_bots", ":cur_player"),
+                                                        (call_script, "script_multiplayer_get_spawn_point_close_to_player", ":cur_player"),
+                                                (try_end),
+                                                
+                                                
+                                        (try_end),
+                                        
+                                        
+                                        
+                                (try_end),
+                                
+                        (try_end),
+                ]),
 
-				
-		# first spawn
-		(1, 0, 0, 
-		[			
-			(eq, "$g_multiplayer_ccoop_game_started", 0),
-			(multiplayer_is_server),
-		],
-		
-		[			
-			(assign, ":any_player_spawned", 0),
-			
-			(get_max_players, ":num_players"),
-			(try_for_range, ":player_no", 0, ":num_players"),
-				(player_is_active, ":player_no"),
-				
-				(call_script, "script_multiplayer_ccoop_spawn_player_and_bots", ":player_no"),
+                                
+                # first spawn
+                (1, 0, 0, 
+                [			
+                        (eq, "$g_multiplayer_ccoop_game_started", 0),
+                        (multiplayer_is_server),
+                ],
+                
+                [			
+                        (assign, ":any_player_spawned", 0),
+                        
+                        (get_max_players, ":num_players"),
+                        (try_for_range, ":player_no", 0, ":num_players"),
+                                (player_is_active, ":player_no"),
+                                
+                                (call_script, "script_multiplayer_ccoop_spawn_player_and_bots", ":player_no"),
                 
 
-				
-				(try_begin),
-					(eq, ":any_player_spawned", 0),
-					(gt, reg0, 0),
-					(assign, ":any_player_spawned", 1),
-				(try_end),
-			(try_end),
-			
-			(try_begin),
-				(ge, ":any_player_spawned", 1),
+                                
+                                (try_begin),
+                                        (eq, ":any_player_spawned", 0),
+                                        (gt, reg0, 0),
+                                        (assign, ":any_player_spawned", 1),
+                                (try_end),
+                        (try_end),
+                        
+                        (try_begin),
+                                (ge, ":any_player_spawned", 1),
                 
-			
-				#(display_debug_message, "@{!}first spawn" ),
-				(assign, "$g_multiplayer_ccoop_game_started", 1),
-				
-				(assign, "$g_multiplayer_ccoop_enemy_respawn_secs", 31), # set 31 secs left for next wave
-				(assign, "$g_multiplayer_ccoop_enable_count_down", 1), # enable count down
-				
-				(call_script, "script_multiplayer_ccoop_start_player_and_squad_respawn_period", 1),
-			(try_end),
-		]),
+                        
+                                #(display_debug_message, "@{!}first spawn" ),
+                                (assign, "$g_multiplayer_ccoop_game_started", 1),
+                                
+                                (assign, "$g_multiplayer_ccoop_enemy_respawn_secs", 31), # set 31 secs left for next wave
+                                (assign, "$g_multiplayer_ccoop_enable_count_down", 1), # enable count down
+                                
+                                (call_script, "script_multiplayer_ccoop_start_player_and_squad_respawn_period", 1),
+                        (try_end),
+                ]),
     
-		multiplayer_server_check_end_map,
+                multiplayer_server_check_end_map,
 
-		(ti_tab_pressed, 0, 0, [],
-		[
-			(try_begin),
-				(eq, "$g_multiplayer_mission_end_screen", 0),
-				(assign, "$g_multiplayer_stats_chart_opened_manually", 1),
-				(start_presentation, "prsnt_multiplayer_stats_chart_deathmatch"),
-			(try_end),
-		]),
+                (ti_tab_pressed, 0, 0, [],
+                [
+                        (try_begin),
+                                (eq, "$g_multiplayer_mission_end_screen", 0),
+                                (assign, "$g_multiplayer_stats_chart_opened_manually", 1),
+                                (start_presentation, "prsnt_multiplayer_stats_chart_deathmatch"),
+                        (try_end),
+                ]),
 
-		multiplayer_once_at_the_first_frame,
-		#multiplayer_battle_window_opened,
-		(ti_battle_window_opened, 0, 0, [], [
-			#(start_presentation, "prsnt_multiplayer_round_time_counter"),
-			#(start_presentation, "prsnt_multiplayer_team_score_display"),
-			(start_presentation, "prsnt_multiplayer_flag_projection_display_ccoop"),
-			(start_presentation, "prsnt_multiplayer_flag_projection_display_ccoop_wave"),
-			(start_presentation, "prsnt_multiplayer_ccoop_next_wave_time_counter"),
+                multiplayer_once_at_the_first_frame,
+                #multiplayer_battle_window_opened,
+                (ti_battle_window_opened, 0, 0, [], [
+                        #(start_presentation, "prsnt_multiplayer_round_time_counter"),
+                        #(start_presentation, "prsnt_multiplayer_team_score_display"),
+                        (start_presentation, "prsnt_multiplayer_flag_projection_display_ccoop"),
+                        (start_presentation, "prsnt_multiplayer_flag_projection_display_ccoop_wave"),
+                        (start_presentation, "prsnt_multiplayer_ccoop_next_wave_time_counter"),
         ]),
 
-		(ti_escape_pressed, 0, 0, [],
-		[
-			(neg|is_presentation_active, "prsnt_multiplayer_escape_menu"),
-			(neg|is_presentation_active, "prsnt_multiplayer_stats_chart_deathmatch"),
-			(eq, "$g_waiting_for_confirmation_to_terminate", 0),
-			(start_presentation, "prsnt_multiplayer_escape_menu"),
-		]),
+                (ti_escape_pressed, 0, 0, [],
+                [
+                        (neg|is_presentation_active, "prsnt_multiplayer_escape_menu"),
+                        (neg|is_presentation_active, "prsnt_multiplayer_stats_chart_deathmatch"),
+                        (eq, "$g_waiting_for_confirmation_to_terminate", 0),
+                        (start_presentation, "prsnt_multiplayer_escape_menu"),
+                ]),
         
-		(ti_on_agent_hit, 0, 0, [(multiplayer_is_server),],
-		[
+                (ti_on_agent_hit, 0, 0, [(multiplayer_is_server),],
+                [
             (multiplayer_is_server),
             
             (store_trigger_param_1, ":agent_no"),
@@ -14499,7 +14499,7 @@ mission_templates = [
               (try_end),
             (try_end),
         
-			(try_begin),
+                        (try_begin),
               (eq, reg0, "itm_knockdown_mace"),
               (agent_is_human, ":agent_no"),
               (agent_get_horse, ":horse", ":agent_no"),
@@ -14644,11 +14644,11 @@ mission_templates = [
             #    (try_end),
             #  (try_end),
             (try_end),
-		]),
+                ]),
         
-		# for leeching effects such as the doom jav and healing armour.
-		(2, 0, 0, [(multiplayer_is_server),],
-		[
+                # for leeching effects such as the doom jav and healing armour.
+                (2, 0, 0, [(multiplayer_is_server),],
+                [
           (multiplayer_is_server),
           (try_for_agents, ":agent_no"),
             (agent_is_active, ":agent_no"),
@@ -14693,9 +14693,9 @@ mission_templates = [
           (try_end),
             
 
-		]),
+                ]),
         
-	]),
+        ]),
   
   
   
@@ -14704,7 +14704,7 @@ mission_templates = [
 #INVASION MODE END
   
   (
-	"bandit_lair",mtf_battle_mode|mtf_synch_inventory,charge,
+        "bandit_lair",mtf_battle_mode|mtf_synch_inventory,charge,
     "Ambushing a bandit lair",
     [
       (0,mtef_team_0|mtef_use_exact_number,af_override_horse, aif_start_alarmed, 7,[]),
@@ -14748,14 +14748,14 @@ mission_templates = [
         (try_end),                
         ]),
         
-	   (0, 0, 0, 
-	   [	     
+           (0, 0, 0, 
+           [	     
          (party_get_template_id, ":template", "$g_encountered_party"),
          (eq, ":template", "pt_looter_lair"),
          (check_quest_active, "qst_save_relative_of_merchant"),	   
          (eq, "$relative_of_merchant_is_found", 0),
-	   ],
-	   [
+           ],
+           [
         (get_player_agent_no, ":player_agent"),
         (agent_get_position, pos0, ":player_agent"),
 
@@ -14769,7 +14769,7 @@ mission_templates = [
           #(assign, "$g_talk_troop", "trp_relative_of_merchant"),
           (start_mission_conversation, "trp_relative_of_merchant"),
         (try_end),
-	   ]),
+           ]),
         
       (ti_tab_pressed, 0, 0,
        [
@@ -14780,10 +14780,10 @@ mission_templates = [
        [
         (assign, "$defender_reinforcement_stage", 0),
         (assign, "$bandits_spawned_extra", 0),
-	   ]),
-	   
-	   (1, 0, 0, [],
-	   [
+           ]),
+           
+           (1, 0, 0, [],
+           [
         (try_for_agents, ":bandit_id"),
           (agent_is_alive, ":bandit_id"),          
           (agent_get_team, ":agent_team_1", ":bandit_id"),
@@ -14851,13 +14851,13 @@ mission_templates = [
             (agent_clear_scripted_mode, ":bandit_id"),            
           (try_end),
         (try_end),
-	   ]),
-	   
-	   (30, 0, 0, 
-	   [
-	     (le, "$defender_reinforcement_stage", 1),
-	   ],
-	   [          
+           ]),
+           
+           (30, 0, 0, 
+           [
+             (le, "$defender_reinforcement_stage", 1),
+           ],
+           [          
           (store_character_level, ":player_level", "trp_player"),                   
           (store_add, ":number_of_bandits_will_be_spawned_at_each_period", 5, ":player_level"),
           (val_div, ":number_of_bandits_will_be_spawned_at_each_period", 3),
@@ -15095,7 +15095,7 @@ mission_templates = [
       ]),
         
   (
-	"alley_fight", mtf_battle_mode,charge,
+        "alley_fight", mtf_battle_mode,charge,
     "Alley fight",
     [    
       (0,mtef_team_0|mtef_use_exact_number,af_override_horse,aif_start_alarmed,7,[]),
@@ -15124,11 +15124,11 @@ mission_templates = [
         (try_end),                
       ]),
               
-	   (0, 0, 0, 
-	   [
-	     (eq, "$talked_with_merchant", 0), 
-	   ],
-	   [
+           (0, 0, 0, 
+           [
+             (eq, "$talked_with_merchant", 0), 
+           ],
+           [
         (get_player_agent_no, ":player_agent"),
         (agent_get_position, pos0, ":player_agent"),
 
@@ -15142,7 +15142,7 @@ mission_templates = [
           (assign, "$talk_context", tc_back_alley),     
           (start_mission_conversation, ":troop_no"),
         (try_end),
-	   ]),
+           ]),
      
       (1, 0, 0, [], 
       [      
@@ -15313,7 +15313,7 @@ mission_templates = [
           (assign, ":continue", 1),
         (else_try),
           (ge, "$dialog_with_merchant_ended", 1),
-		  (neg|conversation_screen_is_active),          
+                  (neg|conversation_screen_is_active),          
 
           (try_begin),
             (eq, "$dialog_with_merchant_ended", 1),
@@ -15340,11 +15340,11 @@ mission_templates = [
         (tutorial_message_set_background, 1),
         (tutorial_message, "str_press_tab_to_exit_from_town"),
       ]),
-      	  	
+                
       (ti_before_mission_start, 0, 0, [], 
       [      
         #(call_script, "script_change_banners_and_chest"),
-	  ]),
+          ]),
 
       (ti_inventory_key_pressed, 0, 0, 
       [
@@ -15423,31 +15423,31 @@ mission_templates = [
       (20,mtef_visitor_source,af_override_horse,0,1,[]),
       (21,mtef_visitor_source|mtef_team_1,af_override_horse,0,1,[]),
       (22,mtef_visitor_source|mtef_team_1,af_override_horse,0,1,[]),
-	  (23,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
+          (23,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
       (24,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
-	  (25,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
-	  (26,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
-	  (27,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
-	  (28,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
-	  (29,mtef_visitor_source,af_override_horse,0,1,[]),
-	  (30,mtef_visitor_source,af_override_horse,0,1,[]), 
-	  (31,mtef_visitor_source,af_override_horse,0,1,[]), 
+          (25,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
+          (26,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
+          (27,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
+          (28,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #guard
+          (29,mtef_visitor_source,af_override_horse,0,1,[]),
+          (30,mtef_visitor_source,af_override_horse,0,1,[]), 
+          (31,mtef_visitor_source,af_override_horse,0,1,[]), 
       (32,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
-	  (33,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
-	  (34,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
-	  (35,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
-	  (36,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
-	  (37,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
-	  (38,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
-	  (39,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
+          (33,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
+          (34,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
+          (35,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
+          (36,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
+          (37,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
+          (38,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
+          (39,mtef_visitor_source|mtef_team_0,af_override_horse,0,1,[]), #town walker point
       (40,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
-	  (41,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
-	  (42,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
-	  (43,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
+          (41,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
+          (42,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
+          (43,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]), #in towns, can be used for guard reinforcements
       (44,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
-	  (45,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
-	  (46,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
-	  (47,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
+          (45,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
+          (46,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
+          (47,mtef_visitor_source|mtef_team_1,af_override_horse,aif_start_alarmed,1,[]),
     ],
     [
       common_battle_init_banner,
@@ -15470,8 +15470,8 @@ mission_templates = [
         (assign, "$number_of_civilian_loses", 0),
         
         (set_fixed_point_multiplier, 100),
-	  ]),
-		 
+          ]),
+                 
       (1, 0, ti_once, 
       [
         (call_script, "script_init_town_walker_agents"),
@@ -15502,23 +15502,23 @@ mission_templates = [
       (1, 0, 0, 
       [
         (lt, "$merchant_sign_count", 8),
-  	    (val_add, "$merchant_sign_count", 1),
-  	    
-  	    (try_begin),
-  	      (eq, "$merchant_sign_count", 2),
+            (val_add, "$merchant_sign_count", 1),
+            
+            (try_begin),
+              (eq, "$merchant_sign_count", 2),
           (get_player_agent_no, ":player_agent"),
-  	      (try_for_agents, ":agent_no"),
-  	        (agent_get_troop_id, ":agent_troop_id", ":agent_no"),
-  	        (ge, ":agent_troop_id", "trp_swadian_merchant"),
-  	        (lt, ":agent_troop_id", "trp_startup_merchants_end"),
-  	        
-  	        (assign, "$g_city_merchant_troop_id", ":agent_troop_id"),
-  	        (assign, "$g_city_merchant_agent_id", ":agent_no"),
-  	        
-  	        (agent_get_position, pos0, ":player_agent"),
-  	        (agent_get_position, pos1, ":agent_no"),
-  	                    
-  	        (assign, ":max_dif", -1000),
+              (try_for_agents, ":agent_no"),
+                (agent_get_troop_id, ":agent_troop_id", ":agent_no"),
+                (ge, ":agent_troop_id", "trp_swadian_merchant"),
+                (lt, ":agent_troop_id", "trp_startup_merchants_end"),
+                
+                (assign, "$g_city_merchant_troop_id", ":agent_troop_id"),
+                (assign, "$g_city_merchant_agent_id", ":agent_no"),
+                
+                (agent_get_position, pos0, ":player_agent"),
+                (agent_get_position, pos1, ":agent_no"),
+                            
+                (assign, ":max_dif", -1000),
             (try_for_range, ":target_entry_point", 0, 64),
               #(neg|entry_point_is_auto_generated, ":target_entry_point"),
               (entry_point_get_position, pos6, ":target_entry_point"),
@@ -15530,35 +15530,35 @@ mission_templates = [
               (copy_position, pos2, pos6),
               (assign, ":max_dif", ":dif"),
             (try_end),
-  	      	    
-    	    (agent_set_scripted_destination, ":agent_no", pos2, 0),
+                    
+            (agent_set_scripted_destination, ":agent_no", pos2, 0),
             (agent_set_speed_limit, ":agent_no", 10),
           (try_end),
         (else_try),
-  	      (eq, "$merchant_sign_count", 5),
-  	                 
+              (eq, "$merchant_sign_count", 5),
+                         
           (get_player_agent_no, ":player_agent"),
-	      (agent_get_position, pos0, ":player_agent"),
+              (agent_get_position, pos0, ":player_agent"),
 
-  	      (agent_set_scripted_destination, "$g_city_merchant_agent_id", pos0, 0),
+              (agent_set_scripted_destination, "$g_city_merchant_agent_id", pos0, 0),
           (agent_set_speed_limit, "$g_city_merchant_agent_id", 10),
         (else_try),
-  	      (eq, "$merchant_sign_count", 7),
-  	      
-  	      (agent_clear_scripted_mode, "$g_city_merchant_agent_id"),
-  	                 
-  	      (assign, "$talk_context", tc_town_talk),
-  	      (start_mission_conversation, "$g_city_merchant_troop_id"),  	        	      
-  	    (try_end),  	      
-  	  ], 
-	  []),
-	  
-	  (1, 0, 0, [],
-	  [	  
-	    (ge, "$merchant_sign_count", 8),
-	   
-	    (get_player_agent_no, ":player_agent"),
-	    	    
+              (eq, "$merchant_sign_count", 7),
+              
+              (agent_clear_scripted_mode, "$g_city_merchant_agent_id"),
+                         
+              (assign, "$talk_context", tc_town_talk),
+              (start_mission_conversation, "$g_city_merchant_troop_id"),  	        	      
+            (try_end),  	      
+          ], 
+          []),
+          
+          (1, 0, 0, [],
+          [	  
+            (ge, "$merchant_sign_count", 8),
+           
+            (get_player_agent_no, ":player_agent"),
+                    
         (try_for_agents, ":agent_no"),
           (neq, ":agent_no", ":player_agent"),
           (agent_is_alive, ":agent_no"),
@@ -15595,10 +15595,10 @@ mission_templates = [
       (3, 0, 0, 
       [
         (lt, "$merchant_sign_count", 8),
-  	    (call_script, "script_tick_town_walkers")
-  	  ], 
-	  []),	  	  
-	
+            (call_script, "script_tick_town_walkers")
+          ], 
+          []),	  	  
+        
       (2, 0, 0, 
       [
         (call_script, "script_center_ambiance_sounds")

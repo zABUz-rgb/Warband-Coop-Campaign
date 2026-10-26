@@ -94,35 +94,35 @@ triggers = [
   ],
    [
     (quest_get_slot, ":bandit_party", "qst_track_down_bandits", slot_quest_target_party),
-	(try_begin),
-		(party_is_active, ":bandit_party"),
-		(store_faction_of_party, ":bandit_party_faction", ":bandit_party"),
-		(neg|is_between, ":bandit_party_faction", kingdoms_begin, kingdoms_end), #ie, the party has not respawned as a non-bandit
-		
-		
-		(assign, ":spot_range", 8),
-		(try_begin),
-			(is_currently_night),
-			(assign, ":spot_range", 5),
-		(try_end),
-		
-		(try_for_parties, ":party"),
-			(gt, ":party", "p_spawn_points_end"),
-			
-			(store_faction_of_party, ":faction", ":party"),
-			(is_between, ":faction", kingdoms_begin, kingdoms_end),
-			
-			
-			(store_distance_to_party_from_party, ":distance", ":party", ":bandit_party"),
-			(lt, ":distance", ":spot_range"),
-			(try_begin),
-				(eq, "$cheat_mode", 1),
-				(str_store_party_name, s4, ":party"),
-				(display_message, "@{!}DEBUG -- Wanted bandits spotted by {s4}"),
-			(try_end),
-			
-			(call_script, "script_get_closest_center", ":bandit_party"),
-			(assign, ":nearest_center", reg0),
+        (try_begin),
+                (party_is_active, ":bandit_party"),
+                (store_faction_of_party, ":bandit_party_faction", ":bandit_party"),
+                (neg|is_between, ":bandit_party_faction", kingdoms_begin, kingdoms_end), #ie, the party has not respawned as a non-bandit
+                
+                
+                (assign, ":spot_range", 8),
+                (try_begin),
+                        (is_currently_night),
+                        (assign, ":spot_range", 5),
+                (try_end),
+                
+                (try_for_parties, ":party"),
+                        (gt, ":party", "p_spawn_points_end"),
+                        
+                        (store_faction_of_party, ":faction", ":party"),
+                        (is_between, ":faction", kingdoms_begin, kingdoms_end),
+                        
+                        
+                        (store_distance_to_party_from_party, ":distance", ":party", ":bandit_party"),
+                        (lt, ":distance", ":spot_range"),
+                        (try_begin),
+                                (eq, "$cheat_mode", 1),
+                                (str_store_party_name, s4, ":party"),
+                                (display_message, "@{!}DEBUG -- Wanted bandits spotted by {s4}"),
+                        (try_end),
+                        
+                        (call_script, "script_get_closest_center", ":bandit_party"),
+                        (assign, ":nearest_center", reg0),
 #			(try_begin),
 #				(get_party_ai_current_behavior, ":behavior", ":party"),
 #				(eq, ":behavior", ai_bhvr_attack_party),
@@ -131,13 +131,13 @@ triggers = [
 #				(eq, ":behavior", ai_bhvr_avoid_party),
 #				(call_script, "script_add_log_entry",  logent_party_runs_from_wanted_bandits, ":party",  ":nearest_center", ":bandit_party", -1),
 #			(else_try),
-			(call_script, "script_add_log_entry",  logent_party_spots_wanted_bandits, ":party",  ":nearest_center", ":bandit_party", -1),
+                        (call_script, "script_add_log_entry",  logent_party_spots_wanted_bandits, ":party",  ":nearest_center", ":bandit_party", -1),
 #			(try_end),
-		(try_end),
-	(else_try), #Party not found
-		(display_message, "str_bandits_eliminated_by_another"),
+                (try_end),
+        (else_try), #Party not found
+                (display_message, "str_bandits_eliminated_by_another"),
         (call_script, "script_abort_quest", "qst_track_down_bandits", 0),
-	(try_end),
+        (try_end),
    ]),
 
 
@@ -1240,7 +1240,7 @@ triggers = [
                    (neq, ":cur_eliminated_by_player", "$qst_troublesome_bandits_eliminated_by_player"),
                    ],
                   [(call_script, "script_succeed_quest", "qst_troublesome_bandits"),]),
-				  
+                                  
 # Kidnapped girl:
    (1, 0, 0,
    [(check_quest_active, "qst_kidnapped_girl"),
@@ -1374,28 +1374,28 @@ triggers = [
 
 
 #Check for political issues
-			(try_begin), #does npc's opponent pipe up?
-				(troop_slot_ge, ":npc", slot_troop_days_on_mission, 5),
-				(troop_slot_eq, ":npc", slot_troop_current_mission, npc_mission_kingsupport),
+                        (try_begin), #does npc's opponent pipe up?
+                                (troop_slot_ge, ":npc", slot_troop_days_on_mission, 5),
+                                (troop_slot_eq, ":npc", slot_troop_current_mission, npc_mission_kingsupport),
 
-				(troop_get_slot, ":other_npc", ":npc", slot_troop_kingsupport_opponent),
-				(troop_slot_eq, ":other_npc", slot_troop_kingsupport_objection_state, 0),
-				
-				(troop_set_slot, ":other_npc", slot_troop_kingsupport_objection_state, 1),
-				
-				(str_store_troop_name, s3, ":npc"),
-				(str_store_troop_name, s4, ":other_npc"),
+                                (troop_get_slot, ":other_npc", ":npc", slot_troop_kingsupport_opponent),
+                                (troop_slot_eq, ":other_npc", slot_troop_kingsupport_objection_state, 0),
+                                
+                                (troop_set_slot, ":other_npc", slot_troop_kingsupport_objection_state, 1),
+                                
+                                (str_store_troop_name, s3, ":npc"),
+                                (str_store_troop_name, s4, ":other_npc"),
 
-				(try_begin),
-					(eq, "$cheat_mode", 1),
-					(display_message, "str_s4_ready_to_voice_objection_to_s3s_mission_if_in_party"),
-				(try_end),
-			(try_end),
+                                (try_begin),
+                                        (eq, "$cheat_mode", 1),
+                                        (display_message, "str_s4_ready_to_voice_objection_to_s3s_mission_if_in_party"),
+                                (try_end),
+                        (try_end),
 
-			#Check for quitting
+                        #Check for quitting
             (try_begin),
                 (main_party_has_troop, ":npc"),
-				
+                                
                 (call_script, "script_npc_morale", ":npc"),
                 (assign, ":npc_morale", reg0),
 
@@ -1407,7 +1407,7 @@ triggers = [
                     (assign, "$npc_is_quitting", ":npc"),
                 (try_end),
 
-				#Reduce grievance over time (or augment, if party is overcrowded
+                                #Reduce grievance over time (or augment, if party is overcrowded
                 (troop_get_slot, ":grievance", ":npc", slot_troop_personalityclash_penalties),
                 (val_mul, ":grievance", 90),
                 (val_div, ":grievance", ":grievance_divisor"),
@@ -1419,7 +1419,7 @@ triggers = [
                 (troop_set_slot, ":npc", slot_troop_morality_penalties, ":grievance"),
 
 
-				#Change personality grievance levels
+                                #Change personality grievance levels
                 (try_begin),
                     (this_or_next|troop_slot_ge, ":npc", slot_troop_personalityclash_state, 1),
                         (eq, "$disable_npc_complaints", 1),
@@ -1446,10 +1446,10 @@ triggers = [
                 (try_end),
 
 
-				
+                                
 #Check for new personality clashes
 
-				#Active personality clash 1 if at least 24 hours have passed
+                                #Active personality clash 1 if at least 24 hours have passed
                 (try_begin),
                     (eq, "$disable_npc_complaints", 0),
                     (eq, "$npc_with_personality_clash", 0),
@@ -1461,34 +1461,34 @@ triggers = [
                     (assign, "$personality_clash_after_24_hrs", ":npc"),
                 (try_end),
 
-				#Personality clash 2 and personality match is triggered by battles
-				(try_begin),
-					(eq, "$npc_with_political_grievance", 0),
-				
-					(troop_slot_eq, ":npc", slot_troop_kingsupport_objection_state, 1),
-					(assign, "$npc_with_political_grievance", ":npc"),
-				(try_end),
+                                #Personality clash 2 and personality match is triggered by battles
+                                (try_begin),
+                                        (eq, "$npc_with_political_grievance", 0),
+                                
+                                        (troop_slot_eq, ":npc", slot_troop_kingsupport_objection_state, 1),
+                                        (assign, "$npc_with_political_grievance", ":npc"),
+                                (try_end),
 
-			#main party does not have troop, and the troop is a companion
-			(else_try), 
-				(neg|main_party_has_troop, ":npc"),
-				(eq, ":occupation", slto_player_companion),
+                        #main party does not have troop, and the troop is a companion
+                        (else_try), 
+                                (neg|main_party_has_troop, ":npc"),
+                                (eq, ":occupation", slto_player_companion),
 
-				
-				(troop_get_slot, ":days_on_mission", ":npc", slot_troop_days_on_mission),
-				(try_begin),
-					(gt, ":days_on_mission", 0),
-					(val_sub, ":days_on_mission", 1),
-					(troop_set_slot, ":npc", slot_troop_days_on_mission, ":days_on_mission"),
-				(else_try), 
-					(troop_slot_ge, ":npc", slot_troop_current_mission, 1),
-					
-					#If the hero can join
-					(this_or_next|neg|troop_slot_eq, ":npc", slot_troop_current_mission, npc_mission_rejoin_when_possible),
-						(hero_can_join, ":npc"),
-						
-					(assign, "$npc_to_rejoin_party", ":npc"),
-				(try_end),
+                                
+                                (troop_get_slot, ":days_on_mission", ":npc", slot_troop_days_on_mission),
+                                (try_begin),
+                                        (gt, ":days_on_mission", 0),
+                                        (val_sub, ":days_on_mission", 1),
+                                        (troop_set_slot, ":npc", slot_troop_days_on_mission, ":days_on_mission"),
+                                (else_try), 
+                                        (troop_slot_ge, ":npc", slot_troop_current_mission, 1),
+                                        
+                                        #If the hero can join
+                                        (this_or_next|neg|troop_slot_eq, ":npc", slot_troop_current_mission, npc_mission_rejoin_when_possible),
+                                                (hero_can_join, ":npc"),
+                                                
+                                        (assign, "$npc_to_rejoin_party", ":npc"),
+                                (try_end),
             (try_end),
         (try_end),
     ]),
@@ -1508,16 +1508,16 @@ triggers = [
        (try_for_range, ":i_slot", 0, ":inv_cap"),
          (troop_get_inventory_slot, ":item_id", ":companion", ":i_slot"),
 
-		 (ge, ":item_id", 0),
+                 (ge, ":item_id", 0),
 
-	 	 (this_or_next|eq, ":item_id", "itm_great_sword"),
-	 	 (this_or_next|eq, ":item_id", "itm_sword_two_handed_a"),
-		 (eq, ":item_id", "itm_strange_great_sword"),
-		 		 
-		 (unlock_achievement, ACHIEVEMENT_LADY_OF_THE_LAKE),
-		 (assign, ":inv_cap", 0),
-	   (try_end),
-	 (try_end),
+                 (this_or_next|eq, ":item_id", "itm_great_sword"),
+                 (this_or_next|eq, ":item_id", "itm_sword_two_handed_a"),
+                 (eq, ":item_id", "itm_strange_great_sword"),
+                                 
+                 (unlock_achievement, ACHIEVEMENT_LADY_OF_THE_LAKE),
+                 (assign, ":inv_cap", 0),
+           (try_end),
+         (try_end),
     ],
    []
    ),

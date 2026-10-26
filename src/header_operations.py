@@ -19,10 +19,10 @@ else_try_begin    = 5 # deprecated, use else_try instead
 else_try          = 5 # (else_try),
 
 try_for_range     = 6 # Works like a for loop from lower-bound up to (upper-bound - 1)
-		      # (try_for_range,<destination>,<lower_bound>,<upper_bound>),
+                      # (try_for_range,<destination>,<lower_bound>,<upper_bound>),
 
 try_for_range_backwards = 7	# Same as above but starts from (upper-bound - 1) down-to lower bound.
-				# (try_for_range_backwards,<destination>,<lower_bound>,<upper_bound>),
+                                # (try_for_range_backwards,<destination>,<lower_bound>,<upper_bound>),
 try_for_parties   = 11	# (try_for_parties,<destination>),
 try_for_agents    = 12	# (try_for_agents, <destination>, [<position_no>], [<radius_fixed_point>]), #avoid using pos0
 try_for_prop_instances = 16 # (try_for_prop_instances, <destination>, [<scene_prop_id>]), # if scene_prop_id is not given, it loops through all prop instances.
@@ -298,7 +298,7 @@ store_last_sound_channel        = 615 # (store_last_sound_channel, <destination>
 stop_sound_channel              = 616 # (stop_sound_channel, <sound_channel_no>),
 
 copy_position                   = 700 # copies position_no_2 to position_no_1
-				      # (copy_position,<position_no_1>,<position_no_2>),
+                                      # (copy_position,<position_no_1>,<position_no_2>),
 init_position                   = 701 # (init_position,<position_no>),
 get_trigger_object_position     = 702 # (get_trigger_object_position,<position_no>),
 
@@ -317,7 +317,7 @@ position_transform_position_to_local        = 717 # (position_transform_position
 position_copy_rotation          = 718 # (position_copy_rotation,<position_no_1>,<position_no_2>), copies rotation of position_no_2 to position_no_1
 position_copy_origin            = 719 # (position_copy_origin,<position_no_1>,<position_no_2>), copies origin of position_no_2 to position_no_1
 position_move_x                 = 720 # movement is in cms, [0 = local; 1=global]
-				      # (position_move_x,<position_no>,<movement>,[value]),
+                                      # (position_move_x,<position_no>,<movement>,[value]),
 position_move_y                 = 721 # (position_move_y,<position_no>,<movement>,[value]),
 position_move_z                 = 722 # (position_move_z,<position_no>,<movement>,[value]),
 
@@ -461,7 +461,7 @@ add_gold_as_xp                  = 1063 # (add_gold_as_xp,<value>,[troop_id]),
 add_xp_as_reward                = 1064 # (add_xp_as_reward,<value>),
 
 add_gold_to_party               = 1070 # party_id should be different from 0
-			       # (add_gold_to_party,<value>,<party_id>),
+                               # (add_gold_to_party,<value>,<party_id>),
 
 set_party_creation_random_limits= 1080 # (set_party_creation_random_limits, <min_value>, <max_value>), (values should be between 0, 100)
 
@@ -474,7 +474,7 @@ quest_set_note_available        = 1098 # (quest_set_note_available, <quest_id>, 
 
 #1090-1091-1092 is taken, see below (info_page)
 spawn_around_party              = 1100 # ID of spawned party is put into reg(0)
-			       # (spawn_around_party,<party_id>,<party_template_id>),
+                               # (spawn_around_party,<party_id>,<party_template_id>),
 set_spawn_radius                = 1103 # (set_spawn_radius,<value>),
 
 display_debug_message           = 1104 # (display_debug_message,<string_id>,[hex_colour_code]), #displays message only in debug mode, but writes to rgl_log.txt in both release and debug modes when edit mode is enabled
@@ -574,11 +574,11 @@ end_current_battle         = 1307 # (end_current_battle),
 
 
 set_mercenary_source_party = 1320 # selects party from which to buy mercenaries
-				   # (set_mercenary_source_party,<party_id>),
+                                   # (set_mercenary_source_party,<party_id>),
 
 
 set_merchandise_modifier_quality = 1490	        # Quality rate in percentage (average quality = 100),
-						# (set_merchandise_modifier_quality,<value>),
+                                                # (set_merchandise_modifier_quality,<value>),
 set_merchandise_max_value = 1491		# (set_merchandise_max_value,<value>),
 reset_item_probabilities = 1492		        # (reset_item_probabilities),
 set_item_probability_in_merchandise = 1493	# (set_item_probability_in_merchandise,<itm_id>,<value>),
@@ -605,7 +605,7 @@ troop_raise_attribute                  = 1520	# (troop_raise_attribute,<troop_id
 troop_raise_skill                      = 1521	# (troop_raise_skill,<troop_id>,<skill_id>,<value>),
 troop_raise_proficiency                = 1522	# (troop_raise_proficiency,<troop_id>,<proficiency_no>,<value>),
 troop_raise_proficiency_linear         = 1523	# raises weapon proficiencies linearly without being limited by weapon master skill
-						# (troop_raise_proficiency,<troop_id>,<proficiency_no>,<value>),
+                                                # (troop_raise_proficiency,<troop_id>,<proficiency_no>,<value>),
 
 troop_add_proficiency_points           = 1525   # (troop_add_proficiency_points,<troop_id>,<value>),					
 troop_add_gold                         = 1528	# (troop_add_gold,<troop_id>,<value>),
@@ -655,13 +655,13 @@ party_force_add_members                = 1613	# (party_force_add_members,<party_
 party_force_add_prisoners              = 1614	# (party_force_add_prisoners,<party_id>,<troop_id>,<number>),
 
 party_remove_members                   = 1615	# stores number removed to reg0
-						# (party_remove_members,<party_id>,<troop_id>,<number>),
+                                                # (party_remove_members,<party_id>,<troop_id>,<number>),
 party_remove_prisoners                 = 1616	# stores number removed to reg0
-						# (party_remove_members,<party_id>,<troop_id>,<number>),
+                                                # (party_remove_members,<party_id>,<troop_id>,<number>),
 party_clear                            = 1617	# (party_clear,<party_id>),
 party_wound_members                    = 1618	# (party_wound_members,<party_id>,<troop_id>,<number>),
 party_remove_members_wounded_first     = 1619	# stores number removed to reg0
-						# (party_remove_members_wounded_first,<party_id>,<troop_id>,<number>),
+                                                # (party_remove_members_wounded_first,<party_id>,<troop_id>,<number>),
 
 party_set_faction                      = 1620	# (party_set_faction,<party_id>,<faction_id>),
 party_relocate_near_party              = 1623	# (party_relocate_near_party,<party_id>,<target_party_id>,<value_spawn_radius>),
@@ -780,9 +780,9 @@ agent_get_troop_id                     = 1718	# (agent_get_troop_id,<destination
 agent_get_item_id                      = 1719	# (agent_get_item_id,<destination>, <agent_id>), (works only for horses, returns -1 otherwise)
 
 store_agent_hit_points                 = 1720	# set absolute to 1 to retrieve actual hps, otherwise will return relative hp in range [0..100]
-						# (store_agent_hit_points,<destination>,<agent_id>,[absolute]),
+                                                # (store_agent_hit_points,<destination>,<agent_id>,[absolute]),
 agent_set_hit_points                   = 1721	# set absolute to 1 if value is absolute, otherwise value will be treated as relative number in range [0..100]
-						# (agent_set_hit_points,<agent_id>,<value>,[absolute]),
+                                                # (agent_set_hit_points,<agent_id>,<value>,[absolute]),
 agent_deliver_damage_to_agent          = 1722	# (agent_deliver_damage_to_agent, <agent_id_deliverer>, <agent_id>, <value>, [item_id]), #if value <= 0, then damage will be calculated using the weapon item. # item_id is the item that the damage is delivered. can be ignored.
 agent_get_kill_count                   = 1723   # (agent_get_kill_count,<destination>,<agent_id>,[get_wounded]), #Set second value to non-zero to get wounded count
 agent_get_player_id                    = 1724   # (agent_get_player_id,<destination>,<agent_id>),
@@ -995,7 +995,7 @@ mission_tpl_entry_add_override_item    = 1942   # (mission_tpl_entry_add_overrid
 mission_tpl_are_all_agents_spawned     = 1943   # (mission_tpl_are_all_agents_spawned), #agents >300 may keep spawning after ti_after_mission_start (still fires .1 second too early)
 
 set_current_color                      = 1950	# red, green, blue: a value of 255 means 100%
-					          # (set_current_color,<value>,<value>,<value>),
+                                                  # (set_current_color,<value>,<value>,<value>),
 set_position_delta                     = 1955	# x, y, z
                                                   # (set_position_delta,<value>,<value>,<value>),
 add_point_light                        = 1960	# (add_point_light,[flicker_magnitude],[flicker_interval]), #flicker_magnitude between 0 and 100, flicker_interval is in 1/100 seconds
@@ -1122,7 +1122,7 @@ agent_ai_get_behavior_target           = 2082 # (agent_ai_get_behavior_target, <
 agent_ai_set_can_crouch                = 2083 # (agent_ai_set_can_crouch, <agent_id>, <value>), # 0 for false, 1 for true.
 
 agent_set_max_hit_points               = 2090	# set absolute to 1 if value is absolute, otherwise value will be treated as relative number in range [0..100]
-						# (agent_set_max_hit_points,<agent_id>,<value>,[absolute]),
+                                                # (agent_set_max_hit_points,<agent_id>,<value>,[absolute]),
 agent_set_damage_modifier              = 2091   # (agent_set_damage_modifier, <agent_id>, <value>), # value is in percentage, 100 is default
 agent_set_accuracy_modifier            = 2092   # (agent_set_accuracy_modifier, <agent_id>, <value>), # value is in percentage, 100 is default, value can be between [0..1000]
 agent_set_speed_modifier               = 2093   # (agent_set_speed_modifier, <agent_id>, <value>), # value is in percentage, 100 is default, value can be between [0..1000]
@@ -1137,42 +1137,42 @@ val_lshift             = 2100 # (val_lshift, <destination>, <value>), # shifts t
 val_rshift             = 2101 # (val_rshift, <destination>, <value>), # shifts the bits of destination to right by value amount.
 
 val_add                = 2105	#dest, operand ::       dest = dest + operand
-				# (val_add,<destination>,<value>),
+                                # (val_add,<destination>,<value>),
 val_sub                = 2106	#dest, operand ::       dest = dest + operand
-				# (val_sub,<destination>,<value>),
+                                # (val_sub,<destination>,<value>),
 val_mul                = 2107	#dest, operand ::       dest = dest * operand
-				# (val_mul,<destination>,<value>),
+                                # (val_mul,<destination>,<value>),
 val_div                = 2108	#dest, operand ::       dest = dest / operand
-				# (val_div,<destination>,<value>),
+                                # (val_div,<destination>,<value>),
 val_mod                = 2109	#dest, operand ::       dest = dest mod operand
-				# (val_mod,<destination>,<value>),
+                                # (val_mod,<destination>,<value>),
 val_min                = 2110	#dest, operand ::       dest = min(dest, operand)
-				# (val_min,<destination>,<value>),
+                                # (val_min,<destination>,<value>),
 val_max                = 2111	#dest, operand ::       dest = max(dest, operand)
-				# (val_max,<destination>,<value>),
+                                # (val_max,<destination>,<value>),
 val_clamp              = 2112	#dest, operand ::       dest = max(min(dest,<upper_bound> - 1),<lower_bound>)
-				# (val_clamp,<destination>,<lower_bound>, <upper_bound>),
+                                # (val_clamp,<destination>,<lower_bound>, <upper_bound>),
 val_abs                = 2113  #dest          ::       dest = abs(dest)
                                 # (val_abs,<destination>),
 val_or                 = 2114   #dest, operand ::       dest = dest | operand
-				# (val_or,<destination>,<value>),
+                                # (val_or,<destination>,<value>),
 val_and                = 2115   #dest, operand ::       dest = dest & operand
-				# (val_and,<destination>,<value>),
+                                # (val_and,<destination>,<value>),
 store_or               = 2116   #dest, op1, op2 :      dest = op1 | op2
                                 # (store_or,<destination>,<value>,<value>),
 store_and              = 2117   #dest, op1, op2 :      dest = op1 & op2
                                 # (store_and,<destination>,<value>,<value>),
 
 store_mod              = 2119	#dest, op1, op2 :      dest = op1 % op2
-				# (store_mod,<destination>,<value>,<value>),
+                                # (store_mod,<destination>,<value>,<value>),
 store_add              = 2120	#dest, op1, op2 :      dest = op1 + op2
-				# (store_add,<destination>,<value>,<value>),
+                                # (store_add,<destination>,<value>,<value>),
 store_sub              = 2121	#dest, op1, op2 :      dest = op1 - op2
-				# (store_sub,<destination>,<value>,<value>),
+                                # (store_sub,<destination>,<value>,<value>),
 store_mul              = 2122	#dest, op1, op2 :      dest = op1 * op2
-				# (store_mul,<destination>,<value>,<value>),
+                                # (store_mul,<destination>,<value>,<value>),
 store_div              = 2123	#dest, op1, op2 :      dest = op1 / op2
-				# (store_div,<destination>,<value>,<value>),
+                                # (store_div,<destination>,<value>,<value>),
 
 set_fixed_point_multiplier      = 2124 # (set_fixed_point_multiplier, <value>),
                                         # sets the precision of the values that are named as value_fixed_point or destination_fixed_point.
@@ -1189,12 +1189,12 @@ convert_to_fixed_point = 2130  # (convert_to_fixed_point, <destination_fixed_poi
 convert_from_fixed_point= 2131 # (convert_from_fixed_point, <destination>), divides the value with the fixed point multiplier
 
 assign                 = 2133	# had to put this here so that it can be called from conditions.
-				# (assign,<destination>,<value>),
+                                # (assign,<destination>,<value>),
 shuffle_range          = 2134	# (shuffle_range,<reg_no>,<reg_no>),
 
 store_random           = 2135	# deprecated, use store_random_in_range instead.
 store_random_in_range  = 2136	# gets random number in range [range_low,range_high] excluding range_high 
-				# (store_random_in_range,<destination>,<range_low>,<range_high>),
+                                # (store_random_in_range,<destination>,<range_low>,<range_high>),
 
 store_asin             = 2140  # (store_asin, <destination_fixed_point>, <value_fixed_point>),
 store_acos             = 2141  # (store_acos, <destination_fixed_point>, <value_fixed_point>),
@@ -1228,7 +1228,7 @@ store_troop_health              = 2175	# (store_troop_health,<destination>,<troo
 
 store_proficiency_level         = 2176	# (store_proficiency_level,<destination>,<troop_id>,<attribute_id>),
 
-					# (store_troop_health,<destination>,<troop_id>,[absolute]),
+                                        # (store_troop_health,<destination>,<troop_id>,[absolute]),
 store_relation                  = 2190	# (store_relation,<destination>,<faction_id_1>,<faction_id_2>),
 set_conversation_speaker_troop  = 2197  # (set_conversation_speaker_troop, <troop_id>),
                                         # Allows to dynamically switch speaking troops during the dialog when developer doesn't know in advance who will be doing the speaking. Should be placed in post-talk code section of dialog entry.
@@ -1262,7 +1262,7 @@ store_random_troop_to_raise     = 2251 # (store_random_troop_to_raise,<destinati
 store_random_troop_to_capture   = 2252	# (store_random_troop_to_capture,<destination>,<lower_bound>,<upper_bound>),
 store_random_party_in_range     = 2254	# (store_random_party_in_range,<destination>,<lower_bound>,<upper_bound>),
 store01_random_parties_in_range = 2255 # stores two random, different parties in a range to reg0 and reg1.
-					# (store01_random_parties_in_range,<lower_bound>,<upper_bound>),
+                                        # (store01_random_parties_in_range,<lower_bound>,<upper_bound>),
 store_random_horse              = 2257	# (store_random_horse,<destination>)
 store_random_equipment          = 2258	# (store_random_equipment,<destination>)
 store_random_armor              = 2259	# (store_random_armor,<destination>)
@@ -1292,7 +1292,7 @@ store_num_parties_destroyed_by_player = 2302	# (store_num_parties_destroyed_by_p
 # Searching operations.
 store_num_parties_of_template   = 2310	# (store_num_parties_of_template,<destination>,<party_template_id>),
 store_random_party_of_template  = 2311	# fails if no party exists with tempolate_id (expensive)
-					# (store_random_party_of_template,<destination>,<party_template_id>),
+                                        # (store_random_party_of_template,<destination>,<party_template_id>),
 
 str_is_empty                    = 2318 # (str_is_empty, <string_register>),
 str_clear                       = 2319 # (str_clear, <string_register>)
@@ -1438,7 +1438,7 @@ lhs_operations = [try_for_range,
                   store_script_param_2,
                   store_script_param,
                   store_repeat_object,
-				  get_operation_set_version,
+                                  get_operation_set_version,
                   get_global_cloud_amount,
                   get_global_haze_amount,
                   options_get_damage_to_player,
@@ -1446,7 +1446,7 @@ lhs_operations = [try_for_range,
                   options_get_combat_ai,
                   options_get_campaign_ai,
                   options_get_combat_speed,
-				  options_get_battle_size,
+                                  options_get_battle_size,
                   profile_get_banner_id,
                   get_achievement_stat,
                   get_max_players,
@@ -1736,10 +1736,10 @@ lhs_operations = [try_for_range,
                   store_defender_count,
                   store_attacker_count,
                   store_normalized_team_count,
-				  prop_instance_get_current_deform_progress,
-				  prop_instance_get_current_deform_frame,
-				  agent_ai_get_num_cached_enemies,
-				  agent_ai_get_cached_enemy,
+                                  prop_instance_get_current_deform_progress,
+                                  prop_instance_get_current_deform_frame,
+                                  agent_ai_get_num_cached_enemies,
+                                  agent_ai_get_cached_enemy,
                   item_get_weight,
                   item_get_value,
                   item_get_difficulty,
@@ -1889,12 +1889,12 @@ can_fail_operations = [ge,
                        agent_has_item_equipped,
                        map_get_land_position_around_position,
                        map_get_water_position_around_position,
-					   mission_tpl_are_all_agents_spawned,
+                                           mission_tpl_are_all_agents_spawned,
                        is_zoom_disabled,
                        is_currently_night,
                        store_random_party_of_template,
                        str_is_empty,
-					   item_has_property,
+                                           item_has_property,
                        item_has_capability,
                        item_has_modifier,
                        item_has_faction
