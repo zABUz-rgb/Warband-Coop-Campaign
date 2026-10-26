@@ -622,5 +622,9 @@ script_cf_freelancer_player_can_upgrade = 620
 script_freelancer_equip_troop = 621
 script_freelancer_unequip_troop = 622
 script_troop_can_use_item = 623
+script_game_get_party_speed_multiplier = 624
+script_coop_battle_ceasefire = 625
+script_coop_end_battle_prep = 626
+script_coop_evict_from_town = 627
 
 
