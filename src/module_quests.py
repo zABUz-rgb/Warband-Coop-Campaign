@@ -413,3 +413,7 @@ quests = [
   
  ("quests_end", "Quests End", 0, "{!}."),
 ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("quests", quests)

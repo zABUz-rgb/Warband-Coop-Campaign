@@ -14510,3 +14510,7 @@ game_menus = [
 
   
  ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("game_menus", game_menus)

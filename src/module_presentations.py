@@ -13619,3 +13619,7 @@ presentations = [
     #INVASION MODE END
 
   ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("presentations", presentations)

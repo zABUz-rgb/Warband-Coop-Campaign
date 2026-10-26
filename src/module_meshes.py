@@ -612,3 +612,7 @@ meshes = [
   ("ccoop_mounted_class", 0, "ccoop_mounted_class", 0, 0, 0, 0, 0, 0, 1, 1, 1),
 #INVASION MODE END
 ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("meshes", meshes)

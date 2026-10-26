@@ -608,5 +608,19 @@ script_coop_drop_item = 606
 script_cf_coop_give_item_to_assigned_group_member = 607
 script_add_player_to_cur_tableau_for_coop = 608
 script_add_troop_to_cur_tableau_for_coop = 609
+script_freelancer_attach_party = 610
+script_freelancer_detach_party = 611
+script_event_player_enlists = 612
+script_event_player_discharge = 613
+script_event_player_vacation = 614
+script_event_player_returns_vacation = 615
+script_event_player_deserts = 616
+script_party_restore = 617
+script_get_desert_troops = 618
+script_freelancer_keep_field_loot = 619
+script_cf_freelancer_player_can_upgrade = 620
+script_freelancer_equip_troop = 621
+script_freelancer_unequip_troop = 622
+script_troop_can_use_item = 623
 
 

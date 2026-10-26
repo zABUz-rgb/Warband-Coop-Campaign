@@ -26285,3 +26285,7 @@ I suppose there are plenty of bounty hunters around to get the job done . . .", 
   [anyone|plyr,"free", [[neg|in_meta_mission]], " [Leave]", "close_window",[]],
 #  [anyone,"free", [], "NO MATCHING SENTENCE!", "close_window",[]],
 ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("dialogs", dialogs)

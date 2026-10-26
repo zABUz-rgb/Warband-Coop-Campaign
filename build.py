@@ -31,7 +31,8 @@ def main():
         out = (r.stdout + r.stderr).strip()
         if out:
             print(out)
-        if r.returncode != 0 or "Traceback" in out:
+        # the compiler only prints errors (unknown ids, unassigned locals) and keeps going
+        if r.returncode != 0 or "Traceback" in out or "error" in out.lower():
             print(f"BUILD FAILED at {step}")
             sys.exit(1)
     print("BUILD OK")

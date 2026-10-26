@@ -154,3 +154,7 @@ party_templates = [
 
   ("leaded_looters","Band of robbers",icon_axeman|carries_goods(8)|pf_quest_party,0,fac_neutral,bandit_personality,[(trp_looter_leader,1,1),(trp_looter,3,3)]),
 ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("party_templates", party_templates)

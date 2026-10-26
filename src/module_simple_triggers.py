@@ -4051,3 +4051,7 @@ simple_triggers = [
   (24,
    []),
 ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("simple_triggers", simple_triggers)

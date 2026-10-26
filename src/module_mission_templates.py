@@ -16012,3 +16012,7 @@ mission_templates = [
 
 
 ]
+
+# CoopWorld merge hook
+import coop_mods
+coop_mods.merge("mission_templates", mission_templates, common_battle_mission_start=common_battle_mission_start)
