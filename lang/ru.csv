@@ -223,3 +223,5 @@ quick_strings|qstr_CoopWorld:_your_hero|CoopWorld: ваш герой пал в �
 quick_strings|qstr_CoopWorld:_your_hero_|CoopWorld: ваш герой выходит из совместного боя с {reg1}% здоровья.
 quick_strings|qstr_CoopWorld:_you_take_|CoopWorld: вы берёте в плен {reg1} бойцов побеждённой стороны.
 quick_strings|qstr_^^Your_name_on_the_b|^^На сервере боя ваше имя должно быть {s3} (Мультиплеер - Профили): тогда ваши солдаты будут вас слушаться.
+quick_strings|qstr_CoopWorld:_in_co_op_|CoopWorld: в кооперативе владения пока получает только хост. {s1} остаётся за своим лордом в общем мире; ваша присяга, звание и отношения остаются при вас.
+quick_strings|qstr_CoopWorld:_a_call_to|CoopWorld: вас зовут в бой против ваших союзников ({s1}) — приглашение отклонено.

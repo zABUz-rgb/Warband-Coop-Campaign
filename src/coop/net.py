@@ -13,7 +13,7 @@ from header_parties import (ai_bhvr_hold, ai_bhvr_travel_to_point, ai_bhvr_patro
                             ai_bhvr_escort_party)
 from coop.constants import *
 
-# server reply layout (slots of p_coop_buf): 7777|1|pause|joins|np|(slot,x,y)*np|kind|payload...
+# server reply layout (slots of p_coop_buf): 7777|1|pause|joins|np|(slot,x,y,kingdom)*np|kind|payload...
 SRV_PAUSE, SRV_JOINS, SRV_NUM_PLAYERS, SRV_PLAYERS = 2, 3, 4, 5
 # client reply layout
 CLI_COUNT, CLI_ENTRIES = 2, 3                  # kind 2: positions
@@ -44,6 +44,16 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
+  # script_coop_player_kingdom: reg0 = the kingdom the player serves, 0 for none (or the player's own)
+  ("coop_player_kingdom",
+   [
+     (assign, reg0, 0),
+     (try_begin),
+       (is_between, "$players_kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+       (assign, reg0, "$players_kingdom"),
+     (try_end),
+    ]),
+
   # script_coop_host_player_request: s10 = the host's own player request (the world server the
   # host plays in). s17: a joint battle's cancel or decline. srvp: this player is the server's own
   # party, so the server shows no puppet for it.
@@ -69,7 +79,9 @@ def net_scripts(first_dynamic):
        (map_free),
        (assign, reg6, 1),
      (try_end),
-     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy=0&srvp=1{s17}{s14}"),
+     (call_script, "script_coop_player_kingdom"),
+     (assign, reg8, reg0),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy=0&srvp=1&fac={reg8}{s17}{s14}"),
     ]),
 
   # script_coop_become_client: the world simulation stops here; parties follow the server.
@@ -331,8 +343,17 @@ def net_scripts(first_dynamic):
        (val_add, ":base", 1),
        (party_get_slot, ":y", "p_coop_buf", ":base"),
        (val_add, ":base", 1),
+       (party_get_slot, ":kingdom", "p_coop_buf", ":base"),
+       (val_add, ":base", 1),
        (is_between, ":slot", 0, coop_max_players),
        (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+       # the player's kingdom: its lords leave the player alone, its enemies hunt the player
+       (try_begin),
+         (is_between, ":kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+         (party_set_faction, ":puppet", ":kingdom"),
+       (else_try),
+         (party_set_faction, ":puppet", "fac_player_faction"),
+       (try_end),
        (val_sub, ":x", coop_net_offset),
        (val_sub, ":y", coop_net_offset),
        (init_position, pos1),
@@ -346,7 +367,7 @@ def net_scripts(first_dynamic):
        (party_slot_eq, ":puppet", slot_party_coop_sid, 0),
        (disable_party, ":puppet"), #that player left
      (try_end),
-     (store_mul, reg0, ":num_players", 3),
+     (store_mul, reg0, ":num_players", 4),
      (val_add, reg0, SRV_PLAYERS),
     ]),
 
@@ -401,6 +422,7 @@ def net_scripts(first_dynamic):
      (party_get_slot, ":x", "p_coop_buf", 3),
      (party_get_slot, ":y", "p_coop_buf", 4),
      (party_get_slot, ":size", "p_coop_buf", 5),
+     (party_get_slot, ":kingdom", "p_coop_buf", 6),
      (try_begin),
        (is_between, ":slot", 0, coop_max_players),
        (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
@@ -434,6 +456,13 @@ def net_scripts(first_dynamic):
        (try_begin),
          (ge, ":num_strings", 1),
          (party_set_name, ":puppet", s0),
+       (try_end),
+       # whom that player serves shows on the map (a player without a kingdom is a friend)
+       (try_begin),
+         (is_between, ":kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+         (party_set_faction, ":puppet", ":kingdom"),
+       (else_try),
+         (party_set_faction, ":puppet", "fac_player_supporters_faction"),
        (try_end),
        # its size shows on the map: one stack of the right size is enough for a party seen from afar
        (try_begin),

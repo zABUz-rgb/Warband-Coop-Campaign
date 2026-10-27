@@ -25,15 +25,17 @@ the player there by it, so each player's soldiers obey that player; without it, 
 World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...]   or  /srv?seq=S&hold=1
     d: spawned parties: position, where the party is heading (tx,ty), and the party it is inside
        (a town) + 1, or 0 on the open map; c: troops of one party near a player; h: game hours.
-    reply 7777|1|pause|joins|np|slot|x|y|...(np players)|kind|payload...
+    reply 7777|1|pause|joins|np|slot|x|y|kingdom|...(np players)|kind|payload...
+      kingdom: the faction the player serves (0: none), which the puppet takes on the server
       pause 1: a player is in an encounter, a battle or a menu: the world stands still
       joins: how many times a player game joined (a held world runs again when it changes)
       kind 0: nothing   1: battle result sid|destroyed|n|t1|n1|...|np|t1|n1|... (np: prisoners it takes)
       2: player troops slot|n|t1|n1|...
       kind 3: player name slot, and the name as the reply's last (string) token
 
-Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
+Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
                     [&me=t1,n1,...][&name=player name]
+    fac: the kingdom the player serves (0: none);
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
     srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
@@ -41,7 +43,7 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,d
     silent for SILENT_PAUSE_S pauses the world just like a busy one.
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...   positions of world parties (tmpl REMOVED: gone)
           7777|3|sid|n|t1|n1|...               troops of one party near the player
-          7777|4|slot|x|y|troops[|name]          another player's party
+          7777|4|slot|x|y|troops|kingdom[|name]  another player's party, and whom it serves
           7777|5|paused|slot|why                    the world stands still because of player <slot>
                                                     (why: 1 in an encounter or battle, 2 in a menu);
                                                     the player's own map then stands still too
@@ -51,7 +53,9 @@ Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp
 combat skills and weapon proficiencies, in the order of coop/constants.py):
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them) or
     the player in puppet slot; 2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
-    reply 7777|6|bid|type|slot       an invitation from the player in slot: type 1 may join, 2 attacked
+    reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked;
+                                     sid: the world party fought (-1: a player), so the game can see
+                                     whether it would fight its own allies
           7777|7|bid|status|team["name"]   0 gathering, 1 fought on the battle server (team 0 or 1),
                                      2 cancelled or another battle is on, 3 no battle server;
                                      "name": the name the player is expected under on the battle server
@@ -162,6 +166,7 @@ class Player:
         self.mp_out = []        # joint-battle replies waiting for this player
         self.on_server = False  # the host playing in the world server game: no puppet there
         self.hero = None        # the hero's equipment and stats for joint battles
+        self.faction = 0        # the kingdom the player serves, 0 none
 
 
 class Battle:
@@ -271,7 +276,7 @@ class World:
                 if all(r[0] != sid for r in self.results) and self.troops.get(sid, (0, None))[1] != stacks:
                     self.version += 1
                     self.troops[sid] = (self.version, stacks)
-            puppets = [(p.slot, p.pos[0], p.pos[1]) for p in self.players.values()
+            puppets = [(p.slot, p.pos[0], p.pos[1], p.faction) for p in self.players.values()
                        if p.slot is not None and p.pos is not None and not p.on_server]
             name = None
             pending_troops = [p for p in self.players.values() if p.slot is not None and p.stacks is not None]
@@ -320,7 +325,7 @@ class World:
                 self.players[cid].troops_sent[sid] = self.version
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
-                       on_server=False):
+                       on_server=False, faction=None):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
@@ -329,6 +334,8 @@ class World:
                 return [0], None
             p = self._player(cid)
             p.on_server = on_server
+            if faction is not None:
+                p.faction = faction
             p.requests += 1
             p.pos = (x, y)
             p.busy = busy
@@ -378,7 +385,7 @@ class World:
                 q = others[p.others_cursor % len(others)]
                 p.others_cursor += 1
                 size = sum(n for _, n in (q.stacks_last or []))
-                return [4, q.slot, q.pos[0] + COORD_OFFSET, q.pos[1] + COORD_OFFSET, size], q.name
+                return [4, q.slot, q.pos[0] + COORD_OFFSET, q.pos[1] + COORD_OFFSET, size, q.faction], q.name
             out = []
             while p.removed and len(out) < REMOVALS_PER_REPLY:
                 out.append((p.removed.pop(0), REMOVED, 0, 0, 0, 0, 0))
@@ -427,7 +434,7 @@ class World:
                     return
                 b.sides[defender.cid] = 1
                 b.invited.add(defender.cid)
-                defender.mp_out.append([6, b.bid, 2, p.slot])
+                defender.mp_out.append([6, b.bid, 2, p.slot, -1])
             elif mp["sid"] >= 0:
                 b.enemy_sid = mp["sid"]
                 b.enemy_stacks = mp["troops"] or (self.troops.get(mp["sid"], (0, None))[1] or [])
@@ -439,7 +446,7 @@ class World:
                     continue
                 if (q.pos[0] - p.pos[0]) ** 2 + (q.pos[1] - p.pos[1]) ** 2 <= INVITE_DIST ** 2:
                     b.invited.add(q.cid)
-                    q.mp_out.append([6, b.bid, 1, p.slot])
+                    q.mp_out.append([6, b.bid, 1, p.slot, b.enemy_sid if b.enemy_sid is not None else -1])
             self.battle = b
             p.mp_out.append([7, b.bid, 0, 0])
         elif b is None or b.bid != bid:
@@ -744,8 +751,8 @@ def handle_request(world, role, target, now, cid="local"):
         pause, joins, puppets, payload, name = world.server_report(
             parse_entries(q.get("d", "")), parse_troops(q.get("c", "")), now, hold=q.get("hold") == "1")
         nums = [MARKER, 1, int(pause), joins, len(puppets)]
-        for slot, x, y in puppets:
-            nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET]
+        for slot, x, y, faction in puppets:
+            nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, faction]
         return reply_text(nums + payload, name)
     if role == "cli" and url.path == "/cli":
         try:
@@ -770,7 +777,8 @@ def handle_request(world, role, target, now, cid="local"):
                   "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
                                             hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp,
-                                            on_server=q.get("srvp") == "1")
+                                            on_server=q.get("srvp") == "1",
+                                            faction=query_int(q, "fac", 0) if "fac" in q else None)
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),

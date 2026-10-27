@@ -29,6 +29,8 @@ def puppet_end():
 
 mp_campaign_scripts = [
   # script_coop_client_mp_invite: kind 6 reply
+  # An invitation to fight one's own allies (the world party is friendly, or the inviting player
+  # serves an enemy kingdom) is declined at once; an attacked player is always called in.
   ("coop_client_mp_invite",
    [
      (try_begin),
@@ -36,7 +38,47 @@ mp_campaign_scripts = [
        (party_get_slot, "$coop_mp_bid", "p_coop_buf", 2),
        (party_get_slot, "$coop_mp_inv_type", "p_coop_buf", 3),
        (party_get_slot, "$coop_mp_inv_slot", "p_coop_buf", 4),
-       (assign, "$coop_mp_invite_pending", 1),
+       (party_get_slot, ":sid", "p_coop_buf", 5),
+       (assign, ":refuse", 0),
+       (try_begin),
+         (eq, "$coop_mp_inv_type", 1),
+         (try_begin),
+           (ge, ":sid", 0),
+           (try_begin),
+             (eq, "$coop_role", coop_role_server), #the host: the world's own party
+             (assign, ":enemy", ":sid"),
+           (else_try),
+             (party_get_slot, ":enemy", "p_coop_map", ":sid"), #a client: its mirror, + 1
+             (val_sub, ":enemy", 1),
+           (try_end),
+           (gt, ":enemy", 0),
+           (party_is_active, ":enemy"),
+           (store_faction_of_party, ":enemy_faction", ":enemy"),
+           (store_relation, ":relation", ":enemy_faction", "fac_player_supporters_faction"),
+           (ge, ":relation", 0),
+           (assign, ":refuse", 1),
+           (str_store_party_name, s1, ":enemy"),
+         (try_end),
+         (try_begin),
+           (eq, ":refuse", 0),
+           (is_between, "$coop_mp_inv_slot", 0, coop_max_players),
+           (store_add, ":puppet", "p_coop_puppet_1", "$coop_mp_inv_slot"),
+           (party_is_active, ":puppet"),
+           (store_faction_of_party, ":inviter_faction", ":puppet"),
+           (is_between, ":inviter_faction", npc_kingdoms_begin, npc_kingdoms_end),
+           (store_relation, ":relation", ":inviter_faction", "fac_player_supporters_faction"),
+           (lt, ":relation", 0),
+           (assign, ":refuse", 1),
+           (str_store_party_name, s1, ":puppet"),
+         (try_end),
+       (try_end),
+       (try_begin),
+         (eq, ":refuse", 1),
+         (assign, "$coop_mp_state", 4), #the decline goes out with the next request
+         (display_message, "@CoopWorld: a call to arms against your allies ({s1}) - declined.", 0xFFDD66),
+       (else_try),
+         (assign, "$coop_mp_invite_pending", 1),
+       (try_end),
      (try_end),
     ]),
 

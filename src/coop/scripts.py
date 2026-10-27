@@ -107,6 +107,25 @@ def merge(orig_scripts):
   orig_scripts.extend(mp_campaign_scripts)
   response[:0] = mp_reply_hook()
   script_block(orig_scripts, "game_receive_network_message")[:0] = mp_network_hook()
+  # a client's fief would exist in its own game only: the world server's center keeps its lord
+  block = script_block(orig_scripts, "give_center_to_lord")
+  if [op[0] for op in block[:3]] != [store_script_param] * 3:
+    from coop_merge import MergeError
+    raise MergeError("give_center_to_lord: expected its three parameter reads first")
+  block[:] = block[:3] + [
+      (assign, ":coop_fief_refused", 0),
+      (try_begin),
+        (eq, "$coop_role", coop_role_client),
+        (eq, ":lord_troop_id", "trp_player"),
+        (assign, ":coop_fief_refused", 1),
+        (str_store_party_name, s1, ":center_no"),
+        (display_message, "@CoopWorld: in co-op only the host holds fiefs for now. {s1} stays with its lord in the shared world; your oath, rank and relations stay yours.", 0xFFDD66),
+      (try_end),
+      (try_begin),
+        (eq, ":coop_fief_refused", 0),
+  ] + block[3:] + [
+      (try_end),
+  ]
   # a new arrival (not the automatic return after resting) starts a new stay
   insert_after(script_block(orig_scripts, "game_event_party_encounter"),
                (assign, "$new_encounter", 1), [

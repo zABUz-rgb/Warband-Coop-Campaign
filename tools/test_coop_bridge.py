@@ -73,12 +73,12 @@ def test_players_and_puppets():
     req(w, "a", 100, 200, now=1.0, hello=True, name="Anna")
     req(w, "b", 300, 400, now=1.0, hello=True, name="Boris Bek")
     pause, joins, puppets, payload, name = w.server_report([], None, 1.1)
-    check(joins == 2 and sorted(puppets) == [(0, 100, 200), (1, 300, 400)], "two players: two puppets, two joins")
+    check(joins == 2 and sorted(puppets) == [(0, 100, 200, 0), (1, 300, 400, 0)], "two players: two puppets, two joins")
     check(payload == [3, 0] and name == "Anna", "the server learns the first player's name")
     check(w.server_report([], None, 1.2)[3:] == ([3, 1], "Boris Bek"), "then the second's")
     check(w.server_report([], None, 1.3)[3] == [0], "then nothing")
     others = [r for r in (req(w, "a", 100, 200, now=1.4) for _ in range(8)) if r[0][0] == 4]
-    check(others and others[0] == ([4, 1, 300 + OFF, 400 + OFF, 0], "Boris Bek"),
+    check(others and others[0] == ([4, 1, 300 + OFF, 400 + OFF, 0, 0], "Boris Bek"),
           "a player sees the other player's party and name")
     check(all(r[0][1] != 0 for r in others), "and never its own")
     for cid in "cde":
@@ -247,7 +247,7 @@ def test_hub_and_relay():
     check(r[0] == "7777", f"a friend's game is answered through the relay: {r[:3]}")
     r = get("http://127.0.0.3:18090/srv?seq=2&n=0&d=").split("|")
     check(r[2:5] == ["0", "2", "2"], f"server: running, two joins, two players' parties: {r[:5]}")
-    positions_at_server = sorted((int(r[6 + 3 * i]) - OFF, int(r[7 + 3 * i]) - OFF) for i in range(2))
+    positions_at_server = sorted((int(r[6 + 4 * i]) - OFF, int(r[7 + 4 * i]) - OFF) for i in range(2))
     check(positions_at_server == [(100, -400), (5000, 5000)], "both players' positions reach the server")
     names = set()
     for _ in range(8):
@@ -280,7 +280,8 @@ def test_joint_battle():
     nums, _ = req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)], hero=HERO))
     bid = w.battle.bid
     check(nums == [7, bid, 0, 0], "a battle is gathering")
-    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 1, w.players["a"].slot], "a player nearby is invited")
+    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 1, w.players["a"].slot, 600],
+          "a player nearby is invited, told which world party it would fight")
     check("c" not in w.battle.invited, "a player far away is not")
     check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 2.2) == [0], "nothing goes to the server while gathering")
     req(w, "b", x=300, now=3.0, busy=True, mp=mp(3, bid))
@@ -309,6 +310,21 @@ def test_joint_battle():
           "a player who lost nobody still hears the outcome, after the news it was fought")
     check(req(w, "b", x=300, now=9.1)[0] == [10, bid, 0, -1], "a hero who fell comes back with 0 health")
     check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
+
+
+def test_factions():
+    w = cb.World()
+    req(w, "a", now=0.0, name="Ivan", faction=5)
+    req(w, "b", x=100, now=0.0, name="Olga", faction=7)
+    puppets = sorted(w.server_report([], None, 0.1)[2])
+    check([f for *_, f in puppets] == [5, 7], "the server learns whom each player serves")
+    seen = [req(w, "b", x=100, now=0.2 + i * 0.01)[0] for i in range(8)]
+    shown = [r for r in seen if r[0] == 4]
+    check(shown and shown[0][5] == 5, f"the other players see it: {shown[:1]}")
+    req(w, "a", now=0.5, name="Ivan")
+    check(w.players["a"].faction == 5, "a request without fac keeps the kingdom known")
+    req(w, "a", now=0.6, name="Ivan", faction=0)
+    check(w.players["a"].faction == 0, "and leaving a kingdom is heard")
 
 
 def test_multiplayer_names():
@@ -365,7 +381,7 @@ def test_joint_battle_decline_cancel_pvp():
     slot_b = w.players["b"].slot
     req(w, "a", now=2.0, busy=True, mp=mp(1, slot=slot_b))
     bid = w.battle.bid
-    check(req(w, "b", x=100, now=2.1)[0] == [6, bid, 2, w.players["a"].slot], "the attacked player is called in")
+    check(req(w, "b", x=100, now=2.1)[0] == [6, bid, 2, w.players["a"].slot, -1], "the attacked player is called in")
     req(w, "b", x=100, now=2.2, mp=mp(4, bid))
     check(w.battle.sides == {"a": 0, "b": 1}, "an attacked player cannot decline")
     nums = w.mp_request(0, 0, -1, {}, {}, 2.0 + cb.GATHER_S + 1)
@@ -389,7 +405,7 @@ def test_host_plays_on_server():
     req(w, "local", x=100, y=200, now=0.0, me=[(31, 3)], name="Host", on_server=True)
     req(w, "b", x=5000, now=0.0, name="Olga")
     puppets = w.server_report([], None, 0.1)[2]
-    check([s for s, _, _ in puppets] == [w.players["b"].slot], "the host's own party gets no puppet on the server")
+    check([s for s, *_ in puppets] == [w.players["b"].slot], "the host's own party gets no puppet on the server")
     seen = [req(w, "b", x=5000, now=0.2 + i * 0.01)[0] for i in range(8)]
     check(any(r[0] == 4 and r[1] == w.players["local"].slot for r in seen), "the other players see the host")
     check(w.pause_cause(2.0, but=w.players["b"]) == (w.players["local"].slot, 2),
@@ -408,6 +424,7 @@ if __name__ == "__main__":
     test_host_plays_on_server()
     test_joint_battle()
     test_multiplayer_names()
+    test_factions()
     test_joint_battle_scaled_and_lost()
     test_joint_battle_decline_cancel_pvp()
     test_hub_and_relay()

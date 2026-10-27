@@ -352,6 +352,14 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
   Большие армии уменьшаются до 150 ботов на поле, потери пересчитываются обратно.
   Для мультиплеера Warband нужен серийный ключ игры (GOG: в библиотеке у игры, Steam: выдаётся сам).
 
+ФРАКЦИИ
+  Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
+  Мир сервера знает, кому служит каждый игрок: лорды его королевства его не трогают, враги
+  королевства на него охотятся, другие игроки видят на карте цвет его фракции.
+  Игроки враждующих королевств сражаются друг с другом в совместных боях; приглашение в бой
+  против ваших союзников отклоняется само. Владения (замки, города, деревни) пока получает только
+  хост: клиенту король их не выдаёт - игра сообщит об этом, присяга и звание при этом остаются.
+
 ОСТАНОВКА
   В своей игре: Лагерь - "CoopWorld: остановить кооператив", затем закройте окно моста.
 
@@ -413,6 +421,12 @@ JOINT BATTLES (multiplayer server):
   defeated by a party of the world is taken prisoner as in Native: troops and companions become
   its prisoners. A player defeated by another player is not captured, but the surviving troops
   become the winner's prisoners.
+
+FACTIONS: each player may swear fealty to a kingdom by the usual talk with its king or a lord.
+  The world server knows whom each player serves: that kingdom's lords leave the player alone,
+  its enemies hunt the player, the others see the player's faction colour on the map. Players of
+  kingdoms at war fight each other in joint battles; a call to arms against your allies is declined
+  by itself. Fiefs go only to the host for now: a client is told so, and keeps oath and rank.
 
 Stopping: Camp - "CoopWorld: stop co-op" in your game, then close the bridge window.
 '''

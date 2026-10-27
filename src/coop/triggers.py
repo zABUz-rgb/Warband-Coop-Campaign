@@ -360,7 +360,9 @@ def net_triggers(first_dynamic):
          (assign, reg6, 1),
        (try_end),
        ] + client_request_suffix() + [
-       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy={reg4}{s17}{s13}{s14}"),
+       (call_script, "script_coop_player_kingdom"),
+       (assign, reg8, reg0),
+       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy={reg4}&fac={reg8}{s17}{s13}{s14}"),
        (send_message_to_url, s10, 0),
      (try_end),
     ]),
