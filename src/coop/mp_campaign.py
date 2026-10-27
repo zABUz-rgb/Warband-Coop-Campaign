@@ -18,6 +18,8 @@ from coop.constants import *
 # Bridge replies (tools/coop_bridge.py): 6 invite bid|type|slot (type 1 may join, 2 attacked)
 #   7 status bid|status|team   8 outcome bid|won|xp|n|(troop, killed, wounded)*n
 #   9 the hero's blows bid|n|(weapon proficiency, hits, damage)*n
+#   10 aftermath bid|health|captor (health in percent or -1; captor: the world party that takes
+#      the defeated player prisoner, or -1)   11 prisoners for the winner bid|n|(troop, count)*n
 
 
 def puppet_end():
@@ -168,6 +170,73 @@ mp_campaign_scripts = [
          (display_message, "@{s1}: {reg2}, no gain ({reg3} hits; the weapon master skill limits it).", 0xCCCCCC),
        (try_end),
      (try_end),
+    ]),
+
+  # script_coop_client_mp_aftermath: kind 10 reply. The hero's wounds come back to the map; a
+  # player who lost to a party of the world is taken prisoner by it, as after a Native defeat.
+  ("coop_client_mp_aftermath",
+   [
+     (party_get_slot, ":health", "p_coop_buf", 3),
+     (party_get_slot, ":captor", "p_coop_buf", 4),
+     (try_begin),
+       (ge, ":health", 0),
+       (try_begin),
+         (eq, ":health", 0),
+         (assign, ":health", coop_hero_knocked_out_health),
+         (display_message, "@CoopWorld: your hero fell in the joint battle and is badly wounded.", 0xFF6666),
+       (else_try),
+         (assign, reg1, ":health"),
+         (display_message, "@CoopWorld: your hero comes out of the joint battle with {reg1}% health.", 0xFFDD66),
+       (try_end),
+       (troop_set_health, "trp_player", ":health"),
+     (try_end),
+     (try_begin),
+       (ge, ":captor", 0),
+       (try_begin),
+         (eq, "$coop_role", coop_role_server), #the host: the world's own party
+         (assign, ":party_no", ":captor"),
+       (else_try),
+         (party_get_slot, ":party_no", "p_coop_map", ":captor"), #a client: the mirror of that party, + 1
+         (val_sub, ":party_no", 1),
+       (try_end),
+       (gt, ":party_no", 0),
+       (party_is_active, ":party_no"),
+       (assign, "$coop_mp_captor", ":party_no"), #the capture starts back on the map or from the menu
+     (try_end),
+    ]),
+
+  # script_coop_client_mp_prisoners: kind 11 reply, the defeated player's troops become ours
+  ("coop_client_mp_prisoners",
+   [
+     (party_get_slot, ":n", "p_coop_buf", 3),
+     (assign, ":taken", 0),
+     (try_for_range, ":k", 0, ":n"),
+       (store_mul, ":at", ":k", 2),
+       (val_add, ":at", 4),
+       (party_get_slot, ":troop", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":count", "p_coop_buf", ":at"),
+       (party_add_prisoners, "p_main_party", ":troop", ":count"),
+       (val_add, ":taken", reg0),
+     (try_end),
+     (assign, reg1, ":taken"),
+     (display_message, "@CoopWorld: you take {reg1} prisoners from the defeated side.", 0x66FF66),
+    ]),
+
+  # script_coop_client_mp_capture: the defeated player is taken prisoner, through Native's own defeat:
+  # the captor takes the troops and the companions prisoner, loots some of the hero's items, and the
+  # captivity begins
+  ("coop_client_mp_capture",
+   [
+     (assign, ":captor", "$coop_mp_captor"),
+     (assign, "$coop_mp_captor", 0),
+     (party_is_active, ":captor"),
+     (assign, "$g_encountered_party", ":captor"),
+     (assign, "$g_enemy_party", ":captor"),
+     (assign, "$g_ally_party", -1),
+     (assign, "$g_player_surrenders", 0),
+     (assign, "$g_next_menu", "mnu_captivity_start_wilderness"),
+     (jump_to_menu, "mnu_total_defeat"),
     ]),
 
   # script_coop_client_mp_text: s1 = what the waiting window says now
@@ -341,8 +410,11 @@ mp_campaign_menus = [
       [(assign, "$coop_mp_hidden", 0), (start_presentation, "prsnt_coop_mp_wait")]),
      ("coop_mp_cancel", [(eq, "$coop_mp_state", 2), (eq, "$coop_mp_status", 0)], "Cancel the joint battle.",
       [(assign, "$coop_mp_state", 4), (leave_encounter), (change_screen_return)]),
-     ("coop_mp_back", [(neg|is_between, "$coop_mp_state", 1, 4)], "Back to the map.",
+     ("coop_mp_back", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_captor", 0)], "Back to the map.",
       [(leave_encounter), (change_screen_return)]),
+     ("coop_mp_captured", [(neg|is_between, "$coop_mp_state", 1, 4), (gt, "$coop_mp_captor", 0)],
+      "You are taken prisoner...",
+      [(call_script, "script_coop_client_mp_capture")]),
    ]),
 
   ("coop_mp_invite", 0,
@@ -454,6 +526,12 @@ def client_map_tick():
       (assign, "$coop_mp_invite_pending", 0),
       (jump_to_menu, "mnu_coop_mp_invite"),
     (try_end),
+    # lost a joint battle while away from its window: the capture begins on the map
+    (try_begin),
+      (gt, "$coop_mp_captor", 0),
+      (map_free),
+      (call_script, "script_coop_client_mp_capture"),
+    (try_end),
   ]
 
 
@@ -471,7 +549,7 @@ def client_request_suffix():
 
 
 def reply_branches():
-  """else_try branches for net_reply_handler: kinds 6 to 9."""
+  """else_try branches for net_reply_handler: kinds 6 to 11."""
   return [
     (else_try),
       (eq, ":kind", 6),
@@ -483,6 +561,16 @@ def reply_branches():
       (this_or_next|eq, "$coop_role", coop_role_client),
       (eq, "$coop_srv_player", 1), #the host's own player requests
       (call_script, "script_coop_client_mp_status"),
+    (else_try),
+      (eq, ":kind", 10),
+      (this_or_next|eq, "$coop_role", coop_role_client),
+      (eq, "$coop_srv_player", 1),
+      (call_script, "script_coop_client_mp_aftermath"),
+    (else_try),
+      (eq, ":kind", 11),
+      (this_or_next|eq, "$coop_role", coop_role_client),
+      (eq, "$coop_srv_player", 1),
+      (call_script, "script_coop_client_mp_prisoners"),
     (else_try),
       (eq, ":kind", 9),
       (this_or_next|eq, "$coop_role", coop_role_client),

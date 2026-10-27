@@ -24,7 +24,8 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
     reply 7777|1|pause|joins|np|slot|x|y|...(np players)|kind|payload...
       pause 1: a player is in an encounter, a battle or a menu: the world stands still
       joins: how many times a player game joined (a held world runs again when it changes)
-      kind 0: nothing   1: battle result sid|destroyed|n|t1|n1|...   2: player troops slot|n|t1|n1|...
+      kind 0: nothing   1: battle result sid|destroyed|n|t1|n1|...|np|t1|n1|... (np: prisoners it takes)
+      2: player troops slot|n|t1|n1|...
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
@@ -51,10 +52,15 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
                                      2 cancelled or another battle is on, 3 no battle server
           7777|8|bid|won|xp|n|troop|killed|wounded|...   the player's losses, and battle experience
           7777|9|bid|n|(wpt,hits,damage)*n   how the player's hero fought, by weapon proficiency
+          7777|10|bid|health|captor            the hero's health in percent (-1: did not fight as the hero);
+                                               captor: the world party that takes the defeated player prisoner, or -1
+          7777|11|bid|n|(troop,count)*n        the defeated player's troops, prisoners of the winning player
 
-Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&wx=no,wpt,hits,damage;...]&pl=no~name;...
+Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...]
+                  &pl=no~name;...
     PHASE 0 an ordinary round, 1-3 a battle of the campaign, 4 over (w: winning team, r: the bots
-    each stack lost; wx: the heroes' hits and damage by weapon proficiency);
+    each stack lost; hp: the heroes' health at the end, 0 fallen; wx: the heroes' hits and damage by
+    weapon proficiency);
     pl: the players on the server, matched to the players of the campaign by name.
     reply 7778|0                                  nothing
           7778|2|bid|offset|n|(team,player,troop,count)*n   stacks to spawn (player: who commands them, -1 the AI)
@@ -86,7 +92,8 @@ TOMBSTONE_S = 30.0
 STATUS_EVERY = 50       # a player is reminded of the pause state this often, in case a reply was lost      # a party a player destroyed is not sent again for this long
 NEAREST_PER_REPLY = 11
 ROTATING_PER_REPLY = 3
-REMOVALS_PER_REPLY = 3  # 3 header numbers + 7 per entry must stay within 128 registers
+REMOVALS_PER_REPLY = 3
+RESULT_PAIRS = 53       # troop and prisoner pairs of one battle result: 5 + 3 * 4 + 4 + 1 + 2 * 53 <= 128  # 3 header numbers + 7 per entry must stay within 128 registers
 MAX_STACKS = 30         # troop stacks per party in one message
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350
@@ -255,8 +262,9 @@ class World:
             pending_troops = [p for p in self.players.values() if p.slot is not None and p.stacks is not None]
             pending_names = [p for p in self.players.values() if p.slot is not None and p.name_pending]
             if self.results:
-                sid, destroyed, stacks = self.results.pop(0)
-                payload = [1, sid, destroyed, len(stacks)] + flat(stacks)
+                sid, destroyed, stacks, *rest = self.results.pop(0)
+                prisoners = (rest[0] if rest else [])[:max(0, RESULT_PAIRS - len(stacks))]
+                payload = [1, sid, destroyed, len(stacks)] + flat(stacks) + [len(prisoners)] + flat(prisoners)
             elif pending_troops:
                 p = pending_troops[0]
                 payload = [2, p.slot, len(p.stacks)] + flat(p.stacks)
@@ -267,7 +275,8 @@ class World:
                 p.name_pending = False
             else:
                 payload = [0]
-            return self.paused(now), self.joins, puppets, payload, name
+            host = next((p for p in self.players.values() if p.on_server), None)
+            return self.pause_cause(now, but=host) is not None, self.joins, puppets, payload, name
 
     def _forget(self, sid, except_cid):
         """The party is gone: every player (but the one that removed it already) drops it."""
@@ -284,7 +293,7 @@ class World:
         """A battle changed a world party: the server applies it, the players see it at once."""
         self.results.append(result)
         self.stats["results"] += 1
-        sid, destroyed, stacks = result
+        sid, destroyed, stacks = result[:3]
         if destroyed:
             self._forget(sid, except_cid=cid)
             self.tombstones[sid] = now
@@ -465,8 +474,9 @@ class World:
                 return no
         return -1
 
-    def _finish(self, b, winner, fallen, now, weapons=()):
+    def _finish(self, b, winner, fallen, now, weapons=(), health=None):
         losses = {cid: [] for cid in b.sides}
+        left = {cid: [] for cid in b.sides}  # what each player has after the battle
         enemy_left = []
         fell_by_team = {0: 0, 1: 0}
         for i, (team, owner, troop, count, spawned) in enumerate(b.stacks):
@@ -476,9 +486,18 @@ class World:
             if owner is None:
                 if count - lost > 0:
                     enemy_left.append((troop, count - lost))
-            elif lost:
+            else:
                 wounded = lost * WOUNDED_PCT // 100
-                losses.setdefault(owner, []).append((troop, lost - wounded, wounded))
+                if lost:
+                    losses.setdefault(owner, []).append((troop, lost - wounded, wounded))
+                if count - (lost - wounded) > 0:
+                    left.setdefault(owner, []).append((troop, count - (lost - wounded)))
+        # the defeated side's players: their troops are taken prisoner, by the world party or by
+        # the winning player (the starter, or the attacked player)
+        defeated = [cid for cid, team in b.sides.items() if winner in (0, 1) and team != winner]
+        captives = [s for cid in defeated for s in left.get(cid, [])]
+        world_captives = [s for cid in defeated if not getattr(self.players.get(cid), "on_server", False)
+                          for s in left.get(cid, [])]  # the host's own defeat already hands them over
         for cid, lost in losses.items():
             q = self.players.get(cid)
             if q is None:
@@ -496,12 +515,24 @@ class World:
             used = [(wpt, hits, damage) for player, wpt, hits, damage in weapons if player == no >= 0]
             if used:
                 q.mp_out.append([9, b.bid, len(used)] + [v for entry in used for v in entry])
+            # last: the hero's wounds, and the capture (after which the player is in captivity)
+            hp = (health or {}).get(no, -1) if no >= 0 else -1
+            captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1
+            if hp >= 0 or captor >= 0:
+                q.mp_out.append([10, b.bid, hp, captor])
         if b.enemy_sid is not None:
             destroyed = 1 if winner == 0 or not enemy_left else 0
-            self._record_result((b.enemy_sid, destroyed, enemy_left), None, now)
+            self._record_result((b.enemy_sid, destroyed, enemy_left, [] if destroyed else world_captives), None, now)
+        elif captives:
+            # a battle between players: the winner's side takes the prisoners
+            taker = next((cid for cid, team in sorted(b.sides.items(), key=lambda kv: kv[0] != b.starter)
+                          if team == winner and cid in self.players), None)
+            if taker is not None:
+                taken = captives[:MAX_STACKS]
+                self.players[taker].mp_out.append([11, b.bid, len(taken)] + flat(taken))
         self.battle = None
 
-    def mp_request(self, phase, bid, winner, fallen, players, now, weapons=()):
+    def mp_request(self, phase, bid, winner, fallen, players, now, weapons=(), health=None):
         """The battle server asks; returns the reply numbers after the marker."""
         with self.lock:
             self.mp_last = now
@@ -509,7 +540,7 @@ class World:
             b = self.battle
             if phase == 4:
                 if b is not None and b.bid == bid and b.state == "running":
-                    self._finish(b, winner, fallen, now, weapons)
+                    self._finish(b, winner, fallen, now, weapons, health)
                 return [4, bid]
             self._battle_tick(now)
             b = self.battle
@@ -703,7 +734,7 @@ def handle_request(world, role, target, now, cid="local"):
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
                                 parse_fallen(q.get("r", "")), parse_mp_players(q.get("pl", "")), now,
-                                parse_weapons(q.get("wx", "")))
+                                parse_weapons(q.get("wx", "")), parse_fallen(q.get("hp", "")))
         return reply_text([MP_MARKER] + nums)
     return reply_text([0, 0])  # unknown path: no marker, the game ignores it
 

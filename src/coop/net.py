@@ -247,7 +247,7 @@ def net_scripts(first_dynamic):
     ]),
 
   # script_coop_server_apply_result: a battle a player fought. arg1 = slot of p_coop_buf where the
-  # result starts: sid, destroyed, number of troop pairs, pairs
+  # result starts: sid, destroyed, number of troop pairs, pairs, number of prisoner pairs, pairs
   ("coop_server_apply_result",
    [
      (store_script_param, ":base", 1),
@@ -273,6 +273,17 @@ def net_scripts(first_dynamic):
          (try_end),
        (else_try),
          (call_script, "script_coop_set_party_troops", ":sid", ":base", ":num_pairs", 1),
+         # the defeated players' troops, taken prisoner by this party
+         (store_mul, ":at", ":num_pairs", 2),
+         (val_add, ":at", ":base"),
+         (party_get_slot, ":num_prisoners", "p_coop_buf", ":at"),
+         (try_for_range, ":unused", 0, ":num_prisoners"),
+           (val_add, ":at", 1),
+           (party_get_slot, ":troop", "p_coop_buf", ":at"),
+           (val_add, ":at", 1),
+           (party_get_slot, ":count", "p_coop_buf", ":at"),
+           (party_add_prisoners, ":sid", ":troop", ":count"),
+         (try_end),
        (try_end),
        (display_message, "@CoopWorld: battle result applied to {s1}.", 0x66CCFF),
      (try_end),
@@ -287,6 +298,7 @@ def net_scripts(first_dynamic):
        (eq, "$coop_srv_paused", 0),
        (assign, "$coop_srv_paused", 1),
        (rest_for_hours, 0, 0, 0), #stop resting: map time stands still
+       (eq, "$coop_srv_player", 0), #the host is told who and why by the player replies (kind 5)
        (display_message, "@CoopWorld: the world is paused, a player is in battle.", 0xFFDD66),
      (else_try),
        (eq, ":pause", 0),
@@ -296,6 +308,7 @@ def net_scripts(first_dynamic):
          (eq, "$coop_srv_player", 0), #the host rests again once standing still
          (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0),
        (try_end),
+       (eq, "$coop_srv_player", 0),
        (display_message, "@CoopWorld: the world runs again.", 0x66CCFF),
      (try_end),
     ]),
@@ -785,7 +798,8 @@ def net_reply_handler():
         (call_script, "script_coop_client_show_player", ":num_strings"),
       (else_try),
         (eq, ":kind", 5),
-        (eq, "$coop_role", coop_role_client),
+        (this_or_next|eq, "$coop_role", coop_role_client),
+        (eq, "$coop_srv_player", 1), #the host playing on the server: who holds the world, and why
         (call_script, "script_coop_client_set_world_pause"),
       ] + mp_reply_branches() + [
       (try_end),

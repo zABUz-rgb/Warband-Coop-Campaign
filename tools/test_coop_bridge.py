@@ -141,7 +141,7 @@ def test_troops_results_tombstones():
     check([3, 600, 2, 31, 5, 32, 2] in replies, "a player gets the troops of a nearby party")
     check(all(r[0] == 2 for r in (req(w, "a", now=1.0)[0] for _ in range(4))), "unchanged troops are not resent")
     req(w, "a", now=2.0, result=(600, 0, [(31, 3)]))
-    check(w.server_report([], (600, [(31, 5)]), 2.1)[3] == [1, 600, 0, 1, 31, 3], "the server gets the result")
+    check(w.server_report([], (600, [(31, 5)]), 2.1)[3] == [1, 600, 0, 1, 31, 3, 0], "the server gets the result")
     check(w.troops[600][1] == [(31, 3)], "the server's older report did not undo the result")
     check([3, 600, 1, 31, 3] in [req(w, "b", now=2.2)[0] for _ in range(4)],
           "another player gets the new troops of that party")
@@ -296,16 +296,19 @@ def test_joint_battle():
     check(req(w, "c", x=50000, now=3.3, busy=False, mp=mp(1, sid=601))[0] == [7, 0, 2, 0], "one battle at a time")
     w.mp_players = {0: "ivan", 1: "Olga "}
     check(w.mp_request(4, bid, 0, {0: 4, 1: 2, 3: 20}, {0: "ivan", 1: "Olga "}, 9.0,
-                       [(0, 0, 7, 180), (0, 3, 2, 60), (5, 1, 1, 30)]) == [4, bid], "the outcome is acknowledged")
+                       [(0, 0, 7, 180), (0, 3, 2, 60), (5, 1, 1, 30)], {0: 40, 1: 0}) == [4, bid],
+          "the outcome is acknowledged")
     check(w.battle is None, "the battle is over")
     xp = 20 * cb.XP_PER_ENEMY // 2
     check(req(w, "a", now=9.1)[0] == [8, bid, 1, xp, 2, 31, 2, 2, 32, 1, 1],
           "the starter gets the losses (half wounded) and half the experience (two players won)")
     check(req(w, "a", now=9.1)[0] == [9, bid, 2, 0, 7, 180, 3, 2, 60],
           "and how the hero fought, by weapon proficiency (another player's blows are not the starter's)")
+    check(req(w, "a", now=9.1)[0] == [10, bid, 40, -1], "and the hero's health; the winner is not captured")
     check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, xp, 0],
           "a player who lost nobody still hears the outcome, after the news it was fought")
-    check(w.results[-1] == (600, 1, []) and 600 in w.tombstones, "the defeated world party is destroyed")
+    check(req(w, "b", x=300, now=9.1)[0] == [10, bid, 0, -1], "a hero who fell comes back with 0 health")
+    check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
 
 
 def test_joint_battle_scaled_and_lost():
@@ -320,7 +323,10 @@ def test_joint_battle_scaled_and_lost():
     w.mp_request(4, bid, 1, {0: 75, 1: 15}, {}, 5.0)
     check(req(w, "a", now=5.1)[0][0] == 7 and req(w, "a", now=5.1)[0] == [8, bid, 0, 60 * cb.XP_PER_ENEMY // 3, 1, 31, 150, 150],
           "and their losses scaled up; the battle is lost (a third of the experience)")
-    check(w.results[-1] == (700, 0, [(40, 240)]), "the world party keeps what survived")
+    check(req(w, "a", now=5.1)[0] == [10, bid, -1, 700], "the defeated player is taken prisoner by the world party")
+    check(w.results[-1] == (700, 0, [(40, 240)], [(31, 150)]),
+          "the world party keeps what survived and takes the player's troops (wounded too) prisoner")
+    check(w.server_report([], None, 5.2)[3] == [1, 700, 0, 1, 40, 240, 1, 31, 150], "the server gets the prisoners")
 
 
 def test_joint_battle_decline_cancel_pvp():
@@ -346,6 +352,15 @@ def test_joint_battle_decline_cancel_pvp():
     w.mp_request(0, 0, -1, {}, {}, 30.0)
     w.mp_request(0, 0, -1, {}, {}, 30.0 + cb.MP_LOST_S + 1)
     check(w.battle is None, "a battle server that forgot the battle frees it")
+    req(w, "a", now=40.0, busy=True, mp=mp(1, slot=slot_b))
+    bid = w.battle.bid
+    w.mp_request(0, 0, -1, {}, {}, 40.0 + cb.GATHER_S + 1)
+    w.mp_request(0, 0, -1, {}, {}, 40.0 + cb.GATHER_S + 1)
+    w.mp_request(4, bid, 0, {1: 2}, {}, 70.0)
+    replies = [req(w, "a", now=70.1)[0] for _ in range(8)]
+    check([11, bid, 1, 33, 5] in replies, f"the winner of a battle between players takes the loser's troops: {replies}")
+    replies = [req(w, "b", x=100, now=70.1)[0] for _ in range(8)]
+    check(not any(r[0] == 10 and r[3] >= 0 for r in replies), "and the loser is not captured by a player")
 
 
 def test_host_plays_on_server():
@@ -358,6 +373,8 @@ def test_host_plays_on_server():
     check(any(r[0] == 4 and r[1] == w.players["local"].slot for r in seen), "the other players see the host")
     check(w.pause_cause(2.0, but=w.players["b"]) == (w.players["local"].slot, 2),
           "the host's game falling silent (a menu, a battle) pauses the others")
+    req(w, "b", x=5000, now=2.0)
+    check(w.server_report([], None, 2.0)[0] is False, "but never the server itself: it is the host's own game")
 
 
 if __name__ == "__main__":

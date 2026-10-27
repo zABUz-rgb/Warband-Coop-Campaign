@@ -654,10 +654,13 @@ script_coop_client_mp_invite = 652
 script_coop_client_mp_status = 653
 script_coop_client_mp_result = 654
 script_coop_client_mp_weapons = 655
-script_coop_client_mp_text = 656
-script_coop_client_mp_send = 657
-script_coop_client_mp_hero_to_s18 = 658
-script_coop_append_s18 = 659
-script_coop_client_mp_begin = 660
+script_coop_client_mp_aftermath = 656
+script_coop_client_mp_prisoners = 657
+script_coop_client_mp_capture = 658
+script_coop_client_mp_text = 659
+script_coop_client_mp_send = 660
+script_coop_client_mp_hero_to_s18 = 661
+script_coop_append_s18 = 662
+script_coop_client_mp_begin = 663
 
 

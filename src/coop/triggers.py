@@ -80,6 +80,14 @@ def net_triggers(first_dynamic):
      (try_begin),
        (eq, "$coop_srv_player", 1),
        ] + client_map_tick() + [
+       # the world is held by another player: remind now and then why nothing moves
+       (try_begin),
+         (eq, "$coop_world_paused", 1),
+         (val_add, "$coop_pause_reminder", 1),
+         (ge, "$coop_pause_reminder", coop_pause_reminder_frames),
+         (assign, "$coop_pause_reminder", 0),
+         (call_script, "script_coop_client_pause_message", "$coop_pause_slot", "$coop_pause_why"),
+       (try_end),
      (try_end),
      (val_add, "$coop_net_frames", 1),
      (try_begin),

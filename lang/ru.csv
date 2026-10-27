@@ -218,3 +218,7 @@ quick_strings|qstr_Throwing|Метательное оружие
 quick_strings|qstr_Firearms|Огнестрельное оружие
 quick_strings|qstr_{s1}:_+{reg1}__{reg2|{s1}: +{reg1} ({reg2}) за {reg3} попаданий в совместном бою.
 quick_strings|qstr_{s1}:_{reg2}_no_gain|{s1}: {reg2}, без роста ({reg3} попаданий; предел задаёт навык «Владение оружием»).
+game_menus|mno_coop_mp_captured|Вас берут в плен...
+quick_strings|qstr_CoopWorld:_your_hero|CoopWorld: ваш герой пал в совместном бою и тяжело ранен.
+quick_strings|qstr_CoopWorld:_your_hero_|CoopWorld: ваш герой выходит из совместного боя с {reg1}% здоровья.
+quick_strings|qstr_CoopWorld:_you_take_|CoopWorld: вы берёте в плен {reg1} бойцов побеждённой стороны.
