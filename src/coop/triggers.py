@@ -187,6 +187,34 @@ def net_triggers(first_dynamic):
        (ge, "$coop_idle_frames", coop_client_idle_frames),
        (assign, "$coop_idle_frames", 0),
        (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 1), #rest while attackable
+       (assign, "$coop_menu_hours", -2), #our own rest: time flows, it is not a menu
+     (try_end),
+     # menu: off the map while time stands still (inventory, reports, a town's menus). The world
+     # pauses on the server too. A rest (time flows) is not a menu; a rest this game did not start
+     # (captivity, Freelancer) counts as a menu only until its first game hour has passed.
+     (store_current_hours, ":hours_now"),
+     (try_begin),
+       (map_free),
+       (assign, "$coop_menu", 0),
+       (assign, "$coop_menu_hours", -1),
+     (else_try),
+       (eq, "$coop_menu_hours", -2),
+       (assign, "$coop_menu", 0),
+     (else_try),
+       (lt, "$coop_menu_hours", 0),
+       (assign, "$coop_menu_hours", ":hours_now"),
+       (assign, "$coop_menu", 1),
+     (else_try),
+       (gt, ":hours_now", "$coop_menu_hours"),
+       (assign, "$coop_menu", 0),
+       (assign, "$coop_menu_hours", ":hours_now"),
+     (try_end),
+     # a prisoner stays with the captor (Native does this in a world trigger the client has off)
+     (try_begin),
+       (eq, "$g_player_is_captive", 1),
+       (gt, "$capturer_party", 0),
+       (party_is_active, "$capturer_party"),
+       (party_relocate_near_party, "p_main_party", "$capturer_party", 0),
      (try_end),
      (val_add, "$coop_net_frames", 1),
      (try_begin),
@@ -247,6 +275,7 @@ def net_triggers(first_dynamic):
        (position_get_y, reg3, pos1),
        (assign, reg1, "$coop_net_seq"),
        (assign, reg4, "$coop_busy"),
+       (val_max, reg4, "$coop_menu"), #the world pauses for a battle or a menu
        (store_current_hours, reg5),
        (assign, reg6, 0),
        (try_begin),

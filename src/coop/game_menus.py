@@ -38,7 +38,8 @@ town_auto_lodging = [
     (assign, "$g_town_visit_after_rest", 1),
     (assign, "$g_last_rest_center", "$current_town"),
     (assign, "$g_last_rest_payment_until", -1),
-    (rest_for_hours_interactive, 24 * 7, 5, 0), #rest while not attackable
+    (rest_for_hours_interactive, 24 * 7, coop_world_time_speed, 0), #rest while not attackable
+    (assign, "$coop_menu_hours", -2), #our own rest: time flows, it is not a menu
     (change_screen_return),
   (try_end),
 ]

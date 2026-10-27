@@ -44,7 +44,14 @@ game_menus = [
     "none",
     [
          (set_background_mesh, "mesh_pic_soldier_world_map"),
-         (troop_get_slot, "$enlisted_party", "$enlisted_lord", slot_troop_leaded_party), #CABA - to refresh it? maybe not necessessary
+         #CABA - to refresh it? maybe not necessessary
+         #CoopWorld: only when the lord still leads a party; -1 crashed the engine in this menu
+         (try_begin),
+           (troop_get_slot, ":leaded_party", "$enlisted_lord", slot_troop_leaded_party),
+           (ge, ":leaded_party", 0),
+           (party_is_active, ":leaded_party"),
+           (assign, "$enlisted_party", ":leaded_party"),
+         (try_end),
         ],
         [
                 ("join_commander_battle",[

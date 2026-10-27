@@ -40,7 +40,9 @@ coop_net_resend_frames = 200    # trigger runs to wait for a lost reply
 coop_world_time_speed = 1        # rest time speed; Native's "Wait here" uses 5, which ran the
                                  # world at about 75 game hours per real minute (bridge clock log)
 coop_client_idle_frames = 30     # map frames without moving before the client rests
-coop_mirror_snap = 300           # a mirror further than this (map units * 100) from the server's position jumps
+coop_mirror_snap = 300           # a mirror further than this (map units * 100) from the server's position
+                                 # walks to that position to catch up instead of to its target
+coop_mirror_jump = 2000          # further than this it jumps there at once
 coop_mirror_still = 50           # a target this close to the party's position: it stays put
 
 # Battles and pause
