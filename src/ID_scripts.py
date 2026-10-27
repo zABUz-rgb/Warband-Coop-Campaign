@@ -626,5 +626,10 @@ script_game_get_party_speed_multiplier = 624
 script_coop_battle_ceasefire = 625
 script_coop_end_battle_prep = 626
 script_coop_evict_from_town = 627
+script_coop_become_server = 628
+script_coop_become_client = 629
+script_coop_stop = 630
+script_coop_server_move_puppet = 631
+script_coop_client_apply = 632
 
 

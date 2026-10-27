@@ -3,6 +3,7 @@ local/
 
 # Game copy and third-party downloads are never committed
 game/
+game2/
 vendor/
 
 __pycache__/

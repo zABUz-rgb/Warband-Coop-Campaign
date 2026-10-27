@@ -15,6 +15,18 @@ coop_dawn_hour = 6
 # Mission templates that get the preparation phase
 coop_prep_mission_templates = ("lead_charge", "village_attack_bandits", "village_raid")
 
-# Link spike: how many trigger runs to wait for a lost reply.
-# The bridge must listen on port 80: send_message_to_url ignores the port in the URL.
-coop_link_resend_frames = 200
+# Co-op network (prototype). Roles: who this game is in a co-op session.
+coop_role_single = 0
+coop_role_server = 1   # world server: owns the world, rests continuously, mirrors nothing
+coop_role_client = 2   # player client: world simulation off, shows the server's parties
+
+# send_message_to_url ignores ports: each game uses its own loopback address on port 80
+coop_server_url = "http://127.0.0.1"
+coop_client_url = "http://127.0.0.2"
+
+coop_net_marker = 7777          # first number of every bridge reply (failed sends have none)
+coop_net_offset = 100000        # coordinates come back shifted so they are never negative
+coop_net_removed = 9999         # template value meaning "this party is gone on the server"
+coop_net_batch = 8              # parties per server report (URL length)
+coop_net_max_entries = 28       # entries in one client reply: 3 + 4 * 28 numbers <= 128 registers
+coop_net_resend_frames = 200    # trigger runs to wait for a lost reply

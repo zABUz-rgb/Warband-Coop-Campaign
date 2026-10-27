@@ -239,3 +239,6 @@ p_reserved_2 = 237
 p_reserved_3 = 238
 p_reserved_4 = 239
 p_reserved_5 = 240
+p_coop_puppet_1 = 241
+p_coop_buf = 242
+p_coop_map = 243

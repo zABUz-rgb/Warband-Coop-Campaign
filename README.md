@@ -25,3 +25,12 @@
   (SHA256 `b8d5095031ed2b9df0a4020097bea06b6137022a52cd24a9d5c6b575444b16e1`)
 - Freelancer 1.51 modmerger source (Taragoth): https://www.moddb.com/downloads/freelancer-mod-ver-151-modmerger-source
   (MD5 `681f41ba0916287e89a22dbcada03a58`)
+
+## Прототип сервера мира (уровень 2)
+Две копии игры на одном ПК: `game` (сервер мира) и `game2` (клиент, модуль — ссылка на `game`).
+1. `python -I tools/coop_bridge.py` — мост: сервер мира звонит на 127.0.0.1:80, клиент на 127.0.0.2:80
+   (`send_message_to_url` игнорирует порт в адресе).
+2. Обе игры загружают **одно и то же** сохранение CoopWorld.
+3. Сервер: Лагерь → «run this game as the WORLD SERVER» (и больше его не трогать).
+4. Клиент: Лагерь → «run this game as a CLIENT».
+Тесты моста: `python -I tools/test_coop_bridge.py`.

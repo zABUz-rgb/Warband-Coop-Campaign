@@ -75,23 +75,14 @@ scripts = [
 
 
 def merge(orig_scripts):
-  from coop_merge import find_by_id, script_block, insert_after
+  from coop_merge import script_block, insert_after
+  from coop.net import net_scripts, net_reply_handler
+  from coop.triggers import first_dynamic_party
   # the engine hook is commented out in Native, so it is simply added
   orig_scripts.extend(scripts)
-  # link spike: a reply from the local bridge (reg0 = seq echoed, reg1 = requests served)
-  script_block(orig_scripts, "game_receive_url_response").extend([
-      (try_begin),
-        (eq, "$coop_link_test", 1),
-        (assign, "$coop_link_pending", 0),
-        (val_add, "$coop_link_replies", 1),
-        (store_mod, ":every_20th", "$coop_link_replies", 20),
-        (eq, ":every_20th", 1),
-        (assign, reg20, "$coop_link_replies"),
-        (store_script_param, reg21, 1),
-        (store_script_param, reg22, 2),
-        (display_message, "@CoopWorld link: reply #{reg20}: {reg21} numbers, {reg22} strings, reg0={reg0} reg1={reg1} s0={s0}", 0x66CCFF),
-      (try_end),
-  ])
+  orig_scripts.extend(net_scripts(first_dynamic_party()))
+  # co-op network replies (wire format in tools/coop_bridge.py)
+  script_block(orig_scripts, "game_receive_url_response").extend(net_reply_handler())
   # a new arrival (not the automatic return after resting) starts a new stay
   insert_after(script_block(orig_scripts, "game_event_party_encounter"),
                (assign, "$new_encounter", 1), [
