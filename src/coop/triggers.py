@@ -10,7 +10,15 @@ def first_dynamic_party():
   return len(parties)
 
 
+def puppet_range():
+  """(first, end) party ids of the players' parties coop_puppet_1..coop_max_players"""
+  from module_parties import parties
+  first = [p[0] for p in parties].index("coop_puppet_1")
+  return first, first + coop_max_players
+
+
 def net_triggers(first_dynamic):
+  puppets_end = puppet_range()[1]
   return [
   # World server held for a joining client: only asks whether the client has joined.
   (0, 0, 0,
@@ -68,10 +76,20 @@ def net_triggers(first_dynamic):
          (try_end),
          (assign, "$coop_net_cursor", first_dynamic - 1),
        (try_end),
-       # parties close to the client's puppet first: they are the ones the client sees move
+       # the players take turns: this report looks around one of them
+       (assign, ":puppet", -1),
+       (try_for_range, ":unused", 0, coop_max_players),
+         (lt, ":puppet", 0),
+         (val_add, "$coop_turn_slot", 1),
+         (val_mod, "$coop_turn_slot", coop_max_players),
+         (store_add, ":candidate", "p_coop_puppet_1", "$coop_turn_slot"),
+         (party_is_active, ":candidate"),
+         (assign, ":puppet", ":candidate"),
+       (try_end),
+       # parties close to that player first: they are the ones the player sees move
        (try_begin),
-         (party_is_active, "p_coop_puppet_1"),
-         (party_get_position, pos3, "p_coop_puppet_1"),
+         (ge, ":puppet", 0),
+         (party_get_position, pos3, ":puppet"),
          (position_get_x, ":puppet_x", pos3),
          (position_get_y, ":puppet_y", pos3),
          (store_add, ":from", "$coop_near_cursor", 1),
@@ -118,11 +136,11 @@ def net_triggers(first_dynamic):
          (ge, "$coop_net_cursor", "$coop_net_max_party"),
          (assign, "$coop_net_cursor", -1), #reached the end: start over
        (try_end),
-       # troops of the next party close to the client's puppet: the client fights these
+       # troops of the next party close to that player: the player fights these
        (str_clear, s13),
        (try_begin),
-         (party_is_active, "p_coop_puppet_1"),
-         (party_get_position, pos3, "p_coop_puppet_1"),
+         (ge, ":puppet", 0),
+         (party_get_position, pos3, ":puppet"),
          (position_get_x, ":puppet_x", pos3),
          (position_get_y, ":puppet_y", pos3),
          (assign, ":found", -1),
@@ -208,6 +226,14 @@ def net_triggers(first_dynamic):
        (gt, ":hours_now", "$coop_menu_hours"),
        (assign, "$coop_menu", 0),
        (assign, "$coop_menu_hours", ":hours_now"),
+     (try_end),
+     # another player's party not updated for a while: that player left
+     (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
+       (party_is_active, ":puppet"),
+       (party_get_slot, ":last_seen", ":puppet", slot_party_coop_sid),
+       (store_sub, ":silent", "$coop_net_seq", ":last_seen"),
+       (gt, ":silent", coop_player_stale_requests),
+       (disable_party, ":puppet"),
      (try_end),
      # a prisoner stays with the captor (Native does this in a world trigger the client has off)
      (try_begin),

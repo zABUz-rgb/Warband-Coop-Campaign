@@ -19,6 +19,7 @@ coop_prep_mission_templates = ("lead_charge", "village_attack_bandits", "village
 coop_role_single = 0
 coop_role_server = 1   # world server: owns the world, rests continuously, mirrors nothing
 coop_role_client = 2   # player client: world simulation off, shows the server's parties
+coop_max_players = 4   # player parties coop_puppet_1..4 (tools/coop_bridge.py MAX_PLAYERS)
 coop_role_held = 3     # world server holding the world still until a client joins; it sends no
                        # world data, so a client game that loads its save (and with it this role)
                        # does not act as a second server before it switches to client
@@ -55,3 +56,4 @@ coop_srv_troops_radius = 1500    # map units * 100: the server reports troops of
 slot_party_coop_sid = 300        # on a client mirror: server party id + 1 (Native party slots end at 249)
 coop_busy_timeout_frames = 60    # an encounter that never opened a menu stops counting as busy
 coop_tombstone_requests = 3000   # a party the client destroyed is not mirrored again for this many requests
+coop_player_stale_requests = 600 # another player's party not updated for this many requests is hidden

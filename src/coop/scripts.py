@@ -102,6 +102,8 @@ def merge(orig_scripts):
       (try_end),
   ])
   # the server never auto-resolves a fight of the client's puppet: the client fights it itself
+  from coop.triggers import puppet_range
+  puppets_end = puppet_range()[1]
   block = script_block(orig_scripts, "game_event_simulate_battle")
   params = [(store_script_param_1, ":root_defender_party"), (store_script_param_2, ":root_attacker_party")]
   if [tuple(op) for op in block[:2]] != params:
@@ -111,8 +113,8 @@ def merge(orig_scripts):
       (assign, ":coop_puppet_fight", 0),
       (try_begin),
         (eq, "$coop_role", coop_role_server),
-        (this_or_next|eq, ":root_defender_party", "p_coop_puppet_1"),
-        (eq, ":root_attacker_party", "p_coop_puppet_1"),
+        (this_or_next|is_between, ":root_defender_party", "p_coop_puppet_1", puppets_end),
+        (is_between, ":root_attacker_party", "p_coop_puppet_1", puppets_end),
         (assign, ":coop_puppet_fight", 1),
         (set_trigger_result, 1), #end this battle
       (try_end),

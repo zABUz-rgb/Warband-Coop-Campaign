@@ -13,14 +13,16 @@ from header_parties import (ai_bhvr_hold, ai_bhvr_travel_to_point, ai_bhvr_patro
                             ai_bhvr_escort_party)
 from coop.constants import *
 
-# server reply layout (slots of p_coop_buf)
-SRV_HAS_CLIENT, SRV_X, SRV_Y, SRV_PAUSE, SRV_JOINS, SRV_KIND, SRV_PAYLOAD = 2, 3, 4, 5, 6, 7, 8
+# server reply layout (slots of p_coop_buf): 7777|1|pause|joins|np|(slot,x,y)*np|kind|payload...
+SRV_PAUSE, SRV_JOINS, SRV_NUM_PLAYERS, SRV_PLAYERS = 2, 3, 4, 5
 # client reply layout
 CLI_COUNT, CLI_ENTRIES = 2, 3                  # kind 2: positions
 CLI_SID, CLI_NUM_STACKS, CLI_STACKS = 2, 3, 4  # kind 3: troops of one party
 
 
 def net_scripts(first_dynamic):
+  from coop.triggers import puppet_range
+  puppets_end = puppet_range()[1]
   return [
   # script_coop_become_server: this game owns the world; it rests so that time keeps flowing.
   ("coop_become_server",
@@ -51,6 +53,9 @@ def net_scripts(first_dynamic):
      (try_end),
      (assign, "$coop_menu", 0),
      (assign, "$coop_menu_hours", -1),
+     (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
+       (disable_party, ":puppet"), #the others appear as their positions arrive
+     (try_end),
      (display_message, "@CoopWorld: this game is now a CLIENT of the world server.", 0x66CCFF),
     ]),
 
@@ -201,12 +206,17 @@ def net_scripts(first_dynamic):
      (str_store_string, s11, "@{s11}{reg11},{reg12},{reg13},{reg14},{reg15},{reg16},{reg17};"),
     ]),
 
-  # script_coop_server_apply_result: a battle the client fought, as p_coop_buf holds it
+  # script_coop_server_apply_result: a battle a player fought. arg1 = slot of p_coop_buf where the
+  # result starts: sid, destroyed, number of troop pairs, pairs
   ("coop_server_apply_result",
    [
-     (party_get_slot, ":sid", "p_coop_buf", SRV_PAYLOAD),
-     (party_get_slot, ":destroyed", "p_coop_buf", SRV_PAYLOAD + 1),
-     (party_get_slot, ":num_pairs", "p_coop_buf", SRV_PAYLOAD + 2),
+     (store_script_param, ":base", 1),
+     (party_get_slot, ":sid", "p_coop_buf", ":base"),
+     (val_add, ":base", 1),
+     (party_get_slot, ":destroyed", "p_coop_buf", ":base"),
+     (val_add, ":base", 1),
+     (party_get_slot, ":num_pairs", "p_coop_buf", ":base"),
+     (val_add, ":base", 1),
      (try_begin),
        (ge, ":sid", first_dynamic),
        (party_is_active, ":sid"),
@@ -217,12 +227,12 @@ def net_scripts(first_dynamic):
          (party_stack_get_troop_id, ":leader", ":sid", 0),
          (try_begin),
            (troop_is_hero, ":leader"), #a lord's party: the lord stays, his men are gone
-           (call_script, "script_coop_set_party_troops", ":sid", SRV_PAYLOAD + 3, 0, 1),
+           (call_script, "script_coop_set_party_troops", ":sid", ":base", 0, 1),
          (else_try),
            (remove_party, ":sid"),
          (try_end),
        (else_try),
-         (call_script, "script_coop_set_party_troops", ":sid", SRV_PAYLOAD + 3, ":num_pairs", 1),
+         (call_script, "script_coop_set_party_troops", ":sid", ":base", ":num_pairs", 1),
        (try_end),
        (display_message, "@CoopWorld: battle result applied to {s1}.", 0x66CCFF),
      (try_end),
@@ -247,19 +257,96 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
-  # script_coop_server_move_puppet: the client player's position from p_coop_buf
-  ("coop_server_move_puppet",
+  # script_coop_server_move_puppets: every connected player's party to where the player is;
+  # the parties of players not in the reply are hidden. reg0 = slot where the reply's kind is.
+  ("coop_server_move_puppets",
    [
-     (party_get_slot, ":x", "p_coop_buf", SRV_X),
-     (party_get_slot, ":y", "p_coop_buf", SRV_Y),
-     (val_sub, ":x", coop_net_offset),
-     (val_sub, ":y", coop_net_offset),
+     (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
+       (party_set_slot, ":puppet", slot_party_coop_sid, 0), #not seen in this reply yet
+     (try_end),
      (set_fixed_point_multiplier, 100),
-     (init_position, pos1),
-     (position_set_x, pos1, ":x"),
-     (position_set_y, pos1, ":y"),
-     (enable_party, "p_coop_puppet_1"),
-     (party_set_position, "p_coop_puppet_1", pos1),
+     (party_get_slot, ":num_players", "p_coop_buf", SRV_NUM_PLAYERS),
+     (val_min, ":num_players", coop_max_players),
+     (assign, ":base", SRV_PLAYERS),
+     (try_for_range, ":unused", 0, ":num_players"),
+       (party_get_slot, ":slot", "p_coop_buf", ":base"),
+       (val_add, ":base", 1),
+       (party_get_slot, ":x", "p_coop_buf", ":base"),
+       (val_add, ":base", 1),
+       (party_get_slot, ":y", "p_coop_buf", ":base"),
+       (val_add, ":base", 1),
+       (is_between, ":slot", 0, coop_max_players),
+       (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+       (val_sub, ":x", coop_net_offset),
+       (val_sub, ":y", coop_net_offset),
+       (init_position, pos1),
+       (position_set_x, pos1, ":x"),
+       (position_set_y, pos1, ":y"),
+       (enable_party, ":puppet"),
+       (party_set_position, ":puppet", pos1),
+       (party_set_slot, ":puppet", slot_party_coop_sid, 1),
+     (try_end),
+     (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
+       (party_slot_eq, ":puppet", slot_party_coop_sid, 0),
+       (disable_party, ":puppet"), #that player left
+     (try_end),
+     (store_mul, reg0, ":num_players", 3),
+     (val_add, reg0, SRV_PLAYERS),
+    ]),
+
+  # script_coop_client_show_player: another player's party (kind 4 reply: slot, x, y, troops),
+  # with the name as the reply's string when it has one
+  ("coop_client_show_player",
+   [
+     (store_script_param, ":num_strings", 1),
+     (party_get_slot, ":slot", "p_coop_buf", 2),
+     (party_get_slot, ":x", "p_coop_buf", 3),
+     (party_get_slot, ":y", "p_coop_buf", 4),
+     (party_get_slot, ":size", "p_coop_buf", 5),
+     (try_begin),
+       (is_between, ":slot", 0, coop_max_players),
+       (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+       (val_sub, ":x", coop_net_offset),
+       (val_sub, ":y", coop_net_offset),
+       (set_fixed_point_multiplier, 100),
+       (init_position, pos1),
+       (position_set_x, pos1, ":x"),
+       (position_set_y, pos1, ":y"),
+       (try_begin),
+         (neg|party_is_active, ":puppet"),
+         (enable_party, ":puppet"),
+         (party_set_faction, ":puppet", "fac_player_supporters_faction"), #a friend, not an enemy
+         (party_set_position, ":puppet", pos1),
+       (else_try),
+         # far off: jump; otherwise walk there, like the mirrors
+         (party_get_position, pos2, ":puppet"),
+         (position_get_x, ":dx", pos2),
+         (position_get_y, ":dy", pos2),
+         (val_sub, ":dx", ":x"),
+         (val_sub, ":dy", ":y"),
+         (val_abs, ":dx"),
+         (val_abs, ":dy"),
+         (this_or_next|gt, ":dx", coop_mirror_jump),
+         (gt, ":dy", coop_mirror_jump),
+         (party_set_position, ":puppet", pos1),
+       (else_try),
+         (party_set_ai_behavior, ":puppet", ai_bhvr_travel_to_point),
+         (party_set_ai_target_position, ":puppet", pos1),
+       (try_end),
+       (try_begin),
+         (ge, ":num_strings", 1),
+         (party_set_name, ":puppet", s0),
+       (try_end),
+       # its size shows on the map: one stack of the right size is enough for a party seen from afar
+       (try_begin),
+         (gt, ":size", 0),
+         (party_get_num_companions, ":have", ":puppet"),
+         (neq, ":have", ":size"),
+         (party_clear, ":puppet"),
+         (party_add_members, ":puppet", "trp_farmer", ":size"),
+       (try_end),
+       (party_set_slot, ":puppet", slot_party_coop_sid, "$coop_net_seq"), #last seen
+     (try_end),
     ]),
 
   # script_coop_client_apply_positions: entries (sid, tmpl, x, y) in p_coop_buf from slot CLI_ENTRIES.
@@ -545,6 +632,7 @@ def net_reply_handler():
       (neq, "$coop_role", coop_role_single),
       (assign, "$coop_net_pending", 0), #any reply, even a failed send, frees the next request
       (store_script_param, ":num_integers", 1),
+      (store_script_param, ":num_strings", 2),
       (ge, ":num_integers", 2),
       (eq, reg0, coop_net_marker),
       (val_add, "$coop_net_replies", 1),
@@ -554,7 +642,7 @@ def net_reply_handler():
         (eq, ":kind", 1),
         (this_or_next|eq, "$coop_role", coop_role_server),
         (eq, "$coop_role", coop_role_held),
-        # held: a client joined since the hold began, so the world may run again
+        # held: a player joined since the hold began, so the world may run again
         (party_get_slot, ":joins", "p_coop_buf", SRV_JOINS),
         (try_begin),
           (eq, "$coop_role", coop_role_held),
@@ -569,25 +657,31 @@ def net_reply_handler():
           (try_end),
         (try_end),
         (eq, "$coop_role", coop_role_server),
-        (try_begin),
-          (store_script_param, ":num_strings", 2),
-          (ge, ":num_strings", 1),
-          (party_set_name, "p_coop_puppet_1", s0), #the client player's name
-        (try_end),
         (party_get_slot, ":pause", "p_coop_buf", SRV_PAUSE),
         (call_script, "script_coop_server_set_pause", ":pause"),
-        (try_begin),
-          (party_slot_eq, "p_coop_buf", SRV_HAS_CLIENT, 1),
-          (call_script, "script_coop_server_move_puppet"),
-        (try_end),
-        (party_get_slot, ":payload", "p_coop_buf", SRV_KIND),
+        (call_script, "script_coop_server_move_puppets"),
+        (assign, ":at", reg0), #the slot where the payload's kind is
+        (party_get_slot, ":payload", "p_coop_buf", ":at"),
+        (val_add, ":at", 1),
         (try_begin),
           (eq, ":payload", 1),
-          (call_script, "script_coop_server_apply_result"),
+          (call_script, "script_coop_server_apply_result", ":at"),
         (else_try),
-          (eq, ":payload", 2),
-          (party_get_slot, ":num_pairs", "p_coop_buf", SRV_PAYLOAD),
-          (call_script, "script_coop_set_party_troops", "p_coop_puppet_1", SRV_PAYLOAD + 1, ":num_pairs", 0),
+          (eq, ":payload", 2), #a player's troops: slot, number of pairs, pairs
+          (party_get_slot, ":slot", "p_coop_buf", ":at"),
+          (is_between, ":slot", 0, coop_max_players),
+          (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+          (val_add, ":at", 1),
+          (party_get_slot, ":num_pairs", "p_coop_buf", ":at"),
+          (val_add, ":at", 1),
+          (call_script, "script_coop_set_party_troops", ":puppet", ":at", ":num_pairs", 0),
+        (else_try),
+          (eq, ":payload", 3), #a player's name: slot, and the name in s0
+          (ge, ":num_strings", 1),
+          (party_get_slot, ":slot", "p_coop_buf", ":at"),
+          (is_between, ":slot", 0, coop_max_players),
+          (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+          (party_set_name, ":puppet", s0),
         (try_end),
       (else_try),
         (eq, ":kind", 2),
@@ -599,6 +693,10 @@ def net_reply_handler():
         (eq, "$coop_role", coop_role_client),
         (eq, "$coop_busy", 0), #mirrors stay as they are during an encounter or battle
         (call_script, "script_coop_client_apply_troops"),
+      (else_try),
+        (eq, ":kind", 4),
+        (eq, "$coop_role", coop_role_client),
+        (call_script, "script_coop_client_show_player", ":num_strings"),
       (try_end),
     (try_end),
   ]
