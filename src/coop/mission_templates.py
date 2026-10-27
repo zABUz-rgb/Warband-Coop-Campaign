@@ -59,7 +59,26 @@ battle_prep_triggers = [
 ]
 
 
+VICTORY_OPS = (all_enemies_defeated, num_active_teams_le)
+
+
+def checks_victory(trigger):
+  ops = list(trigger[3]) + list(trigger[4])
+  return any(isinstance(op, (tuple, list)) and op[0] in VICTORY_OPS for op in ops)
+
+
 def merge(mission_templates, **unused):
-  from coop_merge import get_by_id
+  from coop_merge import get_by_id, MergeError
   for mt_id in coop_prep_mission_templates:
-    get_by_id(mission_templates, mt_id)[5].extend(battle_prep_triggers)
+    template_triggers = get_by_id(mission_templates, mt_id)[5]
+    # While the sides are neutral nobody counts as an enemy, so Native's "all enemies defeated"
+    # was true and the battle was won the moment the 10 s were up. The victory checks of these
+    # battles wait until the preparation is over (-1). Copies: other battles share these triggers.
+    guarded = 0
+    for i, t in enumerate(template_triggers):
+      if checks_victory(t):
+        template_triggers[i] = (t[0], t[1], t[2], [(lt, "$coop_prep_seconds_left", 0)] + list(t[3])) + tuple(t[4:])
+        guarded += 1
+    if guarded == 0:
+      raise MergeError(f"{mt_id}: no victory check found to hold during the preparation")
+    template_triggers.extend(battle_prep_triggers)
