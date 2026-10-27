@@ -335,6 +335,10 @@ def net_triggers(first_dynamic):
      (try_begin),
        (this_or_next|eq, "$coop_net_pending", 0),
        (ge, "$coop_net_frames", coop_net_resend_frames),
+       (try_begin),
+         (eq, "$coop_net_pending", 1), #the game never answered the last one either
+         (call_script, "script_coop_client_no_answer"),
+       (try_end),
        (assign, "$coop_net_pending", 1),
        (assign, "$coop_net_frames", 0),
        (val_add, "$coop_net_seq", 1),

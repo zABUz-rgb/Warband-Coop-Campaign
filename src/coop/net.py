@@ -103,6 +103,7 @@ def net_scripts(first_dynamic):
      (assign, "$coop_role", coop_role_client),
      (assign, "$coop_srv_player", 0),
      (assign, "$coop_net_pending", 0),
+     (assign, "$coop_net_misses", 0),
      (assign, "$coop_busy", 0),
      (assign, "$coop_hello", 1), #the server holds the world until this client says hello
      (assign, "$coop_leader", 0), #a new session: in nobody's party, nobody in mine
@@ -111,6 +112,8 @@ def net_scripts(first_dynamic):
      # the hero of this session is the host's until the bridge says whether it keeps one for this player
      (assign, "$coop_profile_state", 0),
      (assign, "$coop_profile_ready", 0),
+     (assign, "$coop_profile_got", 0),
+     (assign, "$coop_profile_ask_frames", 0),
      (assign, "$coop_profile_len", 0),
      (assign, "$coop_profile_sent", 0),
      (assign, "$coop_profile_frames", coop_profile_period_frames),
@@ -460,6 +463,18 @@ def net_scripts(first_dynamic):
      (val_add, reg0, SRV_PLAYERS),
     ]),
 
+  # script_coop_client_no_answer: a request of this player game went unanswered (the bridge window
+  # closed, or the link to the host broke). After a few in a row the link counts as lost: a pause
+  # another player held is lifted here, else this player would stand still until the link is back.
+  ("coop_client_no_answer",
+   [
+     (eq, "$coop_role", coop_role_client),
+     (val_add, "$coop_net_misses", 1),
+     (eq, "$coop_net_misses", coop_net_lost_replies),
+     (assign, "$coop_world_paused", 0),
+     (display_message, "@CoopWorld: no answer from the host. Check the join.bat window and the network (Radmin); the game goes on and catches up once the host answers. Your hero is written down at the host every minute while the link works.", 0xFF6666),
+    ]),
+
   # script_coop_client_set_world_pause: kind 5 reply (paused, slot, why). While another player is
   # in battle or a menu, nothing moves on this player's map either (the speed hook), so no one gets
   # ahead of the world that player will come back to.
@@ -615,6 +630,17 @@ def net_scripts(first_dynamic):
            (party_get_template_id, ":cur_tmpl", ":cid"),
            (eq, ":cur_tmpl", ":tmpl"),
            (assign, ":have", 1),
+         (try_end),
+         # the server reused this id for a party of another kind: the old mirror goes, else it would
+         # stay on the map for good (and copies pile up over a long session)
+         (try_begin),
+           (eq, ":have", 0),
+           (gt, ":tmpl", 0),
+           (ge, ":cid", first_dynamic),
+           (party_is_active, ":cid"),
+           (neq, ":cid", "p_main_party"),
+           (neq, ":cid", "$g_encountered_party"),
+           (remove_party, ":cid"),
          (try_end),
          (try_begin),
            (eq, ":have", 0),
@@ -851,9 +877,20 @@ def net_reply_handler():
       (assign, "$coop_net_pending", 0), #any reply, even a failed send, frees the next request
       (store_script_param, ":num_integers", 1),
       (store_script_param, ":num_strings", 2),
+      (try_begin),
+        (this_or_next|lt, ":num_integers", 2),
+        (neq, reg0, coop_net_marker),
+        (call_script, "script_coop_client_no_answer"),
+      (try_end),
       (ge, ":num_integers", 2),
       (eq, reg0, coop_net_marker),
       (val_add, "$coop_net_replies", 1),
+      (try_begin),
+        (ge, "$coop_net_misses", coop_net_lost_replies),
+        (eq, "$coop_role", coop_role_client),
+        (display_message, "@CoopWorld: the host answers again.", 0x66CCFF),
+      (try_end),
+      (assign, "$coop_net_misses", 0),
       ] + copy + [
       (party_get_slot, ":kind", "p_coop_buf", 1),
       (try_begin),

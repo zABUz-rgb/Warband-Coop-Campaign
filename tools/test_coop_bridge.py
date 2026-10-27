@@ -5,6 +5,7 @@
 import socket
 import sys
 import tempfile
+import threading
 import time
 import urllib.request
 from pathlib import Path
@@ -255,11 +256,37 @@ def test_hub_and_relay():
         if "Ivan" in r or "Olga" in r:
             names.add(r.rsplit("|", 1)[1])
     check(names == {"Ivan Petrov", "Olga"}, f"both names reach the server (a raw space kept): {names}")
+    cb.RECONNECT_GRACE_S = 0.6
+    friend = next(p for p in w.players.values() if p.cid.startswith("net"))
     relay.sock.close()
-    time.sleep(0.3)
+    time.sleep(0.2)
+    relay.connect()  # the link broke and came back: the same player, slot and name
+    time.sleep(0.6)
+    again = next((p for p in w.players.values() if p.cid.startswith("net")), None)
+    check(again is friend and again.name == "Olga", "a relay that reconnects keeps its player")
+    relay.sock.close()
+    time.sleep(1.0)
     check(all(not p.cid.startswith("net") for p in w.players.values()), "a dropped relay frees its player")
     lost = cb.Relay(net, "secret", log)
     check(lost.forward("/cli?seq=1") == "0|0", "a relay without the host answers without a marker")
+    # a hub that went quiet without closing the link (a VPN route gone): the relay drops it itself
+    mute = socket.socket()
+    mute.bind(("127.0.0.6", 0))
+    mute.listen(1)
+
+    def welcome_then_silence():
+        conn, _ = mute.accept()
+        conn.recv(4096)
+        conn.sendall(b'{"t": "welcome", "cid": "x"}\n')
+        time.sleep(3)
+        conn.close()
+    threading.Thread(target=welcome_then_silence, daemon=True).start()
+    quiet = cb.Relay(mute.getsockname(), "secret", log, timeout=0.2)
+    quiet.connect()
+    quiet.forward("/cli?seq=1")
+    check(quiet.connected.is_set(), "one late reply is not yet a dead link")
+    quiet.forward("/cli?seq=2")
+    check(not quiet.connected.is_set(), "two in a row: the relay drops the link to make a new one")
 
 
 def mp(op, bid=0, sid=-1, slot=-1, troops=None, hero=None, center=-1):
@@ -419,6 +446,8 @@ def test_profiles():
     req(w2, "c", now=0.0, hello=True, name="Olga")
     req(w2, "c", now=0.1, profile=[1, 0, 100] + hero[:50])
     check("olga" not in w2.profiles, "half a hero is not kept")
+    nums, _ = req(w2, "b", now=0.2, profile_ask=True)
+    check(nums == [14, 0, 300, 120] + hero[:120], f"the answer got lost: asked again, the hero comes again: {nums[:4]}")
     req(w2, "h", now=0.0, hello=True, name="Host", on_server=True)
     check(not w2.players["h"].profile_out, "the host's hero lives in the world itself")
 

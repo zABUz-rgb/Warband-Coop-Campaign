@@ -1688,3 +1688,5 @@ game_menus|mno_coop_loot_leave|Вернуться на карту.
 game_menus|mno_coop_mp_loot|Забрать свою долю добычи.
 quick_strings|qstr_CoopWorld:_{s1}_fell|CoopWorld: {s1} пал в совместном бою и тяжело ранен.
 quick_strings|qstr_CoopWorld:_the_spoil|CoopWorld: вас ждёт добыча совместного боя.
+quick_strings|qstr_CoopWorld:_the_host_|CoopWorld: хост снова отвечает.
+quick_strings|qstr_CoopWorld:_no_answer|CoopWorld: хост не отвечает. Проверьте окно join.bat и сеть (Radmin); игра продолжается и догонит мир, когда хост ответит. Пока связь есть, ваш герой записывается у хоста каждую минуту.

@@ -41,6 +41,7 @@ coop_mp_pairs_slot = 900         # on the battle server: the players' sides of t
 coop_mp_switch_wait = 3          # seconds after a new battle mission starts before the sides are set
 coop_mp_resend_ms = 3000
 coop_profile_chunk = 50           # profile numbers sent with one client request
+coop_profile_ask_frames = 400     # client trigger runs before asking again for the kept hero (the answer got lost)
 coop_profile_period_frames = 3000 # client trigger runs between writing the hero down (about a minute)         # the waiting window asks the bridge again after this long without a reply
 
 coop_net_marker = 7777          # first number of every bridge reply (failed sends have none)
@@ -51,6 +52,7 @@ coop_net_batch_far = 6          # other parties per server report, round robin (
 coop_net_near_radius = 3000     # map units * 100: "near the puppet"
 coop_net_max_entries = 17       # entries in one client reply: 3 + 7 * 17 numbers <= 128 registers
 coop_net_resend_frames = 200    # trigger runs to wait for a lost reply
+coop_net_lost_replies = 10      # client requests in a row without an answer from the host: the link is lost
 
 # Time on the map flows only while the player moves or rests: both roles rest when idle
 coop_world_time_speed = 1        # rest time speed; Native's "Wait here" uses 5, which ran the

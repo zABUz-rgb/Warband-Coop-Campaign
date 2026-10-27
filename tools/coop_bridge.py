@@ -37,12 +37,12 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
-                    [&pf=seq,offset,total,v1,v2,...][&join=slot][&joinans=slot,yes][&leave=1][&release=1]
+                    [&pf=seq,offset,total,v1,v2,...][&pfq=1][&join=slot][&joinans=slot,yes][&leave=1][&release=1]
                     [&give=slot,t1,n1,...][&giveans=id,yes]
                     [&me=t1,n1,...][&name=player name]
     fac: the kingdom the player serves (0: none); pf: part of the player's hero (the profile, see
     coop/profile.py), kept by the hub in profiles.json under the player's name and sent back
-    (kind 14) when that player joins again; join: ask the player in slot to take this one into the
+    (kind 14) when that player joins again, or asks again with pfq (the answer got lost); join: ask the player in slot to take this one into the
     party; joinans: the answer to the player in slot asking; leave: leave the leader's party;
     release: let all followers go; give: offer troops to the player in slot; giveans: the answer
     to offer id (see coop/players.py);
@@ -112,6 +112,7 @@ import argparse
 import base64
 import hmac
 import json
+import secrets
 import socket
 import threading
 import time
@@ -138,6 +139,8 @@ CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350
 FETCHED_MARK = "coopworld_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
 PROTOCOL = 1
+RECONNECT_GRACE_S = 30.0  # a relay that lost the hub keeps its player (slot, party, battle) this long
+RELAY_MISSES = 2          # replies in a row the hub did not give in time: the link is dead, reconnect
 MP_MARKER = 7778
 MP_ONLINE_S = 10.0      # a battle server not heard from for this long is not running
 GATHER_S = 20.0         # invited players have this long to answer before the battle starts
@@ -500,7 +503,7 @@ class World:
             pass
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
-                       on_server=False, faction=None, profile=None, together=None):
+                       on_server=False, faction=None, profile=None, together=None, profile_ask=False):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
@@ -520,12 +523,12 @@ class World:
                 p.name, p.name_pending = name, True
             if hello:
                 self.joins += 1
-                if not on_server:
-                    # the hero kept for this player goes back to its game, or word that there is none
-                    kept = self.profiles.get(self._profile_key(cid) or "", [])
-                    p.profile_out = [[14, off, len(kept), len(kept[off:off + PROFILE_PER_REPLY])]
-                                     + kept[off:off + PROFILE_PER_REPLY]
-                                     for off in range(0, len(kept), PROFILE_PER_REPLY)] or [[14, 0, 0, 0]]
+            if (hello or profile_ask) and not on_server and not p.profile_out:
+                # the hero kept for this player goes back to its game, or word that there is none
+                kept = self.profiles.get(self._profile_key(cid) or "", [])
+                p.profile_out = [[14, off, len(kept), len(kept[off:off + PROFILE_PER_REPLY])]
+                                 + kept[off:off + PROFILE_PER_REPLY]
+                                 for off in range(0, len(kept), PROFILE_PER_REPLY)] or [[14, 0, 0, 0]]
             if profile is not None and not on_server:
                 self._profile_part(p, profile)
             if together:
@@ -1115,7 +1118,8 @@ def handle_request(world, role, target, now, cid="local"):
                                             hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp,
                                             on_server=q.get("srvp") == "1",
                                             faction=query_int(q, "fac", 0) if "fac" in q else None,
-                                            profile=parse_profile(q.get("pf", "")), together=together)
+                                            profile=parse_profile(q.get("pf", "")),
+                                            profile_ask=q.get("pfq") == "1", together=together)
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
@@ -1189,6 +1193,16 @@ def serve_http(addr, answer, log, name):
 
 # ---- the network between the hub and the relays: one JSON message per line
 
+def keep_alive(sock):
+    """Let the system notice a link that died without a word (a VPN dropping the route)."""
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        if hasattr(socket, "SIO_KEEPALIVE_VALS"):
+            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 5000, 1000))
+    except (OSError, ValueError):
+        pass
+
+
 def send_msg(sock, lock, msg):
     data = (json.dumps(msg) + "\n").encode()
     with lock:
@@ -1220,11 +1234,20 @@ def serve_relays(addr, world, key, save_dir, log):
     srv.listen(8)
     log(f"net: listening for players on {host}:{port}")
     counter = [0]
+    owners = {}  # cid -> the connection serving it now (a reconnect takes the player over)
+
+    def drop_later(cid, conn):
+        time.sleep(RECONNECT_GRACE_S)
+        if owners.get(cid) is conn:
+            owners.pop(cid, None)
+            world.drop_player(cid)  # gone: its silence no longer pauses the world
+            log(f"net: player {cid} left")
 
     def one(conn, peer):
         counter[0] += 1
         cid = f"net{counter[0]}@{peer[0]}"
         lock = threading.Lock()
+        keep_alive(conn)
         try:
             msgs = read_msgs(conn)
             hello = next(msgs, None)
@@ -1233,9 +1256,15 @@ def serve_relays(addr, world, key, save_dir, log):
                 send_msg(conn, lock, {"t": "refused", "why": "wrong key or protocol"})
                 log(f"net: refused {peer[0]}")
                 return
+            session = "".join(ch for ch in str(hello.get("session", "")) if ch.isalnum())[:16]
+            if session:
+                cid = f"net-{session}@{peer[0]}"
+            again = cid in owners
+            owners[cid] = conn
             send_msg(conn, lock, {"t": "welcome", "cid": cid})
             world.set_mp_name(cid, hello.get("mp_name"))
-            log(f"net: player {cid} connected" + (f", multiplayer name '{hello['mp_name']}'" if hello.get("mp_name") else ""))
+            log(f"net: player {cid} {'connected again' if again else 'connected'}"
+                + (f", multiplayer name '{hello['mp_name']}'" if hello.get("mp_name") else ""))
             for msg in msgs:
                 if msg.get("t") == "req":
                     body = handle_request(world, "cli", msg.get("target", "/"), time.time(), cid=cid)
@@ -1251,9 +1280,10 @@ def serve_relays(addr, world, key, save_dir, log):
         except (OSError, ValueError) as e:
             log(f"net: {cid} error {e}")
         finally:
-            world.drop_player(cid)  # gone: its silence no longer pauses the world
             conn.close()
-            log(f"net: player {cid} left")
+            if owners.get(cid) is conn:
+                log(f"net: lost {cid}; its player waits {RECONNECT_GRACE_S:.0f} s for it to come back")
+                threading.Thread(target=drop_later, args=(cid, conn), daemon=True).start()
 
     def loop():
         while True:
@@ -1275,22 +1305,27 @@ class Relay:
         self.waiting = {}   # request id -> [event, reply]
         self.next_id = 0
         self.connected = threading.Event()
+        self.session = secrets.token_hex(6)  # the same player for the hub over reconnects
+        self.misses = 0
 
     def connect(self):
         sock = socket.create_connection(self.hub, timeout=10)
         sock.settimeout(None)
-        send_msg(sock, self.lock, {"t": "hello", "key": self.key, "protocol": PROTOCOL, "mp_name": self.mp_name})
+        keep_alive(sock)
+        send_msg(sock, self.lock, {"t": "hello", "key": self.key, "protocol": PROTOCOL, "mp_name": self.mp_name,
+                                   "session": self.session})
         msgs = read_msgs(sock)
         first = next(msgs, None)
         if not first or first.get("t") != "welcome":
             sock.close()
             raise ConnectionError((first or {}).get("why", "no answer from the host"))
         self.sock = sock
+        self.misses = 0
         self.connected.set()
         self.log(f"relay: connected to the host as {first.get('cid')}")
-        threading.Thread(target=self._reader, args=(msgs,), daemon=True).start()
+        threading.Thread(target=self._reader, args=(msgs, sock), daemon=True).start()
 
-    def _reader(self, msgs):
+    def _reader(self, msgs, sock):
         try:
             for msg in msgs:
                 waiter = self.waiting.pop(msg.get("id"), None) if msg.get("t") == "rep" else \
@@ -1300,8 +1335,9 @@ class Relay:
                     waiter[0].set()
         except (OSError, ValueError):
             pass
-        self.connected.clear()
-        self.log("relay: lost the host")
+        if self.sock is sock:  # not a link already replaced by a new one
+            self.connected.clear()
+            self.log("relay: lost the host")
 
     def call(self, msg, wait_key):
         waiter = [threading.Event(), None]
@@ -1322,7 +1358,20 @@ class Relay:
             self.next_id += 1
             rid = self.next_id
         rep = self.call({"t": "req", "id": rid, "target": target}, rid)
-        return rep["body"] if rep else reply_text([0, 0])
+        if rep:
+            self.misses = 0
+            return rep["body"]
+        self.misses += 1
+        if self.misses == RELAY_MISSES and self.connected.is_set():
+            # the hub went quiet without closing the link: drop it, keep_connected makes a new one
+            self.log("relay: the host stopped answering; reconnecting")
+            self.connected.clear()
+            try:
+                self.sock.shutdown(socket.SHUT_RDWR)
+                self.sock.close()
+            except OSError:
+                pass
+        return reply_text([0, 0])
 
     def fetch_save(self, save_dir, slot_name=None):
         """Copy the host's newest save into save_dir. Without slot_name: the file fetched last time
@@ -1411,6 +1460,7 @@ def run_host(args, log):
     else:
         log("net: no --key given, other players cannot join (this PC only)")
     last = dict(world.stats)
+    last_cause = None
     known = None
     while True:
         time.sleep(5)
@@ -1430,8 +1480,20 @@ def run_host(args, log):
         known = seen if world._mp_online(time.time()) else None
         with world.lock:
             s, n = dict(world.stats), len(world.parties)
-            paused = world.paused(time.time())
+            now = time.time()
+            cause = world.pause_cause(now)
+            paused = cause is not None
+            if cause != last_cause:
+                if cause is None:
+                    log("world runs again")
+                else:
+                    who = world._player_in_slot(cause[0])
+                    log(f"world held by player {cause[0]} ({who.cid if who else '?'}): "
+                        + ("in an encounter or battle" if cause[1] == 1 else
+                           "silent - a menu, a screen, loading, or its game/link froze"))
+                last_cause = cause
             players = ", ".join(f"{p.slot}:{p.name or p.cid}{' busy' if p.busy else ''}"
+                                f"{f' silent {now - p.last:.0f}s' if p.last is not None and now - p.last > 2 else ''}"
                                 f"{' mp:' + world.mp_names[p.cid] if p.cid in world.mp_names else ''}"
                                 for p in sorted(world.players.values(), key=lambda p: (p.slot is None, p.slot)))
             mp_text = "battle server " + ("on" if world._mp_online(time.time()) else "off")

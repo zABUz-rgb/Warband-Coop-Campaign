@@ -130,6 +130,12 @@ profile_scripts = [
      (party_get_slot, ":offset", "p_coop_buf", 2),
      (party_get_slot, ":total", "p_coop_buf", 3),
      (party_get_slot, ":n", "p_coop_buf", 4),
+     (eq, "$coop_profile_state", 0), #settled already: a late copy must not take the hero back
+     (try_begin),
+       (eq, ":offset", 0),
+       (assign, "$coop_profile_got", 0),
+     (try_end),
+     (val_add, "$coop_profile_got", ":n"),
      (try_for_range, ":k", 0, ":n"),
        (store_add, ":src", ":k", 5),
        (store_add, ":dst", ":k", ":offset"),
@@ -143,6 +149,7 @@ profile_scripts = [
      (else_try),
        (store_add, ":end", ":offset", ":n"),
        (ge, ":end", ":total"),
+       (ge, "$coop_profile_got", ":total"), #a part went missing: asked for again (client_tick)
        (assign, "$coop_profile_ready", 1),
      (try_end),
     ]),
@@ -259,6 +266,16 @@ def client_tick():
       (call_script, "script_coop_profile_apply"),
     (try_end),
     (str_clear, s19),
+    # the bridge's answer about the kept hero got lost (a broken link): ask again, else this
+    # session's hero would never be written down
+    (try_begin),
+      (eq, "$coop_profile_state", 0),
+      (eq, "$coop_profile_ready", 0),
+      (val_add, "$coop_profile_ask_frames", 1),
+      (ge, "$coop_profile_ask_frames", coop_profile_ask_frames),
+      (assign, "$coop_profile_ask_frames", 0),
+      (str_store_string, s19, "@&pfq=1"),
+    (try_end),
     (try_begin),
       (eq, "$coop_profile_state", 1),
       (val_add, "$coop_profile_frames", 1),
