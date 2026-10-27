@@ -15,8 +15,12 @@ Modes:
     join  a relay, on a friend's PC: forwards its player game's requests to the hub, and can
           fetch the host's newest save first.
 
-    python tools/coop_bridge.py host --key SECRET [--listen 0.0.0.0:7350]
-    python tools/coop_bridge.py join HOST_IP --key SECRET [--fetch-save]
+    python tools/coop_bridge.py host --key SECRET [--listen 0.0.0.0:7350] [--mp-name NAME]
+    python tools/coop_bridge.py join HOST_IP --key SECRET [--fetch-save] [--mp-name NAME]
+
+--mp-name: the player's name on the battle server (multiplayer profile name). Joint battles find
+the player there by it, so each player's soldiers obey that player; without it, by the hero's name
+(which friends who loaded the host's save share with the host).
 
 World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...]   or  /srv?seq=S&hold=1
     d: spawned parties: position, where the party is heading (tx,ty), and the party it is inside
@@ -48,8 +52,9 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them) or
     the player in puppet slot; 2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
     reply 7777|6|bid|type|slot       an invitation from the player in slot: type 1 may join, 2 attacked
-          7777|7|bid|status|team     0 gathering, 1 fought on the battle server (team 0 or 1),
-                                     2 cancelled or another battle is on, 3 no battle server
+          7777|7|bid|status|team["name"]   0 gathering, 1 fought on the battle server (team 0 or 1),
+                                     2 cancelled or another battle is on, 3 no battle server;
+                                     "name": the name the player is expected under on the battle server
           7777|8|bid|won|xp|n|troop|killed|wounded|...   the player's losses, and battle experience
           7777|9|bid|n|(wpt,hits,damage)*n   how the player's hero fought, by weapon proficiency
           7777|10|bid|health|captor            the hero's health in percent (-1: did not fight as the hero);
@@ -192,6 +197,7 @@ class World:
         self.battle_seq = 0
         self.mp_last = None     # real time the battle server last asked
         self.mp_players = {}    # player number on the battle server -> name
+        self.mp_names = {}      # cid -> the name its player uses on the battle server (launcher)
         self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0}
 
     # ---- players
@@ -211,6 +217,15 @@ class World:
     def drop_player(self, cid):
         with self.lock:
             self.players.pop(cid, None)
+            self.mp_names.pop(cid, None)
+
+    def set_mp_name(self, cid, name):
+        name = " ".join((name or "").split())[:40]
+        with self.lock:
+            if name:
+                self.mp_names[cid] = name
+            else:
+                self.mp_names.pop(cid, None)
 
     def paused(self, now):
         return self.pause_cause(now) is not None
@@ -329,14 +344,17 @@ class World:
             if mp is not None:
                 self._mp_op(p, mp, now)
             self._battle_tick(now)
+            wanted = self._mp_wanted_name(cid)
+            wanted = f'"{wanted}"' if wanted else None  # quoted: a name like "1" stays a string
             if p.mp_out:
-                return p.mp_out.pop(0), None
+                nums = p.mp_out.pop(0)
+                return nums, wanted if nums[0] == 7 else None
             if mp is not None and mp["op"] in (1, 2, 3):
                 # the waiting window: how the battle stands
                 b = self.battle
                 if b is not None and cid in b.sides:
-                    return [7, b.bid, 1 if b.state == "running" else 0, b.sides[cid]], None
-                return [7, mp["bid"], 0, 0], None
+                    return [7, b.bid, 1 if b.state == "running" else 0, b.sides[cid]], wanted
+                return [7, mp["bid"], 0, 0], wanted
             by_distance = sorted(self.parties.items(),
                                  key=lambda kv: (kv[1][1] - x) ** 2 + (kv[1][2] - y) ** 2)
             # whether another player holds the world still: at once when it changes, and now and then
@@ -463,16 +481,39 @@ class World:
             s[4] = max(1, round(s[3] * scale))
         b.stacks, b.sent, b.state = stacks, 0, "loading"
 
+    def _mp_wanted_name(self, cid):
+        """The name a campaign player is expected under on the battle server: the one given to the
+        launcher, else the hero's."""
+        q = self.players.get(cid)
+        return self.mp_names.get(cid) or (q.name if q is not None else None)
+
     def _mp_player_number(self, cid):
         """The battle server's player number of a campaign player, matched by name, or -1."""
-        q = self.players.get(cid)
-        if q is None or not q.name:
+        wanted = self._mp_wanted_name(cid)
+        if not wanted:
             return -1
-        want = " ".join(q.name.lower().split())
+        def norm(text):
+            return " ".join(text.lower().split())
+        # the game sends names in its own code page, read here as latin-1; a launcher name is real
+        # text, so a Cyrillic one is compared in that form too
+        wants = {norm(wanted), norm(wanted.encode("cp1251", "ignore").decode("latin-1"))}
         for no, name in sorted(self.mp_players.items()):
-            if " ".join(name.lower().split()) == want:
+            if norm(name) in wants:
                 return no
         return -1
+
+    def mp_recognition(self, now):
+        """[(slot, hero name, name on the battle server, its player number or None)] of the campaign's
+        players; None while the battle server is off or the name is not there."""
+        with self.lock:
+            online = self._mp_online(now)
+            out = []
+            for p in sorted(self.players.values(), key=lambda q: (q.slot is None, q.slot)):
+                if p.slot is None:
+                    continue
+                no = self._mp_player_number(p.cid) if online else -1
+                out.append((p.slot, p.name or p.cid, self._mp_wanted_name(p.cid), no if no >= 0 else None))
+            return out
 
     def _finish(self, b, winner, fallen, now, weapons=(), health=None):
         losses = {cid: [] for cid in b.sides}
@@ -848,7 +889,8 @@ def serve_relays(addr, world, key, save_dir, log):
                 log(f"net: refused {peer[0]}")
                 return
             send_msg(conn, lock, {"t": "welcome", "cid": cid})
-            log(f"net: player {cid} connected")
+            world.set_mp_name(cid, hello.get("mp_name"))
+            log(f"net: player {cid} connected" + (f", multiplayer name '{hello['mp_name']}'" if hello.get("mp_name") else ""))
             for msg in msgs:
                 if msg.get("t") == "req":
                     body = handle_request(world, "cli", msg.get("target", "/"), time.time(), cid=cid)
@@ -880,8 +922,9 @@ def serve_relays(addr, world, key, save_dir, log):
 class Relay:
     """The friend's side: forwards its player game's requests to the hub, one at a time."""
 
-    def __init__(self, hub, key, log, timeout=3.0):
+    def __init__(self, hub, key, log, timeout=3.0, mp_name=None):
         self.hub, self.key, self.log, self.timeout = hub, key, log, timeout
+        self.mp_name = mp_name
         self.sock = None
         self.lock = threading.Lock()
         self.waiting = {}   # request id -> [event, reply]
@@ -891,7 +934,7 @@ class Relay:
     def connect(self):
         sock = socket.create_connection(self.hub, timeout=10)
         sock.settimeout(None)
-        send_msg(sock, self.lock, {"t": "hello", "key": self.key, "protocol": PROTOCOL})
+        send_msg(sock, self.lock, {"t": "hello", "key": self.key, "protocol": PROTOCOL, "mp_name": self.mp_name})
         msgs = read_msgs(sock)
         first = next(msgs, None)
         if not first or first.get("t") != "welcome":
@@ -1014,6 +1057,7 @@ def make_log(path):
 
 def run_host(args, log):
     world = World()
+    world.set_mp_name("local", args.mp_name)
     serve_http(parse_addr(args.server, 80), lambda t: handle_request(world, "srv", t, time.time()), log, "srv")
     serve_http(parse_addr(args.client, 80), lambda t: handle_request(world, "cli", t, time.time()), log, "cli")
     serve_http(parse_addr(args.mp, 80), lambda t: handle_request(world, "mp", t, time.time()), log, "mp")
@@ -1022,12 +1066,28 @@ def run_host(args, log):
     else:
         log("net: no --key given, other players cannot join (this PC only)")
     last = dict(world.stats)
+    known = None
     while True:
         time.sleep(5)
+        # who the battle server recognises: told whenever it changes
+        seen = world.mp_recognition(time.time())
+        if world._mp_online(time.time()) and seen != known:
+            for slot, hero, wanted, no in seen:
+                if no is None:
+                    log(f"battle server: player {slot} ({hero}) NOT found - nobody there is named '{wanted}'. "
+                        f"Joint battles: that player's soldiers fight without the player")
+                else:
+                    log(f"battle server: player {slot} ({hero}) recognised as '{wanted}' (player {no} there)")
+            if not seen:
+                log("battle server: no campaign players yet")
+            names = ", ".join(f"'{n}'" for n in world.mp_players.values()) or "nobody"
+            log(f"battle server: on it now: {names}")
+        known = seen if world._mp_online(time.time()) else None
         with world.lock:
             s, n = dict(world.stats), len(world.parties)
             paused = world.paused(time.time())
             players = ", ".join(f"{p.slot}:{p.name or p.cid}{' busy' if p.busy else ''}"
+                                f"{' mp:' + world.mp_names[p.cid] if p.cid in world.mp_names else ''}"
                                 for p in sorted(world.players.values(), key=lambda p: (p.slot is None, p.slot)))
             mp_text = "battle server " + ("on" if world._mp_online(time.time()) else "off")
             if world.battle is not None:
@@ -1041,7 +1101,7 @@ def run_host(args, log):
 
 
 def run_join(args, log):
-    relay = Relay(parse_addr(args.host, NET_PORT), args.key, log)
+    relay = Relay(parse_addr(args.host, NET_PORT), args.key, log, mp_name=args.mp_name)
     try:
         relay.connect()
     except (OSError, ConnectionError) as e:
@@ -1067,12 +1127,14 @@ def main():
     h.add_argument("--server", default="127.0.0.1:80", help="address the world server game calls")
     h.add_argument("--client", default="127.0.0.2:80", help="address this PC's player game calls")
     h.add_argument("--mp", default="127.0.0.3:80", help="address the battle server game (multiplayer) calls")
+    h.add_argument("--mp-name", default=None, help="the host's name on the battle server (multiplayer profile)")
     h.add_argument("--save-dir", default=str(default_save_dir()), help="the world server's saves")
     j = sub.add_parser("join", help="a relay on a friend's PC")
     j.add_argument("host", help="the host's address, e.g. 26.1.2.3 (Radmin VPN) or 192.168.1.5")
     j.add_argument("--key", required=True)
     j.add_argument("--client", default="127.0.0.2:80", help="address this PC's player game calls")
     j.add_argument("--fetch-save", action="store_true", help="copy the host's newest save here first")
+    j.add_argument("--mp-name", default=None, help="this player's name on the battle server (multiplayer profile)")
     j.add_argument("--save-dir", default=str(default_save_dir()))
     j.add_argument("--save-slot", default=None,
                    help="file name for the fetched save (default: the one fetched last time, else a free low slot)")

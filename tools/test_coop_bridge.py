@@ -311,6 +311,27 @@ def test_joint_battle():
     check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
 
 
+def test_multiplayer_names():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 2)], name="Hero")
+    req(w, "b", x=100, now=0.0, me=[(33, 2)], name="Hero")  # loaded the host's save: the same hero's name
+    w.set_mp_name("a", "  Ivan ")
+    w.set_mp_name("b", "Olga")
+    w.mp_request(0, 0, -1, {}, {0: "olga", 3: "IVAN", 5: "Hero"}, 0.0)
+    check(w._mp_player_number("a") == 3 and w._mp_player_number("b") == 0,
+          "players are found on the battle server by the names given to their launchers")
+    check([(s, wanted, no) for s, _, wanted, no in w.mp_recognition(0.1)] ==
+          [(w.players["a"].slot, "Ivan", 3), (w.players["b"].slot, "Olga", 0)], "and the bridge can tell who it found")
+    w.set_mp_name("b", "")
+    check(w._mp_player_number("b") == 5, "without a launcher name, by the hero's name")
+    nums, name = req(w, "a", now=1.0, busy=True, mp=mp(2, 7))
+    check(nums[0] == 7 and name == '"Ivan"', f"the waiting window learns the name expected: {name}")
+    req(w, "c", now=1.0, name="1")
+    check(req(w, "c", now=1.1, busy=True, mp=mp(2, 7))[1] == '"1"', "quoted, so a name like 1 stays a string")
+    w.drop_player("a")
+    check("a" not in w.mp_names, "a player who left takes the name along")
+
+
 def test_joint_battle_scaled_and_lost():
     w = cb.World()
     req(w, "a", now=0.0, me=[(31, 300)], name="Ivan")
@@ -386,6 +407,7 @@ if __name__ == "__main__":
     test_clock()
     test_host_plays_on_server()
     test_joint_battle()
+    test_multiplayer_names()
     test_joint_battle_scaled_and_lost()
     test_joint_battle_decline_cancel_pvp()
     test_hub_and_relay()

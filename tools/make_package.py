@@ -192,6 +192,21 @@ HOST_BODY = r"""  $key = $First
   $bridgeArgs = @("host")
   if ($key) {{ $bridgeArgs += @("--key", $key) }} else {{ Write-Host "{no_key}" -ForegroundColor Yellow }}"""
 
+# both launchers: the player's name on the battle server, remembered in mp_name.txt
+MP_NAME_BODY = r"""
+  $mpFile = Join-Path $here "mp_name.txt"
+  $mpName = ""
+  if (Test-Path $mpFile) {{ $mpName = (Get-Content $mpFile -Raw -Encoding UTF8).Trim() }}
+  Write-Host "{mp_name_hint}"
+  $answer = Read-Host "{ask_mp_name} [$mpName]"
+  if ($answer) {{ $mpName = $answer.Trim(); Set-Content -Path $mpFile -Value $mpName -Encoding UTF8 }}
+  if ($mpName) {{
+    $bridgeArgs += @("--mp-name", $mpName)
+    Write-Host "{mp_name_set} $mpName" -ForegroundColor Green
+  }} else {{
+    Write-Host "{no_mp_name}" -ForegroundColor Yellow
+  }}"""
+
 JOIN_BODY = r"""  $hostAddress = $First
   $key = $Second
   if (-not $hostAddress) {{ $hostAddress = Read-Host "{ask_host}" }}
@@ -216,6 +231,10 @@ LAUNCHER_TEXT = {
     ask_key_join="Password the host gave you",
     no_key_join="No password given.",
     save_hint="The host's newest save goes into your CoopWorld saves (the window shows which slot): load it in the game.",
+    mp_name_hint="Joint battles: the name you use on the battle server (Multiplayer - Profiles). Your soldiers obey you only under this name.",
+    ask_mp_name="Your multiplayer name (Enter = keep the one in brackets)",
+    mp_name_set="Multiplayer name:",
+    no_mp_name="No multiplayer name: the bridge looks for your hero's name on the battle server.",
   ),
   "ru": dict(
     press_enter="Нажмите Enter, чтобы закрыть окно",
@@ -231,6 +250,10 @@ LAUNCHER_TEXT = {
     ask_key_join="Пароль, который дал хост",
     no_key_join="Пароль не указан.",
     save_hint="Свежее сохранение хоста попадёт в ваши сохранения CoopWorld (в окне будет видно, в какой слот) - загрузите его в игре.",
+    mp_name_hint="Совместные бои: имя, под которым вы заходите на сервер боя (Мультиплеер - Профили). Только под этим именем ваши солдаты будут вас слушаться.",
+    ask_mp_name="Ваше имя в мультиплеере (Enter - оставить то, что в скобках)",
+    mp_name_set="Имя в мультиплеере:",
+    no_mp_name="Имя в мультиплеере не задано: мост будет искать на сервере боя имя вашего героя.",
   ),
 }
 
@@ -239,7 +262,7 @@ def launcher(kind, lang):
     m = LAUNCHER_TEXT[lang]
     title = {"host": {"en": "CoopWorld: host the game (the world lives on this PC)", "ru": "CoopWorld: запуск игры у хоста"},
              "join": {"en": "CoopWorld: join a friend's game", "ru": "CoopWorld: подключение к игре друга"}}[kind][lang]
-    body = (HOST_BODY if kind == "host" else JOIN_BODY).format(**m)
+    body = (HOST_BODY if kind == "host" else JOIN_BODY).format(**m) + MP_NAME_BODY.format(**m)
     return LAUNCHER_TEMPLATE.format(title=title, body=body, **m)
 
 
@@ -305,8 +328,11 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
      Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
   2. Каждый друг заходит на этот сервер из второго окна Warband (модуль CoopWorld):
        Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
-     Имя в мультиплеере должно совпадать с именем вашего героя в кампании: тогда мост сам ставит
-     вас в нужную команду и отдаёт вам ваших солдат. Окно игры остаётся на сервере между боями.
+     host.bat и join.bat спрашивают ваше имя в мультиплеере (запоминают его в mp_name.txt): заходите
+     на сервер боя ровно под этим именем - тогда мост сам ставит вас в нужную команду и отдаёт вам
+     ваших солдат. Мост пишет в своём окне, кого он узнал на сервере боя ("recognised") и кого нет
+     ("NOT found"). Имена у всех разные! (У друзей герой из сохранения хоста, с тем же именем.)
+     Окно игры остаётся на сервере между боями.
   3. Во встрече с отрядом на карте выберите "CoopWorld: сразиться вместе с друзьями".
      Игроки поблизости получают приглашение ("В бой!" или "Отказаться"); через несколько секунд
      раунд на сервере боя начинается заново с армиями из кампании. Переключитесь в окно мультиплеера.
@@ -369,8 +395,10 @@ JOINT BATTLES (multiplayer server):
      Host a game, game type Battle, any field map, 0 bots. The bridge finds it by itself.
   2. Every friend joins that server from a second Warband window (CoopWorld):
      the LAN server list, or Favorites with the host's address, e.g. 26.x.x.x:7240.
-     Use your campaign hero's name as your multiplayer name: the bridge then puts you on your
-     side and gives you command of your soldiers.
+     host.bat and join.bat ask for your multiplayer name (kept in mp_name.txt): join the battle
+     server under exactly that name, and the bridge puts you on your side and gives you command of
+     your soldiers. The bridge window tells who it recognised there and who it did not.
+     Every player needs a different name (friends' heroes come from the host's save, same name).
   3. In an encounter: "CoopWorld: fight together with your friends". Players nearby are invited;
      the battle server restarts its round with the campaign's armies. Switch to that window.
   4. Meeting another player's party: "CoopWorld: fight this player" (that player cannot decline).

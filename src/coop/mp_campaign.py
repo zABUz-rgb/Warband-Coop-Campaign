@@ -242,10 +242,16 @@ mp_campaign_scripts = [
   # script_coop_client_mp_text: s1 = what the waiting window says now
   ("coop_client_mp_text",
    [
+     (str_clear, s2),
+     (try_begin),
+       (eq, "$coop_mp_name_known", 1),
+       (str_store_party_name, s3, "p_coop_buf"),
+       (str_store_string, s2, "@^^Your name on the battle server must be {s3} (Multiplayer - Profiles); then your soldiers obey you."),
+     (try_end),
      (store_add, reg1, "$coop_mp_team", 1),
      (try_begin),
        (eq, "$coop_mp_status", 1),
-       (str_store_string, s1, "@The battle is on!^^Switch to the multiplayer window (the CoopWorld battle server) and fight: your side is team {reg1}. Your troops are on the field and obey your orders.^^This window waits for the outcome. The world stands still meanwhile."),
+       (str_store_string, s1, "@The battle is on!^^Switch to the multiplayer window (the CoopWorld battle server) and fight: your side is team {reg1}. Your troops are on the field and obey your orders.^^This window waits for the outcome. The world stands still meanwhile.{s2}"),
      (else_try),
        (eq, "$coop_mp_status", 2),
        (str_store_string, s1, "@The joint battle was cancelled (another one is being fought, or the player who began it left)."),
@@ -256,7 +262,7 @@ mp_campaign_scripts = [
        (eq, "$coop_mp_status", 4),
        (str_store_string, s1, "@The battle is over. The outcome is in the message log."),
      (else_try),
-       (str_store_string, s1, "@Gathering the players for a joint battle...^^Players nearby are invited. The battle starts in a few seconds."),
+       (str_store_string, s1, "@Gathering the players for a joint battle...^^Players nearby are invited. The battle starts in a few seconds.{s2}"),
      (try_end),
     ]),
 
@@ -560,6 +566,13 @@ def reply_branches():
       (eq, ":kind", 7),
       (this_or_next|eq, "$coop_role", coop_role_client),
       (eq, "$coop_srv_player", 1), #the host's own player requests
+      (try_begin),
+        (ge, ":num_strings", 1), #the name this player is expected under on the battle server
+        (party_set_name, "p_coop_buf", s0), #kept as a party name: string registers do not last
+        (neq, "$coop_mp_name_known", 1),
+        (assign, "$coop_mp_name_known", 1),
+        (assign, "$coop_mp_dirty", 1),
+      (try_end),
       (call_script, "script_coop_client_mp_status"),
     (else_try),
       (eq, ":kind", 10),

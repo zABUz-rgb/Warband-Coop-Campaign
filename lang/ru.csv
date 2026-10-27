@@ -198,11 +198,11 @@ quick_strings|qstr_Close|Закрыть
 quick_strings|qstr_CoopWorld:_a_battle_|CoopWorld: начинается бой из кампании!
 quick_strings|qstr_CoopWorld:_the_joint|CoopWorld: совместный бой ВЫИГРАН. Ваши потери: убито {reg1}, ранено {reg2}.
 quick_strings|qstr_CoopWorld:_the_joint_|CoopWorld: совместный бой ПРОИГРАН. Ваши потери: убито {reg1}, ранено {reg2}.
-quick_strings|qstr_The_battle_is_on!^^S|Бой начался!^^Переключитесь в окно мультиплеера (сервер боя CoopWorld) и сражайтесь: ваша сторона — команда {reg1}. Ваши отряды уже на поле и слушаются ваших приказов.^^Это окно ждёт итогов боя. Мир тем временем стоит.
+quick_strings|qstr_The_battle_is_on!^^S|Бой начался!^^Переключитесь в окно мультиплеера (сервер боя CoopWorld) и сражайтесь: ваша сторона — команда {reg1}. Ваши отряды уже на поле и слушаются ваших приказов.^^Это окно ждёт итогов боя. Мир тем временем стоит.{s2}
 quick_strings|qstr_The_joint_battle_was|Совместный бой отменён (уже идёт другой бой или начавший его игрок вышел).
 quick_strings|qstr_No_battle_server_is_|Сервер боя не запущен. Его запускает хост: Мультиплеер — Создать игру — режим «Битва», модуль CoopWorld.
 quick_strings|qstr_The_battle_is_over._|Бой окончен. Итоги — в журнале сообщений.
-quick_strings|qstr_Gathering_the_player|Собираем игроков на совместный бой...^^Игроки поблизости получили приглашение. Бой начнётся через несколько секунд.
+quick_strings|qstr_Gathering_the_player|Собираем игроков на совместный бой...^^Игроки поблизости получили приглашение. Бой начнётся через несколько секунд.{s2}
 quick_strings|qstr_CoopWorld:_all_troop|CoopWorld: все отряды на поле. В бой!
 quick_strings|qstr_CoopWorld:_the_battl|CoopWorld: бой окончен. Итоги уходят в кампанию.
 quick_strings|qstr_CoopWorld:_fight_thi|CoopWorld: сразиться с этим игроком (совместный бой на сервере мультиплеера).
@@ -222,3 +222,4 @@ game_menus|mno_coop_mp_captured|Вас берут в плен...
 quick_strings|qstr_CoopWorld:_your_hero|CoopWorld: ваш герой пал в совместном бою и тяжело ранен.
 quick_strings|qstr_CoopWorld:_your_hero_|CoopWorld: ваш герой выходит из совместного боя с {reg1}% здоровья.
 quick_strings|qstr_CoopWorld:_you_take_|CoopWorld: вы берёте в плен {reg1} бойцов побеждённой стороны.
+quick_strings|qstr_^^Your_name_on_the_b|^^На сервере боя ваше имя должно быть {s3} (Мультиплеер - Профили): тогда ваши солдаты будут вас слушаться.
