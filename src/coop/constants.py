@@ -57,3 +57,6 @@ slot_party_coop_sid = 300        # on a client mirror: server party id + 1 (Nati
 coop_busy_timeout_frames = 60    # an encounter that never opened a menu stops counting as busy
 coop_tombstone_requests = 3000   # a party the client destroyed is not mirrored again for this many requests
 coop_player_stale_requests = 600 # another player's party not updated for this many requests is hidden
+coop_paused_speed_percent = 1    # party speed on a player's map while another player holds the world
+                                 # still (in battle or a menu): nobody moves, the map stays usable
+coop_pause_reminder_frames = 600 # trigger runs between "the world is paused" reminders

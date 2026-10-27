@@ -11,7 +11,14 @@ scripts = [
    [
      (store_script_param, ":party_no", 1),
      (assign, ":unused", ":party_no"),
-     (set_trigger_result, coop_world_speed_percent),
+     (try_begin),
+       # another player is in battle or a menu: the world stands still for everyone, so here too
+       (eq, "$coop_role", coop_role_client),
+       (eq, "$coop_world_paused", 1),
+       (set_trigger_result, coop_paused_speed_percent),
+     (else_try),
+       (set_trigger_result, coop_world_speed_percent),
+     (try_end),
      # shows once per campaign (globals are saved) that the engine really calls this hook
      (try_begin),
        (eq, "$coop_speed_hook_seen", 0),

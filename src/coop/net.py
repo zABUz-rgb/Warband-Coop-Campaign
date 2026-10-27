@@ -53,6 +53,7 @@ def net_scripts(first_dynamic):
      (try_end),
      (assign, "$coop_menu", 0),
      (assign, "$coop_menu_hours", -1),
+     (assign, "$coop_world_paused", 0),
      (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
        (disable_party, ":puppet"), #the others appear as their positions arrive
      (try_end),
@@ -292,6 +293,48 @@ def net_scripts(first_dynamic):
      (try_end),
      (store_mul, reg0, ":num_players", 3),
      (val_add, reg0, SRV_PLAYERS),
+    ]),
+
+  # script_coop_client_set_world_pause: kind 5 reply (paused, slot, why). While another player is
+  # in battle or a menu, nothing moves on this player's map either (the speed hook), so no one gets
+  # ahead of the world that player will come back to.
+  ("coop_client_set_world_pause",
+   [
+     (party_get_slot, ":paused", "p_coop_buf", 2),
+     (party_get_slot, ":slot", "p_coop_buf", 3),
+     (party_get_slot, ":why", "p_coop_buf", 4),
+     (try_begin),
+       (neq, ":paused", "$coop_world_paused"),
+       (assign, "$coop_world_paused", ":paused"),
+       (assign, "$coop_pause_reminder", 0),
+       (try_begin),
+         (eq, ":paused", 1),
+         (call_script, "script_coop_client_pause_message", ":slot", ":why"),
+       (else_try),
+         (display_message, "@CoopWorld: the world runs again.", 0x66CCFF),
+       (try_end),
+     (try_end),
+     (assign, "$coop_pause_slot", ":slot"),
+     (assign, "$coop_pause_why", ":why"),
+    ]),
+
+  # script_coop_client_pause_message: arg1 = slot of the player holding the world, arg2 = why
+  ("coop_client_pause_message",
+   [
+     (store_script_param, ":slot", 1),
+     (store_script_param, ":why", 2),
+     (str_store_string, s1, "@another player"),
+     (try_begin),
+       (is_between, ":slot", 0, coop_max_players),
+       (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+       (str_store_party_name, s1, ":puppet"),
+     (try_end),
+     (try_begin),
+       (eq, ":why", 1),
+       (display_message, "@CoopWorld: the world is paused: {s1} is in battle.", 0xFFDD66),
+     (else_try),
+       (display_message, "@CoopWorld: the world is paused: {s1} is in a menu.", 0xFFDD66),
+     (try_end),
     ]),
 
   # script_coop_client_show_player: another player's party (kind 4 reply: slot, x, y, troops),
@@ -697,6 +740,10 @@ def net_reply_handler():
         (eq, ":kind", 4),
         (eq, "$coop_role", coop_role_client),
         (call_script, "script_coop_client_show_player", ":num_strings"),
+      (else_try),
+        (eq, ":kind", 5),
+        (eq, "$coop_role", coop_role_client),
+        (call_script, "script_coop_client_set_world_pause"),
       (try_end),
     (try_end),
   ]

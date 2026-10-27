@@ -227,6 +227,14 @@ def net_triggers(first_dynamic):
        (assign, "$coop_menu", 0),
        (assign, "$coop_menu_hours", ":hours_now"),
      (try_end),
+     # the world is held by another player: remind now and then why nothing moves
+     (try_begin),
+       (eq, "$coop_world_paused", 1),
+       (val_add, "$coop_pause_reminder", 1),
+       (ge, "$coop_pause_reminder", coop_pause_reminder_frames),
+       (assign, "$coop_pause_reminder", 0),
+       (call_script, "script_coop_client_pause_message", "$coop_pause_slot", "$coop_pause_why"),
+     (try_end),
      # another player's party not updated for a while: that player left
      (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
        (party_is_active, ":puppet"),

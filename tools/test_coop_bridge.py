@@ -94,6 +94,29 @@ def test_players_and_puppets():
     check(w.server_report([], None, 2.1)[3] == [2, 0, 0], "a party of heroes only is sent as an empty list")
 
 
+def statuses(w, cid, now, n=4, **kw):
+    return [r[0] for r in (req(w, cid, now=now, **kw) for _ in range(n)) if r[0][0] == 5]
+
+
+def test_shared_pause():
+    w = cb.World()
+    req(w, "a", now=1.0)
+    req(w, "b", now=1.0)
+    check(statuses(w, "b", 1.1) == [], "nothing new: no status reply")
+    req(w, "a", now=2.0, busy=True)
+    check(statuses(w, "b", 2.1) == [[5, 1, 0, 1]], "player b is told at once: the world stands, player 0 is in battle")
+    check(statuses(w, "a", 2.1, busy=True) in ([], [[5, 0, 0, 0]]),
+          "the player in battle is not paused by itself")
+    req(w, "a", now=3.0)
+    check(statuses(w, "b", 3.1) == [[5, 0, 0, 0]], "the battle is over: the world runs again for b")
+    check(statuses(w, "b", 3.0 + cb.SILENT_PAUSE_S + 0.2)[:1] == [[5, 1, 0, 2]],
+          "player a silent in a menu: b stands still too (why 2)")
+    w2 = cb.World()
+    req(w2, "a", now=0.0)
+    got = [r[0] for r in (req(w2, "a", now=0.0) for _ in range(cb.STATUS_EVERY + 2)) if r[0][0] == 5]
+    check(len(got) == 1, "an unchanged state is repeated now and then, in case a reply was lost")
+
+
 def test_pause():
     w = cb.World()
     req(w, "a", now=10.0, busy=True)
@@ -179,6 +202,11 @@ def test_hub_and_relay():
     r = get("http://127.0.0.3:18090/srv?seq=1&h=50&n=1&d=700,5,123,-456,200,-456,0;&c=700,31,9")
     check(r == "7777|1|0|0|0|0", f"server reply before any player: {r}")
     r = raw_get(*cli, "/cli?seq=1&x=100&y=-400&busy=0&hello=1&me=,40,8&name=Ivan Petrov").split("|")
+    check(r == ["7777", "5", "0", "0", "0"], f"a new player first hears that the world runs: {r}")
+    for seq in (2, 3, 4):  # the reply kinds take turns: wait for the positions
+        r = raw_get(*cli, f"/cli?seq={seq}&x=100&y=-400&busy=0").split("|")
+        if r[1] == "2":
+            break
     check(r[:3] == ["7777", "2", "1"] and r[3:10] == ["700", "5", str(123 + OFF), str(-456 + OFF),
                                                      str(200 + OFF), str(-456 + OFF), "0"],
           "the host's own player: positions with shifted coordinates")
@@ -238,6 +266,7 @@ if __name__ == "__main__":
     test_positions()
     test_players_and_puppets()
     test_pause()
+    test_shared_pause()
     test_troops_results_tombstones()
     test_clock()
     test_hub_and_relay()

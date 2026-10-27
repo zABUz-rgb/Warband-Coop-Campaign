@@ -636,10 +636,12 @@ script_coop_append_entry = 634
 script_coop_server_apply_result = 635
 script_coop_server_set_pause = 636
 script_coop_server_move_puppets = 637
-script_coop_client_show_player = 638
-script_coop_client_apply_positions = 639
-script_coop_client_apply_troops = 640
-script_coop_client_encounter_start = 641
-script_coop_client_next_result = 642
+script_coop_client_set_world_pause = 638
+script_coop_client_pause_message = 639
+script_coop_client_show_player = 640
+script_coop_client_apply_positions = 641
+script_coop_client_apply_troops = 642
+script_coop_client_encounter_start = 643
+script_coop_client_next_result = 644
 
 

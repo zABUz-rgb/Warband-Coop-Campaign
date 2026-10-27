@@ -23,6 +23,9 @@ quick_strings|qstr_CoopWorld:_co_op_sto|CoopWorld: кооператив оста
 quick_strings|qstr_CoopWorld:_battle_re|CoopWorld: итог боя применён к отряду {s1}.
 quick_strings|qstr_CoopWorld:_the_world_|CoopWorld: мир на паузе, игрок в бою.
 quick_strings|qstr_CoopWorld:_the_world_r|CoopWorld: мир снова идёт.
+quick_strings|qstr_another_player|другой игрок
+quick_strings|qstr_CoopWorld:_the_world_i|CoopWorld: мир на паузе: {s1} в бою.
+quick_strings|qstr_CoopWorld:_the_world_is|CoopWorld: мир на паузе: {s1} в меню.
 quick_strings|qstr_The_enemy_is_forming|Враг строится. У вас {reg1} секунд на подготовку!
 quick_strings|qstr_The_gates_of_{s1}_ar|Ворота {s1} закрыты для вас до рассвета.
 quick_strings|qstr_You_take_lodgings_in|Вы остановились на постой в {s1}. Пока вы здесь, время идёт; щёлкните, чтобы пройтись по городу.

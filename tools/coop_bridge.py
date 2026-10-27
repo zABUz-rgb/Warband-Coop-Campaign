@@ -34,6 +34,9 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,d
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...   positions of world parties (tmpl REMOVED: gone)
           7777|3|sid|n|t1|n1|...               troops of one party near the player
           7777|4|slot|x|y|troops[|name]          another player's party
+          7777|5|paused|slot|why                    the world stands still because of player <slot>
+                                                    (why: 1 in an encounter or battle, 2 in a menu);
+                                                    the player's own map then stands still too
 
 Coordinates are map units * 100, shifted by COORD_OFFSET in replies so the games only get
 non-negative numbers. A reply holds at most 128 numbers (the engine's registers).
@@ -55,7 +58,8 @@ MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
 STALE_S = 15.0          # a party not reported for this long is gone
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
-TOMBSTONE_S = 30.0      # a party a player destroyed is not sent again for this long
+TOMBSTONE_S = 30.0
+STATUS_EVERY = 50       # a player is reminded of the pause state this often, in case a reply was lost      # a party a player destroyed is not sent again for this long
 NEAREST_PER_REPLY = 11
 ROTATING_PER_REPLY = 3
 REMOVALS_PER_REPLY = 3  # 3 header numbers + 7 per entry must stay within 128 registers
@@ -105,6 +109,8 @@ class Player:
         self.name = None
         self.name_pending = False
         self.others_cursor = 0
+        self.status_sent = None  # (paused, slot, why) this player was last told
+        self.status_age = 0
 
 
 class World:
@@ -139,13 +145,18 @@ class World:
             self.players.pop(cid, None)
 
     def paused(self, now):
-        for p in self.players.values():
-            if p.slot is None or p.last is None:
+        return self.pause_cause(now) is not None
+
+    def pause_cause(self, now, but=None):
+        """(slot, why) of a player holding the world still, other than `but`, or None.
+        why: 1 in an encounter or battle, 2 silent (a menu, a screen, loading)."""
+        for p in sorted(self.players.values(), key=lambda q: (q.slot is None, q.slot)):
+            if p.slot is None or p.last is None or p is but:
                 continue
             silent = now - p.last
             if silent < BUSY_TIMEOUT_S and (p.busy or silent > SILENT_PAUSE_S):
-                return True
-        return False
+                return p.slot, 1 if p.busy else 2
+        return None
 
     # ---- server
 
@@ -240,6 +251,13 @@ class World:
                 p.stacks = p.stacks_last = me
             by_distance = sorted(self.parties.items(),
                                  key=lambda kv: (kv[1][1] - x) ** 2 + (kv[1][2] - y) ** 2)
+            # whether another player holds the world still: at once when it changes, and now and then
+            cause = self.pause_cause(now, but=p)
+            status = (1, cause[0], cause[1]) if cause else (0, 0, 0)
+            p.status_age += 1
+            if status != p.status_sent or p.status_age >= STATUS_EVERY:
+                p.status_sent, p.status_age = status, 0
+                return [5, *status], None
             # every other reply: troops of the nearest party whose troops this player has not seen
             if p.requests % 2 == 0:
                 for sid, _ in by_distance[:NEAREST_PER_REPLY]:
