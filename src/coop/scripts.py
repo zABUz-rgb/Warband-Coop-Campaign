@@ -78,6 +78,18 @@ def merge(orig_scripts):
   from coop_merge import find_by_id, script_block, insert_after
   # the engine hook is commented out in Native, so it is simply added
   orig_scripts.extend(scripts)
+  # link spike: a reply from the local bridge (reg0 = seq echoed, reg1 = requests served)
+  script_block(orig_scripts, "game_receive_url_response").extend([
+      (try_begin),
+        (eq, "$coop_link_test", 1),
+        (assign, "$coop_link_pending", 0),
+        (val_add, "$coop_link_replies", 1),
+        (store_mod, ":every_20th", "$coop_link_replies", 20),
+        (eq, ":every_20th", 1),
+        (assign, reg20, "$coop_link_replies"),
+        (display_message, "@CoopWorld link: reply {reg0}, bridge served {reg1}, replies here {reg20}", 0x66CCFF),
+      (try_end),
+  ])
   # a new arrival (not the automatic return after resting) starts a new stay
   insert_after(script_block(orig_scripts, "game_event_party_encounter"),
                (assign, "$new_encounter", 1), [

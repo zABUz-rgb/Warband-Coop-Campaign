@@ -44,6 +44,28 @@ town_auto_lodging = [
 ]
 
 
+# Camp menu switch for the link spike (see coop/triggers.py and tools/link_spike.py)
+camp_link_options = [
+  ("coop_link_on", [(eq, "$coop_link_test", 0)], "CoopWorld: start the link test.",
+   [
+     (assign, "$coop_link_test", 1),
+     (assign, "$coop_link_pending", 0),
+     (assign, "$coop_link_frames", 0),
+     (assign, "$coop_link_replies", 0),
+     (display_message, "@CoopWorld link test on: run tools/link_spike.py first.", 0x66CCFF),
+     (change_screen_return),
+    ]),
+  ("coop_link_off", [(eq, "$coop_link_test", 1)], "CoopWorld: stop the link test.",
+   [
+     (assign, "$coop_link_test", 0),
+     (assign, reg20, "$coop_link_replies"),
+     (assign, reg21, "$coop_link_seq"),
+     (display_message, "@CoopWorld link test off: {reg21} sent, {reg20} replies.", 0x66CCFF),
+     (change_screen_return),
+    ]),
+]
+
+
 def merge(menus):
   from coop_merge import menu_block, insert_after, find_line, MergeError
   block = menu_block(menus, "town")
@@ -52,3 +74,5 @@ def merge(menus):
   if block[pos] != (try_begin):
     raise MergeError("town menu: expected try_begin before the $g_leave_town check")
   block[pos:pos] = town_auto_lodging
+  from coop_merge import menu_options
+  menu_options(menus, "camp")[0:0] = camp_link_options
