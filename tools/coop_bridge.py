@@ -59,6 +59,8 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
                                                     the player's own map then stands still too
 
 Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpc=center][&mpt=t1,n1,...]
+[&compn=N&ter=T with a start or an acceptance: the companions coming and the terrain][&comp=troop,hero...:
+one companion per request after that]
 [&hero=...]; hero, with a start or an acceptance: HERO_NUMBERS numbers, the hero's equipment, attributes,
 combat skills and weapon proficiencies, in the order of coop/constants.py):
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them), the
@@ -86,6 +88,7 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|18|slot|accepted                the leader in slot took this player in, or not
           7777|19|slot|joined                  to a leader: the player in slot joined (1) or left (0)
           7777|20|slot                         the leader in slot let this player go
+          7777|21|bid|n|(troop,count)*n        the player's share of the fallen enemies, to loot
     A follower is called into the leader's joint battles: invitation type 3, which cannot be declined.
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...]
@@ -97,6 +100,7 @@ Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent
     reply 7778|0                                  nothing
           7778|2|bid|offset|n|(team,player,troop,count)*n   stacks to spawn (player: who commands them, -1 the AI)
           7778|5|bid|player|hero...               a player fights as the campaign hero (after the stacks)
+          7778|6|bid|troop|hero...                a companion's gear and stats (its stack spawns it)
           7778|1|bid|stacks|mode|hint|n|(player,team)*n   start: players onto their sides, the round
                                                   restarts; mode 1 a siege (Siege game type, map by hint)
           7778|4|bid                              the outcome arrived
@@ -146,6 +150,7 @@ WOUNDED_PCT = 50        # of a player's fallen soldiers, this share is wounded r
 XP_PER_ENEMY = 30       # battle experience for each fallen enemy, shared by the winning side's players;
                         # the losing side gets a third of it
 HERO_NUMBERS = 29       # 9 equipment slots, 4 attributes, 9 combat skills, 7 proficiencies
+COMPANIONS_WAIT_S = 5.0 # a battle waits this long for the starter's companions to arrive
 
 
 def parse_ints(text):
@@ -192,6 +197,8 @@ class Player:
         self.mp_out = []        # joint-battle replies waiting for this player
         self.on_server = False  # the host playing in the world server game: no puppet there
         self.hero = None        # the hero's equipment and stats for joint battles
+        self.companions = {}    # troop -> equipment and stats, of the companions fit for this battle
+        self.companions_expected = 0
         self.faction = 0        # the kingdom the player serves, 0 none
         self.centers_sent = {}  # center -> (faction, lord, besieger + 1) this player was told
         self.profile_out = []   # the kept hero, in replies, after joining
@@ -219,6 +226,10 @@ class Battle:
         self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
         self.sent = 0
         self.heroes = None        # [(player number, hero numbers)] still to send, after the stacks
+        self.companion_data = None  # [(troop, numbers)] still to send, after the heroes
+        self.hero_troops = set()  # companions in the stacks: fallen means wounded, never killed
+        self.terrain = 0
+        self.created = now
         self.started = None
 
 
@@ -604,6 +615,11 @@ class World:
         op, bid, b = mp["op"], mp["bid"], self.battle
         if mp.get("hero"):
             p.hero = mp["hero"]
+        if mp.get("compn") is not None:  # a start or an acceptance: this battle's companions follow
+            p.companions, p.companions_expected = {}, mp["compn"]
+        if mp.get("comp"):
+            troop, numbers = mp["comp"]
+            p.companions[troop] = numbers
         if op == 1:
             if b is not None:
                 if p.cid not in b.sides:
@@ -663,6 +679,7 @@ class World:
                     b.invited.add(q.cid)
                     target = b.enemy_sid if b.enemy_sid is not None else (b.center if b.center is not None else -1)
                     q.mp_out.append([6, b.bid, 1, p.slot, target])
+            b.terrain = mp.get("terrain", 0)
             self.battle = b
             p.mp_out.append([7, b.bid, 0, 0])
         elif b is None or b.bid != bid:
@@ -691,11 +708,22 @@ class World:
         b = self.battle
         if b is None or b.state != "gathering" or (b.invited and now < b.until):
             return
+        # the companions come one per request: wait for them a little
+        waiting = any(len(q.companions) < q.companions_expected
+                      for cid, q in ((c, self.players.get(c)) for c in b.sides)
+                      if q is not None and cid not in b.invited)
+        if waiting and now < b.created + COMPANIONS_WAIT_S:
+            return
         stacks = []
+        b.companion_data = []
         for cid, team in sorted(b.sides.items(), key=lambda kv: (kv[1], kv[0] != b.starter)):
             q = self.players.get(cid)
             for troop, n in (q.stacks_last or []) if q is not None else []:
                 stacks.append([team, cid, troop, n, 0])
+            for troop, numbers in sorted((q.companions if q is not None else {}).items()):
+                stacks.append([team, cid, troop, 1, 0])
+                b.hero_troops.add(troop)
+                b.companion_data.append((troop, numbers))
         if b.defence:
             stacks += [[team, ("npc", sid), troop, n, 0] for team, sid, troop, n in b.npc_stacks]
         else:
@@ -747,10 +775,13 @@ class World:
         enemy_left = []
         npc_left = {}  # a defence: world party -> what it has after the battle
         fell_by_team = {0: 0, 1: 0}
+        fallen_of_team = {0: [], 1: []}  # (troop, count) fallen on each side: the winners' spoils
         for i, (team, owner, troop, count, spawned) in enumerate(b.stacks):
             fell = fallen.get(i, 0)
             lost = min(count, round(fell * count / spawned)) if spawned else 0
             fell_by_team[team] = fell_by_team.get(team, 0) + lost
+            if lost and troop not in b.hero_troops:
+                fallen_of_team.setdefault(team, []).append((troop, lost))
             if owner is None:
                 if count - lost > 0:
                     enemy_left.append((troop, count - lost))
@@ -759,7 +790,7 @@ class World:
                 if count - lost > 0:
                     npc_left[owner[1]].append((troop, count - lost))
             else:
-                wounded = lost * WOUNDED_PCT // 100
+                wounded = lost if troop in b.hero_troops else lost * WOUNDED_PCT // 100
                 if lost:
                     losses.setdefault(owner, []).append((troop, lost - wounded, wounded))
                 if count - (lost - wounded) > 0:
@@ -792,6 +823,16 @@ class World:
             captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1  # a failed storm: no capture
             if hp >= 0 or captor >= 0:
                 q.mp_out.append([10, b.bid, hp, captor])
+        # the spoils: the losers' fallen, shared among the winning players
+        winners = [cid for cid, team in sorted(b.sides.items(), key=lambda kv: kv[0] != b.starter)
+                   if team == winner and cid in self.players]
+        if winners and winner in (0, 1):
+            spoils = fallen_of_team.get(1 - winner, [])
+            for k, cid in enumerate(winners):
+                share = [(troop, n // len(winners) + (1 if k < n % len(winners) else 0)) for troop, n in spoils]
+                share = [(troop, n) for troop, n in share if n > 0][:MAX_STACKS]
+                if share:
+                    self.players[cid].mp_out.append([21, b.bid, len(share)] + flat(share))
         if b.defence:
             # the besiegers keep what survived (a party with nobody left is gone); the garrison too,
             # unless the walls fell: then the center goes to the besiegers' kingdom
@@ -860,6 +901,9 @@ class World:
                 if b.heroes:
                     no, hero = b.heroes.pop(0)
                     return [5, b.bid, no] + hero
+                if b.companion_data:
+                    troop, numbers = b.companion_data.pop(0)
+                    return [6, b.bid, troop] + numbers
                 pairs = []
                 for cid, team in b.sides.items():
                     no = self._mp_player_number(cid)
@@ -871,7 +915,8 @@ class World:
                     if q is not None:
                         q.mp_out.append([7, b.bid, 1, team])
                 mode = 1 if b.center is not None else 0
-                return [1, b.bid, len(b.stacks), mode, b.center or 0, len(pairs) // 2] + pairs
+                hint = b.center if b.center is not None else b.terrain
+                return [1, b.bid, len(b.stacks), mode, hint, len(pairs) // 2] + pairs
             if b.state == "running" and phase == 0 and now - b.started > MP_LOST_S:
                 # the battle server restarted or changed its game: the battle is lost to it
                 for cid in b.sides:
@@ -1057,8 +1102,12 @@ def handle_request(world, role, target, now, cid="local"):
         if "mp" in q:
             troops = q.get("mpt", "").lstrip(",")
             hero = parse_ints(q.get("hero", ""))
+            comp = parse_ints(q.get("comp", "")) if "comp" in q else None
             mp = {"op": query_int(q, "mp", 0), "bid": query_int(q, "bid", 0), "sid": query_int(q, "mpe", -1),
                   "slot": query_int(q, "mpp", -1), "center": query_int(q, "mpc", -1), "defend": q.get("mpd") == "1",
+                  "compn": query_int(q, "compn", 0) if "compn" in q else None,
+                  "comp": (comp[0], comp[1:]) if comp and len(comp) == HERO_NUMBERS + 1 else None,
+                  "terrain": query_int(q, "ter", 0),
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
                   "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
         together = parse_together(q)

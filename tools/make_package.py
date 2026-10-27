@@ -271,6 +271,40 @@ def launcher(kind, lang):
     return LAUNCHER_TEMPLATE.format(title=title, body=body, **m)
 
 
+START_HERE_RU = '''CoopWorld - С ЧЕГО НАЧАТЬ (для друга)
+====================================
+
+1. Нужно один раз:
+   - Mount & Blade: Warband 1.174 (Steam или GOG) с серийным ключом (нужен для мультиплеера).
+   - Python 3 с python.org (при установке отметьте "Add python.exe to PATH").
+   - Radmin VPN (или ZeroTier): войдите в сеть, которую создал хост.
+2. Распакуйте весь архив в любую папку, закройте Warband, дважды щёлкните install.bat.
+   В лаунчере Warband выберите модуль CoopWorld (Configure - Game - Language: ru).
+3. Каждый раз перед игрой:
+   - дважды щёлкните join.bat: адрес хоста (из Radmin VPN), пароль хоста, ваше имя в мультиплеере
+     (то же, что в игре: Мультиплеер - Профили; запомнится). Окно моста не закрывайте.
+   - Запустите Warband (CoopWorld), загрузите свежее сохранение хоста (join.bat его скачал),
+     Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Ваш герой вернётся сам.
+4. Для совместных боёв запустите второе окно Warband (CoopWorld): Мультиплеер - Избранное -
+   добавьте адрес хоста с портом 7240 (например 26.x.x.x:7240) и зайдите на сервер боя хоста.
+Подробности - README.txt.
+'''
+
+START_HERE = '''CoopWorld - START HERE (for a friend)
+=====================================
+
+1. Once: Warband 1.174 (Steam or GOG) with its serial key (multiplayer needs it); Python 3 from
+   python.org ("Add python.exe to PATH"); Radmin VPN or ZeroTier, in the host's network.
+2. Unpack the whole archive, close Warband, double-click install.bat. Pick CoopWorld in the launcher.
+3. Every time: double-click join.bat (the host's address, the host's password, your multiplayer
+   name - the one of your Multiplayer profile). Keep its window open. Start Warband (CoopWorld),
+   load the host's save join.bat fetched, Camp - "run this game as a CLIENT". Your hero comes back.
+4. For joint battles start a second Warband window (CoopWorld): Multiplayer - Favorites - add the
+   host's address with port 7240 (e.g. 26.x.x.x:7240) and join the host's battle server.
+More in README.txt.
+'''
+
+
 def launcher_bat(kind):
     return f'@echo off\r\npowershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0{kind}.ps1" %*\r\n'
 
@@ -369,9 +403,12 @@ CoopWorld без Diplomacy с этой версией не работают.
      ранена, половина убита; разбитый отряд мира исчезает у всех. Пока идёт бой, мир стоит.
   Вы сражаетесь своим героем: его снаряжение (оружие, броня, конь), атрибуты, боевые навыки и
   владение оружием переносятся на сервер боя (до 4 героев в бою). После боя герой и отряд получают
-  опыт за павших врагов (проигравшие - треть). Владение оружием растёт, как в обычном бою: за
+  опыт за павших врагов (проигравшие - треть). Компаньоны выходят в бой ботами со своим снаряжением
+  и навыками и подчиняются вам; павший компаньон возвращается тяжело раненым, но живым. Победители
+  делят добычу с павших врагов (окно добычи, как после обычного боя). Карта полевого боя подбирается
+  по местности: степь, лес, горы, снег, пустыня, река. Владение оружием растёт, как в обычном бою: за
   попадания по врагам и нанесённый урон тем видом оружия, которым вы сражались; чем выше владение,
-  тем медленнее рост, предел задаёт навык "Владение оружием". Компаньоны пока в бой не выходят.
+  тем медленнее рост, предел задаёт навык "Владение оружием".
   Здоровье героя после боя сохраняется (павший в бою герой возвращается тяжело раненым).
   Проигравший отряду мира попадает в плен, как в обычной игре: его войска и компаньоны уходят
   к победителю пленными, часть вещей забирают. Проигравший другому игроку в плен не попадает,
@@ -465,7 +502,9 @@ JOINT BATTLES (multiplayer server):
   weapon proficiencies go to the battle server (up to 4 heroes a battle). Afterwards the hero and
   the troops gain experience for the fallen enemies (the losers a third). Weapon proficiencies grow
   as in a Native battle: by the hits and damage you did with each kind of weapon, slower the better
-  you are, within the weapon master limit. Companions stay behind for now.
+  you are, within the weapon master limit. Companions fight as bots with their own gear and skills,
+  under your command; a fallen companion comes back badly wounded. The winners share the fallen
+  enemies' spoils (the loot screen). The field map fits the terrain the battle was met on.
   The hero keeps the health the battle left (a fallen hero comes back badly wounded). A player
   defeated by a party of the world is taken prisoner as in Native: troops and companions become
   its prisoners. A player defeated by another player is not captured, but the surviving troops
@@ -525,12 +564,13 @@ def main():
     launchers = {lang: {"host.ps1": BOM + launcher("host", lang), "join.ps1": BOM + launcher("join", lang),
                         "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join")} for lang in ("en", "ru")}
     build(f"CoopWorld-{day}", {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
-                               "README.txt": README, **launchers["en"]})
+                               "README.txt": README, "START HERE.txt": START_HERE, **launchers["en"]})
     if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
         raise SystemExit("no Russian: put the russifier in vendor/l10n_ru and run python tools/make_ru.py")
     # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
     build(f"CoopWorld-ru-{day}", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
-                                  "README.txt": BOM + README_RU, **launchers["ru"]}, russian=True)
+                                  "README.txt": BOM + README_RU, "НАЧНИТЕ ЗДЕСЬ.txt": BOM + START_HERE_RU,
+                                  **launchers["ru"]}, russian=True)
 
 
 if __name__ == "__main__":

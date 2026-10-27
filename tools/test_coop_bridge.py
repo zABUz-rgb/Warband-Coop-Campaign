@@ -463,6 +463,26 @@ def test_joining_and_giving():
           {"give": (1, [(31, 2), (32, 1)]), "joinans": (2, 1)}, "the request's parts are read")
 
 
+def test_companions_spoils_terrain():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    comp = list(range(200, 200 + cb.HERO_NUMBERS))
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, sid=600, troops=[(40, 8)], hero=HERO), "compn": 1, "terrain": 11})
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1) == [0], "the battle waits for the companion")
+    req(w, "a", now=1.2, busy=True, mp={**mp(2, w.battle.bid), "comp": (7, comp)})
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.3)
+    check(nums[4:] == [0, 0, 31, 10, 0, 0, 7, 1, 1, -1, 40, 8], f"the companion is a stack of one, commanded by the player: {nums}")
+    bid = nums[1]
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.4)[:3] == [5, bid, 0], "then the hero")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.5) == [6, bid, 7] + comp, "then the companion's gear and stats")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.6)[3:5] == [0, 11], "a field battle on a forest map (terrain 11)")
+    w.mp_request(4, bid, 0, {1: 1, 2: 6}, {}, 9.0)
+    replies = [req(w, "a", now=9.1)[0] for _ in range(8)]
+    check([8, bid, 1, 6 * cb.XP_PER_ENEMY, 1, 7, 0, 1] in replies, f"a fallen companion is wounded, never killed: {replies}")
+    check([21, bid, 1, 40, 6] in replies, "the winner gets the fallen enemies as spoils")
+
+
 def test_centers_reach_players():
     w = cb.World()
     req(w, "a", now=0.0, name="Ivan")
@@ -580,6 +600,7 @@ if __name__ == "__main__":
     test_multiplayer_names()
     test_factions()
     test_joint_siege()
+    test_companions_spoils_terrain()
     test_joining_and_giving()
     test_profiles()
     test_joint_defence()

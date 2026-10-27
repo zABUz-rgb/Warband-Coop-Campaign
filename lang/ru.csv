@@ -1682,3 +1682,9 @@ quick_strings|qstr_{s2}^{reg1}_{s3}|{s2}^{reg1} {s3}
 quick_strings|qstr_CoopWorld:_you_ask_{|CoopWorld: вы просите {s1} принять вас в отряд...
 quick_strings|qstr_{s1}_whose_party_you|{s1}, за кем вы следуете, вступает в бой — вас зовут!^^Бой идёт на сервере мультиплеера: ваши войска сражаются на стороне {s1}. Зайдите туда; если не зайдёте, ваши войска будут сражаться без вас.
 quick_strings|qstr_CoopWorld:_troops_se|CoopWorld: войска отправлены, ждём ответа.
+game_menus|menu_coop_loot|CoopWorld: ваша доля добычи из совместного боя.
+game_menus|mno_coop_loot_take|Забрать.
+game_menus|mno_coop_loot_leave|Вернуться на карту.
+game_menus|mno_coop_mp_loot|Забрать свою долю добычи.
+quick_strings|qstr_CoopWorld:_{s1}_fell|CoopWorld: {s1} пал в совместном бою и тяжело ранен.
+quick_strings|qstr_CoopWorld:_the_spoil|CoopWorld: вас ждёт добыча совместного боя.

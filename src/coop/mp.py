@@ -31,6 +31,19 @@ HERO_TROOPS = "trp_tutorial_student_1"  # .. _4
 SIEGE_SCENES = ["scn_multi_scene_3", "scn_multi_scene_8", "scn_multi_scene_10", "scn_multi_scene_13",
                 "scn_multi_scene_15", "scn_multi_scene_16"]  # Native's Siege maps
 FIELD_SCENE = "scn_random_multi_plain_medium"
+# Battle maps for the terrain the battle was met on (party_get_current_terrain, header_terrain_types)
+TERRAIN_SCENES = [
+  (2, "scn_random_multi_steppe_medium"),  # steppe
+  (10, "scn_multi_scene_18"),             # steppe forest: Forest Hideout
+  (11, "scn_multi_scene_18"),             # forest
+  (9, "scn_multi_scene_18"),              # mountain forest
+  (1, "scn_multi_scene_4"),               # mountain: Ruined Fort
+  (4, "scn_multi_scene_14"),              # snow: Battle on Ice
+  (12, "scn_multi_scene_9"),              # snow forest: Snowy Village
+  (5, "scn_multi_scene_19"),              # desert: Canyon
+  (13, "scn_multi_scene_20"),             # desert forest: Desert Town
+  (8, "scn_multi_scene_7"),               # river: Field by the River
+]
 MP_BUF = "trp_temp_array_b"
 S_TROOP, S_TEAM, S_GROUP, S_COUNT, S_FALLEN, S_SPAWNED = range(6)
 
@@ -131,6 +144,33 @@ mp_scripts = [
          (val_add, ":at", 1),
        (try_end),
      (else_try),
+       (eq, ":kind", 6), #a companion: troop, then coop_hero_numbers values (spawned as a bot of its stack)
+       (eq, "$coop_mp_phase", 0),
+       (troop_get_slot, ":troop", MP_BUF, 3),
+       (gt, ":troop", 0),
+       (try_for_range, ":ek", 0, coop_hero_items),
+         (store_add, ":at", ":ek", 4),
+         (troop_get_slot, ":item", MP_BUF, ":at"),
+         (troop_set_inventory_slot, ":troop", ":ek", ":item"),
+       (try_end),
+       (assign, ":at", 4 + coop_hero_items),
+       (try_for_range, ":attribute", 0, 4),
+         (troop_get_slot, ":value", MP_BUF, ":at"),
+         (call_script, "script_coop_mp_hero_stat_to_all", ":troop", ":attribute", ":value"),
+         (val_add, ":at", 1),
+       (try_end),
+       ] + [op for skill in coop_hero_skills for op in [
+       (troop_get_slot, ":value", MP_BUF, ":at"),
+       (call_script, "script_coop_mp_hero_stat_to_all", ":troop", 10 + skill, ":value"),
+       (val_add, ":at", 1),
+       ]] + [
+       (try_for_range, ":wpt", 0, coop_hero_profs),
+         (troop_get_slot, ":value", MP_BUF, ":at"),
+         (store_add, ":code", ":wpt", 100),
+         (call_script, "script_coop_mp_hero_stat_to_all", ":troop", ":code", ":value"),
+         (val_add, ":at", 1),
+       (try_end),
+     (else_try),
        # start: bid|stacks|mode|scene hint|n|(player, team)*n
        (eq, ":kind", 1),
        (eq, "$coop_mp_phase", 0),
@@ -159,17 +199,23 @@ mp_scripts = [
          (eq, "$coop_mp_mode", 1),
          (assign, ":game_type", multiplayer_game_type_siege),
        (try_end),
+       # the map: a castle for a siege (by the center), else one fitting the terrain (the hint)
+       (assign, ":scene", FIELD_SCENE),
        (try_begin),
-         (neq, "$g_multiplayer_game_type", ":game_type"),
-         # another game type: its own mission on a fitting map; the sides are set once it is up
-         (assign, ":scene", FIELD_SCENE),
-         (try_begin),
-           (eq, "$coop_mp_mode", 1),
-           (store_mod, ":pick", ":hint", len(SIEGE_SCENES)),
-           ] + [op for k, scn in enumerate(SIEGE_SCENES) for op in [
-           (try_begin), (eq, ":pick", k), (assign, ":scene", scn), (try_end),
-           ]] + [
-         (try_end),
+         (eq, "$coop_mp_mode", 1),
+         (store_mod, ":pick", ":hint", len(SIEGE_SCENES)),
+         ] + [op for k, scn in enumerate(SIEGE_SCENES) for op in [
+         (try_begin), (eq, ":pick", k), (assign, ":scene", scn), (try_end),
+         ]] + [
+       (else_try),
+         ] + [op for terrain, scn in TERRAIN_SCENES for op in [
+         (try_begin), (eq, ":hint", terrain), (assign, ":scene", scn), (try_end),
+         ]] + [
+       (try_end),
+       (try_begin),
+         (this_or_next|neq, "$g_multiplayer_game_type", ":game_type"),
+         (neq, "$g_multiplayer_selected_map", ":scene"),
+         # another game type or map: its own mission; the sides are set once it is up
          (assign, "$g_multiplayer_game_type", ":game_type"),
          (assign, "$g_multiplayer_selected_map", ":scene"),
          (call_script, "script_game_multiplayer_get_game_type_mission_template", ":game_type"),
