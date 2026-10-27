@@ -39,7 +39,9 @@ coop_mp_round_seconds = 3600     # a campaign battle's round has no practical ti
 slot_agent_coop_stack = 40       # on a bot of the multiplayer server: its stack + 1 (Native agent slots end at 28)
 coop_mp_pairs_slot = 900         # on the battle server: the players' sides of the coming battle (player, team)*n
 coop_mp_switch_wait = 3          # seconds after a new battle mission starts before the sides are set
-coop_mp_resend_ms = 3000         # the waiting window asks the bridge again after this long without a reply
+coop_mp_resend_ms = 3000
+coop_profile_chunk = 50           # profile numbers sent with one client request
+coop_profile_period_frames = 3000 # client trigger runs between writing the hero down (about a minute)         # the waiting window asks the bridge again after this long without a reply
 
 coop_net_marker = 7777          # first number of every bridge reply (failed sends have none)
 coop_net_offset = 100000        # coordinates come back shifted so they are never negative

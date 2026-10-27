@@ -322,6 +322,15 @@ CoopWorld без Diplomacy с этой версией не работают.
   2. Запустите Warband с модулем CoopWorld, загрузите это сохранение,
      Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир хоста пойдёт дальше, как только вы подключитесь.
 
+ВАШ ГЕРОЙ МЕЖДУ СЕССИЯМИ
+  Каждый раз друг загружает свежее сохранение хоста, но играет своим героем: мост хоста хранит героя
+  каждого игрока (profiles.json рядом с host.bat) под его именем в мультиплеере из join.bat - деньги,
+  опыт, известность, честь, присягу, атрибуты, навыки, владение оружием, весь инвентарь, войска
+  (и раненых), пленных, место на карте. При подключении герой возвращается сам. Имя в join.bat
+  должно оставаться тем же. Опыт можно только добавить: уровень не станет ниже, чем у героя хоста.
+  Нераспределённые очки навыков и атрибутов не сохраняются - распределите их до выхода.
+  Клиенты теперь тоже получают недельный бюджет (жалованье войскам, доходы), читают книги.
+
 КАК ЭТО РАБОТАЕТ
   - Мир (лорды, бандиты, торговля, время) живёт в отдельной игре-сервере у хоста.
     Игры игроков показывают этот мир; у каждого свой отряд, остальные игроки видны на карте.
@@ -459,6 +468,13 @@ FACTIONS: each player may swear fealty to a kingdom by the usual talk with its k
   its enemies hunt the player, the others see the player's faction colour on the map. Players of
   kingdoms at war fight each other in joint battles; a call to arms against your allies is declined
   by itself. Fiefs go only to the host for now: a client is told so, and keeps oath and rank.
+
+YOUR HERO BETWEEN SESSIONS: a friend loads the host's save every time but plays their own hero: the
+  host's bridge keeps each player's hero (profiles.json next to host.bat) under the multiplayer name
+  given to join.bat - gold, experience, renown, honor, allegiance, attributes, skills, proficiencies,
+  inventory, troops (wounded too), prisoners, map position - and puts it back on joining. Keep the
+  same name. Experience only grows (the level stays at least the host's hero's); unspent points are
+  not kept. Clients now get the weekly budget (wages, income) too and can read books.
 
 Stopping: Camp - "CoopWorld: stop co-op" in your game, then close the bridge window.
 '''

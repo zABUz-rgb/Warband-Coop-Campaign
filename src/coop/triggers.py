@@ -19,6 +19,7 @@ def puppet_range():
 
 def net_triggers(first_dynamic):
   from coop.mp_campaign import client_map_tick, client_request_suffix
+  from coop.profile import client_tick as profile_tick
   puppets_end = puppet_range()[1]
   return [
   # World server held for a joining client: only asks whether the client has joined.
@@ -373,6 +374,7 @@ def net_triggers(first_dynamic):
          (eq, "$coop_hello", 1),
          (assign, "$coop_hello", 0),
          (str_store_string, s13, "@{s13}&hello=1"),
+         (assign, "$coop_own_troops_frames", coop_own_troops_frames), #the name goes with the hello: the bridge finds the player's hero by it
        (try_end),
        (str_clear, s14),
        (val_add, "$coop_own_troops_frames", 1),
@@ -395,10 +397,10 @@ def net_triggers(first_dynamic):
          (map_free),
          (assign, reg6, 1),
        (try_end),
-       ] + client_request_suffix() + [
+       ] + client_request_suffix() + profile_tick() + [
        (call_script, "script_coop_player_kingdom"),
        (assign, reg8, reg0),
-       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy={reg4}&fac={reg8}{s17}{s13}{s14}"),
+       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy={reg4}&fac={reg8}{s17}{s19}{s13}{s14}"),
        (send_message_to_url, s10, 0),
      (try_end),
     ]),

@@ -1654,3 +1654,6 @@ quick_strings|qstr_CoopWorld:_a_siege_o|CoopWorld: начинается осад
 quick_strings|qstr_CoopWorld:_the_walls|CoopWorld: стены {s1} ваши!
 game_menus|mno_coop_mp_defend|CoopWorld: защищать стены вместе (совместная осада на сервере мультиплеера).
 quick_strings|qstr_CoopWorld:_{s1}_is_u|CoopWorld: {s1} в осаде! Скачите туда, чтобы вместе защищать стены.
+quick_strings|qstr_CoopWorld:_a_new_her|CoopWorld: новый герой — теперь он сохраняется между сессиями.
+quick_strings|qstr_CoopWorld:_your_own_|CoopWorld: ваш собственный герой вернулся — деньги, навыки, снаряжение, войска и пленные, как вы их оставили.
+quick_strings|qstr_CoopWorld:_the_hero_|CoopWorld: сохранённый для вас герой из другой версии CoopWorld и не был восстановлен.

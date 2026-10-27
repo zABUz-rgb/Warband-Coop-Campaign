@@ -37,8 +37,11 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
+                    [&pf=seq,offset,total,v1,v2,...]
                     [&me=t1,n1,...][&name=player name]
-    fac: the kingdom the player serves (0: none);
+    fac: the kingdom the player serves (0: none); pf: part of the player's hero (the profile, see
+    coop/profile.py), kept by the hub in profiles.json under the player's name and sent back
+    (kind 14) when that player joins again;
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
     srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
@@ -72,6 +75,7 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|11|bid|n|(troop,count)*n        the defeated player's troops, prisoners of the winning player
           7777|12|n|(center,faction,lord,besieger+1)*n   whom centers belong to now, who besieges them
           7777|13|bid|center                   the host stormed this center: the host's game takes it as Native does
+          7777|14|offset|total|n|values...    the hero kept for this player (total 0: none, a new hero)
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...]
                   &pl=no~name;...
@@ -104,6 +108,7 @@ COORD_OFFSET = 100000
 REMOVED = 9999
 MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
 CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
+PROFILE_PER_REPLY = 120 # 5 + 120 numbers
 STALE_S = 15.0          # a party not reported for this long is gone
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
@@ -178,6 +183,8 @@ class Player:
         self.hero = None        # the hero's equipment and stats for joint battles
         self.faction = 0        # the kingdom the player serves, 0 none
         self.centers_sent = {}  # center -> (faction, lord, besieger + 1) this player was told
+        self.profile_out = []   # the kept hero, in replies, after joining
+        self.profile_in = None  # [seq, total, {offset: values}] the hero coming in
 
 
 class Battle:
@@ -203,7 +210,7 @@ class Battle:
 
 
 class World:
-    def __init__(self):
+    def __init__(self, profiles_path=None):
         self.lock = threading.Lock()
         self.parties = {}       # sid -> [tmpl, x, y, last_seen, tx, ty, att]
         self.players = {}       # cid -> Player
@@ -219,6 +226,13 @@ class World:
         self.mp_players = {}    # player number on the battle server -> name
         self.centers = {}       # center -> (faction, lord, besieger + 1), as the world server reports them
         self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
+        self.profiles_path = Path(profiles_path) if profiles_path else None
+        self.profiles = {}      # player key (multiplayer name, or hero name) -> the hero's numbers
+        if self.profiles_path is not None and self.profiles_path.exists():
+            try:
+                self.profiles = json.loads(self.profiles_path.read_text("utf-8"))
+            except (OSError, ValueError):
+                self.profiles = {}
         self.mp_names = {}      # cid -> the name its player uses on the battle server (launcher)
         self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0}
 
@@ -345,8 +359,44 @@ class World:
             if cid in self.players:
                 self.players[cid].troops_sent[sid] = self.version
 
+    def _profile_key(self, cid):
+        """Whose hero: the player's name for the battle server (given to the launcher, unique), else
+        the hero's name."""
+        q = self.players.get(cid)
+        key = self.mp_names.get(cid) or (q.name if q is not None else None)
+        return " ".join(key.lower().split()) if key else None
+
+    def _profile_part(self, p, part):
+        """A part of the player's hero: keep it once all of it arrived."""
+        seq, offset, total, values = part[0], part[1], part[2], part[3:]
+        if p.profile_in is None or p.profile_in[0] != seq or p.profile_in[1] != total:
+            p.profile_in = [seq, total, {}]
+        p.profile_in[2][offset] = values
+        got = sorted(p.profile_in[2].items())
+        flat_values = [v for _, vals in got for v in vals]
+        expected = 0
+        for off, vals in got:
+            if off != expected:
+                return
+            expected += len(vals)
+        key = self._profile_key(p.cid)
+        if expected == total and key:
+            self.profiles[key] = flat_values
+            p.profile_in = None
+            self._save_profiles()
+
+    def _save_profiles(self):
+        if self.profiles_path is None:
+            return
+        try:
+            tmp = self.profiles_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.profiles), "utf-8")
+            tmp.replace(self.profiles_path)
+        except OSError:
+            pass
+
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
-                       on_server=False, faction=None):
+                       on_server=False, faction=None, profile=None):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
@@ -361,10 +411,18 @@ class World:
             p.pos = (x, y)
             p.busy = busy
             p.last = now
-            if hello:
-                self.joins += 1
             if name and name != p.name:
                 p.name, p.name_pending = name, True
+            if hello:
+                self.joins += 1
+                if not on_server:
+                    # the hero kept for this player goes back to its game, or word that there is none
+                    kept = self.profiles.get(self._profile_key(cid) or "", [])
+                    p.profile_out = [[14, off, len(kept), len(kept[off:off + PROFILE_PER_REPLY])]
+                                     + kept[off:off + PROFILE_PER_REPLY]
+                                     for off in range(0, len(kept), PROFILE_PER_REPLY)] or [[14, 0, 0, 0]]
+            if profile is not None and not on_server:
+                self._profile_part(p, profile)
             if result is not None:
                 self._record_result(result, cid, now)
             if me is not None and me != p.stacks_last:
@@ -400,6 +458,8 @@ class World:
             if status != p.status_sent or p.status_age >= STATUS_EVERY:
                 p.status_sent, p.status_age = status, 0
                 return [5, *status], None
+            if p.profile_out:  # the kept hero, right after the first word on the world
+                return p.profile_out.pop(0), None
             # every other reply: troops of the nearest party whose troops this player has not seen
             if p.requests % 2 == 0:
                 for sid, _ in by_distance[:NEAREST_PER_REPLY]:
@@ -755,6 +815,12 @@ def parse_entries(d):
     return entries
 
 
+def parse_profile(text):
+    """'seq,offset,total,v1,...' -> [seq, offset, total, v1, ...] or None"""
+    v = parse_ints(text) if text else None
+    return v if v and len(v) >= 3 and v[1] >= 0 and v[2] >= 0 else None
+
+
 def parse_center(text):
     """'center,faction,lord[,besieger+1]' -> (center, faction, lord, besieger+1) or None"""
     v = parse_ints(text) if text else None
@@ -868,7 +934,8 @@ def handle_request(world, role, target, now, cid="local"):
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
                                             hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp,
                                             on_server=q.get("srvp") == "1",
-                                            faction=query_int(q, "fac", 0) if "fac" in q else None)
+                                            faction=query_int(q, "fac", 0) if "fac" in q else None,
+                                            profile=parse_profile(q.get("pf", "")))
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
@@ -1154,7 +1221,7 @@ def make_log(path):
 
 
 def run_host(args, log):
-    world = World()
+    world = World(args.profiles or Path(args.log).with_name("profiles.json"))
     world.set_mp_name("local", args.mp_name)
     serve_http(parse_addr(args.server, 80), lambda t: handle_request(world, "srv", t, time.time()), log, "srv")
     serve_http(parse_addr(args.client, 80), lambda t: handle_request(world, "cli", t, time.time()), log, "cli")
@@ -1226,6 +1293,7 @@ def main():
     h.add_argument("--client", default="127.0.0.2:80", help="address this PC's player game calls")
     h.add_argument("--mp", default="127.0.0.3:80", help="address the battle server game (multiplayer) calls")
     h.add_argument("--mp-name", default=None, help="the host's name on the battle server (multiplayer profile)")
+    h.add_argument("--profiles", default=None, help="where the players' heroes are kept (default: profiles.json next to the log)")
     h.add_argument("--save-dir", default=str(default_save_dir()), help="the world server's saves")
     j = sub.add_parser("join", help="a relay on a friend's PC")
     j.add_argument("host", help="the host's address, e.g. 26.1.2.3 (Radmin VPN) or 192.168.1.5")

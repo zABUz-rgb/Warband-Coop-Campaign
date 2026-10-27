@@ -838,5 +838,9 @@ script_coop_client_mp_hero_to_s18 = 836
 script_coop_append_s18 = 837
 script_coop_client_mp_begin_defence = 838
 script_coop_client_mp_begin = 839
+script_coop_profile_build = 840
+script_coop_profile_chunk = 841
+script_coop_profile_receive = 842
+script_coop_profile_apply = 843
 
 

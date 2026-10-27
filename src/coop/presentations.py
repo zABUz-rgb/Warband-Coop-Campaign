@@ -2,9 +2,9 @@ def merge(presentations, **unused):
   # the waiting window of a joint battle (coop/mp_campaign.py)
   from coop.mp_campaign import mp_campaign_presentations
   presentations.extend(mp_campaign_presentations)
-  # the weekly budget: the host's money changes as always, the window closes at once and the
-  # outcome is a message (a window would stop the world for everybody)
-  from header_operations import (store_troop_gold, store_sub, try_begin, try_end, else_try, eq, ge, lt,
+  # the weekly budget: the host's and the clients' money changes as always, the window closes at
+  # once and the outcome is a message (a window would stop the world for everybody)
+  from header_operations import (store_troop_gold, store_sub, try_begin, try_end, else_try, eq, ge, lt, this_or_next,
                                  assign, display_message, presentation_set_duration, val_mul)
   from header_triggers import ti_on_presentation_load
   from header_common import reg1
@@ -17,7 +17,8 @@ def merge(presentations, **unused):
   block[0:0] = [(store_troop_gold, ":coop_gold_before", "trp_player")]
   block.extend([
       (try_begin),
-        (eq, "$coop_srv_player", 1),
+        (this_or_next|eq, "$coop_srv_player", 1),
+        (eq, "$coop_role", 2), #a client
         (eq, "$g_apply_budget_report_to_gold", 1),
         (store_troop_gold, ":coop_gold_after", "trp_player"),
         (store_sub, reg1, ":coop_gold_after", ":coop_gold_before"),

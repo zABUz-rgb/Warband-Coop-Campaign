@@ -4,9 +4,13 @@ from module_constants import *
 
 
 # Simple triggers a client keeps: they act on the player, not on the world (auto menus after a rest,
-# such as the escape from captivity; food; lodging; Freelancer's pay, promotion and following).
+# such as the escape from captivity; food; lodging; Freelancer's pay, promotion and following; the
+# weekly pay day and the half wages paid every 6 hours; reading a book; the party's map icon; the
+# daily check that keeps gold from going below zero).
 CLIENT_KEEPS = ("$g_check_autos_at_hour", "script_consume_food", "@You pay for accommodation.",
-                "$player_cur_troop", "$enlisted_party")
+                "$player_cur_troop", "$enlisted_party", "$g_apply_budget_report_to_gold",
+                "$g_cur_week_half_daily_wage_payments", "$g_player_reading_book", "$g_player_icon_state",
+                "$g_last_report_control_day")
 
 
 def gate_world_triggers(orig_simple_triggers):

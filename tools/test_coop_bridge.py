@@ -398,6 +398,31 @@ def test_joint_defence():
     check(any(r[0] == 10 and r[3] == 660 for r in replies), f"the defender is captured by the besieger: {replies}")
 
 
+def test_profiles():
+    path = Path(tempfile.mkdtemp()) / "profiles.json"
+    w = cb.World(path)
+    w.set_mp_name("a", "Ivan")
+    first = req(w, "a", now=0.0, hello=True, name="Hero")[0]
+    nums = req(w, "a", now=0.0)[0]
+    check(first[0] == 5 and nums == [14, 0, 0, 0], f"a new player hears the world, then: no hero kept yet: {nums}")
+    hero = list(range(1, 301))
+    for off in range(0, 300, 50):
+        req(w, "a", now=1.0, profile=[7, off, 300] + hero[off:off + 50])
+    check(w.profiles.get("ivan") == hero, "the hero arrives in parts and is kept under the player's name")
+    w2 = cb.World(path)
+    check(w2.profiles.get("ivan") == hero, "and survives the bridge (profiles.json)")
+    w2.set_mp_name("b", "IVAN")
+    req(w2, "b", now=0.0, hello=True, name="Hero")
+    replies = [req(w2, "b", now=0.1)[0] for _ in range(3)]
+    check(replies[0] == [14, 0, 300, 120] + hero[:120] and replies[2] == [14, 240, 300, 60] + hero[240:],
+          "joining again, the player's game gets its hero back")
+    req(w2, "c", now=0.0, hello=True, name="Olga")
+    req(w2, "c", now=0.1, profile=[1, 0, 100] + hero[:50])
+    check("olga" not in w2.profiles, "half a hero is not kept")
+    req(w2, "h", now=0.0, hello=True, name="Host", on_server=True)
+    check(not w2.players["h"].profile_out, "the host's hero lives in the world itself")
+
+
 def test_centers_reach_players():
     w = cb.World()
     req(w, "a", now=0.0, name="Ivan")
@@ -515,6 +540,7 @@ if __name__ == "__main__":
     test_multiplayer_names()
     test_factions()
     test_joint_siege()
+    test_profiles()
     test_joint_defence()
     test_centers_reach_players()
     test_joint_battle_scaled_and_lost()

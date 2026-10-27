@@ -105,6 +105,12 @@ def net_scripts(first_dynamic):
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_busy", 0),
      (assign, "$coop_hello", 1), #the server holds the world until this client says hello
+     # the hero of this session is the host's until the bridge says whether it keeps one for this player
+     (assign, "$coop_profile_state", 0),
+     (assign, "$coop_profile_ready", 0),
+     (assign, "$coop_profile_len", 0),
+     (assign, "$coop_profile_sent", 0),
+     (assign, "$coop_profile_frames", coop_profile_period_frames),
      (party_set_slot, "p_coop_enc", 0, 0),
      (try_for_parties, ":party_no"),
        (ge, ":party_no", first_dynamic),
@@ -915,6 +921,10 @@ def net_reply_handler():
         (eq, ":kind", 12),
         (eq, "$coop_role", coop_role_client),
         (call_script, "script_coop_client_apply_centers"),
+      (else_try),
+        (eq, ":kind", 14),
+        (eq, "$coop_role", coop_role_client),
+        (call_script, "script_coop_profile_receive"),
       (else_try),
         (eq, ":kind", 5),
         (this_or_next|eq, "$coop_role", coop_role_client),
