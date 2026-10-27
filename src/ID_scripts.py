@@ -643,5 +643,14 @@ script_coop_client_apply_positions = 641
 script_coop_client_apply_troops = 642
 script_coop_client_encounter_start = 643
 script_coop_client_next_result = 644
+script_coop_mp_reply = 645
+script_coop_mp_tell_all = 646
+script_coop_mp_request = 647
+script_coop_client_mp_invite = 648
+script_coop_client_mp_status = 649
+script_coop_client_mp_result = 650
+script_coop_client_mp_text = 651
+script_coop_client_mp_send = 652
+script_coop_client_mp_begin = 653
 
 

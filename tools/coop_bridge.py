@@ -5,6 +5,8 @@ the URL, so each game on one PC has its own loopback address:
 
     world server game   -> http://127.0.0.1/srv...   (on the host's PC)
     a player's game     -> http://127.0.0.2/cli...   (on every player's PC, the host's too)
+    battle server game  -> http://127.0.0.3/mp...    (on the host's PC: a multiplayer server of the
+                           CoopWorld module, game type Battle, where joint battles are fought)
 
 Modes:
     host  the hub, on the host's PC: serves the world server game, the host's own player game and
@@ -38,6 +40,22 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,d
                                                     (why: 1 in an encounter or battle, 2 in a menu);
                                                     the player's own map then stands still too
 
+Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpt=t1,n1,...]):
+    OP 1 start a battle against the world party sid (mpt: its troops as the player sees them) or
+    the player in puppet slot; 2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
+    reply 7777|6|bid|type|slot       an invitation from the player in slot: type 1 may join, 2 attacked
+          7777|7|bid|status|team     0 gathering, 1 fought on the battle server (team 0 or 1),
+                                     2 cancelled or another battle is on, 3 no battle server
+          7777|8|bid|won|n|troop|killed|wounded|...   the player's losses
+
+Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...]&pl=no~name;...
+    PHASE 0 an ordinary round, 1-3 a battle of the campaign, 4 over (w: winning team, r: the bots
+    each stack lost); pl: the players on the server, matched to the players of the campaign by name.
+    reply 7778|0                                  nothing
+          7778|2|bid|offset|n|(team,player,troop,count)*n   stacks to spawn (player: who commands them, -1 the AI)
+          7778|1|bid|stacks|n|(player,team)*n     start: players onto their sides, the round restarts
+          7778|4|bid                              the outcome arrived
+
 Coordinates are map units * 100, shifted by COORD_OFFSET in replies so the games only get
 non-negative numbers. A reply holds at most 128 numbers (the engine's registers).
 """
@@ -68,6 +86,15 @@ CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350
 FETCHED_MARK = "coopworld_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
 PROTOCOL = 1
+MP_MARKER = 7778
+MP_ONLINE_S = 10.0      # a battle server not heard from for this long is not running
+GATHER_S = 20.0         # invited players have this long to answer before the battle starts
+INVITE_DIST = 1000      # map units * 100: players this close to the starter are invited
+MP_MAX_BOTS = 150       # bots on the battle server; bigger armies are scaled down, losses scaled up
+MP_MAX_STACKS = 60
+MP_CHUNK = 30           # stacks per reply: 5 + 4 * 30 numbers
+MP_LOST_S = 30.0        # a battle server back in an ordinary round this long after a start lost it
+WOUNDED_PCT = 50        # of a player's fallen soldiers, this share is wounded rather than killed
 
 
 def parse_ints(text):
@@ -111,6 +138,24 @@ class Player:
         self.others_cursor = 0
         self.status_sent = None  # (paused, slot, why) this player was last told
         self.status_age = 0
+        self.mp_out = []        # joint-battle replies waiting for this player
+
+
+class Battle:
+    """A joint battle: gathered from the campaign, fought on the battle server."""
+
+    def __init__(self, bid, starter, now):
+        self.bid = bid
+        self.starter = starter
+        self.state = "gathering"  # -> "loading" (stacks go to the battle server) -> "running"
+        self.sides = {starter: 0}  # cid -> team; the starter's side is 0
+        self.invited = set()      # cids that have not answered yet
+        self.until = now + GATHER_S
+        self.enemy_sid = None
+        self.enemy_stacks = []
+        self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
+        self.sent = 0
+        self.started = None
 
 
 class World:
@@ -124,6 +169,10 @@ class World:
         self.results = []       # (sid, destroyed, stacks) for the server to apply
         self.joins = 0
         self.clocks = {"srv": [], "cli": [], "cli_map": []}
+        self.battle = None
+        self.battle_seq = 0
+        self.mp_last = None     # real time the battle server last asked
+        self.mp_players = {}    # player number on the battle server -> name
         self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0}
 
     # ---- players
@@ -219,7 +268,22 @@ class World:
 
     # ---- players' requests
 
-    def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None):
+    def _record_result(self, result, cid, now):
+        """A battle changed a world party: the server applies it, the players see it at once."""
+        self.results.append(result)
+        self.stats["results"] += 1
+        sid, destroyed, stacks = result
+        if destroyed:
+            self._forget(sid, except_cid=cid)
+            self.tombstones[sid] = now
+        else:
+            # after a battle the player's view is what the party has now
+            self.version += 1
+            self.troops[sid] = (self.version, stacks)
+            if cid in self.players:
+                self.players[cid].troops_sent[sid] = self.version
+
+    def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
@@ -236,19 +300,20 @@ class World:
             if name and name != p.name:
                 p.name, p.name_pending = name, True
             if result is not None:
-                self.results.append(result)
-                self.stats["results"] += 1
-                sid, destroyed, stacks = result
-                if destroyed:
-                    self._forget(sid, except_cid=cid)
-                    self.tombstones[sid] = now
-                else:
-                    # after a battle the player's view is what the party has now
-                    self.version += 1
-                    self.troops[sid] = (self.version, stacks)
-                    p.troops_sent[sid] = self.version
+                self._record_result(result, cid, now)
             if me is not None and me != p.stacks_last:
                 p.stacks = p.stacks_last = me
+            if mp is not None:
+                self._mp_op(p, mp, now)
+            self._battle_tick(now)
+            if p.mp_out:
+                return p.mp_out.pop(0), None
+            if mp is not None and mp["op"] in (1, 2, 3):
+                # the waiting window: how the battle stands
+                b = self.battle
+                if b is not None and cid in b.sides:
+                    return [7, b.bid, 1 if b.state == "running" else 0, b.sides[cid]], None
+                return [7, mp["bid"], 0, 0], None
             by_distance = sorted(self.parties.items(),
                                  key=lambda kv: (kv[1][1] - x) ** 2 + (kv[1][2] - y) ** 2)
             # whether another player holds the world still: at once when it changes, and now and then
@@ -293,6 +358,163 @@ class World:
                     nums += [sid, tmpl, ex + COORD_OFFSET, ey + COORD_OFFSET, tx + COORD_OFFSET, ty + COORD_OFFSET,
                              max(att, 0)]
             return nums, None
+
+    # ---- joint battles
+
+    def _mp_online(self, now):
+        return self.mp_last is not None and now - self.mp_last <= MP_ONLINE_S
+
+    def _mp_op(self, p, mp, now):
+        op, bid, b = mp["op"], mp["bid"], self.battle
+        if op == 1:
+            if b is not None:
+                if p.cid not in b.sides:
+                    p.mp_out.append([7, 0, 2, 0])  # another battle is on
+                return
+            if not self._mp_online(now):
+                p.mp_out.append([7, 0, 3, 0])
+                return
+            self.battle_seq += 1
+            b = Battle(self.battle_seq, p.cid, now)
+            defender = None
+            if mp["slot"] >= 0:
+                defender = next((q for q in self.players.values() if q.slot == mp["slot"] and q is not p), None)
+                if defender is None:
+                    p.mp_out.append([7, 0, 2, 0])
+                    return
+                b.sides[defender.cid] = 1
+                b.invited.add(defender.cid)
+                defender.mp_out.append([6, b.bid, 2, p.slot])
+            elif mp["sid"] >= 0:
+                b.enemy_sid = mp["sid"]
+                b.enemy_stacks = mp["troops"] or (self.troops.get(mp["sid"], (0, None))[1] or [])
+            else:
+                p.mp_out.append([7, 0, 2, 0])
+                return
+            for q in self.players.values():
+                if q is p or q is defender or q.slot is None or q.pos is None or p.pos is None:
+                    continue
+                if (q.pos[0] - p.pos[0]) ** 2 + (q.pos[1] - p.pos[1]) ** 2 <= INVITE_DIST ** 2:
+                    b.invited.add(q.cid)
+                    q.mp_out.append([6, b.bid, 1, p.slot])
+            self.battle = b
+            p.mp_out.append([7, b.bid, 0, 0])
+        elif b is None or b.bid != bid:
+            if op in (2, 3):
+                p.mp_out.append([7, bid, 2, 0])  # that battle is gone
+        elif op == 3:
+            if b.state != "gathering" and p.cid not in b.sides:
+                p.mp_out.append([7, bid, 2, 0])  # too late
+                return
+            b.invited.discard(p.cid)
+            b.sides.setdefault(p.cid, 0)  # an invited player fights on the starter's side
+        elif op == 4:
+            b.invited.discard(p.cid)
+            if b.state == "running":
+                return  # the battle goes on: that player's troops fight without the player
+            if p.cid == b.starter:
+                for cid in set(b.sides) | b.invited:
+                    q = self.players.get(cid)
+                    if q is not None and q is not p:
+                        q.mp_out.append([7, b.bid, 2, 0])
+                self.battle = None
+            elif b.sides.get(p.cid) == 0:
+                del b.sides[p.cid]  # declined (an attacked player cannot decline)
+
+    def _battle_tick(self, now):
+        b = self.battle
+        if b is None or b.state != "gathering" or (b.invited and now < b.until):
+            return
+        stacks = []
+        for cid, team in sorted(b.sides.items(), key=lambda kv: (kv[1], kv[0] != b.starter)):
+            q = self.players.get(cid)
+            for troop, n in (q.stacks_last or []) if q is not None else []:
+                stacks.append([team, cid, troop, n, 0])
+        stacks += [[1, None, troop, n, 0] for troop, n in b.enemy_stacks]
+        stacks = [s for s in stacks if s[3] > 0][:MP_MAX_STACKS]
+        total = sum(s[3] for s in stacks)
+        scale = min(1.0, MP_MAX_BOTS / total) if total else 1.0
+        for s in stacks:
+            s[4] = max(1, round(s[3] * scale))
+        b.stacks, b.sent, b.state = stacks, 0, "loading"
+
+    def _mp_player_number(self, cid):
+        """The battle server's player number of a campaign player, matched by name, or -1."""
+        q = self.players.get(cid)
+        if q is None or not q.name:
+            return -1
+        want = " ".join(q.name.lower().split())
+        for no, name in sorted(self.mp_players.items()):
+            if " ".join(name.lower().split()) == want:
+                return no
+        return -1
+
+    def _finish(self, b, winner, fallen, now):
+        losses = {cid: [] for cid in b.sides}
+        enemy_left = []
+        for i, (team, owner, troop, count, spawned) in enumerate(b.stacks):
+            fell = fallen.get(i, 0)
+            lost = min(count, round(fell * count / spawned)) if spawned else 0
+            if owner is None:
+                if count - lost > 0:
+                    enemy_left.append((troop, count - lost))
+            elif lost:
+                wounded = lost * WOUNDED_PCT // 100
+                losses.setdefault(owner, []).append((troop, lost - wounded, wounded))
+        for cid, lost in losses.items():
+            q = self.players.get(cid)
+            if q is None:
+                continue
+            lost = lost[:MAX_STACKS]
+            won = 1 if b.sides.get(cid) == winner else 0
+            q.mp_out.append([8, b.bid, won, len(lost)] + [v for entry in lost for v in entry])
+        if b.enemy_sid is not None:
+            destroyed = 1 if winner == 0 or not enemy_left else 0
+            self._record_result((b.enemy_sid, destroyed, enemy_left), None, now)
+        self.battle = None
+
+    def mp_request(self, phase, bid, winner, fallen, players, now):
+        """The battle server asks; returns the reply numbers after the marker."""
+        with self.lock:
+            self.mp_last = now
+            self.mp_players = players
+            b = self.battle
+            if phase == 4:
+                if b is not None and b.bid == bid and b.state == "running":
+                    self._finish(b, winner, fallen, now)
+                return [4, bid]
+            self._battle_tick(now)
+            b = self.battle
+            if b is None:
+                return [0]
+            if b.state == "loading" and phase == 0:
+                if b.sent < len(b.stacks):
+                    chunk = b.stacks[b.sent:b.sent + MP_CHUNK]
+                    nums = [2, b.bid, b.sent, len(chunk)]
+                    for team, owner, troop, count, spawned in chunk:
+                        group = -1 if owner is None else self._mp_player_number(owner)
+                        nums += [team, group, troop, spawned]
+                    b.sent += len(chunk)
+                    return nums
+                pairs = []
+                for cid, team in b.sides.items():
+                    no = self._mp_player_number(cid)
+                    if no >= 0:
+                        pairs += [no, team]
+                b.state, b.started = "running", now
+                for cid, team in b.sides.items():
+                    q = self.players.get(cid)
+                    if q is not None:
+                        q.mp_out.append([7, b.bid, 1, team])
+                return [1, b.bid, len(b.stacks), len(pairs) // 2] + pairs
+            if b.state == "running" and phase == 0 and now - b.started > MP_LOST_S:
+                # the battle server restarted or changed its game: the battle is lost to it
+                for cid in b.sides:
+                    q = self.players.get(cid)
+                    if q is not None:
+                        q.mp_out.append([7, b.bid, 2, 0])
+                self.battle = None
+            return [0]
 
     # ---- clocks
 
@@ -361,6 +583,33 @@ def parse_result(text):
     return None if stacks is None else (values[0], 1 if values[1] else 0, stacks)
 
 
+def parse_mp_players(text):
+    """'no~name;...' -> {no: name}"""
+    players = {}
+    for chunk in text.split(";"):
+        no, sep, name = chunk.partition("~")
+        if sep and no.strip().isdigit() and name.strip():
+            players[int(no)] = name.strip()
+    return players
+
+
+def parse_fallen(text):
+    """'i,fallen;...' -> {i: fallen}"""
+    fallen = {}
+    for chunk in text.split(";"):
+        v = parse_ints(chunk)
+        if v and len(v) == 2:
+            fallen[v[0]] = v[1]
+    return fallen
+
+
+def query_int(q, key, default):
+    try:
+        return int(q.get(key, default))
+    except ValueError:
+        return default
+
+
 def reply_text(numbers, string=None):
     text = "|".join(str(int(v)) for v in numbers)
     if string and not string.lstrip("-").isdigit():  # a number would land in a register, not s0
@@ -392,9 +641,19 @@ def handle_request(world, role, target, now, cid="local"):
         if "me" in q:  # present but empty: the player's party has only heroes
             me = parse_stacks(parse_ints(q["me"].lstrip(","))) if q["me"].lstrip(",") else []
         name = q.get("name", "").replace("|", " ").strip()[:40] or None
+        mp = None
+        if "mp" in q:
+            troops = q.get("mpt", "").lstrip(",")
+            mp = {"op": query_int(q, "mp", 0), "bid": query_int(q, "bid", 0), "sid": query_int(q, "mpe", -1),
+                  "slot": query_int(q, "mpp", -1),
+                  "troops": (parse_stacks(parse_ints(troops)) or []) if troops else []}
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
-                                            hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name)
+                                            hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp)
         return reply_text([MARKER] + nums, string)
+    if role == "mp" and url.path == "/mp":
+        nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
+                                parse_fallen(q.get("r", "")), parse_mp_players(q.get("pl", "")), now)
+        return reply_text([MP_MARKER] + nums)
     return reply_text([0, 0])  # unknown path: no marker, the game ignores it
 
 
@@ -664,6 +923,7 @@ def run_host(args, log):
     world = World()
     serve_http(parse_addr(args.server, 80), lambda t: handle_request(world, "srv", t, time.time()), log, "srv")
     serve_http(parse_addr(args.client, 80), lambda t: handle_request(world, "cli", t, time.time()), log, "cli")
+    serve_http(parse_addr(args.mp, 80), lambda t: handle_request(world, "mp", t, time.time()), log, "mp")
     if args.key:
         serve_relays(parse_addr(args.listen, NET_PORT), world, args.key, args.save_dir, log)
     else:
@@ -676,11 +936,14 @@ def run_host(args, log):
             paused = world.paused(time.time())
             players = ", ".join(f"{p.slot}:{p.name or p.cid}{' busy' if p.busy else ''}"
                                 for p in sorted(world.players.values(), key=lambda p: (p.slot is None, p.slot)))
+            mp_text = "battle server " + ("on" if world._mp_online(time.time()) else "off")
+            if world.battle is not None:
+                mp_text += f", battle {world.battle.bid} {world.battle.state} sides {world.battle.sides}"
         clocks = {r: world.clock_rate(r) for r in ("srv", "cli", "cli_map")}
         clock_text = ", ".join(f"{r} {'?' if v is None else f'{v:.1f}'} h/min" for r, v in clocks.items())
         rate = {k: (s[k] - last[k]) / 5 for k in s}
         log(f"parties {n}, server {rate['srv']:.1f}/s, players {rate['cli']:.1f}/s [{players or 'none'}], "
-            f"{'PAUSED' if paused else 'running'}, results {s['results']}, {clock_text}")
+            f"{'PAUSED' if paused else 'running'}, results {s['results']}, {clock_text}, {mp_text}")
         last = s
 
 
@@ -710,6 +973,7 @@ def main():
     h.add_argument("--listen", default=f"0.0.0.0:{NET_PORT}", help="where other players connect")
     h.add_argument("--server", default="127.0.0.1:80", help="address the world server game calls")
     h.add_argument("--client", default="127.0.0.2:80", help="address this PC's player game calls")
+    h.add_argument("--mp", default="127.0.0.3:80", help="address the battle server game (multiplayer) calls")
     h.add_argument("--save-dir", default=str(default_save_dir()), help="the world server's saves")
     j = sub.add_parser("join", help="a relay on a friend's PC")
     j.add_argument("host", help="the host's address, e.g. 26.1.2.3 (Radmin VPN) or 192.168.1.5")

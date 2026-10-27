@@ -186,3 +186,24 @@ dialogs|dlga_start:close_window.43|Нам не положено разговар
 dialogs|dlga_mayor_wealth_comparison_5:mayor_pretalk|По нападениям на путников самым опасным считается {s4}. Здесь, в {s5}, разбойники и налётчики донимают нас меньше, чем {reg4} других городов, и больше, чем {reg5}.
 dialogs|dlga_free:close_window| До свидания.
 dialogs|dlga_free:close_window.1| [Уйти]
+game_menus|menu_coop_mp_wait|CoopWorld: совместный бой.
+game_menus|mno_coop_mp_show|Показать бой.
+game_menus|mno_coop_mp_cancel|Отменить совместный бой.
+game_menus|mno_coop_mp_back|Вернуться на карту.
+game_menus|mno_coop_mp_join|В бой!
+game_menus|mno_coop_mp_decline|Отказаться.
+quick_strings|qstr_Close|Закрыть
+quick_strings|qstr_CoopWorld:_a_battle_|CoopWorld: начинается бой из кампании!
+quick_strings|qstr_CoopWorld:_the_joint|CoopWorld: совместный бой ВЫИГРАН. Ваши потери: убито {reg1}, ранено {reg2}.
+quick_strings|qstr_CoopWorld:_the_joint_|CoopWorld: совместный бой ПРОИГРАН. Ваши потери: убито {reg1}, ранено {reg2}.
+quick_strings|qstr_The_battle_is_on!^^S|Бой начался!^^Переключитесь в окно мультиплеера (сервер боя CoopWorld) и сражайтесь: ваша сторона — команда {reg1}. Ваши отряды уже на поле и слушаются ваших приказов.^^Это окно ждёт итогов боя. Мир тем временем стоит.
+quick_strings|qstr_The_joint_battle_was|Совместный бой отменён (уже идёт другой бой или начавший его игрок вышел).
+quick_strings|qstr_No_battle_server_is_|Сервер боя не запущен. Его запускает хост: Мультиплеер — Создать игру — режим «Битва», модуль CoopWorld.
+quick_strings|qstr_The_battle_is_over._|Бой окончен. Итоги — в журнале сообщений.
+quick_strings|qstr_Gathering_the_player|Собираем игроков на совместный бой...^^Игроки поблизости получили приглашение. Бой начнётся через несколько секунд.
+quick_strings|qstr_CoopWorld:_all_troop|CoopWorld: все отряды на поле. В бой!
+quick_strings|qstr_CoopWorld:_the_battl|CoopWorld: бой окончен. Итоги уходят в кампанию.
+quick_strings|qstr_CoopWorld:_fight_thi|CoopWorld: сразиться с этим игроком (совместный бой на сервере мультиплеера).
+quick_strings|qstr_CoopWorld:_fight_tog|CoopWorld: сразиться вместе с друзьями (совместный бой на сервере мультиплеера).
+quick_strings|qstr_{s1}_attacks_you!^^T|{s1} нападает на вас!^^Бой идёт на сервере мультиплеера. Зайдите туда; если не зайдёте, ваши отряды будут сражаться без вас.
+quick_strings|qstr_{s1}_begins_a_battle|{s1} начинает бой рядом с вами и зовёт на помощь.^^Бой идёт на сервере мультиплеера: ваши отряды сражаются на стороне {s1}.

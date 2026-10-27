@@ -27,6 +27,15 @@ coop_role_held = 3     # world server holding the world still until a client joi
 # send_message_to_url ignores ports: each game uses its own loopback address on port 80
 coop_server_url = "http://127.0.0.1"
 coop_client_url = "http://127.0.0.2"
+coop_mp_url = "http://127.0.0.3"      # the joint-battle multiplayer server game (host's PC)
+coop_mp_marker = 7778
+
+# Joint battles on the multiplayer server (coop/mp.py, coop/mp_campaign.py)
+coop_mp_max_stacks = 60          # troop stacks of one battle, both sides
+coop_mp_stride = 8               # slots per stack on the multiplayer server
+coop_mp_round_seconds = 3600     # a campaign battle's round has no practical time limit
+slot_agent_coop_stack = 40       # on a bot of the multiplayer server: its stack + 1 (Native agent slots end at 28)
+coop_mp_resend_ms = 3000         # the waiting window asks the bridge again after this long without a reply
 
 coop_net_marker = 7777          # first number of every bridge reply (failed sends have none)
 coop_net_offset = 100000        # coordinates come back shifted so they are never negative

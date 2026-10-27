@@ -294,8 +294,29 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
   - Мир (лорды, бандиты, торговля, время) живёт в отдельной игре-сервере у хоста.
     Игры игроков показывают этот мир; у каждого свой отряд, остальные игроки видны на карте.
   - Пока кто-то в бою, во встрече или в меню (город, инвентарь), мир стоит у всех.
+  - Бои можно вести вместе на сервере мультиплеера (см. "Совместные бои").
   - Итоги ваших боёв уходят на сервер: разбитые отряды исчезают у всех.
   - До 4 игроков.
+
+СОВМЕСТНЫЕ БОИ (сервер мультиплеера)
+  Бой из кампании можно провести на сервере мультиплеера Warband: каждый игрок сражается сам,
+  его отряды - боты под его командованием.
+  1. Хост запускает ещё одно окно Warband (модуль CoopWorld) - сервер боя:
+       Мультиплеер - Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0.
+     Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
+  2. Каждый игрок (и хост) заходит на этот сервер из ещё одного окна Warband (модуль CoopWorld):
+       Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
+     Имя в мультиплеере должно совпадать с именем вашего героя в кампании: тогда мост сам ставит
+     вас в нужную команду и отдаёт вам ваших солдат. Окно игры остаётся на сервере между боями.
+  3. Во встрече с отрядом на карте выберите "CoopWorld: сразиться вместе с друзьями".
+     Игроки поблизости получают приглашение ("В бой!" или "Отказаться"); через несколько секунд
+     раунд на сервере боя начинается заново с армиями из кампании. Переключитесь в окно мультиплеера.
+  4. Встреча с отрядом другого игрока: "CoopWorld: сразиться с этим игроком". Его вызывают в бой,
+     отказаться нельзя; если он не зайдёт на сервер, его отряды сражаются без него.
+  5. Когда одна из сторон перебита, потери возвращаются в кампанию: из павших бойцов игрока половина
+     ранена, половина убита; разбитый отряд мира исчезает у всех. Пока идёт бой, мир стоит.
+  Большие армии уменьшаются до 150 ботов на поле, потери пересчитываются обратно.
+  Для мультиплеера Warband нужен серийный ключ игры (GOG: в библиотеке у игры, Steam: выдаётся сам).
 
 ОСТАНОВКА
   В своей игре: Лагерь - "CoopWorld: остановить кооператив", затем закройте окно моста.
@@ -334,6 +355,19 @@ FRIEND:
      newest save into your CoopWorld saves and keeps the link. Keep its window open.
   2. Start Warband with CoopWorld, load that save, Camp - "run this game as a CLIENT".
      The host's world runs on as soon as you joined.
+
+JOINT BATTLES (multiplayer server):
+  1. The host starts one more Warband window (CoopWorld): Multiplayer - Host a game,
+     game type Battle, any field map, 0 bots. The bridge finds it by itself.
+  2. Every player (the host too) joins that server from one more Warband window (CoopWorld):
+     the LAN server list, or Favorites with the host's address, e.g. 26.x.x.x:7240.
+     Use your campaign hero's name as your multiplayer name: the bridge then puts you on your
+     side and gives you command of your soldiers.
+  3. In an encounter: "CoopWorld: fight together with your friends". Players nearby are invited;
+     the battle server restarts its round with the campaign's armies. Switch to that window.
+  4. Meeting another player's party: "CoopWorld: fight this player" (that player cannot decline).
+  5. When one side is wiped out, the losses go back to the campaign (half of a player's fallen
+     are wounded); a defeated world party is gone for everybody. The world stands still meanwhile.
 
 Stopping: Camp - "CoopWorld: stop co-op" in your game, then close the bridge window.
 '''

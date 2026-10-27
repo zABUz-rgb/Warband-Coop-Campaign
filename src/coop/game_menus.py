@@ -62,7 +62,7 @@ camp_coop_options = [
 
 
 def merge(menus):
-  from coop_merge import menu_block, insert_after, find_line, MergeError
+  from coop_merge import menu_block, insert_after, find_line, find_by_id, MergeError
   block = menu_block(menus, "town")
   insert_after(block, (store_encountered_party, "$current_town"), town_ban_check)
   pos = find_line(block, (eq, "$g_leave_town", 1)) - 1
@@ -71,3 +71,8 @@ def merge(menus):
   block[pos:pos] = town_auto_lodging
   from coop_merge import menu_options
   menu_options(menus, "camp")[0:0] = camp_coop_options
+  # joint battles on the multiplayer server
+  from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option
+  options = menu_options(menus, "simple_encounter")
+  options.insert(find_by_id(options, "encounter_leave"), coop_mp_encounter_option)
+  menus.extend(mp_campaign_menus)

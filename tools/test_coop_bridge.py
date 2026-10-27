@@ -262,6 +262,81 @@ def test_hub_and_relay():
     check(lost.forward("/cli?seq=1") == "0|0", "a relay without the host answers without a marker")
 
 
+def mp(op, bid=0, sid=-1, slot=-1, troops=None):
+    return {"op": op, "bid": bid, "sid": sid, "slot": slot, "troops": troops or []}
+
+
+def test_joint_battle():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10), (32, 4)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    req(w, "c", x=50000, now=0.0, me=[(34, 2)], name="Far")
+    nums, _ = req(w, "a", now=1.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)]))
+    check(nums == [7, 0, 3, 0], "no battle server: the battle cannot start")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 1.0) == [0], "a battle server with nothing to do")
+    nums, _ = req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)]))
+    bid = w.battle.bid
+    check(nums == [7, bid, 0, 0], "a battle is gathering")
+    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 1, w.players["a"].slot], "a player nearby is invited")
+    check("c" not in w.battle.invited, "a player far away is not")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 2.2) == [0], "nothing goes to the server while gathering")
+    req(w, "b", x=300, now=3.0, busy=True, mp=mp(3, bid))
+    check(w.battle.sides == {"a": 0, "b": 0}, "the invited player joins the starter's side")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 3.1)
+    check(nums == [2, bid, 0, 4, 0, 0, 31, 10, 0, 0, 32, 4, 0, 1, 33, 6, 1, -1, 40, 20],
+          f"stacks go to the server, each commanded by its player (matched by name): {nums}")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 3.2)
+    check(nums == [1, bid, 4, 2, 0, 0, 1, 0], f"then the start, with the players' sides: {nums}")
+    check(req(w, "a", now=3.3, busy=True, mp=mp(2, bid))[0] == [7, bid, 1, 0], "the players learn it is being fought")
+    check(req(w, "c", x=50000, now=3.3, busy=False, mp=mp(1, sid=601))[0] == [7, 0, 2, 0], "one battle at a time")
+    check(w.mp_request(4, bid, 0, {0: 4, 1: 2, 3: 20}, {}, 9.0) == [4, bid], "the outcome is acknowledged")
+    check(w.battle is None, "the battle is over")
+    check(req(w, "a", now=9.1)[0] == [8, bid, 1, 2, 31, 2, 2, 32, 1, 1], "the starter gets the losses (half wounded)")
+    check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, 0],
+          "a player who lost nobody still hears the outcome, after the news it was fought")
+    check(w.results[-1] == (600, 1, []) and 600 in w.tombstones, "the defeated world party is destroyed")
+
+
+def test_joint_battle_scaled_and_lost():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 300)], name="Ivan")
+    w.mp_request(0, 0, -1, {}, {}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp=mp(1, sid=700, troops=[(40, 300)]))
+    nums = w.mp_request(0, 0, -1, {}, {}, 1.1)
+    check(nums[2:] == [0, 2, 0, -1, 31, 75, 1, -1, 40, 75], f"big armies are scaled down: {nums}")
+    bid = nums[1]
+    w.mp_request(0, 0, -1, {}, {}, 1.2)
+    w.mp_request(4, bid, 1, {0: 75, 1: 15}, {}, 5.0)
+    check(req(w, "a", now=5.1)[0][0] == 7 and req(w, "a", now=5.1)[0] == [8, bid, 0, 1, 31, 150, 150],
+          "and their losses scaled up; the battle is lost")
+    check(w.results[-1] == (700, 0, [(40, 240)]), "the world party keeps what survived")
+
+
+def test_joint_battle_decline_cancel_pvp():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 5)], name="Ivan")
+    req(w, "b", x=100, now=0.0, me=[(33, 6)], name="Olga")
+    w.mp_request(0, 0, -1, {}, {}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp=mp(1, sid=600))
+    bid = w.battle.bid
+    req(w, "b", x=100, now=1.1)
+    req(w, "b", x=100, now=1.2, mp=mp(4, bid))
+    check(w.battle.sides == {"a": 0} and not w.battle.invited, "a declined invitation")
+    req(w, "a", now=1.3, mp=mp(4, bid))
+    check(w.battle is None, "the starter cancels the battle")
+    slot_b = w.players["b"].slot
+    req(w, "a", now=2.0, busy=True, mp=mp(1, slot=slot_b))
+    bid = w.battle.bid
+    check(req(w, "b", x=100, now=2.1)[0] == [6, bid, 2, w.players["a"].slot], "the attacked player is called in")
+    req(w, "b", x=100, now=2.2, mp=mp(4, bid))
+    check(w.battle.sides == {"a": 0, "b": 1}, "an attacked player cannot decline")
+    nums = w.mp_request(0, 0, -1, {}, {}, 2.0 + cb.GATHER_S + 1)
+    check(nums[4:] == [0, -1, 31, 5, 1, -1, 33, 6], f"without an answer the battle starts anyway: {nums}")
+    w.mp_request(0, 0, -1, {}, {}, 30.0)
+    w.mp_request(0, 0, -1, {}, {}, 30.0 + cb.MP_LOST_S + 1)
+    check(w.battle is None, "a battle server that forgot the battle frees it")
+
+
 if __name__ == "__main__":
     test_positions()
     test_players_and_puppets()
@@ -269,5 +344,8 @@ if __name__ == "__main__":
     test_shared_pause()
     test_troops_results_tombstones()
     test_clock()
+    test_joint_battle()
+    test_joint_battle_scaled_and_lost()
+    test_joint_battle_decline_cancel_pvp()
     test_hub_and_relay()
     print("ALL OK")

@@ -222,3 +222,5 @@ menu_revolt = 220
 menu_ask_desert = 221
 menu_desert = 222
 menu_upgrade_path = 223
+menu_coop_mp_wait = 224
+menu_coop_mp_invite = 225

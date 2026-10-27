@@ -669,6 +669,7 @@ def net_scripts(first_dynamic):
 
 def net_reply_handler():
   """Appended to game_receive_url_response."""
+  from coop.mp_campaign import reply_branches as mp_reply_branches
   copy = [(party_set_slot, "p_coop_buf", i, reg(i)) for i in range(coop_net_max_numbers)]
   return [
     (try_begin),
@@ -744,6 +745,7 @@ def net_reply_handler():
         (eq, ":kind", 5),
         (eq, "$coop_role", coop_role_client),
         (call_script, "script_coop_client_set_world_pause"),
+      ] + mp_reply_branches() + [
       (try_end),
     (try_end),
   ]

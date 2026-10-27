@@ -93,7 +93,14 @@ def merge(orig_scripts):
   for s in orig_scripts:
     quiet_block(s[1], BOX_OPS)
   # co-op network replies (wire format in tools/coop_bridge.py)
-  script_block(orig_scripts, "game_receive_url_response").extend(net_reply_handler())
+  response = script_block(orig_scripts, "game_receive_url_response")
+  response.extend(net_reply_handler())
+  # joint battles: replies on the multiplayer server
+  from coop.mp import mp_scripts, mp_reply_hook
+  from coop.mp_campaign import mp_campaign_scripts
+  orig_scripts.extend(mp_scripts)
+  orig_scripts.extend(mp_campaign_scripts)
+  response[:0] = mp_reply_hook()
   # a new arrival (not the automatic return after resting) starts a new stay
   insert_after(script_block(orig_scripts, "game_event_party_encounter"),
                (assign, "$new_encounter", 1), [

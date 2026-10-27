@@ -18,6 +18,7 @@ def puppet_range():
 
 
 def net_triggers(first_dynamic):
+  from coop.mp_campaign import client_map_tick, client_request_suffix
   puppets_end = puppet_range()[1]
   return [
   # World server held for a joining client: only asks whether the client has joined.
@@ -184,7 +185,7 @@ def net_triggers(first_dynamic):
    [
      (eq, "$coop_role", coop_role_client),
    ],
-   [
+   client_map_tick() + [
      # time on the map flows only while the player moves or rests: rest when standing still,
      # a click on the map ends the rest as in Native "Wait here"
      (try_begin),
@@ -317,7 +318,8 @@ def net_triggers(first_dynamic):
          (map_free),
          (assign, reg6, 1),
        (try_end),
-       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy={reg4}{s13}{s14}"),
+       ] + client_request_suffix() + [
+       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy={reg4}{s17}{s13}{s14}"),
        (send_message_to_url, s10, 0),
      (try_end),
     ]),
