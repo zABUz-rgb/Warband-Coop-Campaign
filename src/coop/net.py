@@ -14,7 +14,7 @@ from header_parties import (ai_bhvr_hold, ai_bhvr_travel_to_point, ai_bhvr_patro
 from coop.constants import *
 
 # server reply layout (slots of p_coop_buf)
-SRV_HAS_CLIENT, SRV_X, SRV_Y, SRV_PAUSE, SRV_KIND, SRV_PAYLOAD = 2, 3, 4, 5, 6, 7
+SRV_HAS_CLIENT, SRV_X, SRV_Y, SRV_PAUSE, SRV_JOINS, SRV_KIND, SRV_PAYLOAD = 2, 3, 4, 5, 6, 7, 8
 # client reply layout
 CLI_COUNT, CLI_ENTRIES = 2, 3                  # kind 2: positions
 CLI_SID, CLI_NUM_STACKS, CLI_STACKS = 2, 3, 4  # kind 3: troops of one party
@@ -40,6 +40,7 @@ def net_scripts(first_dynamic):
      (assign, "$coop_role", coop_role_client),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_busy", 0),
+     (assign, "$coop_hello", 1), #the server holds the world until this client says hello
      (party_set_slot, "p_coop_enc", 0, 0),
      (try_for_parties, ":party_no"),
        (ge, ":party_no", first_dynamic),
@@ -51,6 +52,21 @@ def net_scripts(first_dynamic):
      (display_message, "@CoopWorld: this game is now a CLIENT of the world server.", 0x66CCFF),
     ]),
 
+  # script_coop_server_hold: keep the world still until a client game joins, so the save the
+  # client loads is exactly the server's world.
+  ("coop_server_hold",
+   [
+     (assign, "$coop_role", coop_role_held),
+     (assign, "$coop_srv_joins_known", 0),
+     (try_begin),
+       (eq, "$coop_srv_paused", 0),
+       (assign, "$coop_srv_paused", 1),
+       (rest_for_hours, 0, 0, 0), #stop resting: map time stands still
+     (try_end),
+     (display_message, "@CoopWorld: the world is HELD for a joining client.", 0xFFDD66),
+     (display_message, "@Save the game now (Esc - Save Game). In the client game load that save and choose 'run this game as a CLIENT'.", 0xFFDD66),
+    ]),
+
   ("coop_stop",
    [
      (try_begin),
@@ -58,6 +74,7 @@ def net_scripts(first_dynamic):
        (eq, "$coop_srv_paused", 1),
        (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0),
      (try_end),
+     (assign, "$coop_srv_paused", 0),
      (assign, "$coop_role", coop_role_single),
      (assign, reg1, "$coop_net_replies"),
      (assign, reg2, "$coop_net_spawned"),
@@ -267,6 +284,10 @@ def net_scripts(first_dynamic):
            (remove_party, ":cid"),
          (try_end),
          (party_set_slot, "p_coop_map", ":sid", 0),
+         (party_set_slot, "p_coop_dead", ":sid", 0),
+       (else_try),
+         # destroyed here a moment ago: do not bring it back before the server has caught up
+         (party_slot_ge, "p_coop_dead", ":sid", "$coop_net_seq"),
        (else_try),
          (assign, ":have", 0),
          (try_begin),
@@ -352,6 +373,7 @@ def net_scripts(first_dynamic):
   ("coop_client_encounter_start",
    [
      (assign, "$coop_busy", 1),
+     (assign, "$coop_busy_frames", 0),
      (set_fixed_point_multiplier, 100),
      (party_get_position, pos1, "p_main_party"),
      (position_get_x, ":px", pos1),
@@ -412,6 +434,9 @@ def net_scripts(first_dynamic):
        (try_begin),
          (neg|party_is_active, ":cid"),
          (str_store_string, s13, "@&res={reg24},1"),
+         (store_add, ":gone_until", "$coop_net_seq", coop_tombstone_requests),
+         (party_set_slot, "p_coop_dead", reg24, ":gone_until"),
+         (party_set_slot, "p_coop_map", reg24, 0),
          (assign, ":end", 0), #break
        (else_try),
          (party_slot_ge, ":cid", slot_party_coop_sid, 1),
@@ -447,6 +472,22 @@ def net_reply_handler():
       (party_get_slot, ":kind", "p_coop_buf", 1),
       (try_begin),
         (eq, ":kind", 1),
+        (this_or_next|eq, "$coop_role", coop_role_server),
+        (eq, "$coop_role", coop_role_held),
+        # held: a client joined since the hold began, so the world may run again
+        (party_get_slot, ":joins", "p_coop_buf", SRV_JOINS),
+        (try_begin),
+          (eq, "$coop_role", coop_role_held),
+          (try_begin),
+            (eq, "$coop_srv_joins_known", 0),
+            (assign, "$coop_srv_joins_known", 1),
+            (assign, "$coop_srv_joins", ":joins"), #joins before the hold do not count
+          (else_try),
+            (neq, ":joins", "$coop_srv_joins"),
+            (assign, "$coop_role", coop_role_server),
+            (display_message, "@CoopWorld: the client joined. The world runs.", 0x66CCFF),
+          (try_end),
+        (try_end),
         (eq, "$coop_role", coop_role_server),
         (party_get_slot, ":pause", "p_coop_buf", SRV_PAUSE),
         (call_script, "script_coop_server_set_pause", ":pause"),

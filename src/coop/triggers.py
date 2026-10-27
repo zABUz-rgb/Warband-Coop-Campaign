@@ -12,12 +12,43 @@ def first_dynamic_party():
 
 def net_triggers(first_dynamic):
   return [
+  # World server held for a joining client: only asks whether the client has joined.
+  (0, 0, 0,
+   [
+     (eq, "$coop_role", coop_role_held),
+   ],
+   [
+     (val_add, "$coop_net_frames", 1),
+     (try_begin),
+       (this_or_next|eq, "$coop_net_pending", 0),
+       (ge, "$coop_net_frames", coop_net_resend_frames),
+       (assign, "$coop_net_pending", 1),
+       (assign, "$coop_net_frames", 0),
+       (val_add, "$coop_net_seq", 1),
+       (assign, reg1, "$coop_net_seq"),
+       (str_store_string, s10, "@" + coop_server_url + "/srv?seq={reg1}&hold=1"),
+       (send_message_to_url, s10, 0),
+     (try_end),
+    ]),
+
   # World server: report the next batch of spawned parties, round robin, and learn where the client is.
   (0, 0, 0,
    [
      (eq, "$coop_role", coop_role_server),
    ],
    [
+     # resting keeps the world's time flowing; a click on the server's map (or a menu) ends the
+     # rest, so the server goes back to resting after a moment on the free map, unless paused
+     (try_begin),
+       (eq, "$coop_srv_paused", 0),
+       (map_free),
+       (val_add, "$coop_srv_idle_frames", 1),
+       (ge, "$coop_srv_idle_frames", coop_client_idle_frames),
+       (assign, "$coop_srv_idle_frames", 0),
+       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0),
+     (else_try),
+       (assign, "$coop_srv_idle_frames", 0),
+     (try_end),
      (val_add, "$coop_net_frames", 1),
      (try_begin),
        (this_or_next|eq, "$coop_net_pending", 0),
@@ -167,12 +198,34 @@ def net_triggers(first_dynamic):
        (set_fixed_point_multiplier, 100),
        # back on the map after an encounter: the world may run again, and what the battle
        # changed goes to the server, one party per request
+       # busy: 1 = an encounter started, 2 = its menu or battle is open, 0 = back on the map.
+       # The map is still free in the very frame the encounter starts, so 1 only ends once the
+       # menu was seen, or after a while when no menu opened at all.
+       (try_begin),
+         (eq, "$coop_busy", 1),
+         (neg|map_free),
+         (assign, "$coop_busy", 2),
+       (else_try),
+         (eq, "$coop_busy", 1),
+         (val_add, "$coop_busy_frames", 1),
+         (ge, "$coop_busy_frames", coop_busy_timeout_frames),
+         (assign, "$coop_busy", 0),
+       (else_try),
+         (eq, "$coop_busy", 2),
+         (map_free),
+         (assign, "$coop_busy", 0),
+       (try_end),
        (str_clear, s13),
        (try_begin),
          (map_free),
-         (assign, "$coop_busy", 0),
+         (eq, "$coop_busy", 0),
          (party_slot_ge, "p_coop_enc", 0, 1),
          (call_script, "script_coop_client_next_result"),
+       (try_end),
+       (try_begin),
+         (eq, "$coop_hello", 1),
+         (assign, "$coop_hello", 0),
+         (str_store_string, s13, "@{s13}&hello=1"),
        (try_end),
        (str_clear, s14),
        (val_add, "$coop_own_troops_frames", 1),
@@ -188,7 +241,12 @@ def net_triggers(first_dynamic):
        (assign, reg1, "$coop_net_seq"),
        (assign, reg4, "$coop_busy"),
        (store_current_hours, reg5),
-       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&x={reg2}&y={reg3}&busy={reg4}{s13}{s14}"),
+       (assign, reg6, 0),
+       (try_begin),
+         (map_free),
+         (assign, reg6, 1),
+       (try_end),
+       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy={reg4}{s13}{s14}"),
        (send_message_to_url, s10, 0),
      (try_end),
     ]),

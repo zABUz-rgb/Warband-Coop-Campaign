@@ -16,6 +16,8 @@ parties = [
   ("coop_map", "{!}coop_map", pf_disabled, no_menu, pt_none, fac_neutral, 0, ai_bhvr_hold, 0, (0, 0), []),
   # mirrors remembered at the start of a client's encounter: slot 0 = count, then (party, sid, size)
   ("coop_enc", "{!}coop_enc", pf_disabled, no_menu, pt_none, fac_neutral, 0, ai_bhvr_hold, 0, (0, 0), []),
+  # server party id -> request number until which a party the client destroyed stays gone
+  ("coop_dead", "{!}coop_dead", pf_disabled, no_menu, pt_none, fac_neutral, 0, ai_bhvr_hold, 0, (0, 0), []),
 ]
 
 

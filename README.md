@@ -30,7 +30,8 @@
 Две копии игры на одном ПК: `game` (сервер мира) и `game2` (клиент, модуль — ссылка на `game`).
 1. `python -I tools/coop_bridge.py` — мост: сервер мира звонит на 127.0.0.1:80, клиент на 127.0.0.2:80
    (`send_message_to_url` игнорирует порт в адресе).
-2. Обе игры загружают **одно и то же** сохранение CoopWorld.
-3. Сервер: Лагерь → «run this game as the WORLD SERVER» (и больше его не трогать).
-4. Клиент: Лагерь → «run this game as a CLIENT».
+2. Сервер: загрузить сохранение, Лагерь → «run this game as the WORLD SERVER».
+3. Подключение клиента: на сервере Лагерь → «hold the world for a joining client» (мир встаёт),
+   затем сохранить игру на сервере.
+4. Клиент: загрузить **это** сохранение, Лагерь → «run this game as a CLIENT». Сервер сам продолжит.
 Тесты моста: `python -I tools/test_coop_bridge.py`.

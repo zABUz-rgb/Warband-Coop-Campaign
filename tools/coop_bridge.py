@@ -4,16 +4,19 @@ Both games talk to it with Warband's send_message_to_url, which always uses port
 any port in the URL, so each game gets its own loopback address.
 
 World server game -> http://127.0.0.1/srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty;...[&c=sid,t1,n1,t2,n2,...]
+                     or http://127.0.0.1/srv?seq=S&hold=1 while it holds the world for a joining client
     d: spawned parties: position and where the party is heading (tx,ty), the ones near the client's
        puppet first; c: troops of one party near the puppet; h: game hours (clock speed check).
-    reply 7777|1|has_client|client_x|client_y|pause|kind|payload...
+    reply 7777|1|has_client|client_x|client_y|pause|joins|kind|payload...
       pause 1: a player is in an encounter or battle, the world must stand still
+      joins: how many times a client game has joined (the server holds the world until one does)
       kind 0: nothing
       kind 1: battle result  sid|destroyed|n|t1|n1|...   (troops the party has left)
       kind 2: puppet troops  n|t1|n1|...                 (the client player's party)
 
-Client game -> http://127.0.0.2/cli?seq=S&h=H&x=X&y=Y&busy=B[&res=sid,destroyed,t1,n1,...][&me=t1,n1,...]
-    busy: 1 from the start of an encounter until the client is back on the map
+Client game -> http://127.0.0.2/cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&res=sid,destroyed,t1,n1,...][&me=t1,n1,...]
+    busy: not 0 from the start of an encounter until the client is back on the map
+    free: 1 when the client is on the map (its clock then runs at travel speed); hello: it just joined
     res: a battle result for one party; me: the client player's own troops
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|...  (n entries; tmpl REMOVED = party gone), or
           7777|3|sid|n|t1|n1|...     (troops of one party near the client, sent when they changed)
@@ -42,6 +45,7 @@ NEAREST_PER_REPLY = 12
 ROTATING_PER_REPLY = 4
 REMOVALS_PER_REPLY = 4  # 3 header numbers + 6 per entry must stay within 128 registers
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
+TOMBSTONE_S = 30.0      # a party the client destroyed is not sent again for this long
 MAX_STACKS = 30         # troop stacks per party in one reply
 
 
@@ -70,7 +74,9 @@ class World:
     def __init__(self):
         self.lock = threading.Lock()
         self.parties = {}       # sid -> [tmpl, x, y, last_seen, tx, ty]
-        self.clocks = {"srv": [], "cli": []}  # (real time, game hours) samples
+        self.clocks = {"srv": [], "cli": [], "cli_map": []}  # (real time, game hours) samples
+        self.tombstones = {}    # sid -> real time the client destroyed it
+        self.joins = 0
         self.removed = []       # sids the client still has to drop
         self.client_pos = None  # (x, y)
         self.cursor = 0
@@ -87,15 +93,23 @@ class World:
     def paused(self, now):
         return self.busy and self.last_client is not None and now - self.last_client < BUSY_TIMEOUT_S
 
-    def server_report(self, entries, troops, now):
+    def server_report(self, entries, troops, now, hold=False):
         """Returns (client position or None, pause, payload after the pause flag)."""
         with self.lock:
             self.stats["srv"] += 1
+            for sid in [s for s, when in self.tombstones.items() if now - when > TOMBSTONE_S]:
+                del self.tombstones[sid]
             for sid, tmpl, x, y, tx, ty in entries:
+                if sid in self.tombstones:
+                    continue  # destroyed on the client; the server has not caught up yet
                 self.parties[sid] = [tmpl, x, y, now, tx, ty]
                 self.stats["entries_in"] += 1
                 if sid in self.removed:
                     self.removed.remove(sid)
+            if hold:
+                # the world is held and the server sends no parties: nothing goes stale meanwhile
+                for p in self.parties.values():
+                    p[3] = now
             for sid in [s for s, p in self.parties.items() if now - p[3] > STALE_S]:
                 del self.parties[sid]
                 self.troops.pop(sid, None)
@@ -114,23 +128,31 @@ class World:
                 self.puppet = None
             else:
                 payload = [0]
-            return self.client_pos, self.paused(now), payload
+            return self.client_pos, self.paused(now), self.joins, payload
 
-    def client_request(self, x, y, busy, result, me, now):
+    def client_request(self, x, y, busy, result, me, now, hello=False):
         """Returns the reply numbers after the marker: [2, n, entries...] or [3, sid, n, stacks...]."""
         with self.lock:
             self.stats["cli"] += 1
             self.client_pos = (x, y)
             self.busy = busy
             self.last_client = now
+            if hello:
+                self.joins += 1
             if result is not None:
                 self.results.append(result)
                 self.stats["results"] += 1
                 # after a battle the client's view is what the party has now
                 sid, destroyed, stacks = result
-                self.version += 1
-                self.troops[sid] = (self.version, stacks)
-                self.troops_sent[sid] = self.version
+                if destroyed:
+                    self.parties.pop(sid, None)
+                    self.troops.pop(sid, None)
+                    self.troops_sent.pop(sid, None)
+                    self.tombstones[sid] = now
+                else:
+                    self.version += 1
+                    self.troops[sid] = (self.version, stacks)
+                    self.troops_sent[sid] = self.version
             if me is not None and me != self.puppet_last:
                 self.puppet = self.puppet_last = me
             by_distance = sorted(self.parties.items(),
@@ -170,6 +192,8 @@ class World:
             return
         with self.lock:
             samples = self.clocks[role]
+            if role == "cli_map" and samples and now - samples[-1][0] > 1.0:
+                samples.clear()  # the client rested or was in a menu in between: start a new run
             samples.append((now, hours))
             while samples and now - samples[0][0] > CLOCK_WINDOW_S:
                 samples.pop(0)
@@ -231,19 +255,23 @@ def handle_request(world, role, target, now):
     q = {k: v[0] for k, v in parse_qs(url.query).items()}
     if role == "srv" and url.path == "/srv":
         world.clock("srv", parse_hours(q), now)
-        client, pause, payload = world.server_report(parse_entries(q.get("d", "")),
-                                                     parse_troops(q.get("c", "")), now)
+        client, pause, joins, payload = world.server_report(parse_entries(q.get("d", "")),
+                                                            parse_troops(q.get("c", "")), now,
+                                                            hold=q.get("hold") == "1")
         has, cx, cy = (0, 0, 0) if client is None else (1, client[0], client[1])
-        return reply_numbers([MARKER, 1, has, cx + COORD_OFFSET, cy + COORD_OFFSET, int(pause)] + payload)
+        return reply_numbers([MARKER, 1, has, cx + COORD_OFFSET, cy + COORD_OFFSET, int(pause), joins] + payload)
     if role == "cli" and url.path == "/cli":
         try:
             x, y = int(q.get("x", "0")), int(q.get("y", "0"))
         except ValueError:
             x = y = 0
-        busy = q.get("busy", "0") == "1"
+        busy = q.get("busy", "0") not in ("", "0")
         world.clock("cli", parse_hours(q), now)
+        if q.get("free") == "1":
+            world.clock("cli_map", parse_hours(q), now)
         me = parse_stacks(parse_ints(q["me"].lstrip(","))) if q.get("me", "").lstrip(",") else None
-        return reply_numbers([MARKER] + world.client_request(x, y, busy, parse_result(q.get("res", "")), me, now))
+        return reply_numbers([MARKER] + world.client_request(x, y, busy, parse_result(q.get("res", "")), me, now,
+                                                             hello=q.get("hello") == "1"))
     return reply_numbers([0, 0])  # unknown path: no marker, the game ignores it
 
 
@@ -315,7 +343,7 @@ def main():
             with world.lock:
                 s, n, client = dict(world.stats), len(world.parties), world.client_pos
                 paused = world.paused(time.time())
-            clocks = {r: world.clock_rate(r) for r in ("srv", "cli")}
+            clocks = {r: world.clock_rate(r) for r in ("srv", "cli", "cli_map")}
             clock_text = ", ".join(f"{r} clock {'?' if v is None else f'{v:.1f}'} h/min" for r, v in clocks.items())
             rate = {k: (s[k] - last[k]) / 5 for k in s}
             log(f"parties known {n}, server {rate['srv']:.1f}/s ({rate['entries_in']:.0f} entries/s), "

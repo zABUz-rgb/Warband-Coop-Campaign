@@ -48,8 +48,13 @@ town_auto_lodging = [
 camp_coop_options = [
   ("coop_role_server", [(eq, "$coop_role", coop_role_single)], "CoopWorld: run this game as the WORLD SERVER.",
    [(call_script, "script_coop_become_server"), (change_screen_return)]),
-  ("coop_role_client", [(eq, "$coop_role", coop_role_single)], "CoopWorld: run this game as a CLIENT.",
+  # a client game that loaded the held server's save starts in the held role: it may switch at once
+  ("coop_role_client", [(this_or_next|eq, "$coop_role", coop_role_single), (eq, "$coop_role", coop_role_held)],
+   "CoopWorld: run this game as a CLIENT.",
    [(call_script, "script_coop_become_client"), (change_screen_return)]),
+  ("coop_role_hold", [(eq, "$coop_role", coop_role_server)],
+   "CoopWorld: hold the world for a joining client.",
+   [(call_script, "script_coop_server_hold"), (change_screen_return)]),
   ("coop_role_stop", [(neq, "$coop_role", coop_role_single)], "CoopWorld: stop co-op.",
    [(call_script, "script_coop_stop"), (change_screen_return)]),
 ]
