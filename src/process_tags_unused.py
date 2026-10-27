@@ -15,7 +15,7 @@ for i in range(len(tag_uses[tag_string])):
 for i in range(length):
   if tag_uses[tag_string][i] == 0:
     if i > 3:
-      print(("WARNING: String is never used: " + strings[i][0].lower()))
+      print("WARNING: String is never used: " + strings[i][0].lower())
 
 #Processing items
 length = 0
@@ -25,7 +25,7 @@ for i in range(len(tag_uses[tag_item])):
     
 for i in range(length):
   if tag_uses[tag_item][i] == 0 and i > 1:
-    print(("WARNING: Item is never used: " + items[i][0].lower()))
+    print("WARNING: Item is never used: " + items[i][0].lower())
 
 #Processing troops
 length = 0
@@ -36,7 +36,7 @@ for i in range(len(tag_uses[tag_troop])):
 for i in range(length):
   if tag_uses[tag_troop][i] == 0:
     if i > 3:
-      print(("WARNING: Troop is never used: " + troops[i][0].lower()))
+      print("WARNING: Troop is never used: " + troops[i][0].lower())
 
 #Processing factions
 length = 0
@@ -46,7 +46,7 @@ for i in range(len(tag_uses[tag_faction])):
     
 for i in range(length):
   if tag_uses[tag_faction][i] == 0:
-    print(("WARNING: Faction is never used: " + factions[i][0].lower()))
+    print("WARNING: Faction is never used: " + factions[i][0].lower())
 
 #Processing quests
 length = 0
@@ -56,7 +56,7 @@ for i in range(len(tag_uses[tag_quest])):
     
 for i in range(length):
   if tag_uses[tag_quest][i] == 0:
-    print(("WARNING: Quest is never used: " + quests[i][0].lower()))
+    print("WARNING: Quest is never used: " + quests[i][0].lower())
 
 #Processing party_templates
 length = 0
@@ -67,7 +67,7 @@ for i in range(len(tag_uses[tag_party_tpl])):
 for i in range(length):
   if tag_uses[tag_party_tpl][i] == 0:
     if i > 3:
-      print(("WARNING: Party template is never used: " + party_templates[i][0].lower()))
+      print("WARNING: Party template is never used: " + party_templates[i][0].lower())
 
 #Processing parties
 length = 0
@@ -78,7 +78,7 @@ for i in range(len(tag_uses[tag_party])):
 for i in range(length):
   if tag_uses[tag_party][i] == 0:
     if parties[i][0].lower().find("temp_") == -1:
-      print(("WARNING: Party is never used: " + parties[i][0].lower()))
+      print("WARNING: Party is never used: " + parties[i][0].lower())
 
 #Processing scenes
 #length = 0
@@ -98,7 +98,7 @@ for i in range(len(tag_uses[tag_mission_tpl])):
     
 for i in range(length):
   if tag_uses[tag_mission_tpl][i] == 0:
-    print(("WARNING: Mission template is never used: " + mission_templates[i][0].lower()))
+    print("WARNING: Mission template is never used: " + mission_templates[i][0].lower())
 
 #Processing game_menus
 length = 0
@@ -109,7 +109,7 @@ for i in range(len(tag_uses[tag_menu])):
 for i in range(length):
   if tag_uses[tag_menu][i] == 0 and i > 0:
     if i > 1:
-      print(("WARNING: Game menu is never used: " + game_menus[i][0].lower()))
+      print("WARNING: Game menu is never used: " + game_menus[i][0].lower())
 
 #Processing scripts
 length = 0
@@ -120,7 +120,7 @@ for i in range(len(tag_uses[tag_script])):
 for i in range(length):
   if tag_uses[tag_script][i] == 0:
     if scripts[i][0].lower().find("game_") == -1:
-      print(("WARNING: Script is never used: " + scripts[i][0].lower()))
+      print("WARNING: Script is never used: " + scripts[i][0].lower())
 
 #Processing particle systems
 length = 0
@@ -131,7 +131,7 @@ for i in range(len(tag_uses[tag_particle_sys])):
 for i in range(length):
   if tag_uses[tag_particle_sys][i] == 0:
     if particle_systems[i][0].lower().find("game_") == -1:
-      print(("WARNING: Particle system is never used: " + particle_systems[i][0].lower()))
+      print("WARNING: Particle system is never used: " + particle_systems[i][0].lower())
 
 #Processing scene props
 #length = 0

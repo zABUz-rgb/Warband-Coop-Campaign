@@ -1,7 +1,8 @@
 """Build the CoopWorld packages for players: dist/CoopWorld-<date>.zip (English) and
 dist/CoopWorld-ru-<date>.zip (Russian: game texts, installer and instructions).
 
-They hold only what CoopWorld adds: the compiled module files (*.txt), the bridge and an installer.
+They hold only what CoopWorld adds: the compiled module files (*.txt), Diplomacy's textures and
+changed scenes (tools/dplmc_assets.py), the bridge and an installer.
 No game files: the installer copies each player's own Modules/Native to Modules/CoopWorld and puts
 the compiled files over it. The Russian one also adds CoopWorld's Russian texts
 (tools/make_ru.py) to the copy of Native's languages/ru.
@@ -441,6 +442,9 @@ def build(name, files, russian=False):
         for f in sorted(MODULE.glob("*.txt")):
             if f.name not in BUILD_ONLY:
                 z.write(f, f"{name}/CoopWorld/{f.name}")
+        from dplmc_assets import assets
+        for source, rel in assets():  # Diplomacy's textures and changed scenes
+            z.write(source, f"{name}/CoopWorld/{rel}")
         z.write(ROOT / "tools" / "coop_bridge.py", f"{name}/coop_bridge.py")
         for arcname, text in files.items():
             z.writestr(f"{name}/{arcname}", text.encode("utf-8"))

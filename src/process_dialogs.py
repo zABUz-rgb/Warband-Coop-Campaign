@@ -92,18 +92,18 @@ def compile_sentence_tokens(sentences):
         found = 1
         break
     if not found:
-      print((sentence[ipt_token_pos]))
-      print((sentence[text_pos]))
-      print((sentence[opt_token_pos]))
+      print(sentence[ipt_token_pos])
+      print(sentence[text_pos])
+      print(sentence[opt_token_pos])
       print("**********************************************************************************")
-      print(("ERROR: INPUT TOKEN NOT FOUND:" + input_token))
+      print("ERROR: INPUT TOKEN NOT FOUND:" + input_token)
       print("**********************************************************************************")
       print("**********************************************************************************")
     input_tokens.append(input_token_id)
   save_dialog_states(dialog_states)
   for i_t in range(len(dialog_states)):
     if dialog_state_usages[i_t] == 0:
-      print(("ERROR: Output token not found: " + dialog_states[i_t]))
+      print("ERROR: Output token not found: " + dialog_states[i_t])
   return (input_tokens, output_tokens)
 
 def create_auto_id(sentence,auto_ids):
@@ -182,9 +182,11 @@ def save_sentences(variable_list,variable_uses,sentences,tag_uses,quick_strings,
       else:
         file.write("NO_VOICEOVER ")
       file.write("\n")
-    except:
+    except Exception as err:
       print("Error in dialog line:")
       print(sentence)
+      print("Error was:", err)
+      print("")
   file.close()
 
 # Registered cookies is a list which enables the order of cookies to remain fixed across changes.

@@ -24,7 +24,7 @@ def compile_relations():
         if factions[j_f][faction_name_pos] == rel_name:
           other_pos = j_f
       if other_pos == -1:
-        print(("ERROR faction not found: "+ rel_name))
+        print("ERROR faction not found: "+ rel_name)
       else:
         relations[other_pos][i_faction] = rel[1]
         relations[i_faction][other_pos] = rel[1]

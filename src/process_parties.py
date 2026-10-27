@@ -25,7 +25,7 @@ def save_parties(parties):
     if (type(menu_param) == str):
       menu_no = find_object(game_menus,menu_param)
       if (menu_no < 0):
-        print(("Error: Unable to find menu-id :" + menu_param))
+        print("Error: Unable to find menu-id :" + menu_param)
     else:
       menu_no = menu_param
     file.write("%d "%(menu_no))
@@ -36,7 +36,7 @@ def save_parties(parties):
     if (type(ai_param) == str):
       ai_behavior_object = find_object(parties,ai_param)
       if (ai_behavior_object < 0):
-        print(("Error: Unable to find party-id :" + ai_param))
+        print("Error: Unable to find party-id :" + ai_param)
     else:
       ai_behavior_object = ai_param
     file.write("%d %d "%(ai_behavior_object,ai_behavior_object))

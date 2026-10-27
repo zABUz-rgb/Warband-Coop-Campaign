@@ -25,7 +25,7 @@ def save_party_templates():
     file.write("pt_%s %s %d %d %d %d "%(convert_to_identifier(party_template[0]),replace_spaces(party_template[1]),party_template[2],party_template[3], party_template[4], party_template[5]))
     members = party_template[6]
     if (len(members) > 6):
-      print(("Error! NUMBER OF TEMPLATE MEMBERS EXCEEDS 6 " + party_template[0]))
+      print("Error! NUMBER OF TEMPLATE MEMBERS EXCEEDS 6 " + party_template[0])
       members = members[0:6]
     for party_template_member in members:
       save_party_template_troop(file,party_template_member)

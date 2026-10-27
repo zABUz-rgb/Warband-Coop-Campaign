@@ -57,7 +57,7 @@ def save_scenes(variables,variable_uses,tag_uses):
     for chest_troop in chest_troops:
       troop_no = find_troop(troops,chest_troop)
       if (troop_no < 0):
-        print(("Error unable to find chest-troop: " + chest_troop))
+        print("Error unable to find chest-troop: " + chest_troop)
         troop_no = 0
       else:
         add_tag_use(tag_uses,tag_troop,troop_no)

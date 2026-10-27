@@ -1,11 +1,14 @@
-"""Russian translation of what CoopWorld adds to Native (Freelancer, co-op), on top of Native's own.
+"""Russian translation of the CoopWorld module: Diplomacy, Freelancer and co-op on top of Native.
 
 The game reads a module's texts from Modules/<module>/languages/<lang>/*.csv, lines "id|text".
-Native ships languages/ru; this tool finds every id the CoopWorld build adds that Native's ru files
-lack, and takes their Russian text from lang/ru.csv (kept by hand, "file|id|text").
+Each text comes from the first of these that has its id:
+  1. the russifier's Native (vendor/l10n_ru), the base for everything Native has;
+  2. the Russian translation of Diplomacy (MRCMOD's, vendor/dplmc_ru_mrcmod), for what Diplomacy adds;
+  3. lang/ru.csv (kept by hand, "file|id|text"), for the rest: Freelancer, co-op, and what neither has.
+This tool finds every id the build has and none of them translates.
 
     python tools/make_ru.py --missing   list ids that still need a translation (with the English)
-    python tools/make_ru.py             write game/Modules/CoopWorld/languages/ru (Native's + ours)
+    python tools/make_ru.py             write game/Modules/CoopWorld/languages/ru
                                         and dist/ru_additions/*.csv for the player package
 """
 import os
@@ -23,7 +26,10 @@ RUSSIFIER = ROOT / "vendor" / "l10n_ru"
 NATIVE_RU = (RUSSIFIER / "Modules" / "Native" / "languages" / "ru"
              if (RUSSIFIER / "Modules" / "Native" / "languages" / "ru").exists()
              else ROOT / "game" / "Modules" / "Native" / "languages" / "ru")
+DIPLOMACY_RU = ROOT / "vendor" / "dplmc_ru_mrcmod" / "ru"
 OURS = ROOT / "lang" / "ru.csv"
+FILES = ("game_menus", "dialogs", "quests", "parties", "quick_strings", "game_strings", "troops",
+         "item_kinds", "party_templates", "factions", "info_pages", "skills")
 ADDITIONS = ROOT / "dist" / "ru_additions"
 
 
@@ -49,8 +55,33 @@ def module_texts():
     from module_dialogs import dialogs
     from module_quests import quests
     from module_parties import parties
+    from module_strings import strings
+    from module_troops import troops
+    from module_items import items
+    from module_party_templates import party_templates
+    from module_factions import factions
+    from module_info_pages import info_pages
+    from module_skills import skills
     from process_common import convert_to_identifier
-    texts = {"game_menus": {}, "dialogs": {}, "quests": {}, "parties": {}, "quick_strings": {}}
+    texts = {f: {} for f in FILES}
+    for s in strings:
+        texts["game_strings"][f"str_{s[0]}"] = s[1]
+    for tr in troops:
+        texts["troops"][f"trp_{tr[0]}"] = tr[1]
+        texts["troops"][f"trp_{tr[0]}_pl"] = tr[2]
+    for it in items:
+        texts["item_kinds"][f"itm_{it[0]}"] = it[1][0][1] if isinstance(it[1], list) else it[1]
+        texts["item_kinds"][f"itm_{it[0]}_pl"] = (it[1][0][1] if isinstance(it[1], list) else it[1]) + "s"
+    for pt in party_templates:
+        texts["party_templates"][f"pt_{pt[0]}"] = pt[1]
+    for fac in factions:
+        texts["factions"][f"fac_{fac[0]}"] = fac[1]
+    for ip in info_pages:
+        texts["info_pages"][f"ip_{ip[0]}"] = ip[1]
+        texts["info_pages"][f"ip_{ip[0]}_text"] = ip[2]
+    for sk in skills:
+        texts["skills"][f"skl_{sk[0]}"] = sk[1]
+        texts["skills"][f"skl_{sk[0]}_desc"] = sk[4]
     for m in game_menus:
         texts["game_menus"][f"menu_{m[0]}"] = m[2]
         for opt in m[5]:
@@ -84,12 +115,13 @@ def internal(text):
     return "http://" in text or ("&" in text and "=" in text) or (" " not in text and not any(c.isalpha() for c in re.sub(r"\{[^}]*\}", "", text)))
 
 
-def missing(texts, native, ours):
-    """(file, id, English) of texts Native's ru lacks and lang/ru.csv does not translate yet."""
+def missing(texts, bases, ours):
+    """(file, id, English) of texts no base translation has and lang/ru.csv does not translate yet."""
     out = []
     for f, items in texts.items():
         for k, en in items.items():
-            if not en or en.startswith("{!}") or k in native[f] or (f, k) in ours or internal(en):
+            if (not en or en.startswith("{!}") or any(k in b[f] for b in bases) or (f, k) in ours
+                    or internal(en)):
                 continue
             out.append((f, k, en))
     return out
@@ -102,9 +134,10 @@ def main():
             if line.count("|") >= 2 and not line.startswith("#"):
                 f, k, v = line.split("|", 2)
                 ours[(f, k)] = v
-    native = {f: load_csv(NATIVE_RU / f"{f}.csv") for f in ("game_menus", "dialogs", "quests", "parties", "quick_strings")}
+    native = {f: load_csv(NATIVE_RU / f"{f}.csv") for f in FILES}
+    diplomacy = {f: load_csv(DIPLOMACY_RU / f"{f}.csv") for f in FILES}
     texts = module_texts()
-    gaps = missing(texts, native, ours)
+    gaps = missing(texts, (native, diplomacy), ours)
     if "--missing" in sys.argv:
         for f, k, en in gaps:
             print(f"{f}|{k}|{en}")
@@ -119,18 +152,23 @@ def main():
     target = MODULE / "languages" / "ru"
     target.mkdir(parents=True, exist_ok=True)
     ADDITIONS.mkdir(parents=True, exist_ok=True)
-    for path in sorted(NATIVE_RU.glob("*.csv")):
-        f = path.stem
+    names = sorted({p.name for p in NATIVE_RU.glob("*.csv")} | {p.name for p in DIPLOMACY_RU.glob("*.csv")})
+    for name in names:
+        f = name[:-4]
+        path = NATIVE_RU / name
         base_ids = load_csv(path)
-        # the base's own translation wins: ours only fills what it lacks
-        add = [(k, v) for (ff, k), v in sorted(ours.items())
-               if ff == f and k in texts.get(f, {}) and k not in base_ids]
-        base = path.read_text("utf-8-sig").rstrip("\r\n")
+        # the russifier's Native wins, then Diplomacy's translation fills its own texts, then ours
+        add = [(k, v) for k, v in load_csv(DIPLOMACY_RU / name).items()
+               if k not in base_ids and (k in texts.get(f, {}) or f not in texts)]
+        known = base_ids.keys() | {k for k, _ in add}
+        add += [(k, v) for (ff, k), v in sorted(ours.items())
+                if ff == f and k in texts.get(f, {}) and k not in known]
+        base = path.read_text("utf-8-sig").rstrip("\r\n") if path.exists() else ""
         lines = "".join(f"\r\n{k}|{v}" for k, v in add)
-        (target / path.name).write_text("﻿" + base + lines + "\r\n", "utf-8", newline="")
+        (target / name).write_text("﻿" + (base + lines).lstrip("\r\n") + "\r\n", "utf-8", newline="")
         if add:
-            (ADDITIONS / path.name).write_text(lines.lstrip("\r\n") + "\r\n", "utf-8", newline="")
-    print(f"languages/ru written from {NATIVE_RU.relative_to(ROOT)}: CoopWorld fills what it lacks; "
+            (ADDITIONS / name).write_text(lines.lstrip("\r\n") + "\r\n", "utf-8", newline="")
+    print(f"languages/ru written from {NATIVE_RU.relative_to(ROOT)} and {DIPLOMACY_RU.relative_to(ROOT)}: CoopWorld fills what they lack; "
           f"{len(gaps)} untranslated, {len(unused)} unused")
 
 

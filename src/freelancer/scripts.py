@@ -718,8 +718,13 @@ scripts = [
 
 def merge(orig_scripts):
   from coop_merge import script_block, insert_before, insert_after
-  insert_before(script_block(orig_scripts, "agent_reassign_team"),
-                (party_stack_get_troop_id, ":leader_troop_id", ":party_no", 0), not_in_party)
+  # an enlisted player does not command the lord's troops: they always go to the allies' team
+  block = script_block(orig_scripts, "agent_reassign_team")
+  diplomacy_check = (neg | party_slot_eq, ":party_no", slot_party_temp_slot_1, 0)
+  if diplomacy_check in block:  # Diplomacy decides per party beforehand (slot_party_temp_slot_1)
+    insert_before(block, diplomacy_check, [(this_or_next | eq, "$freelancer_state", 1)])
+  else:
+    insert_before(block, (party_stack_get_troop_id, ":leader_troop_id", ":party_no", 0), not_in_party)
   insert_after(script_block(orig_scripts, "game_start"),
                (assign, "$g_player_luck", 200), [(assign, "$freelancer_state", 0)])
   insert_before(script_block(orig_scripts, "encounter_init_variables"),

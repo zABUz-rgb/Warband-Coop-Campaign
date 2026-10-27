@@ -27,8 +27,10 @@ tf_guarantee_gloves           = 0x00800000
 tf_guarantee_horse            = 0x01000000
 tf_guarantee_shield           = 0x02000000
 tf_guarantee_ranged           = 0x04000000
-tf_guarantee_polearm          = 0x08000000
 tf_unmoveable_in_party_window = 0x10000000
+
+tf_disable_sounds             = 0x00010000 #disable agent related sounds, but not voices. useful for animals
+tf_guarantee_polearm          = 0x08000000
 
 # Character attributes...
 ca_strength     = 0
@@ -257,9 +259,9 @@ def upgrade(troops,troop1_id,troop2_id):
   troop1_no = find_troop(troops,troop1_id)
   troop2_no = find_troop(troops,troop2_id)
   if (troop1_no == -1):
-    print(("Error with upgrade def: Unable to find troop1-id: " + troop1_id))
+    print("Error with upgrade def: Unable to find troop1-id: " + troop1_id)
   elif (troop2_no == -1):
-    print(("Error with upgrade def: Unable to find troop2-id: " + troop2_id))
+    print("Error with upgrade def: Unable to find troop2-id: " + troop2_id)
   else:
     cur_troop = troops[troop1_no]
     cur_troop_length = len(cur_troop)
@@ -278,11 +280,11 @@ def upgrade2(troops,troop1_id,troop2_id,troop3_id):
   troop2_no = find_troop(troops,troop2_id)
   troop3_no = find_troop(troops,troop3_id)
   if (troop1_no == -1):
-    print(("Error with upgrade2 def: Unable to find troop1-id: " + troop1_id))
+    print("Error with upgrade2 def: Unable to find troop1-id: " + troop1_id)
   elif (troop2_no == -1):
-    print(("Error with upgrade2 def: Unable to find troop2-id: " + troop2_id))
+    print("Error with upgrade2 def: Unable to find troop2-id: " + troop2_id)
   elif (troop3_no == -1):
-    print(("Error with upgrade2 def: Unable to find troop3-id: " + troop3_id))
+    print("Error with upgrade2 def: Unable to find troop3-id: " + troop3_id)
   else:
     cur_troop = troops[troop1_no]
     cur_troop_length = len(cur_troop)

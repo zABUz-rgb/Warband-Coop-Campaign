@@ -109,13 +109,13 @@ def get_identifier_value(str, tag_uses):
     (tag_type, id_no) = get_id_value(tag_str,id_str,tag_uses)
     if (tag_type > 0):
       if (id_no < 0):
-        print(("Error: Unable to find object:" + str))
+        print("Error: Unable to find object:" + str)
       else:
         result = id_no | (tag_type << op_num_value_bits)
     else:
-      print(("Error: Unrecognized tag:" +tag_str + "in object:" + str))
+      print("Error: Unrecognized tag:" +tag_str + "in object:" + str)
   else:
-    print(("Error: Invalid object:" +str + ".Variables should start with $ sign and references should start with a tag"))
+    print("Error: Invalid object:" +str + ".Variables should start with $ sign and references should start with a tag")
   return result
 
 def load_quick_strings(export_dir):
@@ -241,7 +241,7 @@ def get_cookie(cookies_list,cookie_string):
       result = i_t
       break
   if not found:
-    print(("ERROR: input token not found:" + cookie_string))
+    print("ERROR: input token not found:" + cookie_string)
     cookies_list.append(cookie_string)
     result = len(cookies_list) - 1
   return result
@@ -250,7 +250,7 @@ def get_cookie(cookies_list,cookie_string):
 def check_varible_not_defined(variable_string,variables_list):
   for i_t in range(len(variables_list)):
     if variable_string == variables_list[i_t]:
-      print(("WARNING: Variable name used for both local and global contexts:" + variable_string))
+      print("WARNING: Variable name used for both local and global contexts:" + variable_string)
       break
 
 #def add_get_variable(variable_string,variables_list):
@@ -292,9 +292,11 @@ def get_variable(variable_string,variables_list,variable_uses):
       variables_list.append(variable_string)
       variable_uses.append(0)
       result = len(variables_list) - 1
-      print(("WARNING: Usage of unassigned global variable: " + variable_string))
+      print("WARNING: Usage of unassigned global variable: " + variable_string)
     else:
-      print(("ERROR: Usage of unassigned local variable: " + variable_string))
+      if True:
+        raise Exception("ERROR: Usage of unassigned local variable: " + variable_string)
+      print("ERROR: Usage of unassigned local variable: " + variable_string)
   return result
 
 def is_lhs_operation(op_code):
@@ -379,7 +381,7 @@ def process_param(param,global_vars_list,global_var_uses, local_vars_list, local
     else:
       result = get_identifier_value(param.lower(), tag_uses)
       if (result < 0):
-        print(("ERROR: Illegal Identifier:" + param))
+        print("ERROR: Illegal Identifier:" + param)
   else:
     result = param
   return result
@@ -445,19 +447,19 @@ def save_statement_block(ofile,statement_name,can_fail_statement,statement_block
           and (is_can_fail_operation(opcode)
                or ((opcode == call_script) and (statement[1].startswith("cf_", 7))))
           and (not statement_name.startswith("cf_"))):
-      print(("WARNING: Script can fail at operation #" + str(i) + ". Use cf_ at the beginning of its name: " + statement_name))
+      print("WARNING: Script can fail at operation #" + str(i) + ". Use cf_ at the beginning of its name: " + statement_name)
     save_statement(ofile,opcode,no_variables,statement,variable_list,variable_uses,local_vars, local_var_uses,tag_uses,quick_strings)
   if (store_script_param_1_uses > 1):
-    print(("WARNING: store_script_param_1 is used more than once:" + statement_name))
+    print("WARNING: store_script_param_1 is used more than once:" + statement_name)
   if (store_script_param_2_uses > 1):
-    print(("WARNING: store_script_param_2 is used more than once:" + statement_name))
+    print("WARNING: store_script_param_2 is used more than once:" + statement_name)
   i = 0
   while (i < len(local_vars)):
     if (local_var_uses[i] == 0 and not(local_vars[i].startswith("unused"))):
-      print(("WARNING: Local variable never used: " + local_vars[i] + ", at: " + str(statement_name)))
+      print("WARNING: Local variable never used: " + local_vars[i] + ", at: " + str(statement_name))
     i = i + 1
   if (len(local_vars) > 128):
-          print(("WARNING: Script uses more than 128 local wariables: " + str(statement_name) + "variables count:" + str(len(local_vars))))
+          print("WARNING: Script uses more than 128 local wariables: " + str(statement_name) + "variables count:" + str(len(local_vars)))
 
 def compile_global_vars(statement_block,variable_list, variable_uses):
   for statement in statement_block:

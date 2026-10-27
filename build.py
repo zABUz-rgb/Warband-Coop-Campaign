@@ -35,6 +35,16 @@ def main():
         if r.returncode != 0 or "Traceback" in out or "error" in out.lower():
             print(f"BUILD FAILED at {step}")
             sys.exit(1)
+    # Diplomacy's textures and changed scenes go with the compiled files
+    sys.path.insert(0, str(ROOT / "tools"))
+    from dplmc_assets import assets
+    sys.path.insert(0, str(SRC))
+    from module_info import export_dir
+    for source, rel in assets():
+        dest = Path(export_dir) / rel
+        if not dest.exists() or dest.read_bytes() != source.read_bytes():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(source.read_bytes())
     print("BUILD OK")
 
 
