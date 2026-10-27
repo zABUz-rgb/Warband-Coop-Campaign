@@ -41,19 +41,22 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,d
                                                     (why: 1 in an encounter or battle, 2 in a menu);
                                                     the player's own map then stands still too
 
-Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpt=t1,n1,...]):
+Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpt=t1,n1,...]
+[&hero=...]; hero, with a start or an acceptance: HERO_NUMBERS numbers, the hero's equipment, attributes,
+combat skills and weapon proficiencies, in the order of coop/constants.py):
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them) or
     the player in puppet slot; 2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
     reply 7777|6|bid|type|slot       an invitation from the player in slot: type 1 may join, 2 attacked
           7777|7|bid|status|team     0 gathering, 1 fought on the battle server (team 0 or 1),
                                      2 cancelled or another battle is on, 3 no battle server
-          7777|8|bid|won|n|troop|killed|wounded|...   the player's losses
+          7777|8|bid|won|xp|n|troop|killed|wounded|...   the player's losses, and battle experience
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...]&pl=no~name;...
     PHASE 0 an ordinary round, 1-3 a battle of the campaign, 4 over (w: winning team, r: the bots
     each stack lost); pl: the players on the server, matched to the players of the campaign by name.
     reply 7778|0                                  nothing
           7778|2|bid|offset|n|(team,player,troop,count)*n   stacks to spawn (player: who commands them, -1 the AI)
+          7778|5|bid|player|hero...               a player fights as the campaign hero (after the stacks)
           7778|1|bid|stacks|n|(player,team)*n     start: players onto their sides, the round restarts
           7778|4|bid                              the outcome arrived
 
@@ -96,6 +99,9 @@ MP_MAX_STACKS = 60
 MP_CHUNK = 30           # stacks per reply: 5 + 4 * 30 numbers
 MP_LOST_S = 30.0        # a battle server back in an ordinary round this long after a start lost it
 WOUNDED_PCT = 50        # of a player's fallen soldiers, this share is wounded rather than killed
+XP_PER_ENEMY = 30       # battle experience for each fallen enemy, shared by the winning side's players;
+                        # the losing side gets a third of it
+HERO_NUMBERS = 29       # 9 equipment slots, 4 attributes, 9 combat skills, 7 proficiencies
 
 
 def parse_ints(text):
@@ -141,6 +147,7 @@ class Player:
         self.status_age = 0
         self.mp_out = []        # joint-battle replies waiting for this player
         self.on_server = False  # the host playing in the world server game: no puppet there
+        self.hero = None        # the hero's equipment and stats for joint battles
 
 
 class Battle:
@@ -157,6 +164,7 @@ class Battle:
         self.enemy_stacks = []
         self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
         self.sent = 0
+        self.heroes = None        # [(player number, hero numbers)] still to send, after the stacks
         self.started = None
 
 
@@ -370,6 +378,8 @@ class World:
 
     def _mp_op(self, p, mp, now):
         op, bid, b = mp["op"], mp["bid"], self.battle
+        if mp.get("hero"):
+            p.hero = mp["hero"]
         if op == 1:
             if b is not None:
                 if p.cid not in b.sides:
@@ -456,9 +466,11 @@ class World:
     def _finish(self, b, winner, fallen, now):
         losses = {cid: [] for cid in b.sides}
         enemy_left = []
+        fell_by_team = {0: 0, 1: 0}
         for i, (team, owner, troop, count, spawned) in enumerate(b.stacks):
             fell = fallen.get(i, 0)
             lost = min(count, round(fell * count / spawned)) if spawned else 0
+            fell_by_team[team] = fell_by_team.get(team, 0) + lost
             if owner is None:
                 if count - lost > 0:
                     enemy_left.append((troop, count - lost))
@@ -470,8 +482,14 @@ class World:
             if q is None:
                 continue
             lost = lost[:MAX_STACKS]
-            won = 1 if b.sides.get(cid) == winner else 0
-            q.mp_out.append([8, b.bid, won, len(lost)] + [v for entry in lost for v in entry])
+            team = b.sides.get(cid)
+            won = 1 if team == winner else 0
+            # experience from the enemies that fell, shared by the side's players
+            side_players = sum(1 for t in b.sides.values() if t == team)
+            xp = fell_by_team.get(1 - team, 0) * XP_PER_ENEMY // max(1, side_players)
+            if not won:
+                xp //= 3
+            q.mp_out.append([8, b.bid, won, xp, len(lost)] + [v for entry in lost for v in entry])
         if b.enemy_sid is not None:
             destroyed = 1 if winner == 0 or not enemy_left else 0
             self._record_result((b.enemy_sid, destroyed, enemy_left), None, now)
@@ -500,6 +518,15 @@ class World:
                         nums += [team, group, troop, spawned]
                     b.sent += len(chunk)
                     return nums
+                if b.heroes is None:
+                    b.heroes = []
+                    for cid in b.sides:
+                        q, no = self.players.get(cid), self._mp_player_number(cid)
+                        if q is not None and q.hero and no >= 0:
+                            b.heroes.append((no, q.hero))
+                if b.heroes:
+                    no, hero = b.heroes.pop(0)
+                    return [5, b.bid, no] + hero
                 pairs = []
                 for cid, team in b.sides.items():
                     no = self._mp_player_number(cid)
@@ -648,9 +675,11 @@ def handle_request(world, role, target, now, cid="local"):
         mp = None
         if "mp" in q:
             troops = q.get("mpt", "").lstrip(",")
+            hero = parse_ints(q.get("hero", ""))
             mp = {"op": query_int(q, "mp", 0), "bid": query_int(q, "bid", 0), "sid": query_int(q, "mpe", -1),
                   "slot": query_int(q, "mpp", -1),
-                  "troops": (parse_stacks(parse_ints(troops)) or []) if troops else []}
+                  "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
+                  "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
                                             hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp,
                                             on_server=q.get("srvp") == "1")

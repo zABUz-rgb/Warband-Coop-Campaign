@@ -82,5 +82,5 @@ def merge(mission_templates, **unused):
     if guarded == 0:
       raise MergeError(f"{mt_id}: no victory check found to hold during the preparation")
     template_triggers.extend(battle_prep_triggers)
-  from coop.mp import mp_battle_triggers
-  get_by_id(mission_templates, "multiplayer_bt")[5].extend(mp_battle_triggers)
+  from coop.mp import merge_battle_template
+  merge_battle_template(mission_templates)

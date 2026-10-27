@@ -314,6 +314,9 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
      отказаться нельзя; если он не зайдёт на сервер, его отряды сражаются без него.
   5. Когда одна из сторон перебита, потери возвращаются в кампанию: из павших бойцов игрока половина
      ранена, половина убита; разбитый отряд мира исчезает у всех. Пока идёт бой, мир стоит.
+  Вы сражаетесь своим героем: его снаряжение (оружие, броня, конь), атрибуты, боевые навыки и
+  владение оружием переносятся на сервер боя (до 4 героев в бою). После боя герой и отряд получают
+  опыт за павших врагов (проигравшие - треть). Компаньоны пока в бой не выходят.
   Большие армии уменьшаются до 150 ботов на поле, потери пересчитываются обратно.
   Для мультиплеера Warband нужен серийный ключ игры (GOG: в библиотеке у игры, Steam: выдаётся сам).
 
@@ -367,6 +370,9 @@ JOINT BATTLES (multiplayer server):
   4. Meeting another player's party: "CoopWorld: fight this player" (that player cannot decline).
   5. When one side is wiped out, the losses go back to the campaign (half of a player's fallen
      are wounded); a defeated world party is gone for everybody. The world stands still meanwhile.
+  You fight as your hero: equipment (weapons, armour, horse), attributes, combat skills and
+  weapon proficiencies go to the battle server (up to 4 heroes a battle). Afterwards the hero and
+  the troops gain experience for the fallen enemies (the losers a third). Companions stay behind for now.
 
 Stopping: Camp - "CoopWorld: stop co-op" in your game, then close the bridge window.
 '''

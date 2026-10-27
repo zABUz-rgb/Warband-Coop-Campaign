@@ -262,8 +262,11 @@ def test_hub_and_relay():
     check(lost.forward("/cli?seq=1") == "0|0", "a relay without the host answers without a marker")
 
 
-def mp(op, bid=0, sid=-1, slot=-1, troops=None):
-    return {"op": op, "bid": bid, "sid": sid, "slot": slot, "troops": troops or []}
+def mp(op, bid=0, sid=-1, slot=-1, troops=None, hero=None):
+    return {"op": op, "bid": bid, "sid": sid, "slot": slot, "troops": troops or [], "hero": hero}
+
+
+HERO = list(range(100, 100 + cb.HERO_NUMBERS))
 
 
 def test_joint_battle():
@@ -274,7 +277,7 @@ def test_joint_battle():
     nums, _ = req(w, "a", now=1.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)]))
     check(nums == [7, 0, 3, 0], "no battle server: the battle cannot start")
     check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 1.0) == [0], "a battle server with nothing to do")
-    nums, _ = req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)]))
+    nums, _ = req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)], hero=HERO))
     bid = w.battle.bid
     check(nums == [7, bid, 0, 0], "a battle is gathering")
     check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 1, w.players["a"].slot], "a player nearby is invited")
@@ -286,13 +289,17 @@ def test_joint_battle():
     check(nums == [2, bid, 0, 4, 0, 0, 31, 10, 0, 0, 32, 4, 0, 1, 33, 6, 1, -1, 40, 20],
           f"stacks go to the server, each commanded by its player (matched by name): {nums}")
     nums = w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 3.2)
+    check(nums == [5, bid, 0] + HERO, f"then the starter's hero (Olga sent none): {nums[:4]}")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 3.2)
     check(nums == [1, bid, 4, 2, 0, 0, 1, 0], f"then the start, with the players' sides: {nums}")
     check(req(w, "a", now=3.3, busy=True, mp=mp(2, bid))[0] == [7, bid, 1, 0], "the players learn it is being fought")
     check(req(w, "c", x=50000, now=3.3, busy=False, mp=mp(1, sid=601))[0] == [7, 0, 2, 0], "one battle at a time")
     check(w.mp_request(4, bid, 0, {0: 4, 1: 2, 3: 20}, {}, 9.0) == [4, bid], "the outcome is acknowledged")
     check(w.battle is None, "the battle is over")
-    check(req(w, "a", now=9.1)[0] == [8, bid, 1, 2, 31, 2, 2, 32, 1, 1], "the starter gets the losses (half wounded)")
-    check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, 0],
+    xp = 20 * cb.XP_PER_ENEMY // 2
+    check(req(w, "a", now=9.1)[0] == [8, bid, 1, xp, 2, 31, 2, 2, 32, 1, 1],
+          "the starter gets the losses (half wounded) and half the experience (two players won)")
+    check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, xp, 0],
           "a player who lost nobody still hears the outcome, after the news it was fought")
     check(w.results[-1] == (600, 1, []) and 600 in w.tombstones, "the defeated world party is destroyed")
 
@@ -307,8 +314,8 @@ def test_joint_battle_scaled_and_lost():
     bid = nums[1]
     w.mp_request(0, 0, -1, {}, {}, 1.2)
     w.mp_request(4, bid, 1, {0: 75, 1: 15}, {}, 5.0)
-    check(req(w, "a", now=5.1)[0][0] == 7 and req(w, "a", now=5.1)[0] == [8, bid, 0, 1, 31, 150, 150],
-          "and their losses scaled up; the battle is lost")
+    check(req(w, "a", now=5.1)[0][0] == 7 and req(w, "a", now=5.1)[0] == [8, bid, 0, 60 * cb.XP_PER_ENEMY // 3, 1, 31, 150, 150],
+          "and their losses scaled up; the battle is lost (a third of the experience)")
     check(w.results[-1] == (700, 0, [(40, 240)]), "the world party keeps what survived")
 
 

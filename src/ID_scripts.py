@@ -645,13 +645,18 @@ script_coop_client_apply_troops = 643
 script_coop_client_encounter_start = 644
 script_coop_client_next_result = 645
 script_coop_mp_reply = 646
-script_coop_mp_tell_all = 647
-script_coop_mp_request = 648
-script_coop_client_mp_invite = 649
-script_coop_client_mp_status = 650
-script_coop_client_mp_result = 651
-script_coop_client_mp_text = 652
-script_coop_client_mp_send = 653
-script_coop_client_mp_begin = 654
+script_coop_mp_hero_stat = 647
+script_coop_mp_hero_stat_to_all = 648
+script_cf_coop_mp_hero_spawn = 649
+script_coop_mp_tell_all = 650
+script_coop_mp_request = 651
+script_coop_client_mp_invite = 652
+script_coop_client_mp_status = 653
+script_coop_client_mp_result = 654
+script_coop_client_mp_text = 655
+script_coop_client_mp_send = 656
+script_coop_client_mp_hero_to_s18 = 657
+script_coop_append_s18 = 658
+script_coop_client_mp_begin = 659
 
 

@@ -14,8 +14,14 @@ from coop.constants import *
 #   3 the battle runs                            4 over: the losses go to the bridge until it acks
 # Stacks are kept on trp_temp_array_a, COOP_MP_STRIDE slots each (troop, team, group = the MP
 # player who commands them or -1, count, fallen, spawned); trp_temp_array_b holds the last reply.
+#
+# The players' heroes: up to four players fight as their campaign hero, with its equipment,
+# attributes, combat skills and proficiencies. The battle server borrows the four tutorial
+# students for them (never used in multiplayer; new troops would change the campaign's saves),
+# and tells every game the stats it gave them (network event coop_mp_event_hero_stat).
 
 MP_ARR = "trp_temp_array_a"
+HERO_TROOPS = "trp_tutorial_student_1"  # .. _4
 MP_BUF = "trp_temp_array_b"
 S_TROOP, S_TEAM, S_GROUP, S_COUNT, S_FALLEN, S_SPAWNED = range(6)
 
@@ -43,6 +49,14 @@ mp_scripts = [
        (eq, "$coop_mp_phase", 0),
        (troop_get_slot, ":offset", MP_BUF, 3),
        (troop_get_slot, ":n", MP_BUF, 4),
+       (try_begin),
+         (eq, ":offset", 0), #a new battle: no heroes yet
+         (assign, "$coop_mp_heroes", 0),
+         (get_max_players, ":num_players"),
+         (try_for_range, ":player_no", 0, ":num_players"),
+           (player_set_slot, ":player_no", slot_player_coop_hero, 0),
+         (try_end),
+       (try_end),
        (try_for_range, ":k", 0, ":n"),
          (store_add, ":i", ":offset", ":k"),
          (lt, ":i", coop_mp_max_stacks),
@@ -68,6 +82,37 @@ mp_scripts = [
          (troop_set_slot, MP_ARR, ":slot", 0),
          (store_add, ":slot", ":dst", S_SPAWNED),
          (troop_set_slot, MP_ARR, ":slot", 0),
+       (try_end),
+     (else_try),
+       (eq, ":kind", 5), #a player's hero: player, then coop_hero_numbers values
+       (eq, "$coop_mp_phase", 0),
+       (troop_get_slot, ":player_no", MP_BUF, 3),
+       (player_is_active, ":player_no"),
+       (lt, "$coop_mp_heroes", 4),
+       (store_add, ":troop", HERO_TROOPS, "$coop_mp_heroes"),
+       (val_add, "$coop_mp_heroes", 1),
+       (player_set_slot, ":player_no", slot_player_coop_hero, "$coop_mp_heroes"),
+       (try_for_range, ":ek", 0, coop_hero_items),
+         (store_add, ":at", ":ek", 4),
+         (troop_get_slot, ":item", MP_BUF, ":at"),
+         (troop_set_inventory_slot, ":troop", ":ek", ":item"),
+       (try_end),
+       (assign, ":at", 4 + coop_hero_items),
+       (try_for_range, ":attribute", 0, 4),
+         (troop_get_slot, ":value", MP_BUF, ":at"),
+         (call_script, "script_coop_mp_hero_stat_to_all", ":troop", ":attribute", ":value"),
+         (val_add, ":at", 1),
+       (try_end),
+       ] + [op for skill in coop_hero_skills for op in [
+       (troop_get_slot, ":value", MP_BUF, ":at"),
+       (call_script, "script_coop_mp_hero_stat_to_all", ":troop", 10 + skill, ":value"),
+       (val_add, ":at", 1),
+       ]] + [
+       (try_for_range, ":wpt", 0, coop_hero_profs),
+         (troop_get_slot, ":value", MP_BUF, ":at"),
+         (store_add, ":code", ":wpt", 100),
+         (call_script, "script_coop_mp_hero_stat_to_all", ":troop", ":code", ":value"),
+         (val_add, ":at", 1),
        (try_end),
      (else_try),
        (eq, ":kind", 1),
@@ -104,6 +149,64 @@ mp_scripts = [
        (eq, ":bid", "$coop_mp_battle"),
        (assign, "$coop_mp_phase", 0),
        (assign, "$coop_mp_battle", 0),
+     (try_end),
+    ]),
+
+  # script_coop_mp_hero_stat: arg1 = troop, arg2 = code (0-3 attribute, 10 + skill, 100 + weapon
+  # proficiency), arg3 = the value the troop gets
+  ("coop_mp_hero_stat",
+   [
+     (store_script_param, ":troop", 1),
+     (store_script_param, ":code", 2),
+     (store_script_param, ":value", 3),
+     (try_begin),
+       (lt, ":code", 4),
+       (store_attribute_level, ":now", ":troop", ":code"),
+       (store_sub, ":delta", ":value", ":now"),
+       (troop_raise_attribute, ":troop", ":code", ":delta"),
+     (else_try),
+       (lt, ":code", 100),
+       (store_sub, ":skill", ":code", 10),
+       (store_skill_level, ":now", ":skill", ":troop"),
+       (store_sub, ":delta", ":value", ":now"),
+       (troop_raise_skill, ":troop", ":skill", ":delta"),
+     (else_try),
+       (store_sub, ":wpt", ":code", 100),
+       (store_proficiency_level, ":now", ":troop", ":wpt"),
+       (store_sub, ":delta", ":value", ":now"),
+       (troop_raise_proficiency_linear, ":troop", ":wpt", ":delta"),
+     (try_end),
+    ]),
+
+  # script_coop_mp_hero_stat_to_all: the same here and in every player's game
+  ("coop_mp_hero_stat_to_all",
+   [
+     (store_script_param, ":troop", 1),
+     (store_script_param, ":code", 2),
+     (store_script_param, ":value", 3),
+     (call_script, "script_coop_mp_hero_stat", ":troop", ":code", ":value"),
+     (get_max_players, ":num_players"),
+     (try_for_range, ":player_no", 1, ":num_players"), #0 is the server itself
+       (player_is_active, ":player_no"),
+       (multiplayer_send_3_int_to_player, ":player_no", coop_mp_event_hero_stat, ":troop", ":code", ":value"),
+     (try_end),
+    ]),
+
+  # script_cf_coop_mp_hero_spawn: arg1 = player about to spawn. Fails unless the player fights as a
+  # campaign hero in this battle; then the player is that hero, with the hero's equipment.
+  ("cf_coop_mp_hero_spawn",
+   [
+     (store_script_param, ":player_no", 1),
+     (is_between, "$coop_mp_phase", 1, 4),
+     (player_get_slot, ":hero", ":player_no", slot_player_coop_hero),
+     (gt, ":hero", 0),
+     (store_add, ":troop", HERO_TROOPS, ":hero"),
+     (val_sub, ":troop", 1),
+     (player_set_troop_id, ":player_no", ":troop"),
+     (try_for_range, ":ek", 0, coop_hero_items),
+       (troop_get_inventory_slot, ":item", ":troop", ":ek"),
+       (ge, ":item", 0),
+       (player_add_spawn_item, ":player_no", ":ek", ":item"),
      (try_end),
     ]),
 
@@ -276,9 +379,56 @@ mp_battle_triggers = [
    [
      (assign, "$coop_mp_winner", "$g_winner_team"),
      (assign, "$g_multiplayer_round_max_seconds", "$coop_mp_old_round_seconds"),
+     (get_max_players, ":num_players"),
+     (try_for_range, ":player_no", 0, ":num_players"),
+       (player_is_active, ":player_no"),
+       (player_slot_ge, ":player_no", slot_player_coop_hero, 1),
+       (player_set_slot, ":player_no", slot_player_coop_hero, 0),
+       (player_set_troop_id, ":player_no", -1), #picks a class of the ordinary game again
+       (multiplayer_send_message_to_player, ":player_no", multiplayer_event_force_start_team_selection),
+     (try_end),
      (assign, "$coop_mp_phase", 4),
      (assign, "$coop_mp_pending", 0), #report at once
      (str_store_string, s0, "@CoopWorld: the battle is over. The outcome goes back to the campaign."),
      (call_script, "script_coop_mp_tell_all"),
     ]),
 ]
+
+
+def mp_network_hook():
+  """Prepended to game_receive_network_message: a hero's stats, sent by the battle server."""
+  return [
+    (try_begin),
+      (neg|multiplayer_is_server),
+      (store_script_param, ":coop_event", 2),
+      (eq, ":coop_event", coop_mp_event_hero_stat),
+      (store_script_param, ":coop_troop", 3),
+      (store_script_param, ":coop_code", 4),
+      (store_script_param, ":coop_value", 5),
+      (call_script, "script_coop_mp_hero_stat", ":coop_troop", ":coop_code", ":coop_value"),
+    (try_end),
+  ]
+
+
+def merge_battle_template(mission_templates):
+  """The Battle game type: the campaign's battles run in it; a hero player spawns as the hero."""
+  from coop_merge import get_by_id, MergeError
+  template_triggers = get_by_id(mission_templates, "multiplayer_bt")[5]
+  buy = (call_script, "script_multiplayer_buy_agent_equipment", ":player_no")
+  found = 0
+  for trigger in template_triggers:
+    block = trigger[4]
+    for i, op in enumerate(block):
+      if op == buy and block[i + 1][0] == player_spawn_new_agent:
+        block[i:i + 1] = [
+          (try_begin),
+            (call_script, "script_cf_coop_mp_hero_spawn", ":player_no"),
+          (else_try),
+            buy,
+          (try_end),
+        ]
+        found += 1
+        break
+  if found != 1:
+    raise MergeError(f"multiplayer_bt: expected one player spawn buying equipment, found {found}")
+  template_triggers.extend(mp_battle_triggers)

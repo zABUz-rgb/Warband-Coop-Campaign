@@ -15,7 +15,7 @@ from coop.constants import *
 # $coop_mp_status: what the bridge last said: 0 gathering, 1 fighting on the server,
 #                  2 cancelled, 3 no battle server, 4 over
 # Bridge replies (tools/coop_bridge.py): 6 invite bid|type|slot (type 1 may join, 2 attacked)
-#   7 status bid|status|team   8 outcome bid|won|n|(troop, killed, wounded)*n
+#   7 status bid|status|team   8 outcome bid|won|xp|n|(troop, killed, wounded)*n
 
 
 def puppet_end():
@@ -63,12 +63,13 @@ mp_campaign_scripts = [
    [
      (party_get_slot, ":bid", "p_coop_buf", 2),
      (party_get_slot, ":won", "p_coop_buf", 3),
-     (party_get_slot, ":n", "p_coop_buf", 4),
+     (party_get_slot, ":xp", "p_coop_buf", 4),
+     (party_get_slot, ":n", "p_coop_buf", 5),
      (assign, ":killed_all", 0),
      (assign, ":wounded_all", 0),
      (try_for_range, ":k", 0, ":n"),
        (store_mul, ":at", ":k", 3),
-       (val_add, ":at", 5),
+       (val_add, ":at", 6),
        (party_get_slot, ":troop", "p_coop_buf", ":at"),
        (val_add, ":at", 1),
        (party_get_slot, ":killed", "p_coop_buf", ":at"),
@@ -84,6 +85,10 @@ mp_campaign_scripts = [
          (party_wound_members, "p_main_party", ":troop", ":wounded"),
          (val_add, ":wounded_all", ":wounded"),
        (try_end),
+     (try_end),
+     (try_begin),
+       (gt, ":xp", 0),
+       (add_xp_as_reward, ":xp"), #the hero and the troops learn from the battle, as after a Native one
      (try_end),
      (assign, reg1, ":killed_all"),
      (assign, reg2, ":wounded_all"),
@@ -148,6 +153,11 @@ mp_campaign_scripts = [
        (call_script, "script_coop_troops_to_s12", "$coop_mp_enemy_party", 1),
        (str_store_string, s16, "@&mpt={s12}"),
      (try_end),
+     (str_clear, s18),
+     (try_begin),
+       (neq, reg6, 2), #starting or accepting: the hero goes to the battle server
+       (call_script, "script_coop_client_mp_hero_to_s18"),
+     (try_end),
      (call_script, "script_coop_troops_to_s12", "p_main_party", 1),
      (str_store_troop_name, s15, "trp_player"),
      (val_add, "$coop_net_seq", 1),
@@ -160,9 +170,46 @@ mp_campaign_scripts = [
      (assign, reg7, "$coop_mp_bid"),
      (assign, reg8, "$coop_mp_target_sid"),
      (assign, reg9, "$coop_mp_target_slot"),
-     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&mp={reg6}&bid={reg7}&mpe={reg8}&mpp={reg9}{s16}&me={s12}&name={s15}"),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&mp={reg6}&bid={reg7}&mpe={reg8}&mpp={reg9}{s16}{s18}&me={s12}&name={s15}"),
      (assign, "$coop_net_pending", 1),
      (send_message_to_url, s10, 0),
+    ]),
+
+  # script_coop_client_mp_hero_to_s18: s18 = "&hero=..." the player's hero for the battle server:
+  # equipment (ek_item_0 .. ek_horse), attributes, combat skills, weapon proficiencies
+  ("coop_client_mp_hero_to_s18",
+   [
+     (str_store_string, s18, "@&hero="),
+     (assign, ":first", 1),
+     (try_for_range, ":ek", 0, coop_hero_items),
+       (troop_get_inventory_slot, reg20, "trp_player", ":ek"),
+       (call_script, "script_coop_append_s18", ":first"),
+       (assign, ":first", 0),
+     (try_end),
+     (try_for_range, ":attribute", 0, 4),
+       (store_attribute_level, reg20, "trp_player", ":attribute"),
+       (call_script, "script_coop_append_s18", 0),
+     (try_end),
+     ] + [op for skill in coop_hero_skills for op in [
+     (store_skill_level, reg20, skill, "trp_player"),
+     (call_script, "script_coop_append_s18", 0),
+     ]] + [
+     (try_for_range, ":wpt", 0, coop_hero_profs),
+       (store_proficiency_level, reg20, "trp_player", ":wpt"),
+       (call_script, "script_coop_append_s18", 0),
+     (try_end),
+    ]),
+
+  # script_coop_append_s18: reg20 onto s18, after a comma unless arg1 = 1
+  ("coop_append_s18",
+   [
+     (store_script_param, ":first", 1),
+     (try_begin),
+       (eq, ":first", 1),
+       (str_store_string, s18, "@{s18}{reg20}"),
+     (else_try),
+       (str_store_string, s18, "@{s18},{reg20}"),
+     (try_end),
     ]),
 
   # script_coop_client_mp_begin: arg1 = the party met (a mirror of the server's world, or another

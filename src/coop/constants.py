@@ -71,3 +71,13 @@ coop_player_stale_requests = 600 # another player's party not updated for this m
 coop_paused_speed_percent = 1    # party speed on a player's map while another player holds the world
                                  # still (in battle or a menu): nobody moves, the map stays usable
 coop_pause_reminder_frames = 600 # trigger runs between "the world is paused" reminders
+
+# A player's hero in a joint battle: equipment, attributes, combat skills, proficiencies
+# (campaign -> bridge -> battle server, in this order; 29 numbers)
+coop_hero_skills = [36, 35, 34, 33, 27, 26, 25, 24, 23] # ironflesh, power strike/throw/draw, weapon master,
+                                                        # shield, athletics, riding, horse archery
+coop_hero_profs = 7              # wpt_one_handed_weapon .. wpt_firearm
+coop_hero_items = 9              # ek_item_0 .. ek_horse
+coop_hero_numbers = 9 + 4 + 9 + 7
+slot_player_coop_hero = 100      # on the battle server: which borrowed troop is this player's hero, + 1
+coop_mp_event_hero_stat = 140    # network event: (troop, stat code, value) so every game knows the hero's stats
