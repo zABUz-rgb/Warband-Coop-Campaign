@@ -629,7 +629,14 @@ script_coop_evict_from_town = 627
 script_coop_become_server = 628
 script_coop_become_client = 629
 script_coop_stop = 630
-script_coop_server_move_puppet = 631
-script_coop_client_apply = 632
+script_coop_set_party_troops = 631
+script_coop_troops_to_s12 = 632
+script_coop_server_apply_result = 633
+script_coop_server_set_pause = 634
+script_coop_server_move_puppet = 635
+script_coop_client_apply_positions = 636
+script_coop_client_apply_troops = 637
+script_coop_client_encounter_start = 638
+script_coop_client_next_result = 639
 
 

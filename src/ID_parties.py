@@ -242,3 +242,4 @@ p_reserved_5 = 240
 p_coop_puppet_1 = 241
 p_coop_buf = 242
 p_coop_map = 243
+p_coop_enc = 244

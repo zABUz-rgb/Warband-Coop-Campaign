@@ -90,4 +90,30 @@ def merge(orig_scripts):
         (neq, "$auto_enter_town", "$g_encountered_party"),
         (assign, "$coop_lodging_started", 0),
       (try_end),
+      # a client meeting a party of the shared world (not a town): pause the world, note the mirrors
+      (try_begin),
+        (eq, "$coop_role", coop_role_client),
+        (ge, "$g_encountered_party", first_dynamic_party()),
+        (call_script, "script_coop_client_encounter_start"),
+      (try_end),
   ])
+  # the server never auto-resolves a fight of the client's puppet: the client fights it itself
+  block = script_block(orig_scripts, "game_event_simulate_battle")
+  params = [(store_script_param_1, ":root_defender_party"), (store_script_param_2, ":root_attacker_party")]
+  if [tuple(op) for op in block[:2]] != params:
+    from coop_merge import MergeError
+    raise MergeError("game_event_simulate_battle: expected the two parameter reads first")
+  block[:] = block[:2] + [
+      (assign, ":coop_puppet_fight", 0),
+      (try_begin),
+        (eq, "$coop_role", coop_role_server),
+        (this_or_next|eq, ":root_defender_party", "p_coop_puppet_1"),
+        (eq, ":root_attacker_party", "p_coop_puppet_1"),
+        (assign, ":coop_puppet_fight", 1),
+        (set_trigger_result, 1), #end this battle
+      (try_end),
+      (try_begin),
+        (eq, ":coop_puppet_fight", 0),
+  ] + block[2:] + [
+      (try_end),
+  ]

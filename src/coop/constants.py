@@ -35,3 +35,12 @@ coop_net_resend_frames = 200    # trigger runs to wait for a lost reply
 coop_world_time_speed = 5        # rest time speed, as Native's "Wait here"
 coop_client_idle_frames = 30     # map frames without moving before the client rests
 coop_mirror_snap = 500           # a mirror further than this (map units * 100) jumps instead of walking
+
+# Battles and pause
+coop_net_max_numbers = 128       # the engine's registers: a reply never holds more numbers
+coop_net_max_stacks = 30         # troop stacks per party sent in one message
+coop_enc_max_parties = 20        # mirrors remembered around the player when an encounter starts
+coop_enc_radius = 600            # map units * 100: mirrors this close may take part in the battle
+coop_own_troops_frames = 120     # client trigger runs between reports of the player's own troops
+coop_srv_troops_radius = 1500    # map units * 100: the server reports troops of parties this close to the puppet
+slot_party_coop_sid = 300        # on a client mirror: server party id + 1 (Native party slots end at 249)
