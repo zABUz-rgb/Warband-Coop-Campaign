@@ -8,7 +8,9 @@ called afterwards overwrite reg0.
 from header_common import *
 from header_operations import *
 from module_constants import *
-from header_parties import ai_bhvr_hold, ai_bhvr_travel_to_point
+from header_parties import (ai_bhvr_hold, ai_bhvr_travel_to_point, ai_bhvr_patrol_location,
+                            ai_bhvr_travel_to_party, ai_bhvr_patrol_party, ai_bhvr_attack_party,
+                            ai_bhvr_escort_party)
 from coop.constants import *
 
 # server reply layout (slots of p_coop_buf)
@@ -133,6 +135,42 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
+  # script_coop_append_entry: arg1 = party; appends "sid,tmpl,x,y,tx,ty;" to s11, where tx,ty is
+  # where the party is heading (its own position when it stays or the target is unknown), so the
+  # client can let the mirror walk on between updates instead of trailing behind.
+  ("coop_append_entry",
+   [
+     (store_script_param, ":party_no", 1),
+     (set_fixed_point_multiplier, 100),
+     (assign, reg11, ":party_no"),
+     (party_get_template_id, reg12, ":party_no"),
+     (party_get_position, pos5, ":party_no"),
+     (position_get_x, reg13, pos5),
+     (position_get_y, reg14, pos5),
+     (assign, reg15, reg13),
+     (assign, reg16, reg14),
+     (get_party_ai_current_behavior, ":behavior", ":party_no"),
+     (try_begin),
+       (this_or_next|eq, ":behavior", ai_bhvr_travel_to_point),
+       (eq, ":behavior", ai_bhvr_patrol_location),
+       (party_get_ai_target_position, pos6, ":party_no"),
+       (position_get_x, reg15, pos6),
+       (position_get_y, reg16, pos6),
+     (else_try),
+       (this_or_next|eq, ":behavior", ai_bhvr_travel_to_party),
+       (this_or_next|eq, ":behavior", ai_bhvr_patrol_party),
+       (this_or_next|eq, ":behavior", ai_bhvr_attack_party),
+       (eq, ":behavior", ai_bhvr_escort_party),
+       (get_party_ai_current_object, ":object", ":party_no"),
+       (ge, ":object", 0),
+       (party_is_active, ":object"),
+       (party_get_position, pos6, ":object"),
+       (position_get_x, reg15, pos6),
+       (position_get_y, reg16, pos6),
+     (try_end),
+     (str_store_string, s11, "@{s11}{reg11},{reg12},{reg13},{reg14},{reg15},{reg16};"),
+    ]),
+
   # script_coop_server_apply_result: a battle the client fought, as p_coop_buf holds it
   ("coop_server_apply_result",
    [
@@ -202,7 +240,7 @@ def net_scripts(first_dynamic):
      (val_min, ":count", coop_net_max_entries),
      (set_fixed_point_multiplier, 100),
      (try_for_range, ":k", 0, ":count"),
-       (store_mul, ":base", ":k", 4),
+       (store_mul, ":base", ":k", 6),
        (val_add, ":base", CLI_ENTRIES),
        (party_get_slot, ":sid", "p_coop_buf", ":base"),
        (val_add, ":base", 1),
@@ -211,8 +249,14 @@ def net_scripts(first_dynamic):
        (party_get_slot, ":x", "p_coop_buf", ":base"),
        (val_add, ":base", 1),
        (party_get_slot, ":y", "p_coop_buf", ":base"),
+       (val_add, ":base", 1),
+       (party_get_slot, ":tx", "p_coop_buf", ":base"),
+       (val_add, ":base", 1),
+       (party_get_slot, ":ty", "p_coop_buf", ":base"),
        (val_sub, ":x", coop_net_offset),
        (val_sub, ":y", coop_net_offset),
+       (val_sub, ":tx", coop_net_offset),
+       (val_sub, ":ty", coop_net_offset),
        (party_get_slot, ":cid", "p_coop_map", ":sid"),
        (val_sub, ":cid", 1),
        (try_begin),
@@ -257,7 +301,8 @@ def net_scripts(first_dynamic):
          (init_position, pos1),
          (position_set_x, pos1, ":x"),
          (position_set_y, pos1, ":y"),
-         # near: walk there, so the map shows movement between updates; far: jump
+         # the mirror walks on to where the server party is heading, so it keeps moving between
+         # updates; it only jumps when it has drifted too far from the server's position
          (party_get_position, pos2, ":cid"),
          (position_get_x, ":cur_x", pos2),
          (position_get_y, ":cur_y", pos2),
@@ -269,8 +314,18 @@ def net_scripts(first_dynamic):
            (this_or_next|gt, ":dx", coop_mirror_snap),
            (gt, ":dy", coop_mirror_snap),
            (party_set_position, ":cid", pos1),
+         (try_end),
+         (store_sub, ":dx", ":tx", ":x"),
+         (store_sub, ":dy", ":ty", ":y"),
+         (val_abs, ":dx"),
+         (val_abs, ":dy"),
+         (try_begin),
+           (le, ":dx", coop_mirror_still),
+           (le, ":dy", coop_mirror_still),
            (party_set_ai_behavior, ":cid", ai_bhvr_hold),
          (else_try),
+           (position_set_x, pos1, ":tx"),
+           (position_set_y, pos1, ":ty"),
            (party_set_ai_behavior, ":cid", ai_bhvr_travel_to_point),
            (party_set_ai_target_position, ":cid", pos1),
          (try_end),

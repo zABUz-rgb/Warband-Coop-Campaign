@@ -81,6 +81,10 @@ def merge(orig_scripts):
   # the engine hook is commented out in Native, so it is simply added
   orig_scripts.extend(scripts)
   orig_scripts.extend(net_scripts(first_dynamic_party()))
+  # the unattended world server opens no dialog boxes
+  from coop.quiet import quiet_block, BOX_OPS
+  for s in orig_scripts:
+    quiet_block(s[1], BOX_OPS)
   # co-op network replies (wire format in tools/coop_bridge.py)
   script_block(orig_scripts, "game_receive_url_response").extend(net_reply_handler())
   # a new arrival (not the automatic return after resting) starts a new stay

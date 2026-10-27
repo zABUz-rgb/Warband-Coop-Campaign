@@ -18,13 +18,14 @@ def check(cond, msg):
 
 
 def entries_of(nums):
-    """client reply [2, n, sid, tmpl, x, y, ...] -> [(sid, tmpl, x, y), ...] without the offset"""
+    """client reply [2, n, sid, tmpl, x, y, tx, ty, ...] -> [(sid, tmpl, x, y, tx, ty)] without the offset"""
     assert nums[0] == 2, nums
     out = []
     for i in range(nums[1]):
-        sid, tmpl, x, y = nums[2 + 4 * i:6 + 4 * i]
-        out.append((sid, tmpl, x - cb.COORD_OFFSET if tmpl != cb.REMOVED else 0,
-                    y - cb.COORD_OFFSET if tmpl != cb.REMOVED else 0))
+        sid, tmpl, *coords = nums[2 + 6 * i:8 + 6 * i]
+        if tmpl != cb.REMOVED:
+            coords = [c - cb.COORD_OFFSET for c in coords]
+        out.append((sid, tmpl, *coords))
     return out
 
 
@@ -40,16 +41,17 @@ def positions(w, x=0, y=0, now=0.0):
 def test_positions():
     w = cb.World()
     now = 1000.0
-    client, pause, payload = w.server_report([(500, 3, 100, -200), (501, 4, 9000, 9000)], None, now)
+    client, pause, payload = w.server_report([(500, 3, 100, -200, 150, -250), (501, 4, 9000, 9000, 9000, 9000)],
+                                             None, now)
     check(client is None and not pause and payload == [0], "server: no client yet, no pause, nothing to do")
     out = positions(w, now=now)
     check({e[0] for e in out} == {500, 501}, "client receives every known party")
-    check(out[0] == (500, 3, 100, -200), "nearest party first, coordinates restored")
+    check(out[0] == (500, 3, 100, -200, 150, -250), "nearest party first, position and target restored")
     check(w.server_report([], None, now + 1)[0] == (0, 0), "server learns the client position")
-    w.server_report([(501, 4, 9000, 9000)], None, now + 20)  # 500 not reported for > STALE_S
+    w.server_report([(501, 4, 9000, 9000, 9000, 9000)], None, now + 20)  # 500 not reported for > STALE_S
     out = positions(w, now=now + 20)
-    check(out[0] == (500, cb.REMOVED, 0, 0), "a stale party is sent as removed, first")
-    w.server_report([(i, 1, i, i) for i in range(1000, 1100)], None, now + 21)
+    check(out[0] == (500, cb.REMOVED, 0, 0, 0, 0), "a stale party is sent as removed, first")
+    w.server_report([(i, 1, i, i, i, i) for i in range(1000, 1100)], None, now + 21)
     seen = set()
     for _ in range(40):
         nums = w.client_request(0, 0, False, None, None, now + 21)
@@ -57,8 +59,12 @@ def test_positions():
         if nums[0] == 2:
             seen |= {e[0] for e in entries_of(nums)}
     check(len(seen) == 101, "rotation reaches every party within a few replies")
-    check(cb.parse_entries("1,2,3,4;bad;5,6,-7,8;9,9") == [(1, 2, 3, 4), (5, 6, -7, 8)],
-          "malformed entries are skipped, negatives parsed")
+    check(cb.parse_entries("1,2,3,4;bad;5,6,-7,8,9,10;9,9") == [(1, 2, 3, 4, 3, 4), (5, 6, -7, 8, 9, 10)],
+          "malformed entries are skipped, negatives parsed, no target means stay put")
+    w.clock("srv", 10, 0.0)
+    w.clock("srv", 12, 30.0)
+    check(abs(w.clock_rate("srv") - 4.0) < 1e-9 and w.clock_rate("cli") is None,
+          "game clock speed in hours per real minute")
 
 
 def test_pause():
@@ -74,13 +80,13 @@ def test_pause():
 
 def test_troops_and_results():
     w = cb.World()
-    w.server_report([(600, 7, 0, 0)], (600, [(31, 5), (32, 2)]), 0.0)
+    w.server_report([(600, 7, 0, 0, 0, 0)], (600, [(31, 5), (32, 2)]), 0.0)
     replies = [w.client_request(0, 0, False, None, None, 1.0) for _ in range(2)]
     troop_replies = [r for r in replies if r[0] == 3]
     check(troop_replies == [[3, 600, 2, 31, 5, 32, 2]], "client gets the troops of a nearby party once")
     replies = [w.client_request(0, 0, False, None, None, 1.0) for _ in range(4)]
     check(all(r[0] == 2 for r in replies), "unchanged troops are not sent again")
-    w.server_report([(600, 7, 0, 0)], (600, [(31, 4), (32, 2)]), 2.0)
+    w.server_report([(600, 7, 0, 0, 0, 0)], (600, [(31, 4), (32, 2)]), 2.0)
     replies = [w.client_request(0, 0, False, None, None, 2.0) for _ in range(2)]
     check([3, 600, 2, 31, 4, 32, 2] in replies, "changed troops are sent again")
 
@@ -113,11 +119,12 @@ def test_sockets():
     cb.listen(("127.0.0.4", 18090), w, "cli", logs.append)
     time.sleep(0.2)
     off = cb.COORD_OFFSET
-    r = get("http://127.0.0.3:18090/srv?seq=1&n=2&d=700,5,123,-456;701,6,1,1;&c=700,31,9")
+    r = get("http://127.0.0.3:18090/srv?seq=1&h=50&n=2&d=700,5,123,-456,200,-456;701,6,1,1,1,1;&c=700,31,9")
     check(r == f"7777|1|0|{off}|{off}|0|0", f"server reply before client: {r}")
     r = get("http://127.0.0.4:18090/cli?seq=1&x=100&y=-400&busy=1").split("|")
     check(r[:3] == ["7777", "2", "2"], "client reply header")
-    check(r[3:7] == ["700", "5", str(123 + off), str(-456 + off)], "nearest entry with shifted coordinates")
+    check(r[3:9] == ["700", "5", str(123 + off), str(-456 + off), str(200 + off), str(-456 + off)],
+          "nearest entry with shifted position and target")
     check(all(not v.startswith("-") for v in r), "no negative numbers go to the game")
     r = get("http://127.0.0.4:18090/cli?seq=2&x=100&y=-400&busy=1&res=700,0,31,4&me=40,8")
     r = get("http://127.0.0.3:18090/srv?seq=2&n=0&d=")

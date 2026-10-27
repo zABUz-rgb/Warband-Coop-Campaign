@@ -36,3 +36,8 @@ def merge(orig_simple_triggers):
     raise MergeError("accommodation trigger: unexpected code after (gt, :gold, 0)")
   block[pos:pos + 2] = [(call_script, "script_coop_evict_from_town")]
   gate_world_triggers(orig_simple_triggers)
+  # the unattended world server opens no windows (weekly report, budget, notifications)
+  from coop.quiet import quiet_block
+  quieted = sum(quiet_block(t[1]) for t in orig_simple_triggers)
+  if quieted == 0:
+    raise MergeError("no window operations found in the simple triggers")

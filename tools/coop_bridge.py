@@ -3,18 +3,19 @@
 Both games talk to it with Warband's send_message_to_url, which always uses port 80 and ignores
 any port in the URL, so each game gets its own loopback address.
 
-World server game -> http://127.0.0.1/srv?seq=S&n=K&d=sid,tmpl,x,y;...[&c=sid,t1,n1,t2,n2,...]
-    d: positions of spawned parties (round robin); c: troops of one party near the client's puppet.
+World server game -> http://127.0.0.1/srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty;...[&c=sid,t1,n1,t2,n2,...]
+    d: spawned parties: position and where the party is heading (tx,ty), the ones near the client's
+       puppet first; c: troops of one party near the puppet; h: game hours (clock speed check).
     reply 7777|1|has_client|client_x|client_y|pause|kind|payload...
       pause 1: a player is in an encounter or battle, the world must stand still
       kind 0: nothing
       kind 1: battle result  sid|destroyed|n|t1|n1|...   (troops the party has left)
       kind 2: puppet troops  n|t1|n1|...                 (the client player's party)
 
-Client game -> http://127.0.0.2/cli?seq=S&x=X&y=Y&busy=B[&res=sid,destroyed,t1,n1,...][&me=t1,n1,...]
+Client game -> http://127.0.0.2/cli?seq=S&h=H&x=X&y=Y&busy=B[&res=sid,destroyed,t1,n1,...][&me=t1,n1,...]
     busy: 1 from the start of an encounter until the client is back on the map
     res: a battle result for one party; me: the client player's own troops
-    reply 7777|2|n|sid|tmpl|x|y|...  (n position entries; tmpl REMOVED = party gone), or
+    reply 7777|2|n|sid|tmpl|x|y|tx|ty|...  (n entries; tmpl REMOVED = party gone), or
           7777|3|sid|n|t1|n1|...     (troops of one party near the client, sent when they changed)
 
 Positions are map coordinates * 100. In replies to the games every coordinate is shifted by
@@ -37,9 +38,10 @@ COORD_OFFSET = 100000
 REMOVED = 9999
 STALE_S = 15.0          # a party not reported for this long is gone
 BUSY_TIMEOUT_S = 1200.0 # a client silent this long while busy (crashed in battle) ends the pause
-NEAREST_PER_REPLY = 15
-ROTATING_PER_REPLY = 8
-REMOVALS_PER_REPLY = 5  # 3 header numbers + 4 per entry must stay within 128 registers
+NEAREST_PER_REPLY = 12
+ROTATING_PER_REPLY = 4
+REMOVALS_PER_REPLY = 4  # 3 header numbers + 6 per entry must stay within 128 registers
+CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 MAX_STACKS = 30         # troop stacks per party in one reply
 
 
@@ -67,7 +69,8 @@ def flat(stacks):
 class World:
     def __init__(self):
         self.lock = threading.Lock()
-        self.parties = {}       # sid -> [tmpl, x, y, last_seen]
+        self.parties = {}       # sid -> [tmpl, x, y, last_seen, tx, ty]
+        self.clocks = {"srv": [], "cli": []}  # (real time, game hours) samples
         self.removed = []       # sids the client still has to drop
         self.client_pos = None  # (x, y)
         self.cursor = 0
@@ -88,8 +91,8 @@ class World:
         """Returns (client position or None, pause, payload after the pause flag)."""
         with self.lock:
             self.stats["srv"] += 1
-            for sid, tmpl, x, y in entries:
-                self.parties[sid] = [tmpl, x, y, now]
+            for sid, tmpl, x, y, tx, ty in entries:
+                self.parties[sid] = [tmpl, x, y, now, tx, ty]
                 self.stats["entries_in"] += 1
                 if sid in self.removed:
                     self.removed.remove(sid)
@@ -143,32 +146,62 @@ class World:
             while self.removed and len(out) < REMOVALS_PER_REPLY:
                 sid = self.removed.pop(0)
                 self.troops_sent.pop(sid, None)
-                out.append((sid, REMOVED, 0, 0))
+                out.append((sid, REMOVED, 0, 0, 0, 0))
             chosen = {sid for sid, _ in by_distance[:NEAREST_PER_REPLY]}
-            out += [(sid, p[0], p[1], p[2]) for sid, p in by_distance[:NEAREST_PER_REPLY]]
+            out += [(sid, p[0], p[1], p[2], p[4], p[5]) for sid, p in by_distance[:NEAREST_PER_REPLY]]
             rest = [kv for kv in sorted(self.parties.items()) if kv[0] not in chosen]
             if rest:
                 start = self.cursor % len(rest)
                 for sid, p in (rest[start:] + rest[:start])[:ROTATING_PER_REPLY]:
-                    out.append((sid, p[0], p[1], p[2]))
+                    out.append((sid, p[0], p[1], p[2], p[4], p[5]))
                 self.cursor = start + ROTATING_PER_REPLY
             self.stats["entries_out"] += len(out)
             nums = [2, len(out)]
-            for sid, tmpl, ex, ey in out:
-                nums += [sid, tmpl, ex + COORD_OFFSET, ey + COORD_OFFSET]
+            for sid, tmpl, ex, ey, tx, ty in out:
+                if tmpl == REMOVED:
+                    nums += [sid, tmpl, 0, 0, 0, 0]
+                else:
+                    nums += [sid, tmpl, ex + COORD_OFFSET, ey + COORD_OFFSET, tx + COORD_OFFSET, ty + COORD_OFFSET]
             return nums
+
+    def clock(self, role, hours, now):
+        """Record a game-clock sample of one game."""
+        if hours is None:
+            return
+        with self.lock:
+            samples = self.clocks[role]
+            samples.append((now, hours))
+            while samples and now - samples[0][0] > CLOCK_WINDOW_S:
+                samples.pop(0)
+
+    def clock_rate(self, role):
+        """Game hours per real minute over the last CLOCK_WINDOW_S, or None without enough samples."""
+        with self.lock:
+            samples = list(self.clocks[role])
+        if len(samples) < 2 or samples[-1][0] - samples[0][0] < 5:
+            return None
+        return (samples[-1][1] - samples[0][1]) * 60.0 / (samples[-1][0] - samples[0][0])
 
 
 def parse_entries(d):
+    """'sid,tmpl,x,y[,tx,ty];...' -> [(sid, tmpl, x, y, tx, ty)]; without a target the party stays put"""
     entries = []
     for chunk in d.split(";"):
         parts = chunk.split(",")
-        if len(parts) == 4:
+        if len(parts) in (4, 6):
             try:
-                entries.append(tuple(int(v) for v in parts))
+                v = [int(x) for x in parts]
             except ValueError:
-                pass
+                continue
+            entries.append(tuple(v) if len(v) == 6 else (v[0], v[1], v[2], v[3], v[2], v[3]))
     return entries
+
+
+def parse_hours(q):
+    try:
+        return int(q["h"])
+    except (KeyError, ValueError):
+        return None
 
 
 def parse_troops(text):
@@ -197,6 +230,7 @@ def handle_request(world, role, target, now):
     url = urlparse(target)
     q = {k: v[0] for k, v in parse_qs(url.query).items()}
     if role == "srv" and url.path == "/srv":
+        world.clock("srv", parse_hours(q), now)
         client, pause, payload = world.server_report(parse_entries(q.get("d", "")),
                                                      parse_troops(q.get("c", "")), now)
         has, cx, cy = (0, 0, 0) if client is None else (1, client[0], client[1])
@@ -207,6 +241,7 @@ def handle_request(world, role, target, now):
         except ValueError:
             x = y = 0
         busy = q.get("busy", "0") == "1"
+        world.clock("cli", parse_hours(q), now)
         me = parse_stacks(parse_ints(q["me"].lstrip(","))) if q.get("me", "").lstrip(",") else None
         return reply_numbers([MARKER] + world.client_request(x, y, busy, parse_result(q.get("res", "")), me, now))
     return reply_numbers([0, 0])  # unknown path: no marker, the game ignores it
@@ -280,10 +315,12 @@ def main():
             with world.lock:
                 s, n, client = dict(world.stats), len(world.parties), world.client_pos
                 paused = world.paused(time.time())
+            clocks = {r: world.clock_rate(r) for r in ("srv", "cli")}
+            clock_text = ", ".join(f"{r} clock {'?' if v is None else f'{v:.1f}'} h/min" for r, v in clocks.items())
             rate = {k: (s[k] - last[k]) / 5 for k in s}
             log(f"parties known {n}, server {rate['srv']:.1f}/s ({rate['entries_in']:.0f} entries/s), "
                 f"client {rate['cli']:.1f}/s ({rate['entries_out']:.0f} entries/s), client at {client}, "
-                f"{'PAUSED' if paused else 'running'}, battle results {s['results']}")
+                f"{'PAUSED' if paused else 'running'}, battle results {s['results']}, {clock_text}")
             last = s
     except KeyboardInterrupt:
         log("stopped")

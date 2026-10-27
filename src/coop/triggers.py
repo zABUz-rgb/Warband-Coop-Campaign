@@ -37,19 +37,50 @@ def net_triggers(first_dynamic):
          (try_end),
          (assign, "$coop_net_cursor", first_dynamic - 1),
        (try_end),
+       # parties close to the client's puppet first: they are the ones the client sees move
+       (try_begin),
+         (party_is_active, "p_coop_puppet_1"),
+         (party_get_position, pos3, "p_coop_puppet_1"),
+         (position_get_x, ":puppet_x", pos3),
+         (position_get_y, ":puppet_y", pos3),
+         (store_add, ":from", "$coop_near_cursor", 1),
+         (val_max, ":from", first_dynamic),
+         (store_add, ":end", "$coop_net_max_party", 1),
+         (assign, ":near", 0),
+         (try_for_range, ":party_no", ":from", ":end"),
+           (assign, "$coop_near_cursor", ":party_no"),
+           (party_is_active, ":party_no"),
+           (party_get_position, pos4, ":party_no"),
+           (position_get_x, ":dx", pos4),
+           (position_get_y, ":dy", pos4),
+           (val_sub, ":dx", ":puppet_x"),
+           (val_sub, ":dy", ":puppet_y"),
+           (val_abs, ":dx"),
+           (val_abs, ":dy"),
+           (le, ":dx", coop_net_near_radius),
+           (le, ":dy", coop_net_near_radius),
+           (call_script, "script_coop_append_entry", ":party_no"),
+           (val_add, ":near", 1),
+           (val_add, ":count", 1),
+           (ge, ":near", coop_net_batch_near),
+           (assign, ":end", 0), #break
+         (try_end),
+         (try_begin),
+           (ge, "$coop_near_cursor", "$coop_net_max_party"),
+           (assign, "$coop_near_cursor", -1), #all near parties sent: start over
+         (try_end),
+       (try_end),
+       # then the rest of the world, round robin
        (store_add, ":from", "$coop_net_cursor", 1),
        (store_add, ":end", "$coop_net_max_party", 1),
+       (assign, ":far", 0),
        (try_for_range, ":party_no", ":from", ":end"),
          (assign, "$coop_net_cursor", ":party_no"),
          (party_is_active, ":party_no"),
-         (assign, reg11, ":party_no"),
-         (party_get_template_id, reg12, ":party_no"),
-         (party_get_position, pos1, ":party_no"),
-         (position_get_x, reg13, pos1),
-         (position_get_y, reg14, pos1),
-         (str_store_string, s11, "@{s11}{reg11},{reg12},{reg13},{reg14};"),
+         (call_script, "script_coop_append_entry", ":party_no"),
+         (val_add, ":far", 1),
          (val_add, ":count", 1),
-         (ge, ":count", coop_net_batch),
+         (ge, ":far", coop_net_batch_far),
          (assign, ":end", 0), #break
        (try_end),
        (try_begin),
@@ -93,7 +124,8 @@ def net_triggers(first_dynamic):
        (try_end),
        (assign, reg1, "$coop_net_seq"),
        (assign, reg2, ":count"),
-       (str_store_string, s10, "@" + coop_server_url + "/srv?seq={reg1}&n={reg2}&d={s11}{s13}"),
+       (store_current_hours, reg3),
+       (str_store_string, s10, "@" + coop_server_url + "/srv?seq={reg1}&h={reg3}&n={reg2}&d={s11}{s13}"),
        (send_message_to_url, s10, 0),
      (try_end),
     ]),
@@ -155,7 +187,8 @@ def net_triggers(first_dynamic):
        (position_get_y, reg3, pos1),
        (assign, reg1, "$coop_net_seq"),
        (assign, reg4, "$coop_busy"),
-       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&x={reg2}&y={reg3}&busy={reg4}{s13}{s14}"),
+       (store_current_hours, reg5),
+       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&x={reg2}&y={reg3}&busy={reg4}{s13}{s14}"),
        (send_message_to_url, s10, 0),
      (try_end),
     ]),
@@ -164,6 +197,9 @@ def net_triggers(first_dynamic):
 
 def merge(orig_triggers):
   # a client shows the server's world: its own world triggers stay off
+  from coop.quiet import quiet_block
   for t in orig_triggers:
     t[3][0:0] = [(neq, "$coop_role", coop_role_client)]
+    quiet_block(t[3])  # the unattended world server opens no windows (tutorial hints)
+    quiet_block(t[4])
   orig_triggers.extend(net_triggers(first_dynamic_party()))
