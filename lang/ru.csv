@@ -1645,3 +1645,10 @@ quick_strings|qstr_CoopWorld:_weekly_bu|CoopWorld: недельный бюдже
 quick_strings|qstr_CoopWorld:_weekly_bud|CoopWorld: недельный бюджет подсчитан: −{reg1} динаров (подробности — Отчёты, бюджет).
 quick_strings|qstr_CoopWorld:_news_held|CoopWorld: отложенных известий: {reg0}. Прочитать — Лагерь, когда будет удобно.
 quick_strings|qstr_CoopWorld:_all_news_|CoopWorld: все известия прочитаны.
+game_menus|mno_coop_mp_siege|CoopWorld: штурмовать стены вместе (совместная осада на сервере мультиплеера).
+game_menus|mno_coop_mp_taken|Войти в захваченные стены.
+game_menus|mno_coop_mp_siege_on|Вернуться к осаде.
+quick_strings|qstr_CoopWorld:_{s1}_was_|CoopWorld: {s1} взят штурмом в совместной осаде и теперь принадлежит {s2}.
+quick_strings|qstr_CoopWorld:_{s1}_now_|CoopWorld: {s1} теперь принадлежит {s2}.
+quick_strings|qstr_CoopWorld:_a_siege_o|CoopWorld: начинается осада из кампании! Команда 1 держит стены, команда 2 их штурмует.
+quick_strings|qstr_CoopWorld:_the_walls|CoopWorld: стены {s1} ваши!

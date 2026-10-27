@@ -262,8 +262,8 @@ def test_hub_and_relay():
     check(lost.forward("/cli?seq=1") == "0|0", "a relay without the host answers without a marker")
 
 
-def mp(op, bid=0, sid=-1, slot=-1, troops=None, hero=None):
-    return {"op": op, "bid": bid, "sid": sid, "slot": slot, "troops": troops or [], "hero": hero}
+def mp(op, bid=0, sid=-1, slot=-1, troops=None, hero=None, center=-1):
+    return {"op": op, "bid": bid, "sid": sid, "slot": slot, "troops": troops or [], "hero": hero, "center": center}
 
 
 HERO = list(range(100, 100 + cb.HERO_NUMBERS))
@@ -292,7 +292,7 @@ def test_joint_battle():
     nums = w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 3.2)
     check(nums == [5, bid, 0] + HERO, f"then the starter's hero (Olga sent none): {nums[:4]}")
     nums = w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 3.2)
-    check(nums == [1, bid, 4, 2, 0, 0, 1, 0], f"then the start, with the players' sides: {nums}")
+    check(nums == [1, bid, 4, 0, 0, 2, 0, 0, 1, 0], f"then the start (a field battle), with the players' sides: {nums}")
     check(req(w, "a", now=3.3, busy=True, mp=mp(2, bid))[0] == [7, bid, 1, 0], "the players learn it is being fought")
     check(req(w, "c", x=50000, now=3.3, busy=False, mp=mp(1, sid=601))[0] == [7, 0, 2, 0], "one battle at a time")
     w.mp_players = {0: "ivan", 1: "Olga "}
@@ -325,6 +325,62 @@ def test_factions():
     check(w.players["a"].faction == 5, "a request without fac keeps the kingdom known")
     req(w, "a", now=0.6, name="Ivan", faction=0)
     check(w.players["a"].faction == 0, "and leaving a kingdom is heard")
+
+
+def test_joint_siege():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 20)], name="Ivan", faction=5)
+    req(w, "h", x=100, now=0.0, me=[(33, 5)], name="Host", on_server=True)
+    w.server_report([], (40, [(70, 30)]), 0.0, center=(40, 6, 333))
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp=mp(1, center=40, troops=[(70, 99)]))
+    b = w.battle
+    check(b.center == 40 and b.sides == {"a": 1}, "a siege: the starter storms the walls")
+    check(req(w, "h", x=100, now=1.1, on_server=True)[0] == [6, b.bid, 1, w.players["a"].slot, 40],
+          "a player nearby is called to the siege of that center")
+    req(w, "h", x=100, now=1.2, on_server=True, mp=mp(3, b.bid))
+    check(b.sides == {"a": 1, "h": 1}, "and joins the stormers")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.3)
+    check(nums[4:] == [1, 0, 31, 20, 1, -1, 33, 5, 0, -1, 70, 30],
+          f"the garrison as the world server reported it holds the walls: {nums}")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.4)
+    check(nums == [1, b.bid, 3, 1, 40, 1, 0, 1], f"the start says it is a siege of center 40: {nums}")
+    w.mp_request(4, b.bid, 1, {2: 30}, {}, 9.0)
+    check(w.captures == [(40, 5)], "the walls are taken: the center goes to the stormer's kingdom")
+    check(w.server_report([], None, 9.1)[3] == [4, 40, 5], "the world server is told")
+    replies = [req(w, "a", now=9.2)[0] for _ in range(6)]
+    check(not any(r[0] == 10 and r[3] >= 0 for r in replies), "nobody is captured in a siege")
+    # the host storms: its own game takes the center
+    req(w, "h", x=100, now=10.0, on_server=True, busy=True, mp=mp(1, center=41))
+    b = w.battle
+    w.mp_request(0, 0, -1, {}, {}, 10.0 + cb.GATHER_S + 1)
+    w.mp_request(0, 0, -1, {}, {}, 10.0 + cb.GATHER_S + 1)
+    w.mp_request(4, b.bid, 1, {}, {}, 40.0)
+    replies = [req(w, "h", x=100, now=40.1, on_server=True)[0] for _ in range(8)]
+    check([13, b.bid, 41] in replies, f"the host takes the center in its own game: {replies}")
+    # a failed storm: the garrison keeps what survived
+    w.server_report([], (42, [(70, 10)]), 50.0)
+    req(w, "a", now=50.0, busy=True, mp=mp(1, center=42))
+    b = w.battle
+    w.mp_request(0, 0, -1, {}, {}, 50.0 + cb.GATHER_S + 1)
+    w.mp_request(0, 0, -1, {}, {}, 50.0 + cb.GATHER_S + 1)
+    w.mp_request(4, b.bid, 0, {1: 4}, {}, 80.0)
+    check(w.results[-1][:3] == (42, 0, [(70, 6)]), "the walls held: the garrison keeps what survived")
+
+
+def test_centers_reach_players():
+    w = cb.World()
+    req(w, "a", now=0.0, name="Ivan")
+    req(w, "h", now=0.0, name="Host", on_server=True)
+    w.server_report([], None, 0.0, center=(40, 5, 300))
+    w.server_report([], None, 0.1, center=(41, 6, 301))
+    seen = [req(w, "a", now=0.2)[0] for _ in range(6)]
+    check([12, 2, 40, 5, 300, 41, 6, 301] in seen, f"players learn whom centers belong to: {seen}")
+    w.server_report([], None, 1.0, center=(40, 7, 302))
+    seen = [req(w, "a", now=1.1)[0] for _ in range(6)]
+    check([12, 1, 40, 7, 302] in seen, "and when one changes hands")
+    check(not any(r[0] == 12 for r in (req(w, "h", now=1.2, on_server=True)[0] for _ in range(6))),
+          "the host is not told: its game is the world")
 
 
 def test_multiplayer_names():
@@ -425,6 +481,8 @@ if __name__ == "__main__":
     test_joint_battle()
     test_multiplayer_names()
     test_factions()
+    test_joint_siege()
+    test_centers_reach_players()
     test_joint_battle_scaled_and_lost()
     test_joint_battle_decline_cancel_pvp()
     test_hub_and_relay()

@@ -37,6 +37,8 @@ coop_mp_max_stacks = 60          # troop stacks of one battle, both sides
 coop_mp_stride = 8               # slots per stack on the multiplayer server
 coop_mp_round_seconds = 3600     # a campaign battle's round has no practical time limit
 slot_agent_coop_stack = 40       # on a bot of the multiplayer server: its stack + 1 (Native agent slots end at 28)
+coop_mp_pairs_slot = 900         # on the battle server: the players' sides of the coming battle (player, team)*n
+coop_mp_switch_wait = 3          # seconds after a new battle mission starts before the sides are set
 coop_mp_resend_ms = 3000         # the waiting window asks the bridge again after this long without a reply
 
 coop_net_marker = 7777          # first number of every bridge reply (failed sends have none)

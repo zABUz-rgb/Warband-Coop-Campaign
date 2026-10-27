@@ -18,6 +18,7 @@ from coop.constants import *
 # Bridge replies (tools/coop_bridge.py): 6 invite bid|type|slot (type 1 may join, 2 attacked)
 #   7 status bid|status|team   8 outcome bid|won|xp|n|(troop, killed, wounded)*n
 #   9 the hero's blows bid|n|(weapon proficiency, hits, damage)*n
+#   13 the host stormed a center bid|center (the host's game takes it as Native does)
 #   10 aftermath bid|health|captor (health in percent or -1; captor: the world party that takes
 #      the defeated player prisoner, or -1)   11 prisoners for the winner bid|n|(troop, count)*n
 
@@ -45,7 +46,8 @@ mp_campaign_scripts = [
          (try_begin),
            (ge, ":sid", 0),
            (try_begin),
-             (eq, "$coop_role", coop_role_server), #the host: the world's own party
+             (this_or_next|eq, "$coop_role", coop_role_server), #the host: the world's own party
+             (is_between, ":sid", walled_centers_begin, walled_centers_end), #a siege: the same center everywhere
              (assign, ":enemy", ":sid"),
            (else_try),
              (party_get_slot, ":enemy", "p_coop_map", ":sid"), #a client: its mirror, + 1
@@ -109,6 +111,7 @@ mp_campaign_scripts = [
    [
      (party_get_slot, ":bid", "p_coop_buf", 2),
      (party_get_slot, ":won", "p_coop_buf", 3),
+     (assign, "$coop_mp_last_won", ":won"),
      (party_get_slot, ":xp", "p_coop_buf", 4),
      (party_get_slot, ":n", "p_coop_buf", 5),
      (assign, ":killed_all", 0),
@@ -247,6 +250,15 @@ mp_campaign_scripts = [
      (try_end),
     ]),
 
+  # script_coop_client_mp_taken: kind 13 reply, the host stormed this center (the host's game is the
+  # world: it takes it through Native's own victory, from the waiting menu)
+  ("coop_client_mp_taken",
+   [
+     (party_get_slot, "$coop_mp_taken_center", "p_coop_buf", 3),
+     (str_store_party_name, s1, "$coop_mp_taken_center"),
+     (display_message, "@CoopWorld: the walls of {s1} are yours!", 0x66FF66),
+    ]),
+
   # script_coop_client_mp_prisoners: kind 11 reply, the defeated player's troops become ours
   ("coop_client_mp_prisoners",
    [
@@ -350,7 +362,8 @@ mp_campaign_scripts = [
      (assign, reg7, "$coop_mp_bid"),
      (assign, reg8, "$coop_mp_target_sid"),
      (assign, reg9, "$coop_mp_target_slot"),
-     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&mp={reg6}&bid={reg7}&mpe={reg8}&mpp={reg9}{s16}{s18}&me={s12}&name={s15}"),
+     (assign, reg10, "$coop_mp_target_center"),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&mp={reg6}&bid={reg7}&mpe={reg8}&mpp={reg9}&mpc={reg10}{s16}{s18}&me={s12}&name={s15}"),
      (assign, "$coop_net_pending", 1),
      (send_message_to_url, s10, 0),
     ]),
@@ -400,7 +413,11 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_enemy_party", ":party_no"),
      (assign, "$coop_mp_target_sid", -1),
      (assign, "$coop_mp_target_slot", -1),
+     (assign, "$coop_mp_target_center", -1),
      (try_begin),
+       (is_between, ":party_no", walled_centers_begin, walled_centers_end), #a siege: storm its walls
+       (assign, "$coop_mp_target_center", ":party_no"),
+     (else_try),
        (is_between, ":party_no", "p_coop_puppet_1", puppet_end()),
        (store_sub, "$coop_mp_target_slot", ":party_no", "p_coop_puppet_1"),
        (assign, "$coop_mp_enemy_party", -1), #a player brings his own troops
@@ -418,6 +435,28 @@ mp_campaign_scripts = [
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
 ]
+
+
+# the siege menu: storm the walls together, on the battle server's Siege. Native's own conditions
+# for leading the assault (ladders or a tower ready, men fit to fight); a client needs a kingdom to
+# give the center to (only the host holds fiefs)
+coop_mp_siege_option = (
+  "coop_mp_siege",
+  [
+    (this_or_next|eq, "$coop_role", coop_role_client),
+    (eq, "$coop_srv_player", 1),
+    (neg|troop_is_wounded, "trp_player"),
+    (ge, "$g_siege_method", 1),
+    (gt, "$g_friend_fit_for_battle", 3),
+    (store_current_hours, ":cur_hours"),
+    (ge, ":cur_hours", "$g_siege_method_finish_hours"),
+    (this_or_next|eq, "$coop_srv_player", 1),
+    (is_between, "$players_kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+  ],
+  "CoopWorld: storm the walls together (joint siege on the multiplayer server).",
+  [
+    (call_script, "script_coop_client_mp_begin", "$g_encountered_party"),
+  ])
 
 
 coop_mp_encounter_option = (
@@ -462,8 +501,36 @@ mp_campaign_menus = [
       [(assign, "$coop_mp_hidden", 0), (start_presentation, "prsnt_coop_mp_wait")]),
      ("coop_mp_cancel", [(eq, "$coop_mp_state", 2), (eq, "$coop_mp_status", 0)], "Cancel the joint battle.",
       [(assign, "$coop_mp_state", 4), (leave_encounter), (change_screen_return)]),
-     ("coop_mp_back", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_captor", 0)], "Back to the map.",
-      [(leave_encounter), (change_screen_return)]),
+     ("coop_mp_taken", [(neg|is_between, "$coop_mp_state", 1, 4), (gt, "$coop_mp_taken_center", 0)],
+      "Enter the stormed walls.",
+      [
+        # the host's own game: Native's victory and the center's capture, as after its own assault
+        (party_clear, "$coop_mp_taken_center"),
+        (assign, "$coop_mp_taken_center", 0),
+        (assign, "$g_next_menu", "mnu_castle_taken"),
+        (jump_to_menu, "mnu_total_victory"),
+      ]),
+     ("coop_mp_siege_on", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_taken_center", 0),
+                           (eq, "$coop_mp_last_won", 0), #the storm failed: the siege goes on
+                           (le, "$coop_mp_captor", 0), (gt, "$coop_mp_target_center", 0),
+                           (party_is_active, "$coop_mp_target_center"),
+                           (store_faction_of_party, ":faction", "$coop_mp_target_center"),
+                           (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
+                           (lt, ":relation", 0)],
+      "Back to the siege.",
+      [(assign, "$coop_mp_target_center", -1), (jump_to_menu, "mnu_castle_besiege")]),
+     ("coop_mp_back", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_captor", 0),
+                       (le, "$coop_mp_taken_center", 0)], "Back to the map.",
+      [
+        (try_begin),
+          (gt, "$coop_mp_target_center", 0), #a siege that ended: the walls are someone else's now
+          (call_script, "script_lift_siege", "$coop_mp_target_center", 0),
+          (assign, "$g_player_besiege_town", -1),
+          (assign, "$coop_mp_target_center", -1),
+        (try_end),
+        (leave_encounter),
+        (change_screen_return),
+      ]),
      ("coop_mp_captured", [(neg|is_between, "$coop_mp_state", 1, 4), (gt, "$coop_mp_captor", 0)],
       "You are taken prisoner...",
       [(call_script, "script_coop_client_mp_capture")]),
@@ -601,7 +668,7 @@ def client_request_suffix():
 
 
 def reply_branches():
-  """else_try branches for net_reply_handler: kinds 6 to 11."""
+  """else_try branches for net_reply_handler: kinds 6 to 11 and 13."""
   return [
     (else_try),
       (eq, ":kind", 6),
@@ -630,6 +697,10 @@ def reply_branches():
       (this_or_next|eq, "$coop_role", coop_role_client),
       (eq, "$coop_srv_player", 1),
       (call_script, "script_coop_client_mp_prisoners"),
+    (else_try),
+      (eq, ":kind", 13),
+      (eq, "$coop_srv_player", 1),
+      (call_script, "script_coop_client_mp_taken"),
     (else_try),
       (eq, ":kind", 9),
       (this_or_next|eq, "$coop_role", coop_role_client),

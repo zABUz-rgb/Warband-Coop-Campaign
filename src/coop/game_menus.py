@@ -80,7 +80,9 @@ def merge(menus):
   from coop_merge import menu_options
   menu_options(menus, "camp")[0:0] = camp_coop_options
   # joint battles on the multiplayer server
-  from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option
+  from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option, coop_mp_siege_option
+  siege = menu_options(menus, "castle_besiege")
+  siege.insert(find_by_id(siege, "castle_lead_attack") + 1, coop_mp_siege_option)
   options = menu_options(menus, "simple_encounter")
   options.insert(find_by_id(options, "encounter_leave"), coop_mp_encounter_option)
   # another player's party is fought only in a joint battle, never in a local one against its puppet

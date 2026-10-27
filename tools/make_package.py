@@ -360,6 +360,12 @@ CoopWorld без Diplomacy с этой версией не работают.
   к победителю пленными, часть вещей забирают. Проигравший другому игроку в плен не попадает,
   но его уцелевшие войска становятся пленными победителя.
   Большие армии уменьшаются до 150 ботов на поле, потери пересчитываются обратно.
+  СОВМЕСТНАЯ ОСАДА: в меню осады (когда лестницы или башня готовы) - "CoopWorld: штурмовать стены
+  вместе". Сервер боя сам переходит в режим "Осада" на одной из карт с замком: гарнизон (команда 1)
+  держит стены, игроки (команда 2) штурмуют; игроки рядом получают приглашение. Штурм удался, если
+  взят флаг или пал весь гарнизон: хост берёт замок как в обычной игре, а замок, взятый клиентом,
+  переходит его королевству (клиенту без присяги штурм недоступен). Не удался - гарнизон теряет
+  павших, осаду можно продолжить. Кому принадлежат замки и города, видно у всех игроков.
   Для мультиплеера Warband нужен серийный ключ игры (GOG: в библиотеке у игры, Steam: выдаётся сам).
 
 ФРАКЦИИ
@@ -425,6 +431,10 @@ JOINT BATTLES (multiplayer server):
   4. Meeting another player's party: "CoopWorld: fight this player" (that player cannot decline).
   5. When one side is wiped out, the losses go back to the campaign (half of a player's fallen
      are wounded); a defeated world party is gone for everybody. The world stands still meanwhile.
+  JOINT SIEGES: in the siege menu (ladders or a tower ready) - "CoopWorld: storm the walls together".
+  The battle server switches to Siege on a castle map: the garrison (team 1) holds the walls, the
+  players (team 2) storm them. Taken by the flag or when the garrison falls: the host takes the
+  center as in Native; a client's kingdom gets it (a client without a kingdom cannot storm).
   You fight as your hero: equipment (weapons, armour, horse), attributes, combat skills and
   weapon proficiencies go to the battle server (up to 4 heroes a battle). Afterwards the hero and
   the troops gain experience for the fallen enemies (the losers a third). Weapon proficiencies grow

@@ -22,15 +22,17 @@ Modes:
 the player there by it, so each player's soldiers obey that player; without it, by the hero's name
 (which friends who loaded the host's save share with the host).
 
-World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...]   or  /srv?seq=S&hold=1
+World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...][&cf=center,faction,lord]
+                  or  /srv?seq=S&hold=1
     d: spawned parties: position, where the party is heading (tx,ty), and the party it is inside
-       (a town) + 1, or 0 on the open map; c: troops of one party near a player; h: game hours.
+       (a town) + 1, or 0 on the open map; c: troops of one party (or a town's or castle's garrison)
+       near a player; cf: whom one center belongs to, round robin; h: game hours.
     reply 7777|1|pause|joins|np|slot|x|y|kingdom|...(np players)|kind|payload...
       kingdom: the faction the player serves (0: none), which the puppet takes on the server
       pause 1: a player is in an encounter, a battle or a menu: the world stands still
       joins: how many times a player game joined (a held world runs again when it changes)
       kind 0: nothing   1: battle result sid|destroyed|n|t1|n1|...|np|t1|n1|... (np: prisoners it takes)
-      2: player troops slot|n|t1|n1|...
+      2: player troops slot|n|t1|n1|...   4: a center stormed in a joint siege center|kingdom
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
@@ -48,11 +50,12 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
                                                     (why: 1 in an encounter or battle, 2 in a menu);
                                                     the player's own map then stands still too
 
-Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpt=t1,n1,...]
+Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpc=center][&mpt=t1,n1,...]
 [&hero=...]; hero, with a start or an acceptance: HERO_NUMBERS numbers, the hero's equipment, attributes,
 combat skills and weapon proficiencies, in the order of coop/constants.py):
-    OP 1 start a battle against the world party sid (mpt: its troops as the player sees them) or
-    the player in puppet slot; 2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
+    OP 1 start a battle against the world party sid (mpt: its troops as the player sees them), the
+    player in puppet slot, or storm the town or castle mpc (a siege: the players are team 1, the
+    garrison team 0); 2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
     reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked;
                                      sid: the world party fought (-1: a player), so the game can see
                                      whether it would fight its own allies
@@ -64,6 +67,8 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|10|bid|health|captor            the hero's health in percent (-1: did not fight as the hero);
                                                captor: the world party that takes the defeated player prisoner, or -1
           7777|11|bid|n|(troop,count)*n        the defeated player's troops, prisoners of the winning player
+          7777|12|n|(center,faction,lord)*n    whom centers belong to now (on the world server)
+          7777|13|bid|center                   the host stormed this center: the host's game takes it as Native does
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...]
                   &pl=no~name;...
@@ -74,7 +79,8 @@ Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent
     reply 7778|0                                  nothing
           7778|2|bid|offset|n|(team,player,troop,count)*n   stacks to spawn (player: who commands them, -1 the AI)
           7778|5|bid|player|hero...               a player fights as the campaign hero (after the stacks)
-          7778|1|bid|stacks|n|(player,team)*n     start: players onto their sides, the round restarts
+          7778|1|bid|stacks|mode|hint|n|(player,team)*n   start: players onto their sides, the round
+                                                  restarts; mode 1 a siege (Siege game type, map by hint)
           7778|4|bid                              the outcome arrived
 
 Coordinates are map units * 100, shifted by COORD_OFFSET in replies so the games only get
@@ -94,6 +100,7 @@ MARKER = 7777
 COORD_OFFSET = 100000
 REMOVED = 9999
 MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
+CENTERS_PER_REPLY = 40  # 2 + 3 * 40 numbers
 STALE_S = 15.0          # a party not reported for this long is gone
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
@@ -167,6 +174,7 @@ class Player:
         self.on_server = False  # the host playing in the world server game: no puppet there
         self.hero = None        # the hero's equipment and stats for joint battles
         self.faction = 0        # the kingdom the player serves, 0 none
+        self.centers_sent = {}  # center -> (faction, lord) this player was told
 
 
 class Battle:
@@ -181,6 +189,8 @@ class Battle:
         self.until = now + GATHER_S
         self.enemy_sid = None
         self.enemy_stacks = []
+        self.center = None        # a siege: the town or castle stormed
+        self.player_team = 0      # the starter's side: 0 in the field, 1 storming walls
         self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
         self.sent = 0
         self.heroes = None        # [(player number, hero numbers)] still to send, after the stacks
@@ -202,6 +212,8 @@ class World:
         self.battle_seq = 0
         self.mp_last = None     # real time the battle server last asked
         self.mp_players = {}    # player number on the battle server -> name
+        self.centers = {}       # center -> (faction, lord), as the world server reports them
+        self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
         self.mp_names = {}      # cid -> the name its player uses on the battle server (launcher)
         self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0}
 
@@ -248,7 +260,7 @@ class World:
 
     # ---- server
 
-    def server_report(self, entries, troops, now, hold=False):
+    def server_report(self, entries, troops, now, hold=False, center=None):
         """Returns (pause, joins, [(slot, x, y)], payload numbers, name string or None)."""
         with self.lock:
             self.stats["srv"] += 1
@@ -270,6 +282,8 @@ class World:
                     party[3] = now
             for sid in [s for s, party in self.parties.items() if now - party[3] > STALE_S]:
                 self._forget(sid, except_cid=None)
+            if center is not None:
+                self.centers[center[0]] = (center[1], center[2])
             if troops is not None:
                 sid, stacks = troops
                 # until the server applied a battle result, its report is older than the player's
@@ -285,6 +299,8 @@ class World:
                 sid, destroyed, stacks, *rest = self.results.pop(0)
                 prisoners = (rest[0] if rest else [])[:max(0, RESULT_PAIRS - len(stacks))]
                 payload = [1, sid, destroyed, len(stacks)] + flat(stacks) + [len(prisoners)] + flat(prisoners)
+            elif self.captures:
+                payload = [4, *self.captures.pop(0)]
             elif pending_troops:
                 p = pending_troops[0]
                 payload = [2, p.slot, len(p.stacks)] + flat(p.stacks)
@@ -356,6 +372,14 @@ class World:
             if p.mp_out:
                 nums = p.mp_out.pop(0)
                 return nums, wanted if nums[0] == 7 else None
+            # whom centers belong to, as it changes (not for the host: its game is the world)
+            if not p.on_server and p.requests % 5 == 3:
+                news = [(c, f, l) for c, (f, l) in sorted(self.centers.items()) if p.centers_sent.get(c) != (f, l)]
+                if news:
+                    news = news[:CENTERS_PER_REPLY]
+                    for c, f, l in news:
+                        p.centers_sent[c] = (f, l)
+                    return [12, len(news)] + [v for entry in news for v in entry], None
             if mp is not None and mp["op"] in (1, 2, 3):
                 # the waiting window: how the battle stands
                 b = self.battle
@@ -427,7 +451,13 @@ class World:
             self.battle_seq += 1
             b = Battle(self.battle_seq, p.cid, now)
             defender = None
-            if mp["slot"] >= 0:
+            if mp.get("center", -1) > 0:  # center ids are never 0 (the player's party)
+                # a siege: the players storm the walls (team 1), the garrison holds them (team 0)
+                b.center = mp["center"]
+                b.player_team = 1
+                b.sides = {p.cid: 1}
+                b.enemy_stacks = self.troops.get(b.center, (0, None))[1] or mp["troops"] or []
+            elif mp["slot"] >= 0:
                 defender = next((q for q in self.players.values() if q.slot == mp["slot"] and q is not p), None)
                 if defender is None:
                     p.mp_out.append([7, 0, 2, 0])
@@ -446,7 +476,8 @@ class World:
                     continue
                 if (q.pos[0] - p.pos[0]) ** 2 + (q.pos[1] - p.pos[1]) ** 2 <= INVITE_DIST ** 2:
                     b.invited.add(q.cid)
-                    q.mp_out.append([6, b.bid, 1, p.slot, b.enemy_sid if b.enemy_sid is not None else -1])
+                    target = b.enemy_sid if b.enemy_sid is not None else (b.center if b.center is not None else -1)
+                    q.mp_out.append([6, b.bid, 1, p.slot, target])
             self.battle = b
             p.mp_out.append([7, b.bid, 0, 0])
         elif b is None or b.bid != bid:
@@ -457,7 +488,7 @@ class World:
                 p.mp_out.append([7, bid, 2, 0])  # too late
                 return
             b.invited.discard(p.cid)
-            b.sides.setdefault(p.cid, 0)  # an invited player fights on the starter's side
+            b.sides.setdefault(p.cid, b.player_team)  # an invited player fights on the starter's side
         elif op == 4:
             b.invited.discard(p.cid)
             if b.state == "running":
@@ -480,7 +511,7 @@ class World:
             q = self.players.get(cid)
             for troop, n in (q.stacks_last or []) if q is not None else []:
                 stacks.append([team, cid, troop, n, 0])
-        stacks += [[1, None, troop, n, 0] for troop, n in b.enemy_stacks]
+        stacks += [[1 - b.player_team, None, troop, n, 0] for troop, n in b.enemy_stacks]
         stacks = [s for s in stacks if s[3] > 0][:MP_MAX_STACKS]
         total = sum(s[3] for s in stacks)
         scale = min(1.0, MP_MAX_BOTS / total) if total else 1.0
@@ -565,11 +596,24 @@ class World:
                 q.mp_out.append([9, b.bid, len(used)] + [v for entry in used for v in entry])
             # last: the hero's wounds, and the capture (after which the player is in captivity)
             hp = (health or {}).get(no, -1) if no >= 0 else -1
-            captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1
+            captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1  # a failed storm: no capture
             if hp >= 0 or captor >= 0:
                 q.mp_out.append([10, b.bid, hp, captor])
-        if b.enemy_sid is not None:
-            destroyed = 1 if winner == 0 or not enemy_left else 0
+        if b.center is not None:
+            starter = self.players.get(b.starter)
+            if winner == b.player_team:
+                # the walls are taken: the host's own game takes the center as Native does; a
+                # client's kingdom gets it on the world server
+                if starter is not None and starter.on_server:
+                    starter.mp_out.append([13, b.bid, b.center])
+                elif starter is not None and starter.faction:
+                    self.captures.append((b.center, starter.faction))
+                else:
+                    self._record_result((b.center, 0, [], []), None, now)  # no kingdom to give it to
+            else:
+                self._record_result((b.center, 0, enemy_left, []), None, now)  # what the garrison kept
+        elif b.enemy_sid is not None:
+            destroyed = 1 if winner == b.player_team or not enemy_left else 0
             self._record_result((b.enemy_sid, destroyed, enemy_left, [] if destroyed else world_captives), None, now)
         elif captives:
             # a battle between players: the winner's side takes the prisoners
@@ -622,7 +666,8 @@ class World:
                     q = self.players.get(cid)
                     if q is not None:
                         q.mp_out.append([7, b.bid, 1, team])
-                return [1, b.bid, len(b.stacks), len(pairs) // 2] + pairs
+                mode = 1 if b.center is not None else 0
+                return [1, b.bid, len(b.stacks), mode, b.center or 0, len(pairs) // 2] + pairs
             if b.state == "running" and phase == 0 and now - b.started > MP_LOST_S:
                 # the battle server restarted or changed its game: the battle is lost to it
                 for cid in b.sides:
@@ -672,6 +717,12 @@ def parse_entries(d):
                 v.append(0)
             entries.append(tuple(v))
     return entries
+
+
+def parse_center(text):
+    """'center,faction,lord' -> (center, faction, lord) or None"""
+    v = parse_ints(text) if text else None
+    return tuple(v) if v and len(v) == 3 else None
 
 
 def parse_hours(q):
@@ -749,7 +800,8 @@ def handle_request(world, role, target, now, cid="local"):
     if role == "srv" and url.path == "/srv":
         world.clock("srv", parse_hours(q), now)
         pause, joins, puppets, payload, name = world.server_report(
-            parse_entries(q.get("d", "")), parse_troops(q.get("c", "")), now, hold=q.get("hold") == "1")
+            parse_entries(q.get("d", "")), parse_troops(q.get("c", "")), now, hold=q.get("hold") == "1",
+            center=parse_center(q.get("cf", "")))
         nums = [MARKER, 1, int(pause), joins, len(puppets)]
         for slot, x, y, faction in puppets:
             nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, faction]
@@ -772,7 +824,7 @@ def handle_request(world, role, target, now, cid="local"):
             troops = q.get("mpt", "").lstrip(",")
             hero = parse_ints(q.get("hero", ""))
             mp = {"op": query_int(q, "mp", 0), "bid": query_int(q, "bid", 0), "sid": query_int(q, "mpe", -1),
-                  "slot": query_int(q, "mpp", -1),
+                  "slot": query_int(q, "mpp", -1), "center": query_int(q, "mpc", -1),
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
                   "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,

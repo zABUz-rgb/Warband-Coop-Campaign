@@ -14,6 +14,10 @@ from coop.constants import *
 # Phases ($coop_mp_phase): 0 an ordinary round, nothing from the campaign
 #   1 a battle arrived: the round restarts      2 the armies spawn, one bot a frame
 #   3 the battle runs                            4 over: the losses go to the bridge until it acks
+#   5 the server changes its game type (Battle for the field, Siege for a castle or town)
+# A siege ($coop_mp_mode 1) is fought in the Siege game type on one of its maps: team 0 holds the
+# walls (the garrison), team 1 storms them. The attackers win by the flag or when no defender
+# stands; the defenders when no attacker bot stands.
 # Stacks are kept on trp_temp_array_a, COOP_MP_STRIDE slots each (troop, team, group = the MP
 # player who commands them or -1, count, fallen, spawned); trp_temp_array_b holds the last reply.
 #
@@ -24,6 +28,9 @@ from coop.constants import *
 
 MP_ARR = "trp_temp_array_a"
 HERO_TROOPS = "trp_tutorial_student_1"  # .. _4
+SIEGE_SCENES = ["scn_multi_scene_3", "scn_multi_scene_8", "scn_multi_scene_10", "scn_multi_scene_13",
+                "scn_multi_scene_15", "scn_multi_scene_16"]  # Native's Siege maps
+FIELD_SCENE = "scn_random_multi_plain_medium"
 MP_BUF = "trp_temp_array_b"
 S_TROOP, S_TEAM, S_GROUP, S_COUNT, S_FALLEN, S_SPAWNED = range(6)
 
@@ -124,33 +131,64 @@ mp_scripts = [
          (val_add, ":at", 1),
        (try_end),
      (else_try),
+       # start: bid|stacks|mode|scene hint|n|(player, team)*n
        (eq, ":kind", 1),
        (eq, "$coop_mp_phase", 0),
        (assign, "$coop_mp_battle", ":bid"),
        (troop_get_slot, "$coop_mp_n", MP_BUF, 3),
        (val_min, "$coop_mp_n", coop_mp_max_stacks),
-       # the players of the campaign onto their sides
-       (troop_get_slot, ":n", MP_BUF, 4),
-       (try_for_range, ":k", 0, ":n"),
+       (troop_get_slot, "$coop_mp_mode", MP_BUF, 4),
+       (troop_get_slot, ":hint", MP_BUF, 5),
+       # the players' sides, kept until the battle's mission is up
+       (troop_get_slot, "$coop_mp_pairs", MP_BUF, 6),
+       (try_for_range, ":k", 0, "$coop_mp_pairs"),
          (store_mul, ":src", ":k", 2),
-         (val_add, ":src", 5),
-         (troop_get_slot, ":player_no", MP_BUF, ":src"),
+         (val_add, ":src", 7),
+         (store_mul, ":dst", ":k", 2),
+         (val_add, ":dst", coop_mp_pairs_slot),
+         (troop_get_slot, ":v", MP_BUF, ":src"),
+         (troop_set_slot, MP_ARR, ":dst", ":v"),
          (val_add, ":src", 1),
-         (troop_get_slot, ":team", MP_BUF, ":src"),
-         (player_is_active, ":player_no"),
-         (player_get_team_no, ":old_team", ":player_no"),
-         (neq, ":old_team", ":team"),
-         (player_set_troop_id, ":player_no", -1),
-         (player_set_team_no, ":player_no", ":team"),
-         (multiplayer_send_message_to_player, ":player_no", multiplayer_event_force_start_team_selection),
+         (val_add, ":dst", 1),
+         (troop_get_slot, ":v", MP_BUF, ":src"),
+         (troop_set_slot, MP_ARR, ":dst", ":v"),
        (try_end),
-       # one long round: no time limit and no flags while the campaign battle lasts
        (assign, "$coop_mp_old_round_seconds", "$g_multiplayer_round_max_seconds"),
-       (assign, "$g_multiplayer_round_max_seconds", coop_mp_round_seconds),
-       (assign, "$g_round_ended", 1),
-       (assign, "$g_round_finish_time", -100000), #the next round starts at once
-       (assign, "$coop_mp_phase", 1),
-       (str_store_string, s0, "@CoopWorld: a battle of the campaign begins!"),
+       (assign, ":game_type", multiplayer_game_type_battle),
+       (try_begin),
+         (eq, "$coop_mp_mode", 1),
+         (assign, ":game_type", multiplayer_game_type_siege),
+       (try_end),
+       (try_begin),
+         (neq, "$g_multiplayer_game_type", ":game_type"),
+         # another game type: its own mission on a fitting map; the sides are set once it is up
+         (assign, ":scene", FIELD_SCENE),
+         (try_begin),
+           (eq, "$coop_mp_mode", 1),
+           (store_mod, ":pick", ":hint", len(SIEGE_SCENES)),
+           ] + [op for k, scn in enumerate(SIEGE_SCENES) for op in [
+           (try_begin), (eq, ":pick", k), (assign, ":scene", scn), (try_end),
+           ]] + [
+         (try_end),
+         (assign, "$g_multiplayer_game_type", ":game_type"),
+         (assign, "$g_multiplayer_selected_map", ":scene"),
+         (call_script, "script_game_multiplayer_get_game_type_mission_template", ":game_type"),
+         (start_multiplayer_mission, reg0, ":scene", 1),
+         (assign, "$coop_mp_phase", 5),
+       (else_try),
+         (call_script, "script_coop_mp_assign_teams"),
+         # one long round: no time limit and no flags while the campaign battle lasts
+         (assign, "$g_multiplayer_round_max_seconds", coop_mp_round_seconds),
+         (assign, "$g_round_ended", 1),
+         (assign, "$g_round_finish_time", -100000), #the next round starts at once
+         (assign, "$coop_mp_phase", 1),
+       (try_end),
+       (try_begin),
+         (eq, "$coop_mp_mode", 1),
+         (str_store_string, s0, "@CoopWorld: a siege of the campaign begins! Team 1 holds the walls, team 2 storms them."),
+       (else_try),
+         (str_store_string, s0, "@CoopWorld: a battle of the campaign begins!"),
+       (try_end),
        (call_script, "script_coop_mp_tell_all"),
      (else_try),
        (eq, ":kind", 4),
@@ -216,6 +254,24 @@ mp_scripts = [
        (troop_get_inventory_slot, ":item", ":troop", ":ek"),
        (ge, ":item", 0),
        (player_add_spawn_item, ":player_no", ":ek", ":item"),
+     (try_end),
+    ]),
+
+  # script_coop_mp_assign_teams: the players of the campaign onto their sides (kept at kind 1)
+  ("coop_mp_assign_teams",
+   [
+     (try_for_range, ":k", 0, "$coop_mp_pairs"),
+       (store_mul, ":src", ":k", 2),
+       (val_add, ":src", coop_mp_pairs_slot),
+       (troop_get_slot, ":player_no", MP_ARR, ":src"),
+       (val_add, ":src", 1),
+       (troop_get_slot, ":team", MP_ARR, ":src"),
+       (player_is_active, ":player_no"),
+       (player_get_team_no, ":old_team", ":player_no"),
+       (neq, ":old_team", ":team"),
+       (player_set_troop_id, ":player_no", -1),
+       (player_set_team_no, ":player_no", ":team"),
+       (multiplayer_send_message_to_player, ":player_no", multiplayer_event_force_start_team_selection),
      (try_end),
     ]),
 
@@ -319,6 +375,74 @@ mp_battle_triggers = [
      (try_end),
     ]),
 
+  # phase 5 -> 2: the battle's own mission is up (its first round runs already)
+  (1, 0, 0,
+   [
+     (multiplayer_is_server),
+     (eq, "$coop_mp_phase", 5),
+     (store_mission_timer_a, ":seconds"),
+     (ge, ":seconds", coop_mp_switch_wait),
+   ],
+   [
+     (call_script, "script_coop_mp_assign_teams"),
+     (assign, "$g_multiplayer_round_max_seconds", coop_mp_round_seconds),
+     (assign, "$g_multiplayer_num_bots_required_team_1", 0),
+     (assign, "$g_multiplayer_num_bots_required_team_2", 0),
+     (assign, "$coop_mp_spawn_i", 0),
+     (assign, "$coop_mp_phase", 2),
+    ]),
+
+  # a siege ends when one side has no bot standing (players come back in Siege, bots do not)
+  (1, 0, 0,
+   [
+     (multiplayer_is_server),
+     (eq, "$coop_mp_phase", 3),
+     (eq, "$coop_mp_mode", 1),
+     (eq, "$g_round_ended", 0),
+   ],
+   [
+     (assign, ":had_0", 0),
+     (assign, ":had_1", 0),
+     (try_for_range, ":i", 0, "$coop_mp_n"),
+       ] + stack_slot(S_TEAM) + [
+       (troop_get_slot, ":team", MP_ARR, ":slot"),
+       (try_begin),
+         (eq, ":team", 0),
+         (assign, ":had_0", 1),
+       (else_try),
+         (assign, ":had_1", 1),
+       (try_end),
+     (try_end),
+     (assign, ":alive_0", 0),
+     (assign, ":alive_1", 0),
+     (try_for_agents, ":agent_no"),
+       (agent_is_alive, ":agent_no"),
+       (agent_is_human, ":agent_no"),
+       (agent_slot_ge, ":agent_no", slot_agent_coop_stack, 1),
+       (agent_get_team, ":team", ":agent_no"),
+       (try_begin),
+         (eq, ":team", 0),
+         (val_add, ":alive_0", 1),
+       (else_try),
+         (val_add, ":alive_1", 1),
+       (try_end),
+     (try_end),
+     (assign, ":winner", -1),
+     (try_begin),
+       (eq, ":had_1", 1),
+       (eq, ":alive_1", 0),
+       (assign, ":winner", 0), #the storm is broken
+     (else_try),
+       (eq, ":alive_0", 0),
+       (assign, ":winner", 1), #the walls are empty
+     (try_end),
+     (ge, ":winner", 0),
+     (assign, "$g_winner_team", ":winner"),
+     (store_mission_timer_a, "$g_round_finish_time"),
+     (assign, "$g_round_ended", 1),
+     (assign, ":unused", ":had_0"),
+    ]),
+
   # phase 1 -> 2: the new round has started
   (0.5, 0, 0, [(multiplayer_is_server), (eq, "$coop_mp_phase", 1), (eq, "$g_round_ended", 0)],
    [
@@ -370,10 +494,15 @@ mp_battle_triggers = [
          (assign, ":group", -1), #its player is not here: the AI leads it
        (try_end),
        (try_begin),
-         (eq, ":team", 0),
-         (assign, ":entry", 0),
+         (eq, "$g_multiplayer_game_type", multiplayer_game_type_siege),
+         (eq, ":team", 0), #the garrison: inside the walls, where Siege puts its defenders
+         (call_script, "script_multiplayer_find_spawn_point", 0, 1, 0),
+         (assign, ":entry", reg0),
        (else_try),
-         (assign, ":entry", 32),
+         (eq, ":team", 0),
+         (assign, ":entry", multi_initial_spawn_point_team_1),
+       (else_try),
+         (assign, ":entry", multi_initial_spawn_point_team_2),
        (try_end),
        (assign, "$coop_mp_spawning_stack", ":i"),
        (store_current_scene, ":cur_scene"),
@@ -511,24 +640,29 @@ def mp_network_hook():
 
 
 def merge_battle_template(mission_templates):
-  """The Battle game type: the campaign's battles run in it; a hero player spawns as the hero."""
+  """The Battle and Siege game types: the campaign's battles run in them; a hero player spawns
+  as the hero."""
   from coop_merge import get_by_id, MergeError
-  template_triggers = get_by_id(mission_templates, "multiplayer_bt")[5]
   buy = (call_script, "script_multiplayer_buy_agent_equipment", ":player_no")
-  found = 0
-  for trigger in template_triggers:
-    block = trigger[4]
-    for i, op in enumerate(block):
-      if op == buy and block[i + 1][0] == player_spawn_new_agent:
-        block[i:i + 1] = [
-          (try_begin),
-            (call_script, "script_cf_coop_mp_hero_spawn", ":player_no"),
-          (else_try),
-            buy,
-          (try_end),
-        ]
-        found += 1
-        break
-  if found != 1:
-    raise MergeError(f"multiplayer_bt: expected one player spawn buying equipment, found {found}")
-  template_triggers.extend(mp_battle_triggers)
+  for template_id in ("multiplayer_bt", "multiplayer_sg"):
+    template_triggers = get_by_id(mission_templates, template_id)[5]
+    found = 0
+    for trigger in template_triggers:
+      block = trigger[4]
+      i = 0
+      while i < len(block):
+        op = block[i]
+        if op == buy:  # the player is about to spawn (Siege picks the spawn point in between)
+          block[i:i + 1] = [
+            (try_begin),
+              (call_script, "script_cf_coop_mp_hero_spawn", ":player_no"),
+            (else_try),
+              buy,
+            (try_end),
+          ]
+          found += 1
+          i += 5
+        i += 1
+    if found < 1:
+      raise MergeError(f"{template_id}: expected a player spawn buying equipment, found none")
+    template_triggers.extend(mp_battle_triggers)
