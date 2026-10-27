@@ -423,6 +423,46 @@ def test_profiles():
     check(not w2.players["h"].profile_out, "the host's hero lives in the world itself")
 
 
+def test_joining_and_giving():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=50000, now=0.0, me=[(33, 4)], name="Olga")
+    slot_a, slot_b = w.players["a"].slot, w.players["b"].slot
+    req(w, "b", x=50000, now=1.0, together={"join": slot_a})
+    check(req(w, "a", now=1.1)[0] == [17, slot_b], "the leader hears who asks to join")
+    told_leader = req(w, "a", now=1.2, together={"joinans": (slot_b, 1)})[0]
+    check(w.players["b"].leader == "a", "accepted: that player follows the leader")
+    check(req(w, "b", x=50000, now=1.3)[0] == [18, slot_a, 1] and told_leader == [19, slot_b, 1],
+          "both are told")
+    w.mp_request(0, 0, -1, {}, {}, 1.4)
+    req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 5)]))
+    b = w.battle
+    check(b.sides.get("b") == 0 and "b" in b.invited, "the follower is called into the leader's battle, far away or not")
+    check([6, b.bid, 3, slot_a, 600] in [req(w, "b", x=50000, now=2.1)[0] for _ in range(3)],
+          "as an invitation that cannot be declined (type 3)")
+    w.battle = None
+    req(w, "b", x=50000, now=3.0, together={"leave": True})
+    check(w.players["b"].leader is None, "the follower leaves the party")
+    check([19, slot_b, 0] in [req(w, "a", now=3.1)[0] for _ in range(4)], "the leader is told")
+    # troops: offered, declined, back
+    req(w, "a", now=4.0, together={"give": (slot_b, [(31, 3)])})
+    nums = req(w, "b", x=50000, now=4.1)[0]
+    check(nums[0] == 15 and nums[2:] == [slot_a, 1, 31, 3], f"the receiver gets the offer: {nums}")
+    req(w, "b", x=50000, now=4.2, together={"giveans": (nums[1], 0)})
+    check([16, nums[1], 0, 1, 31, 3] in [req(w, "a", now=4.3)[0] for _ in range(4)], "declined troops go back")
+    req(w, "a", now=5.0, together={"give": (slot_b, [(31, 2)])})
+    oid = req(w, "b", x=50000, now=5.1)[0][1]
+    req(w, "b", x=50000, now=5.2, together={"giveans": (oid, 1)})
+    check([16, oid, 1, 1, 31, 2] in [req(w, "a", now=5.3)[0] for _ in range(4)], "accepted: the giver is told")
+    # an offer to a player who leaves goes back
+    req(w, "a", now=6.0, together={"give": (slot_b, [(31, 1)])})
+    w.drop_player("b")
+    check(any(r[0] == 16 and r[2] == 0 for r in (req(w, "a", now=6.1)[0] for _ in range(4))),
+          "troops offered to a player who left come back")
+    check(cb.parse_together({"give": "1,,31,2,32,1", "joinans": "2,1"}) ==
+          {"give": (1, [(31, 2), (32, 1)]), "joinans": (2, 1)}, "the request's parts are read")
+
+
 def test_centers_reach_players():
     w = cb.World()
     req(w, "a", now=0.0, name="Ivan")
@@ -540,6 +580,7 @@ if __name__ == "__main__":
     test_multiplayer_names()
     test_factions()
     test_joint_siege()
+    test_joining_and_giving()
     test_profiles()
     test_joint_defence()
     test_centers_reach_players()

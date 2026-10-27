@@ -842,5 +842,8 @@ script_coop_profile_build = 840
 script_coop_profile_chunk = 841
 script_coop_profile_receive = 842
 script_coop_profile_apply = 843
+script_coop_players_reply = 844
+script_coop_offer_to_s2 = 845
+script_coop_gift_back = 846
 
 

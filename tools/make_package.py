@@ -322,6 +322,14 @@ CoopWorld без Diplomacy с этой версией не работают.
   2. Запустите Warband с модулем CoopWorld, загрузите это сохранение,
      Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир хоста пойдёт дальше, как только вы подключитесь.
 
+ИГРОКИ ВМЕСТЕ
+  Встретив на карте отряд другого игрока, можно:
+  - "попроситься в отряд этого игрока": он примет или откажет. Принятый следует за лидером по карте
+    и вызывается во все его совместные бои (отказаться нельзя). Покинуть отряд - Лагерь; лидер
+    может отпустить всех последователей там же.
+  - "передать войска этому игроку": выберите бойцов в окне обмена и отправьте; получатель примет
+    или откажется, отвергнутые бойцы вернутся (даже если вы успели выйти - при следующем входе).
+
 ВАШ ГЕРОЙ МЕЖДУ СЕССИЯМИ
   Каждый раз друг загружает свежее сохранение хоста, но играет своим героем: мост хоста хранит героя
   каждого игрока (profiles.json рядом с host.bat) под его именем в мультиплеере из join.bat - деньги,
@@ -468,6 +476,11 @@ FACTIONS: each player may swear fealty to a kingdom by the usual talk with its k
   its enemies hunt the player, the others see the player's faction colour on the map. Players of
   kingdoms at war fight each other in joint battles; a call to arms against your allies is declined
   by itself. Fiefs go only to the host for now: a client is told so, and keeps oath and rank.
+
+PLAYERS TOGETHER: meeting another player's party on the map you may ask to join it (that player
+  accepts or declines; a follower follows the leader on the map and is called into all the leader's
+  joint battles; leave in the camp menu, where the leader may release followers too), or give that
+  player troops (chosen on the exchange screen; declined troops come back).
 
 YOUR HERO BETWEEN SESSIONS: a friend loads the host's save every time but plays their own hero: the
   host's bridge keeps each player's hero (profiles.json next to host.bat) under the multiplayer name

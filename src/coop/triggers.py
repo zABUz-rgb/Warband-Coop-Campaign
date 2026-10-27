@@ -20,6 +20,7 @@ def puppet_range():
 def net_triggers(first_dynamic):
   from coop.mp_campaign import client_map_tick, client_request_suffix
   from coop.profile import client_tick as profile_tick
+  from coop.players import map_tick as players_tick
   puppets_end = puppet_range()[1]
   return [
   # World server held for a joining client: only asks whether the client has joined.
@@ -58,6 +59,7 @@ def net_triggers(first_dynamic):
        (map_free),
        (assign, ":still", 1),
        (eq, "$coop_srv_player", 1),
+       (eq, "$coop_leader", 0), #following another player: carried along, the host still rests
        (set_fixed_point_multiplier, 100),
        (party_get_position, pos2, "p_main_party"),
        (position_get_x, ":x", pos2),
@@ -101,7 +103,7 @@ def net_triggers(first_dynamic):
          (assign, "$coop_read_news", 0),
          (display_message, "@CoopWorld: all news read.", 0xFFDD66),
        (try_end),
-       ] + client_map_tick() + [
+       ] + client_map_tick() + players_tick() + [
        # the world is held by another player: remind now and then why nothing moves
        (try_begin),
          (eq, "$coop_world_paused", 1),
@@ -263,7 +265,7 @@ def net_triggers(first_dynamic):
    [
      (eq, "$coop_role", coop_role_client),
    ],
-   client_map_tick() + [
+   client_map_tick() + players_tick() + [
      # time on the map flows only while the player moves or rests: rest when standing still,
      # a click on the map ends the rest as in Native "Wait here"
      (try_begin),

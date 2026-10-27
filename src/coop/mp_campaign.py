@@ -607,6 +607,9 @@ mp_campaign_menus = [
        (str_store_party_name, s1, ":puppet"),
      (try_end),
      (try_begin),
+       (eq, "$coop_mp_inv_type", 3),
+       (str_store_string, s2, "@{s1}, whose party you follow, goes into battle - you are called!^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side. Join it there; if you do not, your troops fight without you."),
+     (else_try),
        (eq, "$coop_mp_inv_type", 2),
        (str_store_string, s2, "@{s1} attacks you!^^The battle is fought on the multiplayer server. Join it there; if you do not, your troops fight without you."),
      (else_try),
@@ -715,7 +718,8 @@ def client_map_tick():
 
 
 def client_request_suffix():
-  """Ops building s17 for the client's map request."""
+  """Ops building s17 for the client's map request (and the host's own player request)."""
+  from coop.players import request_suffix as players_request_suffix
   return [
     (str_clear, s17),
     (try_begin),
@@ -724,7 +728,7 @@ def client_request_suffix():
       (assign, reg7, "$coop_mp_bid"),
       (str_store_string, s17, "@&mp=4&bid={reg7}"),
     (try_end),
-  ]
+  ] + players_request_suffix()
 
 
 def reply_branches():

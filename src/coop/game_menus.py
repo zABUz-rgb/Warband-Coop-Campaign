@@ -95,3 +95,10 @@ def merge(menus):
   for option_id in ("encounter_attack", "encounter_order_attack"):
     options[find_by_id(options, option_id)][1].insert(0, (neg | is_between, "$g_encountered_party", first, end))
   menus.extend(mp_campaign_menus)
+  # players together: joining a player's party, giving troops
+  from coop.players import players_menus, encounter_options, camp_options
+  options.insert(find_by_id(options, "encounter_leave"), encounter_options()[0])
+  options.insert(find_by_id(options, "encounter_leave"), encounter_options()[1])
+  menus.extend(players_menus)
+  camp = menu_options(menus, "camp")
+  camp[find_by_id(camp, "coop_role_stop"):find_by_id(camp, "coop_role_stop")] = camp_options()

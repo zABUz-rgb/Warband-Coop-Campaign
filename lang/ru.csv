@@ -1657,3 +1657,28 @@ quick_strings|qstr_CoopWorld:_{s1}_is_u|CoopWorld: {s1} в осаде! Скач�
 quick_strings|qstr_CoopWorld:_a_new_her|CoopWorld: новый герой — теперь он сохраняется между сессиями.
 quick_strings|qstr_CoopWorld:_your_own_|CoopWorld: ваш собственный герой вернулся — деньги, навыки, снаряжение, войска и пленные, как вы их оставили.
 quick_strings|qstr_CoopWorld:_the_hero_|CoopWorld: сохранённый для вас герой из другой версии CoopWorld и не был восстановлен.
+game_menus|mno_coop_leave_party|CoopWorld: покинуть отряд {s1} и ехать самостоятельно.
+game_menus|mno_coop_release_followers|CoopWorld: отпустить игроков, которые следуют за вами.
+game_menus|mno_coop_join_ask|CoopWorld: попроситься в отряд этого игрока (следовать и сражаться вместе).
+game_menus|mno_coop_give_troops|CoopWorld: передать войска этому игроку.
+game_menus|menu_coop_give_troops|CoopWorld: войска для {s1}.^^Выбрано: {reg1}. Выберите бойцов в окне обмена (слева ваш отряд, справа подарок); {s1} примет их или откажется, а отвергнутые бойцы вернутся к вам. Компаньоны остаются с вами.
+game_menus|mno_coop_give_choose|Выбрать бойцов.
+game_menus|mno_coop_give_send|Отправить.
+game_menus|mno_coop_give_cancel|Передумать.
+game_menus|menu_coop_troops_offered|CoopWorld: {s1} предлагает вам войска:^{s2}
+game_menus|mno_coop_offer_accept|Принять.
+game_menus|mno_coop_offer_decline|Отказаться.
+game_menus|menu_coop_join_request|CoopWorld: {s1} просится в ваш отряд.^^{s1} будет следовать за вами по карте и сражаться в ваших совместных боях, пока не покинет отряд или пока вы не отпустите последователей (меню лагеря).
+game_menus|mno_coop_join_accept|Принять {s1}.
+game_menus|mno_coop_join_decline|Отказать.
+quick_strings|qstr_CoopWorld:_your_troo|CoopWorld: ваши войска приняты.
+quick_strings|qstr_CoopWorld:_your_troop|CoopWorld: от ваших войск отказались, они вернулись к вам.
+quick_strings|qstr_CoopWorld:_{s1}_take|CoopWorld: {s1} принимает вас в отряд. Вы следуете за {s1} и сражаетесь в его боях. Чтобы снова ехать самостоятельно — Лагерь, покинуть отряд.
+quick_strings|qstr_CoopWorld:_{s1}_does|CoopWorld: {s1} не принимает вас в отряд.
+quick_strings|qstr_CoopWorld:_{s1}_foll|CoopWorld: {s1} теперь следует за вами.
+quick_strings|qstr_CoopWorld:_{s1}_left|CoopWorld: {s1} покинул ваш отряд.
+quick_strings|qstr_CoopWorld:_{s1}_rele|CoopWorld: {s1} отпустил вас из отряда. Вы снова едете самостоятельно.
+quick_strings|qstr_{s2}^{reg1}_{s3}|{s2}^{reg1} {s3}
+quick_strings|qstr_CoopWorld:_you_ask_{|CoopWorld: вы просите {s1} принять вас в отряд...
+quick_strings|qstr_{s1}_whose_party_you|{s1}, за кем вы следуете, вступает в бой — вас зовут!^^Бой идёт на сервере мультиплеера: ваши войска сражаются на стороне {s1}. Зайдите туда; если не зайдёте, ваши войска будут сражаться без вас.
+quick_strings|qstr_CoopWorld:_troops_se|CoopWorld: войска отправлены, ждём ответа.

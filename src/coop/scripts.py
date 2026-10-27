@@ -117,6 +117,8 @@ def merge(orig_scripts):
   orig_scripts.extend(mp_campaign_scripts)
   from coop.profile import profile_scripts
   orig_scripts.extend(profile_scripts)
+  from coop.players import players_scripts
+  orig_scripts.extend(players_scripts)
   response[:0] = mp_reply_hook()
   script_block(orig_scripts, "game_receive_network_message")[:0] = mp_network_hook()
   # Diplomacy's own acts on the world (treaties, envoys, gifts, patrols, recruiters, scouts) would

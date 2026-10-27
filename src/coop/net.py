@@ -105,6 +105,9 @@ def net_scripts(first_dynamic):
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_busy", 0),
      (assign, "$coop_hello", 1), #the server holds the world until this client says hello
+     (assign, "$coop_leader", 0), #a new session: in nobody's party, nobody in mine
+     (assign, "$coop_followers", 0),
+     (assign, "$coop_offer_pending", 0),
      # the hero of this session is the host's until the bridge says whether it keeps one for this player
      (assign, "$coop_profile_state", 0),
      (assign, "$coop_profile_ready", 0),
@@ -840,6 +843,7 @@ def net_scripts(first_dynamic):
 def net_reply_handler():
   """Appended to game_receive_url_response."""
   from coop.mp_campaign import reply_branches as mp_reply_branches
+  from coop.players import reply_branches as players_reply_branches
   copy = [(party_set_slot, "p_coop_buf", i, reg(i)) for i in range(coop_net_max_numbers)]
   return [
     (try_begin),
@@ -930,7 +934,7 @@ def net_reply_handler():
         (this_or_next|eq, "$coop_role", coop_role_client),
         (eq, "$coop_srv_player", 1), #the host playing on the server: who holds the world, and why
         (call_script, "script_coop_client_set_world_pause"),
-      ] + mp_reply_branches() + [
+      ] + mp_reply_branches() + players_reply_branches() + [
       (try_end),
     (try_end),
   ]

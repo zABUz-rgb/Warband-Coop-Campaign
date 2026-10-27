@@ -37,11 +37,15 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
-                    [&pf=seq,offset,total,v1,v2,...]
+                    [&pf=seq,offset,total,v1,v2,...][&join=slot][&joinans=slot,yes][&leave=1][&release=1]
+                    [&give=slot,t1,n1,...][&giveans=id,yes]
                     [&me=t1,n1,...][&name=player name]
     fac: the kingdom the player serves (0: none); pf: part of the player's hero (the profile, see
     coop/profile.py), kept by the hub in profiles.json under the player's name and sent back
-    (kind 14) when that player joins again;
+    (kind 14) when that player joins again; join: ask the player in slot to take this one into the
+    party; joinans: the answer to the player in slot asking; leave: leave the leader's party;
+    release: let all followers go; give: offer troops to the player in slot; giveans: the answer
+    to offer id (see coop/players.py);
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
     srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
@@ -76,6 +80,13 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|12|n|(center,faction,lord,besieger+1)*n   whom centers belong to now, who besieges them
           7777|13|bid|center                   the host stormed this center: the host's game takes it as Native does
           7777|14|offset|total|n|values...    the hero kept for this player (total 0: none, a new hero)
+          7777|15|id|slot|n|(troop,count)*n    the player in slot offers these troops
+          7777|16|id|accepted|n|(troop,count)*n   how this player's offer went (declined: they come back)
+          7777|17|slot                         the player in slot asks to join this player's party
+          7777|18|slot|accepted                the leader in slot took this player in, or not
+          7777|19|slot|joined                  to a leader: the player in slot joined (1) or left (0)
+          7777|20|slot                         the leader in slot let this player go
+    A follower is called into the leader's joint battles: invitation type 3, which cannot be declined.
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...]
                   &pl=no~name;...
@@ -185,6 +196,8 @@ class Player:
         self.centers_sent = {}  # center -> (faction, lord, besieger + 1) this player was told
         self.profile_out = []   # the kept hero, in replies, after joining
         self.profile_in = None  # [seq, total, {offset: values}] the hero coming in
+        self.leader = None      # cid of the player whose party this one follows
+        self.join_asked = None  # cid of the player this one asked to join
 
 
 class Battle:
@@ -228,6 +241,10 @@ class World:
         self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
         self.profiles_path = Path(profiles_path) if profiles_path else None
         self.profiles = {}      # player key (multiplayer name, or hero name) -> the hero's numbers
+        self.offers = {}        # id -> (giver cid, receiver cid, stacks): troops on their way
+        self.offer_seq = 0
+        self.returns = {}       # player key -> stacks declined while their giver was away
+        self._offer_keys = {}   # offer id -> the giver's key, for troops coming back later
         if self.profiles_path is not None and self.profiles_path.exists():
             try:
                 self.profiles = json.loads(self.profiles_path.read_text("utf-8"))
@@ -252,8 +269,84 @@ class World:
 
     def drop_player(self, cid):
         with self.lock:
+            self._part_company(cid)
             self.players.pop(cid, None)
             self.mp_names.pop(cid, None)
+
+    def _part_company(self, cid):
+        """A player leaves the game: the leader is told, followers ride on alone, troops offered
+        to this player go back to their giver."""
+        p = self.players.get(cid)
+        if p is None:
+            return
+        leader = self.players.get(p.leader) if p.leader else None
+        if leader is not None and p.slot is not None:
+            leader.mp_out.append([19, p.slot, 0])
+        for q in self.players.values():
+            if q.leader == cid and p.slot is not None:
+                q.leader = None
+                q.mp_out.append([20, p.slot])
+        for oid, (giver, receiver, stacks) in list(self.offers.items()):
+            if receiver == cid:
+                del self.offers[oid]
+                self._offer_answer(oid, giver, stacks, 0)
+
+    def _player_in_slot(self, slot, but=None):
+        return next((q for q in self.players.values() if q.slot == slot and q is not but), None)
+
+    def _offer_answer(self, oid, giver_cid, stacks, accepted):
+        giver = self.players.get(giver_cid)
+        if giver is not None:
+            giver.mp_out.append([16, oid, accepted, len(stacks)] + flat(stacks))
+        elif not accepted:
+            # the giver left meanwhile: the troops wait for that player's return
+            key = self._offer_keys.pop(oid, None)
+            if key:
+                self.returns.setdefault(key, []).extend(stacks)
+        self._offer_keys.pop(oid, None)
+
+    def _together(self, p, together):
+        """Joining parties and giving troops (coop/players.py)."""
+        if together.get("join") is not None:
+            leader = self._player_in_slot(together["join"], but=p)
+            if leader is not None and p.slot is not None:
+                p.join_asked = leader.cid
+                leader.mp_out.append([17, p.slot])
+        if together.get("joinans") is not None:
+            slot, yes = together["joinans"]
+            asker = self._player_in_slot(slot, but=p)
+            if asker is not None and asker.join_asked == p.cid and p.slot is not None:
+                asker.join_asked = None
+                if yes:
+                    asker.leader = p.cid
+                    p.mp_out.append([19, asker.slot, 1])
+                asker.mp_out.append([18, p.slot, 1 if yes else 0])
+        if together.get("leave"):
+            leader = self.players.get(p.leader) if p.leader else None
+            p.leader = None
+            if leader is not None and p.slot is not None:
+                leader.mp_out.append([19, p.slot, 0])
+        if together.get("release"):
+            for q in self.players.values():
+                if q.leader == p.cid and p.slot is not None:
+                    q.leader = None
+                    q.mp_out.append([20, p.slot])
+        if together.get("give") is not None:
+            slot, stacks = together["give"]
+            receiver = self._player_in_slot(slot, but=p)
+            if receiver is None:
+                p.mp_out.append([16, 0, 0, len(stacks)] + flat(stacks))  # nobody there: back
+            elif stacks:
+                self.offer_seq += 1
+                self.offers[self.offer_seq] = (p.cid, receiver.cid, stacks)
+                self._offer_keys[self.offer_seq] = self._profile_key(p.cid)
+                receiver.mp_out.append([15, self.offer_seq, p.slot, len(stacks)] + flat(stacks))
+        if together.get("giveans") is not None:
+            oid, yes = together["giveans"]
+            offer = self.offers.get(oid)
+            if offer is not None and offer[1] == p.cid:
+                del self.offers[oid]
+                self._offer_answer(oid, offer[0], offer[2], 1 if yes else 0)
 
     def set_mp_name(self, cid, name):
         name = " ".join((name or "").split())[:40]
@@ -396,11 +489,12 @@ class World:
             pass
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
-                       on_server=False, faction=None, profile=None):
+                       on_server=False, faction=None, profile=None, together=None):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
             if bye:
+                self._part_company(cid)
                 self.players.pop(cid, None)
                 return [0], None
             p = self._player(cid)
@@ -423,6 +517,11 @@ class World:
                                      for off in range(0, len(kept), PROFILE_PER_REPLY)] or [[14, 0, 0, 0]]
             if profile is not None and not on_server:
                 self._profile_part(p, profile)
+            if together:
+                self._together(p, together)
+            back = self.returns.pop(self._profile_key(cid) or "", None)
+            if back:
+                p.mp_out.append([16, 0, 0, len(back)] + flat(back[:MAX_STACKS]))
             if result is not None:
                 self._record_result(result, cid, now)
             if me is not None and me != p.stacks_last:
@@ -549,7 +648,16 @@ class World:
                 p.mp_out.append([7, 0, 2, 0])
                 return
             for q in self.players.values():
+                if q.leader == p.cid and q is not defender and q.slot is not None:
+                    # the starter's followers: called in, they fight on the starter's side
+                    b.sides[q.cid] = b.player_team
+                    b.invited.add(q.cid)
+                    target = b.enemy_sid if b.enemy_sid is not None else (b.center if b.center is not None else -1)
+                    q.mp_out.append([6, b.bid, 3, p.slot, target])
+            for q in self.players.values():
                 if q is p or q is defender or q.slot is None or q.pos is None or p.pos is None:
+                    continue
+                if q.cid in b.sides:
                     continue
                 if (q.pos[0] - p.pos[0]) ** 2 + (q.pos[1] - p.pos[1]) ** 2 <= INVITE_DIST ** 2:
                     b.invited.add(q.cid)
@@ -815,6 +923,28 @@ def parse_entries(d):
     return entries
 
 
+def parse_together(q):
+    """Joining parties and giving troops: {join, joinans, leave, release, give, giveans} or None."""
+    out = {}
+    if "join" in q:
+        out["join"] = query_int(q, "join", -1)
+    v = parse_ints(q.get("joinans", "")) if "joinans" in q else None
+    if v and len(v) == 2:
+        out["joinans"] = (v[0], v[1])
+    if q.get("leave") == "1":
+        out["leave"] = True
+    if q.get("release") == "1":
+        out["release"] = True
+    v = parse_ints(q.get("give", "").replace(",,", ",")) if "give" in q else None
+    if v:
+        stacks = parse_stacks(v[1:]) or []
+        out["give"] = (v[0], stacks)
+    v = parse_ints(q.get("giveans", "")) if "giveans" in q else None
+    if v and len(v) == 2:
+        out["giveans"] = (v[0], v[1])
+    return out or None
+
+
 def parse_profile(text):
     """'seq,offset,total,v1,...' -> [seq, offset, total, v1, ...] or None"""
     v = parse_ints(text) if text else None
@@ -931,11 +1061,12 @@ def handle_request(world, role, target, now, cid="local"):
                   "slot": query_int(q, "mpp", -1), "center": query_int(q, "mpc", -1), "defend": q.get("mpd") == "1",
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
                   "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
+        together = parse_together(q)
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
                                             hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp,
                                             on_server=q.get("srvp") == "1",
                                             faction=query_int(q, "fac", 0) if "fac" in q else None,
-                                            profile=parse_profile(q.get("pf", "")))
+                                            profile=parse_profile(q.get("pf", "")), together=together)
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),

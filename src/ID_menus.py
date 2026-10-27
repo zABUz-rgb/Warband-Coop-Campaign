@@ -272,3 +272,6 @@ menu_desert = 270
 menu_upgrade_path = 271
 menu_coop_mp_wait = 272
 menu_coop_mp_invite = 273
+menu_coop_give_troops = 274
+menu_coop_troops_offered = 275
+menu_coop_join_request = 276
