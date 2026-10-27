@@ -16,23 +16,141 @@ ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "game" / "Modules" / "CoopWorld"
 BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler state; quick_strings.txt is read by the game
 
-INSTALL_PS1 = r'''# CoopWorld installer: run it with the path of your Mount & Blade Warband folder.
+# One installer, two languages: install.ps1 (and install.bat, which starts it and keeps the window
+# open) for a double click. It finds Warband by itself (GOG and Steam registry, the folder the package
+# is in) or lets the player pick it, shows every error, waits for Enter, and logs to install.log.
+INSTALL_TEMPLATE = r"""# {title}
+#   install.bat                    - double click: finds Warband or asks for the folder
 #   powershell -ExecutionPolicy Bypass -File install.ps1 "D:\Games\Mount and Blade - Warband"
-param([Parameter(Mandatory=$true)][string]$Warband)
+param([string]$Warband)
 $ErrorActionPreference = "Stop"
-$native = Join-Path $Warband "Modules\Native"
-$target = Join-Path $Warband "Modules\CoopWorld"
-if (-not (Test-Path (Join-Path $Warband "mb_warband.exe"))) { throw "mb_warband.exe not found in $Warband" }
-if (-not (Test-Path $native)) { throw "Modules\Native not found in $Warband" }
-if (Test-Path $target) {
-  $backup = "$target.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss")
-  Rename-Item $target $backup
-  Write-Host "Old CoopWorld kept as $backup"
+$here = $PSScriptRoot
+try {{ Start-Transcript -Path (Join-Path $here "install.log") -Force | Out-Null }} catch {{}}
+
+function Done($code) {{
+  try {{ Stop-Transcript | Out-Null }} catch {{}}
+  Write-Host ""
+  try {{ Read-Host "{press_enter}" | Out-Null }} catch {{}}  # no console (started by a tool): just end
+  exit $code
+}}
+
+function Is-Warband($dir) {{
+  return $dir -and (Test-Path (Join-Path $dir "mb_warband.exe")) -and (Test-Path (Join-Path $dir "Modules\Native"))
+}}
+
+function Find-Warband {{
+  $found = @()
+  foreach ($key in "HKLM:\SOFTWARE\WOW6432Node\GOG.com\Games\1207666913", "HKLM:\SOFTWARE\GOG.com\Games\1207666913") {{
+    try {{ $found += (Get-ItemProperty $key -ErrorAction Stop).path }} catch {{}}
+  }}
+  try {{
+    $steam = (Get-ItemProperty "HKCU:\Software\Valve\Steam" -ErrorAction Stop).SteamPath
+    $libraries = @($steam)
+    $vdf = Join-Path $steam "steamapps\libraryfolders.vdf"
+    if (Test-Path $vdf) {{
+      $libraries += Select-String -Path $vdf -Pattern '"path"\s+"([^"]+)"' | ForEach-Object {{ $_.Matches[0].Groups[1].Value -replace '\\\\', '\' }}
+    }}
+    foreach ($lib in $libraries) {{ $found += Join-Path $lib "steamapps\common\MountBlade Warband" }}
+  }} catch {{}}
+  $dir = $here
+  while ($dir) {{ $found += $dir; $dir = Split-Path $dir -Parent }}
+  return $found | Where-Object {{ Is-Warband $_ }} | Select-Object -Unique
+}}
+
+try {{
+  if (-not (Test-Path (Join-Path $here "CoopWorld\scripts.txt"))) {{
+    throw "{not_unpacked}"
+  }}
+  if (-not $Warband) {{
+    foreach ($candidate in @(Find-Warband)) {{
+      $answer = Read-Host "{found_ask}"
+      if ($answer -eq "" -or $answer -match '^[yYдД]') {{ $Warband = $candidate; break }}
+    }}
+  }}
+  if (-not $Warband) {{
+    Add-Type -AssemblyName System.Windows.Forms
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $dialog.Description = "{pick_folder}"
+    if ($dialog.ShowDialog() -eq "OK") {{ $Warband = $dialog.SelectedPath }}
+  }}
+  if (-not $Warband) {{ throw "{no_folder}" }}
+  $Warband = $Warband.Trim('"')
+  if (-not (Test-Path (Join-Path $Warband "mb_warband.exe"))) {{ throw "{no_exe}" }}
+  $native = Join-Path $Warband "Modules\Native"
+  $target = Join-Path $Warband "Modules\CoopWorld"
+  if (-not (Test-Path $native)) {{ throw "{no_native}" }}
+  if (Get-Process mb_warband -ErrorAction SilentlyContinue) {{ throw "{game_running}" }}
+  Write-Host "{installing}"
+  if (Test-Path $target) {{
+    $backup = "$target.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+    Rename-Item $target $backup
+    Write-Host "{kept_old}"
+  }}
+  Copy-Item $native $target -Recurse
+  Copy-Item (Join-Path $here "CoopWorld\*") $target -Force
+{ru_part}  Write-Host ""
+  Write-Host "{done1}" -ForegroundColor Green
+  Write-Host "{done2}"
+  Done 0
+}} catch {{
+  Write-Host ""
+  Write-Host "{failed}" -ForegroundColor Red
+  Write-Host $_.Exception.Message -ForegroundColor Red
+  Write-Host "{log_hint}"
+  Done 1
+}}
+"""
+
+RU_PART = r"""  # Russian texts of CoopWorld on top of Native's Russian
+  $ru = Join-Path $target "languages\ru"
+  New-Item -ItemType Directory -Force $ru | Out-Null
+  $utf8 = New-Object System.Text.UTF8Encoding($false)
+  foreach ($f in Get-ChildItem (Join-Path $here "ru_additions") -Filter *.csv) {
+    $dest = Join-Path $ru $f.Name
+    $text = [IO.File]::ReadAllText($f.FullName, $utf8)
+    if (Test-Path $dest) { [IO.File]::AppendAllText($dest, "`r`n" + $text, $utf8) }
+    else { [IO.File]::WriteAllText($dest, [char]0xFEFF + $text, $utf8) }
+  }
+  # so that Russian can be chosen in the launcher: some editions (GOG) have no languages\ru
+  $uiRu = Join-Path $Warband "languages\ru"
+  if (-not (Test-Path $uiRu) -and (Test-Path (Join-Path $Warband "languages\en"))) {
+    Copy-Item (Join-Path $Warband "languages\en") $uiRu -Recurse
+    Write-Host "Добавлена папка languages\ru: интерфейс движка останется английским, тексты игры будут русскими."
+  }
+"""
+
+MESSAGES = {
+  "en": dict(
+    title="CoopWorld installer", press_enter="Press Enter to close this window",
+    not_unpacked="Unpack the whole archive into a folder first and run install.bat from there (the CoopWorld folder must be next to it).",
+    found_ask="Install into $candidate ? [Y/n]", pick_folder="Choose the Mount & Blade Warband folder (the one with mb_warband.exe)",
+    no_folder="No Warband folder chosen.", no_exe="There is no mb_warband.exe in $Warband",
+    no_native=r"There is no Modules\Native in $Warband",game_running="Close Mount & Blade Warband first, then run the installer again.",
+    installing="Installing CoopWorld into $Warband ...", kept_old="The old CoopWorld is kept as $backup",
+    done1="CoopWorld is installed in $target",
+    done2="Start Warband and choose the CoopWorld module in the launcher.",
+    failed="Installation failed:", log_hint="Everything the installer did is in install.log next to it.",
+    ru_part=""),
+  "ru": dict(
+    title="Установщик CoopWorld (русская версия)", press_enter="Нажмите Enter, чтобы закрыть окно",
+    not_unpacked="Сначала распакуйте весь архив в папку и запускайте install.bat оттуда (рядом должна быть папка CoopWorld).",
+    found_ask="Установить в $candidate ? [Д/н]", pick_folder="Выберите папку Mount & Blade Warband (ту, где лежит mb_warband.exe)",
+    no_folder="Папка Warband не выбрана.", no_exe="В папке $Warband нет mb_warband.exe",
+    no_native=r"В папке $Warband нет Modules\Native",game_running="Сначала закройте Mount & Blade Warband, затем запустите установщик снова.",
+    installing="Устанавливаю CoopWorld в $Warband ...", kept_old="Прежний CoopWorld сохранён как $backup",
+    done1="CoopWorld установлен в $target",
+    done2="Запустите Warband, в лаунчере выберите модуль CoopWorld, а в Configure - Game - Language выберите ru.",
+    failed="Установка не удалась:", log_hint="Всё, что делал установщик, записано в install.log рядом с ним.",
+    ru_part=RU_PART),
 }
-Copy-Item $native $target -Recurse
-Copy-Item (Join-Path $PSScriptRoot "CoopWorld\*") $target -Force
-Write-Host "CoopWorld installed in $target. Start Warband and choose the CoopWorld module."
-'''
+
+INSTALL_PS1 = INSTALL_TEMPLATE.format(**MESSAGES["en"])
+INSTALL_RU_PS1 = INSTALL_TEMPLATE.format(**MESSAGES["ru"])
+
+# a double click on a .ps1 opens Notepad or is blocked by the execution policy; this one works
+INSTALL_BAT = r"""@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1" %*
+"""
 
 JOIN_BAT = r'''@echo off
 rem Join a CoopWorld game. Usage: join.bat HOST_ADDRESS KEY
@@ -46,41 +164,6 @@ HOST_BAT = r'''@echo off
 rem Host a CoopWorld game. Usage: host.bat KEY   (without a key only this PC can play)
 python -I "%~dp0coop_bridge.py" host --key %1
 pause
-'''
-
-INSTALL_RU_PS1 = r'''# Установщик CoopWorld (русская версия). Запуск с путём к папке Mount & Blade Warband:
-#   powershell -ExecutionPolicy Bypass -File install.ps1 "D:\Games\Mount and Blade - Warband"
-param([Parameter(Mandatory=$true)][string]$Warband)
-$ErrorActionPreference = "Stop"
-$native = Join-Path $Warband "Modules\Native"
-$target = Join-Path $Warband "Modules\CoopWorld"
-if (-not (Test-Path (Join-Path $Warband "mb_warband.exe"))) { throw "В папке $Warband нет mb_warband.exe" }
-if (-not (Test-Path $native)) { throw "В папке $Warband нет Modules\Native" }
-if (Test-Path $target) {
-  $backup = "$target.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss")
-  Rename-Item $target $backup
-  Write-Host "Прежний CoopWorld сохранён как $backup"
-}
-Copy-Item $native $target -Recurse
-Copy-Item (Join-Path $PSScriptRoot "CoopWorld\*") $target -Force
-# русские тексты CoopWorld поверх русских текстов Native
-$ru = Join-Path $target "languages\ru"
-New-Item -ItemType Directory -Force $ru | Out-Null
-$utf8 = New-Object System.Text.UTF8Encoding($false)
-foreach ($f in Get-ChildItem (Join-Path $PSScriptRoot "ru_additions") -Filter *.csv) {
-  $dest = Join-Path $ru $f.Name
-  $text = [IO.File]::ReadAllText($f.FullName, $utf8)
-  if (Test-Path $dest) { [IO.File]::AppendAllText($dest, "`r`n" + $text, $utf8) }
-  else { [IO.File]::WriteAllText($dest, [char]0xFEFF + $text, $utf8) }
-}
-# чтобы русский можно было выбрать в лаунчере: у некоторых изданий (GOG) нет languages\ru
-$uiRu = Join-Path $Warband "languages\ru"
-if (-not (Test-Path $uiRu)) {
-  Copy-Item (Join-Path $Warband "languages\en") $uiRu -Recurse
-  Write-Host "Добавлена папка languages\ru (интерфейс движка останется английским, тексты игры будут русскими)"
-}
-Write-Host "CoopWorld установлен в $target."
-Write-Host "Запустите Warband, в лаунчере выберите модуль CoopWorld, а в Configure - Game - Language выберите ru."
 '''
 
 JOIN_RU_BAT = r'''@echo off
@@ -112,8 +195,13 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
     (порт TCP 7350). Разрешите для частной сети.
 
 УСТАНОВКА (у каждого игрока)
-  Распакуйте архив и выполните в PowerShell из этой папки:
-    powershell -ExecutionPolicy Bypass -File install.ps1 "<папка с Warband>"
+  1. Распакуйте весь архив в любую папку (не запускайте из самого архива).
+  2. Закройте Warband и дважды щёлкните install.bat.
+     Он сам найдёт игру (GOG, Steam) и спросит, туда ли ставить; если не найдёт - откроет окно
+     выбора папки. Окно установщика не закроется, пока вы не нажмёте Enter, так что ошибку
+     можно прочитать. Всё, что он делал, записано в install.log.
+  Если install.bat не запускается: откройте PowerShell и выполните
+    powershell -ExecutionPolicy Bypass -File "<папка пакета>\\install.ps1" "<папка с Warband>"
   В лаунчере Warband: модуль CoopWorld, Configure - Game - Language: ru.
   Тексты игры будут на русском. Если у вашего издания нет русского интерфейса, кнопки движка
   останутся английскими.
@@ -155,7 +243,9 @@ README = '''CoopWorld - co-op campaign for Mount & Blade: Warband 1.174
 =============================================================
 
 Needs: Warband 1.174 (Steam or GOG) and Python 3 (python.org) on every PC.
-Install: powershell -ExecutionPolicy Bypass -File install.ps1 "<your Warband folder>"
+Install: unpack the archive, close Warband, double-click install.bat. It finds the game
+(GOG, Steam) or asks for the folder, and waits for Enter so you can read any error.
+Everything it did is in install.log.
 
 The PCs must reach each other: the same LAN, or a virtual LAN such as Radmin VPN or ZeroTier
 (both free). The host's address is then the one that program shows (e.g. 26.x.x.x).
@@ -201,13 +291,15 @@ def main():
         raise SystemExit("build the module first: python build.py")
     (ROOT / "dist").mkdir(exist_ok=True)
     day = f"{datetime.date.today():%Y%m%d}"
-    build(f"CoopWorld-{day}", {"install.ps1": INSTALL_PS1, "join.bat": JOIN_BAT, "host.bat": HOST_BAT,
+    build(f"CoopWorld-{day}", {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
+                               "join.bat": JOIN_BAT, "host.bat": HOST_BAT,
                                "README.txt": README})
     additions = ROOT / "dist" / "ru_additions"
     if not any(additions.glob("*.csv")):
         raise SystemExit("no Russian texts: run python tools/make_ru.py first")
     # PowerShell 5 reads a script without BOM in the ANSI code page; the batch files switch cmd to UTF-8
-    build(f"CoopWorld-ru-{day}", {"install.ps1": BOM + INSTALL_RU_PS1, "join.bat": JOIN_RU_BAT,
+    build(f"CoopWorld-ru-{day}", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
+                                  "join.bat": JOIN_RU_BAT,
                                   "host.bat": HOST_RU_BAT, "README.txt": BOM + README_RU}, additions)
 
 
