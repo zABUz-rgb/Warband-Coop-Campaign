@@ -152,7 +152,7 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
-  # script_coop_append_entry: arg1 = party; appends "sid,tmpl,x,y,tx,ty;" to s11, where tx,ty is
+  # script_coop_append_entry: arg1 = party; appends "sid,tmpl,x,y,tx,ty,att;" to s11, where tx,ty is
   # where the party is heading (its own position when it stays or the target is unknown), so the
   # client can let the mirror walk on between updates instead of trailing behind.
   ("coop_append_entry",
@@ -185,7 +185,11 @@ def net_scripts(first_dynamic):
        (position_get_x, reg15, pos6),
        (position_get_y, reg16, pos6),
      (try_end),
-     (str_store_string, s11, "@{s11}{reg11},{reg12},{reg13},{reg14},{reg15},{reg16};"),
+     # inside a town (or attached to an army's leader): that party + 1, 0 on the open map
+     (party_get_attached_to, reg17, ":party_no"),
+     (val_max, reg17, -1),
+     (val_add, reg17, 1),
+     (str_store_string, s11, "@{s11}{reg11},{reg12},{reg13},{reg14},{reg15},{reg16},{reg17};"),
     ]),
 
   # script_coop_server_apply_result: a battle the client fought, as p_coop_buf holds it
@@ -257,7 +261,7 @@ def net_scripts(first_dynamic):
      (val_min, ":count", coop_net_max_entries),
      (set_fixed_point_multiplier, 100),
      (try_for_range, ":k", 0, ":count"),
-       (store_mul, ":base", ":k", 6),
+       (store_mul, ":base", ":k", 7),
        (val_add, ":base", CLI_ENTRIES),
        (party_get_slot, ":sid", "p_coop_buf", ":base"),
        (val_add, ":base", 1),
@@ -270,6 +274,9 @@ def net_scripts(first_dynamic):
        (party_get_slot, ":tx", "p_coop_buf", ":base"),
        (val_add, ":base", 1),
        (party_get_slot, ":ty", "p_coop_buf", ":base"),
+       (val_add, ":base", 1),
+       (party_get_slot, ":att", "p_coop_buf", ":base"),
+       (val_sub, ":att", 1), #the server's party it is inside, -1 on the open map
        (val_sub, ":x", coop_net_offset),
        (val_sub, ":y", coop_net_offset),
        (val_sub, ":tx", coop_net_offset),
@@ -317,6 +324,32 @@ def net_scripts(first_dynamic):
            (try_end),
            (assign, ":have", 1),
            (val_add, "$coop_net_spawned", 1),
+         (try_end),
+         (eq, ":have", 1),
+         # inside a town or an army on the server: the same here (spawned parties have other ids)
+         (try_begin),
+           (ge, ":att", first_dynamic),
+           (party_get_slot, ":att", "p_coop_map", ":att"),
+           (val_sub, ":att", 1),
+           (lt, ":att", first_dynamic), #that party has no mirror here (yet)
+           (assign, ":att", -1),
+         (try_end),
+         (party_get_attached_to, ":cur_att", ":cid"),
+         (try_begin),
+           (ge, ":att", 0),
+           (party_is_active, ":att"),
+           (try_begin),
+             (neq, ":cur_att", ":att"),
+             (try_begin),
+               (ge, ":cur_att", 0),
+               (party_detach, ":cid"),
+             (try_end),
+             (party_attach_to_party, ":cid", ":att"),
+           (try_end),
+           (assign, ":have", 0), #attached: it does not move on its own
+         (else_try),
+           (ge, ":cur_att", 0),
+           (party_detach, ":cid"),
          (try_end),
          (eq, ":have", 1),
          (init_position, pos1),
@@ -374,6 +407,7 @@ def net_scripts(first_dynamic):
    [
      (assign, "$coop_busy", 1),
      (assign, "$coop_busy_frames", 0),
+     (store_current_hours, "$coop_busy_hours"),
      (set_fixed_point_multiplier, 100),
      (party_get_position, pos1, "p_main_party"),
      (position_get_x, ":px", pos1),

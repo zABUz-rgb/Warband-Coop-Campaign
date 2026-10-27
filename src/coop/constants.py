@@ -33,7 +33,7 @@ coop_net_removed = 9999         # template value meaning "this party is gone on 
 coop_net_batch_near = 6         # parties near the client's puppet per server report
 coop_net_batch_far = 6          # other parties per server report, round robin (URL length)
 coop_net_near_radius = 3000     # map units * 100: "near the puppet"
-coop_net_max_entries = 20       # entries in one client reply: 3 + 6 * 20 numbers <= 128 registers
+coop_net_max_entries = 17       # entries in one client reply: 3 + 7 * 17 numbers <= 128 registers
 coop_net_resend_frames = 200    # trigger runs to wait for a lost reply
 
 # Time on the map flows only while the player moves or rests: both roles rest when idle

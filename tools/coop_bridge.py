@@ -3,10 +3,11 @@
 Both games talk to it with Warband's send_message_to_url, which always uses port 80 and ignores
 any port in the URL, so each game gets its own loopback address.
 
-World server game -> http://127.0.0.1/srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty;...[&c=sid,t1,n1,t2,n2,...]
+World server game -> http://127.0.0.1/srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,t2,n2,...]
                      or http://127.0.0.1/srv?seq=S&hold=1 while it holds the world for a joining client
     d: spawned parties: position and where the party is heading (tx,ty), the ones near the client's
-       puppet first; c: troops of one party near the puppet; h: game hours (clock speed check).
+       puppet first; att: the party it is inside (a town), + 1, or 0 on the open map;
+       c: troops of one party near the puppet; h: game hours (clock speed check).
     reply 7777|1|has_client|client_x|client_y|pause|joins|kind|payload...
       pause 1: a player is in an encounter or battle, the world must stand still
       joins: how many times a client game has joined (the server holds the world until one does)
@@ -18,7 +19,7 @@ Client game -> http://127.0.0.2/cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&r
     busy: not 0 from the start of an encounter until the client is back on the map
     free: 1 when the client is on the map (its clock then runs at travel speed); hello: it just joined
     res: a battle result for one party; me: the client player's own troops
-    reply 7777|2|n|sid|tmpl|x|y|tx|ty|...  (n entries; tmpl REMOVED = party gone), or
+    reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...  (n entries; tmpl REMOVED = party gone), or
           7777|3|sid|n|t1|n1|...     (troops of one party near the client, sent when they changed)
 
 Positions are map coordinates * 100. In replies to the games every coordinate is shifted by
@@ -41,9 +42,9 @@ COORD_OFFSET = 100000
 REMOVED = 9999
 STALE_S = 15.0          # a party not reported for this long is gone
 BUSY_TIMEOUT_S = 1200.0 # a client silent this long while busy (crashed in battle) ends the pause
-NEAREST_PER_REPLY = 12
-ROTATING_PER_REPLY = 4
-REMOVALS_PER_REPLY = 4  # 3 header numbers + 6 per entry must stay within 128 registers
+NEAREST_PER_REPLY = 11
+ROTATING_PER_REPLY = 3
+REMOVALS_PER_REPLY = 3  # 3 header numbers + 7 per entry must stay within 128 registers
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 TOMBSTONE_S = 30.0      # a party the client destroyed is not sent again for this long
 MAX_STACKS = 30         # troop stacks per party in one reply
@@ -73,7 +74,7 @@ def flat(stacks):
 class World:
     def __init__(self):
         self.lock = threading.Lock()
-        self.parties = {}       # sid -> [tmpl, x, y, last_seen, tx, ty]
+        self.parties = {}       # sid -> [tmpl, x, y, last_seen, tx, ty, att]
         self.clocks = {"srv": [], "cli": [], "cli_map": []}  # (real time, game hours) samples
         self.tombstones = {}    # sid -> real time the client destroyed it
         self.joins = 0
@@ -99,10 +100,10 @@ class World:
             self.stats["srv"] += 1
             for sid in [s for s, when in self.tombstones.items() if now - when > TOMBSTONE_S]:
                 del self.tombstones[sid]
-            for sid, tmpl, x, y, tx, ty in entries:
+            for sid, tmpl, x, y, tx, ty, *att in entries:
                 if sid in self.tombstones:
                     continue  # destroyed on the client; the server has not caught up yet
-                self.parties[sid] = [tmpl, x, y, now, tx, ty]
+                self.parties[sid] = [tmpl, x, y, now, tx, ty, att[0] if att else 0]
                 self.stats["entries_in"] += 1
                 if sid in self.removed:
                     self.removed.remove(sid)
@@ -168,22 +169,23 @@ class World:
             while self.removed and len(out) < REMOVALS_PER_REPLY:
                 sid = self.removed.pop(0)
                 self.troops_sent.pop(sid, None)
-                out.append((sid, REMOVED, 0, 0, 0, 0))
+                out.append((sid, REMOVED, 0, 0, 0, 0, 0))
             chosen = {sid for sid, _ in by_distance[:NEAREST_PER_REPLY]}
-            out += [(sid, p[0], p[1], p[2], p[4], p[5]) for sid, p in by_distance[:NEAREST_PER_REPLY]]
+            out += [(sid, p[0], p[1], p[2], p[4], p[5], p[6]) for sid, p in by_distance[:NEAREST_PER_REPLY]]
             rest = [kv for kv in sorted(self.parties.items()) if kv[0] not in chosen]
             if rest:
                 start = self.cursor % len(rest)
                 for sid, p in (rest[start:] + rest[:start])[:ROTATING_PER_REPLY]:
-                    out.append((sid, p[0], p[1], p[2], p[4], p[5]))
+                    out.append((sid, p[0], p[1], p[2], p[4], p[5], p[6]))
                 self.cursor = start + ROTATING_PER_REPLY
             self.stats["entries_out"] += len(out)
             nums = [2, len(out)]
-            for sid, tmpl, ex, ey, tx, ty in out:
+            for sid, tmpl, ex, ey, tx, ty, att in out:
                 if tmpl == REMOVED:
-                    nums += [sid, tmpl, 0, 0, 0, 0]
+                    nums += [sid, tmpl, 0, 0, 0, 0, 0]
                 else:
-                    nums += [sid, tmpl, ex + COORD_OFFSET, ey + COORD_OFFSET, tx + COORD_OFFSET, ty + COORD_OFFSET]
+                    nums += [sid, tmpl, ex + COORD_OFFSET, ey + COORD_OFFSET, tx + COORD_OFFSET, ty + COORD_OFFSET,
+                             max(att, 0)]
             return nums
 
     def clock(self, role, hours, now):
@@ -208,16 +210,21 @@ class World:
 
 
 def parse_entries(d):
-    """'sid,tmpl,x,y[,tx,ty];...' -> [(sid, tmpl, x, y, tx, ty)]; without a target the party stays put"""
+    """'sid,tmpl,x,y[,tx,ty[,att]];...' -> [(sid, tmpl, x, y, tx, ty, att)]; without a target the
+    party stays put, without att it is on the open map"""
     entries = []
     for chunk in d.split(";"):
         parts = chunk.split(",")
-        if len(parts) in (4, 6):
+        if len(parts) in (4, 6, 7):
             try:
                 v = [int(x) for x in parts]
             except ValueError:
                 continue
-            entries.append(tuple(v) if len(v) == 6 else (v[0], v[1], v[2], v[3], v[2], v[3]))
+            if len(v) == 4:
+                v += [v[2], v[3]]
+            if len(v) == 6:
+                v.append(0)
+            entries.append(tuple(v))
     return entries
 
 

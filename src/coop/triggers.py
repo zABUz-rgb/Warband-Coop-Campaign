@@ -214,6 +214,13 @@ def net_triggers(first_dynamic):
          (eq, "$coop_busy", 2),
          (map_free),
          (assign, "$coop_busy", 0),
+       (else_try),
+         # time flows again although the map is not free: the encounter ended in a rest
+         # (captivity, serving in a lord's army, waiting); the world may run
+         (eq, "$coop_busy", 2),
+         (store_current_hours, ":hours"),
+         (gt, ":hours", "$coop_busy_hours"),
+         (assign, "$coop_busy", 0),
        (try_end),
        (str_clear, s13),
        (try_begin),
@@ -257,7 +264,8 @@ def merge(orig_triggers):
   # a client shows the server's world: its own world triggers stay off
   from coop.quiet import quiet_block
   for t in orig_triggers:
-    t[3][0:0] = [(neq, "$coop_role", coop_role_client)]
+    if "$freelancer_state" not in repr(t):  # Freelancer's triggers act on the player: keep them
+      t[3][0:0] = [(neq, "$coop_role", coop_role_client)]
     quiet_block(t[3])  # the unattended world server opens no windows (tutorial hints)
     quiet_block(t[4])
   orig_triggers.extend(net_triggers(first_dynamic_party()))
