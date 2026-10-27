@@ -152,35 +152,100 @@ INSTALL_BAT = r"""@echo off
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1" %*
 """
 
-JOIN_BAT = r'''@echo off
-rem Join a CoopWorld game. Usage: join.bat HOST_ADDRESS KEY
-rem Fetches the host's save as sg90.sav (load it in the game), then keeps the link open.
-if "%~2"=="" (echo Usage: join.bat HOST_ADDRESS KEY & pause & exit /b 1)
-python -I "%~dp0coop_bridge.py" join %1 --key %2 --fetch-save
-pause
-'''
+# host.bat / join.bat: ASCII only (cmd misreads Cyrillic in batch files even after chcp 65001) and
+# they only start PowerShell scripts, which ask for what is missing, check Python, keep the window
+# open when the bridge stops, and log to bridge.log next to them.
+LAUNCHER_TEMPLATE = r"""# {title}
+param([string]$First, [string]$Second)
+$ErrorActionPreference = "Stop"
+$here = $PSScriptRoot
 
-HOST_BAT = r'''@echo off
-rem Host a CoopWorld game. Usage: host.bat KEY   (without a key only this PC can play)
-python -I "%~dp0coop_bridge.py" host --key %1
-pause
-'''
+function Wait-Close {{
+  Write-Host ""
+  try {{ Read-Host "{press_enter}" | Out-Null }} catch {{}}
+}}
 
-JOIN_RU_BAT = r'''@echo off
-chcp 65001 >nul
-rem Подключение к игре CoopWorld: join.bat АДРЕС_ХОСТА ПАРОЛЬ
-rem Скачивает свежее сохранение хоста как sg90.sav (загрузите его в игре) и держит связь.
-if "%~2"=="" (echo Использование: join.bat АДРЕС_ХОСТА ПАРОЛЬ & pause & exit /b 1)
-python -I "%~dp0coop_bridge.py" join %1 --key %2 --fetch-save
-pause
-'''
+try {{
+  $python = $null
+  foreach ($candidate in "python", "py") {{
+    $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -notmatch "WindowsApps") {{ $python = $cmd.Source; break }}
+  }}
+  if (-not $python) {{ throw "{no_python}" }}
+{body}
+  Write-Host ""
+  Write-Host "{starting}" -ForegroundColor Green
+  Write-Host "{stop_hint}"
+  & $python -I (Join-Path $here "coop_bridge.py") @bridgeArgs --log (Join-Path $here "bridge.log")
+  Write-Host ""
+  Write-Host "{stopped}" -ForegroundColor Yellow
+}} catch {{
+  Write-Host ""
+  Write-Host "{failed}" -ForegroundColor Red
+  Write-Host $_.Exception.Message -ForegroundColor Red
+}}
+Wait-Close
+"""
 
-HOST_RU_BAT = r'''@echo off
-chcp 65001 >nul
-rem Запуск игры CoopWorld у хоста: host.bat ПАРОЛЬ   (без пароля играть можно только на этом ПК)
-python -I "%~dp0coop_bridge.py" host --key %1
-pause
-'''
+HOST_BODY = r"""  $key = $First
+  if (-not $key) {{ $key = Read-Host "{ask_key}" }}
+  $bridgeArgs = @("host")
+  if ($key) {{ $bridgeArgs += @("--key", $key) }} else {{ Write-Host "{no_key}" -ForegroundColor Yellow }}"""
+
+JOIN_BODY = r"""  $hostAddress = $First
+  $key = $Second
+  if (-not $hostAddress) {{ $hostAddress = Read-Host "{ask_host}" }}
+  if (-not $hostAddress) {{ throw "{no_host}" }}
+  if (-not $key) {{ $key = Read-Host "{ask_key_join}" }}
+  if (-not $key) {{ throw "{no_key_join}" }}
+  $bridgeArgs = @("join", $hostAddress, "--key", $key, "--fetch-save")
+  Write-Host "{save_hint}" """
+
+LAUNCHER_TEXT = {
+  "en": dict(
+    press_enter="Press Enter to close this window",
+    no_python="Python 3 is not installed (or not in PATH). Install it from python.org, tick 'Add python.exe to PATH', then try again.",
+    starting="Starting the CoopWorld bridge. Keep this window open while you play.",
+    stop_hint="To stop it: Ctrl+C or close the window. Its log is bridge.log next to this file.",
+    stopped="The bridge has stopped. If it stopped by itself, the reason is in the lines above and in bridge.log.",
+    failed="The bridge could not start:",
+    ask_key="Password for your friends (Enter = play on this PC only)",
+    no_key="No password: only games on this PC can join.",
+    ask_host="Host address (for example 26.12.34.56 from Radmin VPN)",
+    no_host="No host address given.",
+    ask_key_join="Password the host gave you",
+    no_key_join="No password given.",
+    save_hint="The host's newest save goes into your CoopWorld saves as sg90.sav: load it in the game.",
+  ),
+  "ru": dict(
+    press_enter="Нажмите Enter, чтобы закрыть окно",
+    no_python="Python 3 не установлен (или его нет в PATH). Установите его с python.org, отметьте 'Add python.exe to PATH' и попробуйте снова.",
+    starting="Запускаю мост CoopWorld. Не закрывайте это окно, пока играете.",
+    stop_hint="Остановить: Ctrl+C или закрыть окно. Журнал моста - bridge.log рядом с этим файлом.",
+    stopped="Мост остановлен. Если он остановился сам, причина в строках выше и в bridge.log.",
+    failed="Мост не запустился:",
+    ask_key="Пароль для друзей (Enter - играть только на этом компьютере)",
+    no_key="Без пароля: подключиться смогут только игры на этом компьютере.",
+    ask_host="Адрес хоста (например 26.12.34.56 из Radmin VPN)",
+    no_host="Адрес хоста не указан.",
+    ask_key_join="Пароль, который дал хост",
+    no_key_join="Пароль не указан.",
+    save_hint="Свежее сохранение хоста попадёт в ваши сохранения CoopWorld как sg90.sav - загрузите его в игре.",
+  ),
+}
+
+
+def launcher(kind, lang):
+    m = LAUNCHER_TEXT[lang]
+    title = {"host": {"en": "CoopWorld: host the game (the world lives on this PC)", "ru": "CoopWorld: запуск игры у хоста"},
+             "join": {"en": "CoopWorld: join a friend's game", "ru": "CoopWorld: подключение к игре друга"}}[kind][lang]
+    body = (HOST_BODY if kind == "host" else JOIN_BODY).format(**m)
+    return LAUNCHER_TEMPLATE.format(title=title, body=body, **m)
+
+
+def launcher_bat(kind):
+    return f'@echo off\r\npowershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0{kind}.ps1" %*\r\n'
+
 
 README_RU = '''CoopWorld - кооперативная кампания для Mount & Blade: Warband 1.174
 ====================================================================
@@ -207,7 +272,8 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
   останутся английскими.
 
 ХОСТ (на его компьютере живёт мир)
-  1. host.bat ПАРОЛЬ - запустите мост. Пароль придумайте сами и сообщите друзьям.
+  1. Дважды щёлкните host.bat - запустится мост. Он спросит пароль: придумайте любой и сообщите
+     друзьям (Enter без пароля - играть только на этом компьютере). Окно не закрывайте.
   2. Запустите Warband два раза, оба с модулем CoopWorld, в оконном режиме
      (Configure - Video - Start Windowed).
      Окно 1 - сервер мира: загрузите свою кампанию,
@@ -219,8 +285,8 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
        Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир на сервере пойдёт дальше сам.
 
 ДРУГ
-  1. join.bat АДРЕС_ХОСТА ПАРОЛЬ - скачает свежее сохранение хоста (sg90.sav) и будет держать связь.
-     Окно моста не закрывайте, пока играете.
+  1. Дважды щёлкните join.bat. Он спросит адрес хоста и пароль, скачает свежее сохранение хоста
+     (sg90.sav) и будет держать связь. Окно моста не закрывайте, пока играете.
   2. Запустите Warband с модулем CoopWorld, загрузите это сохранение,
      Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир хоста пойдёт дальше, как только вы подключитесь.
 
@@ -235,7 +301,9 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
   В своей игре: Лагерь - "CoopWorld: остановить кооператив", затем закройте окно моста.
 
 ЕСЛИ ЧТО-ТО НЕ ТАК
-  - Мост пишет журнал в local\bridge.log рядом со своей папкой и выводит строку состояния каждые 5 секунд.
+  - Мост пишет журнал в bridge.log в папке пакета и каждые 5 секунд выводит строку состояния.
+  - Если окно моста пишет, что Python не найден: установите Python 3 с python.org и отметьте
+    "Add python.exe to PATH".
   - "cannot reach the host": проверьте адрес хоста, пароль и что Radmin VPN/ZeroTier включён у обоих.
 '''
 
@@ -252,7 +320,8 @@ The PCs must reach each other: the same LAN, or a virtual LAN such as Radmin VPN
 The host's PC must let Python accept connections on TCP port 7350 (Windows asks once).
 
 HOST (runs the world):
-  1. host.bat SECRET          - start the bridge, choose any SECRET and tell it your friends
+  1. Double-click host.bat: it asks for a password (any, tell it your friends; Enter without one
+     = this PC only) and starts the bridge. Keep its window open.
   2. Start Warband twice, both with the CoopWorld module, in windowed mode.
      Window 1 = the world server: load your campaign, Camp - "run this game as the WORLD SERVER".
      Window 2 = your own game.
@@ -261,7 +330,8 @@ HOST (runs the world):
   4. Your own game (window 2): load that save, Camp - "run this game as a CLIENT".
 
 FRIEND:
-  1. join.bat HOST_ADDRESS SECRET  - fetches the host's newest save as sg90.sav, keeps the link
+  1. Double-click join.bat: it asks for the host's address and password, fetches the host's
+     newest save as sg90.sav and keeps the link. Keep its window open.
   2. Start Warband with CoopWorld, load that save, Camp - "run this game as a CLIENT".
      The host's world runs on as soon as you joined.
 
@@ -291,16 +361,16 @@ def main():
         raise SystemExit("build the module first: python build.py")
     (ROOT / "dist").mkdir(exist_ok=True)
     day = f"{datetime.date.today():%Y%m%d}"
+    launchers = {lang: {"host.ps1": BOM + launcher("host", lang), "join.ps1": BOM + launcher("join", lang),
+                        "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join")} for lang in ("en", "ru")}
     build(f"CoopWorld-{day}", {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
-                               "join.bat": JOIN_BAT, "host.bat": HOST_BAT,
-                               "README.txt": README})
+                               "README.txt": README, **launchers["en"]})
     additions = ROOT / "dist" / "ru_additions"
     if not any(additions.glob("*.csv")):
         raise SystemExit("no Russian texts: run python tools/make_ru.py first")
-    # PowerShell 5 reads a script without BOM in the ANSI code page; the batch files switch cmd to UTF-8
+    # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
     build(f"CoopWorld-ru-{day}", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
-                                  "join.bat": JOIN_RU_BAT,
-                                  "host.bat": HOST_RU_BAT, "README.txt": BOM + README_RU}, additions)
+                                  "README.txt": BOM + README_RU, **launchers["ru"]}, additions)
 
 
 if __name__ == "__main__":

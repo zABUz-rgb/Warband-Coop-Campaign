@@ -640,11 +640,13 @@ def run_join(args, log):
         relay.connect()
     except (OSError, ConnectionError) as e:
         log(f"relay: cannot reach the host: {e}")
+    threading.Thread(target=relay.keep_connected, daemon=True).start()  # retries until the host answers
     if args.fetch_save:
+        if not relay.connected.is_set():
+            log("relay: waiting for the host (check its address, the key, and that both PCs are on the same network)")
         relay.connected.wait()
         path, name = relay.fetch_save(args.save_dir, args.save_slot)
         log(f"relay: the host's save {name} is now {path} - load it in the game")
-    threading.Thread(target=relay.keep_connected, daemon=True).start()
     serve_http(parse_addr(args.client, 80), relay.forward, log, "cli")
     while True:
         time.sleep(5)
