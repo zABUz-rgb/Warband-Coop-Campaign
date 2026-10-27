@@ -15,9 +15,14 @@ World server game -> http://127.0.0.1/srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att
       kind 1: battle result  sid|destroyed|n|t1|n1|...   (troops the party has left)
       kind 2: puppet troops  n|t1|n1|...                 (the client player's party)
 
-Client game -> http://127.0.0.2/cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&res=sid,destroyed,t1,n1,...][&me=t1,n1,...]
+Client game -> http://127.0.0.2/cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
+                                [&me=t1,n1,...][&name=player name]
     busy: not 0 from the start of an encounter until the client is back on the map
-    free: 1 when the client is on the map (its clock then runs at travel speed); hello: it just joined
+    free: 1 when the client is on the map (its clock then runs at travel speed); hello: it just joined;
+    bye: it stopped co-op; me: its troops (empty: heroes only); name: its player's name.
+    The client's triggers do not run in menus, screens and battles: it goes silent, and a client
+    silent for SILENT_PAUSE_S pauses the world just like a busy one.
+    The server reply ends with the client player's name as a string when it changed.
     res: a battle result for one party; me: the client player's own troops
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...  (n entries; tmpl REMOVED = party gone), or
           7777|3|sid|n|t1|n1|...     (troops of one party near the client, sent when they changed)
@@ -41,7 +46,8 @@ MARKER = 7777
 COORD_OFFSET = 100000
 REMOVED = 9999
 STALE_S = 15.0          # a party not reported for this long is gone
-BUSY_TIMEOUT_S = 1200.0 # a client silent this long while busy (crashed in battle) ends the pause
+BUSY_TIMEOUT_S = 1200.0 # a client silent this long (crashed, or gone without bye) ends the pause
+SILENT_PAUSE_S = 0.7    # a client sends ~50 requests/s on the map; this much silence means a menu
 NEAREST_PER_REPLY = 11
 ROTATING_PER_REPLY = 3
 REMOVALS_PER_REPLY = 3  # 3 header numbers + 7 per entry must stay within 128 registers
@@ -89,10 +95,14 @@ class World:
         self.results = []       # (sid, destroyed, stacks) for the server to apply
         self.puppet = None      # client player's stacks not yet sent to the server
         self.puppet_last = None
+        self.name = None        # client player's name not yet sent to the server
         self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0}
 
     def paused(self, now):
-        return self.busy and self.last_client is not None and now - self.last_client < BUSY_TIMEOUT_S
+        if self.last_client is None:
+            return False
+        silent = now - self.last_client
+        return silent < BUSY_TIMEOUT_S and (self.busy or silent > SILENT_PAUSE_S)
 
     def server_report(self, entries, troops, now, hold=False):
         """Returns (client position or None, pause, payload after the pause flag)."""
@@ -129,9 +139,10 @@ class World:
                 self.puppet = None
             else:
                 payload = [0]
-            return self.client_pos, self.paused(now), self.joins, payload
+            name, self.name = self.name, None
+            return self.client_pos, self.paused(now), self.joins, payload, name
 
-    def client_request(self, x, y, busy, result, me, now, hello=False):
+    def client_request(self, x, y, busy, result, me, now, hello=False, bye=False, name=None):
         """Returns the reply numbers after the marker: [2, n, entries...] or [3, sid, n, stacks...]."""
         with self.lock:
             self.stats["cli"] += 1
@@ -140,6 +151,12 @@ class World:
             self.last_client = now
             if hello:
                 self.joins += 1
+            if name:
+                self.name = name
+            if bye:
+                self.last_client = None  # gone: its silence no longer pauses the world
+                self.busy = False
+                return [0]
             if result is not None:
                 self.results.append(result)
                 self.stats["results"] += 1
@@ -259,14 +276,17 @@ def reply_numbers(numbers):
 
 def handle_request(world, role, target, now):
     url = urlparse(target)
-    q = {k: v[0] for k, v in parse_qs(url.query).items()}
+    q = {k: v[0] for k, v in parse_qs(url.query, encoding="latin-1").items()}
     if role == "srv" and url.path == "/srv":
         world.clock("srv", parse_hours(q), now)
-        client, pause, joins, payload = world.server_report(parse_entries(q.get("d", "")),
-                                                            parse_troops(q.get("c", "")), now,
-                                                            hold=q.get("hold") == "1")
+        client, pause, joins, payload, name = world.server_report(parse_entries(q.get("d", "")),
+                                                                  parse_troops(q.get("c", "")), now,
+                                                                  hold=q.get("hold") == "1")
         has, cx, cy = (0, 0, 0) if client is None else (1, client[0], client[1])
-        return reply_numbers([MARKER, 1, has, cx + COORD_OFFSET, cy + COORD_OFFSET, int(pause), joins] + payload)
+        reply = reply_numbers([MARKER, 1, has, cx + COORD_OFFSET, cy + COORD_OFFSET, int(pause), joins] + payload)
+        if name and not name.lstrip("-").isdigit():  # a number would land in a register, not s0
+            reply += "|" + name
+        return reply
     if role == "cli" and url.path == "/cli":
         try:
             x, y = int(q.get("x", "0")), int(q.get("y", "0"))
@@ -276,9 +296,13 @@ def handle_request(world, role, target, now):
         world.clock("cli", parse_hours(q), now)
         if q.get("free") == "1":
             world.clock("cli_map", parse_hours(q), now)
-        me = parse_stacks(parse_ints(q["me"].lstrip(","))) if q.get("me", "").lstrip(",") else None
+        me = None
+        if "me" in q:  # present but empty: the client's party has only heroes
+            me = parse_stacks(parse_ints(q["me"].lstrip(","))) if q["me"].lstrip(",") else []
+        name = q.get("name", "").replace("|", " ").strip()[:40] or None
         return reply_numbers([MARKER] + world.client_request(x, y, busy, parse_result(q.get("res", "")), me, now,
-                                                             hello=q.get("hello") == "1"))
+                                                             hello=q.get("hello") == "1", bye=q.get("bye") == "1",
+                                                             name=name))
     return reply_numbers([0, 0])  # unknown path: no marker, the game ignores it
 
 
@@ -291,9 +315,12 @@ def serve_connection(conn, world, role, log):
             if not chunk:
                 break
             raw += chunk
-        first = raw.split(b"\r\n", 1)[0].decode("latin-1", "replace").split(" ")
-        target = first[1] if len(first) > 1 else "/"
-        body = handle_request(world, role, target, time.time()).encode()
+        # the request line may hold raw spaces (a player name): the target ends at " HTTP/"
+        line = raw.split(b"\r\n", 1)[0].decode("latin-1", "replace")
+        start, end = line.find(" ") + 1, line.rfind(" HTTP/")
+        target = line[start:end] if 0 < start <= end else (line[start:] or "/")
+        # latin-1 both ways: a name in the game's own code page comes back as the same bytes
+        body = handle_request(world, role, target, time.time()).encode("latin-1", "replace")
         conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n"
                      + f"Content-Length: {len(body)}\r\n\r\n".encode() + body)
     except OSError as e:

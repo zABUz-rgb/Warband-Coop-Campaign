@@ -41,7 +41,7 @@ def positions(w, x=0, y=0, now=0.0):
 def test_positions():
     w = cb.World()
     now = 1000.0
-    client, pause, joins, payload = w.server_report([(500, 3, 100, -200, 150, -250), (501, 4, 9000, 9000, 9000, 9000)],
+    client, pause, joins, payload, _ = w.server_report([(500, 3, 100, -200, 150, -250), (501, 4, 9000, 9000, 9000, 9000)],
                                              None, now)
     check(client is None and not pause and joins == 0 and payload == [0], "server: no client yet, no pause, nothing to do")
     out = positions(w, now=now)
@@ -78,7 +78,11 @@ def test_pause():
     check(w.server_report([], None, 10.0 + cb.BUSY_TIMEOUT_S + 1)[1] is False,
           "a client silent for too long while busy no longer pauses the world")
     w.client_request(0, 0, False, None, None, 12.0)
-    check(w.server_report([], None, 13.0)[1] is False, "back on the map: the world runs")
+    check(w.server_report([], None, 12.2)[1] is False, "back on the map: the world runs")
+    check(w.server_report([], None, 12.0 + cb.SILENT_PAUSE_S + 0.1)[1] is True,
+          "a client gone silent (a menu, a screen) pauses the world")
+    w.client_request(0, 0, False, None, None, 14.0, bye=True)
+    check(w.server_report([], None, 20.0)[1] is False, "a client that said bye does not pause the world")
 
 
 def test_troops_and_results():
@@ -95,16 +99,18 @@ def test_troops_and_results():
 
     # the client fought party 600: 3 of troop 31 left, troop 32 gone
     w.client_request(0, 0, False, (600, 0, [(31, 3)]), [(40, 8)], 3.0)
-    _, _, _, payload = w.server_report([], (600, [(31, 4), (32, 2)]), 3.0)
+    _, _, _, payload, _ = w.server_report([], (600, [(31, 4), (32, 2)]), 3.0)
     check(payload == [1, 600, 0, 1, 31, 3], "server receives the battle result")
     check(w.troops[600][1] == [(31, 3)], "the server's older troops report did not undo the result")
-    _, _, _, payload = w.server_report([], None, 3.1)
+    _, _, _, payload, _ = w.server_report([], None, 3.1)
     check(payload == [2, 1, 40, 8], "then the client's own troops for the puppet")
-    _, _, _, payload = w.server_report([], None, 3.2)
+    _, _, _, payload, _ = w.server_report([], None, 3.2)
     check(payload == [0], "then nothing")
     replies = [w.client_request(0, 0, False, None, [(40, 8)], 3.3) for _ in range(4)]
     check(all(r[0] == 2 for r in replies), "the client is not sent back its own battle result")
     check(w.server_report([], None, 3.4)[3] == [0], "unchanged own troops are not resent")
+    w.client_request(0, 0, False, None, [], 3.9)
+    check(w.server_report([], None, 3.95)[3] == [2, 0], "a party of heroes only is sent as an empty list")
     w.client_request(0, 0, False, (601, 1, []), None, 4.0)
     check(w.server_report([], None, 4.0)[3] == [1, 601, 1, 0], "a destroyed party")
     check(cb.parse_result("601,1") == (601, 1, []) and cb.parse_result("601,0,5") is None
@@ -134,6 +140,13 @@ def test_join_and_tombstones():
     check(w.clocks["cli_map"] == [(110.0, 30)], "the map clock only measures uninterrupted map time")
 
 
+def test_name():
+    w = cb.World()
+    w.client_request(0, 0, False, None, None, 1.0, name="Ivan Petrov")
+    check(w.server_report([], None, 1.1)[4] == "Ivan Petrov", "the client's name goes to the server once")
+    check(w.server_report([], None, 1.2)[4] is None, "and only once")
+
+
 def get(url):
     return urllib.request.urlopen(url, timeout=3).read().decode()
 
@@ -158,6 +171,13 @@ def test_sockets():
           f"server: client position, PAUSED (busy 2), one join, battle result: {r}")
     r = get("http://127.0.0.3:18090/srv?seq=3&n=0&d=")
     check(r.endswith("|1|1|2|1|40|8"), f"server: puppet troops (leading comma accepted): {r}")
+    import socket
+    s = socket.create_connection(("127.0.0.4", 18090))
+    s.sendall(b"GET /cli?seq=4&x=1&y=1&busy=0&name=Ivan Petrov HTTP/1.1\r\nHost: x\r\n\r\n")
+    s.recv(500)
+    s.close()
+    r = get("http://127.0.0.3:18090/srv?seq=4&n=0&d=")
+    check(r.endswith("|Ivan Petrov"), f"a raw space in the request line keeps the whole name: {r}")
     r = get("http://127.0.0.4:18090/srv?seq=3")
     check(not r.startswith("7777"), "the client address does not serve server requests")
 
@@ -167,5 +187,6 @@ if __name__ == "__main__":
     test_pause()
     test_troops_and_results()
     test_join_and_tombstones()
+    test_name()
     test_sockets()
     print("ALL OK")

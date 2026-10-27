@@ -268,7 +268,8 @@ def net_triggers(first_dynamic):
          (ge, "$coop_own_troops_frames", coop_own_troops_frames),
          (assign, "$coop_own_troops_frames", 0),
          (call_script, "script_coop_troops_to_s12", "p_main_party", 1),
-         (str_store_string, s14, "@&me={s12}"),
+         (str_store_troop_name, s15, "trp_player"),
+         (str_store_string, s14, "@&me={s12}&name={s15}"), #name last: it may hold spaces
        (try_end),
        (party_get_position, pos1, "p_main_party"),
        (position_get_x, reg2, pos1),
