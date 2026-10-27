@@ -368,17 +368,50 @@ def test_joint_siege():
     check(w.results[-1][:3] == (42, 0, [(70, 6)]), "the walls held: the garrison keeps what survived")
 
 
+def test_joint_defence():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan", faction=5)
+    w.server_report([(650, 9, 0, 0), (660, 9, 0, 0, 0, 0, 651), (670, 9, 0, 0)], (40, [(80, 12)]), 0.0)
+    w.server_report([], (650, [(90, 40)]), 0.0)
+    w.server_report([], (660, [(91, 20)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, sid=650, center=40), "defend": True})
+    b = w.battle
+    check(b.defence and b.sides == {"a": 0} and b.enemy_sid == 650, "a defence: the player holds the walls")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1)
+    check(nums[4:] == [0, 0, 31, 10, 0, -1, 80, 12, 1, -1, 90, 40, 1, -1, 91, 20],
+          f"the player and the garrison on the walls, the besieger and its army storming them: {nums}")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.2)[3:5] == [1, 40], "fought as a siege of center 40")
+    w.mp_request(4, b.bid, 0, {1: 2, 2: 40, 3: 5}, {}, 9.0)
+    check((650, 1, [], []) in w.results and (660, 0, [(91, 15)], []) in w.results,
+          f"the storm is broken: the besiegers keep their survivors: {w.results}")
+    check(w.results[-1] == (40, 0, [(80, 10)], []), "and the garrison its own")
+    # the walls fall: the besiegers' kingdom takes the center, the defenders are captured
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 19.9)
+    req(w, "a", now=20.0, busy=True, mp={**mp(1, sid=660, center=40), "defend": True})
+    b = w.battle
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.1)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.2)
+    w.mp_request(4, b.bid, 1, {}, {0: "ivan"}, 30.0)
+    check(w.captures == [(40, -1)], "the walls fell: the center goes to the besiegers")
+    replies = [req(w, "a", now=30.1)[0] for _ in range(6)]
+    check(any(r[0] == 10 and r[3] == 660 for r in replies), f"the defender is captured by the besieger: {replies}")
+
+
 def test_centers_reach_players():
     w = cb.World()
     req(w, "a", now=0.0, name="Ivan")
     req(w, "h", now=0.0, name="Host", on_server=True)
-    w.server_report([], None, 0.0, center=(40, 5, 300))
-    w.server_report([], None, 0.1, center=(41, 6, 301))
+    w.server_report([], None, 0.0, center=cb.parse_center("40,5,300,0"))
+    w.server_report([], None, 0.1, center=cb.parse_center("41,6,301,0"))
     seen = [req(w, "a", now=0.2)[0] for _ in range(6)]
-    check([12, 2, 40, 5, 300, 41, 6, 301] in seen, f"players learn whom centers belong to: {seen}")
-    w.server_report([], None, 1.0, center=(40, 7, 302))
+    check([12, 2, 40, 5, 300, 0, 41, 6, 301, 0] in seen, f"players learn whom centers belong to: {seen}")
+    w.server_report([], None, 1.0, center=cb.parse_center("40,7,302,0"))
     seen = [req(w, "a", now=1.1)[0] for _ in range(6)]
-    check([12, 1, 40, 7, 302] in seen, "and when one changes hands")
+    check([12, 1, 40, 7, 302, 0] in seen, "and when one changes hands")
+    w.server_report([], None, 2.0, center=cb.parse_center("40,7,302,651"))
+    seen = [req(w, "a", now=2.1)[0] for _ in range(6)]
+    check([12, 1, 40, 7, 302, 651] in seen, "and when one is besieged (by party 650)")
     check(not any(r[0] == 12 for r in (req(w, "h", now=1.2, on_server=True)[0] for _ in range(6))),
           "the host is not told: its game is the world")
 
@@ -482,6 +515,7 @@ if __name__ == "__main__":
     test_multiplayer_names()
     test_factions()
     test_joint_siege()
+    test_joint_defence()
     test_centers_reach_players()
     test_joint_battle_scaled_and_lost()
     test_joint_battle_decline_cancel_pvp()

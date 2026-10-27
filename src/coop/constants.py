@@ -67,6 +67,7 @@ coop_enc_radius = 600            # map units * 100: mirrors this close may take 
 coop_own_troops_frames = 120     # client trigger runs between reports of the player's own troops
 coop_srv_troops_radius = 1500    # map units * 100: the server reports troops of parties this close to the puppet
 slot_party_coop_sid = 300        # on a client mirror: server party id + 1 (Native party slots end at 249)
+slot_center_coop_besieger = 301  # on a client's center: the world server's party besieging it + 1, 0 none
 coop_busy_timeout_frames = 60    # an encounter that never opened a menu stops counting as busy
 coop_tombstone_requests = 3000   # a party the client destroyed is not mirrored again for this many requests
 coop_player_stale_requests = 600 # another player's party not updated for this many requests is hidden

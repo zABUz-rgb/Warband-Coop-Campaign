@@ -22,17 +22,18 @@ Modes:
 the player there by it, so each player's soldiers obey that player; without it, by the hero's name
 (which friends who loaded the host's save share with the host).
 
-World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...][&cf=center,faction,lord]
+World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...][&cf=center,faction,lord,besieger+1]
                   or  /srv?seq=S&hold=1
     d: spawned parties: position, where the party is heading (tx,ty), and the party it is inside
        (a town) + 1, or 0 on the open map; c: troops of one party (or a town's or castle's garrison)
-       near a player; cf: whom one center belongs to, round robin; h: game hours.
+       near a player; cf: whom one center belongs to and who besieges it, round robin; h: game hours.
     reply 7777|1|pause|joins|np|slot|x|y|kingdom|...(np players)|kind|payload...
       kingdom: the faction the player serves (0: none), which the puppet takes on the server
       pause 1: a player is in an encounter, a battle or a menu: the world stands still
       joins: how many times a player game joined (a held world runs again when it changes)
       kind 0: nothing   1: battle result sid|destroyed|n|t1|n1|...|np|t1|n1|... (np: prisoners it takes)
       2: player troops slot|n|t1|n1|...   4: a center stormed in a joint siege center|kingdom
+         (kingdom -1: the defenders of a joint defence fell, the besiegers' kingdom takes it)
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
@@ -55,7 +56,9 @@ Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp
 combat skills and weapon proficiencies, in the order of coop/constants.py):
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them), the
     player in puppet slot, or storm the town or castle mpc (a siege: the players are team 1, the
-    garrison team 0); 2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
+    garrison team 0); with &mpd=1 defend that center against its besieger mpe (the players and the
+    garrison team 0, the besieger and the army camped with it team 1);
+    2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
     reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked;
                                      sid: the world party fought (-1: a player), so the game can see
                                      whether it would fight its own allies
@@ -67,7 +70,7 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|10|bid|health|captor            the hero's health in percent (-1: did not fight as the hero);
                                                captor: the world party that takes the defeated player prisoner, or -1
           7777|11|bid|n|(troop,count)*n        the defeated player's troops, prisoners of the winning player
-          7777|12|n|(center,faction,lord)*n    whom centers belong to now (on the world server)
+          7777|12|n|(center,faction,lord,besieger+1)*n   whom centers belong to now, who besieges them
           7777|13|bid|center                   the host stormed this center: the host's game takes it as Native does
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...]
@@ -100,7 +103,7 @@ MARKER = 7777
 COORD_OFFSET = 100000
 REMOVED = 9999
 MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
-CENTERS_PER_REPLY = 40  # 2 + 3 * 40 numbers
+CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
 STALE_S = 15.0          # a party not reported for this long is gone
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
@@ -174,7 +177,7 @@ class Player:
         self.on_server = False  # the host playing in the world server game: no puppet there
         self.hero = None        # the hero's equipment and stats for joint battles
         self.faction = 0        # the kingdom the player serves, 0 none
-        self.centers_sent = {}  # center -> (faction, lord) this player was told
+        self.centers_sent = {}  # center -> (faction, lord, besieger + 1) this player was told
 
 
 class Battle:
@@ -189,7 +192,9 @@ class Battle:
         self.until = now + GATHER_S
         self.enemy_sid = None
         self.enemy_stacks = []
-        self.center = None        # a siege: the town or castle stormed
+        self.center = None        # a siege: the town or castle stormed or defended
+        self.defence = False      # the players hold the walls against the world's besiegers
+        self.npc_stacks = []      # a defence: (team, world party, troop, count) of the garrison and the besiegers
         self.player_team = 0      # the starter's side: 0 in the field, 1 storming walls
         self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
         self.sent = 0
@@ -212,7 +217,7 @@ class World:
         self.battle_seq = 0
         self.mp_last = None     # real time the battle server last asked
         self.mp_players = {}    # player number on the battle server -> name
-        self.centers = {}       # center -> (faction, lord), as the world server reports them
+        self.centers = {}       # center -> (faction, lord, besieger + 1), as the world server reports them
         self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
         self.mp_names = {}      # cid -> the name its player uses on the battle server (launcher)
         self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0}
@@ -283,7 +288,7 @@ class World:
             for sid in [s for s, party in self.parties.items() if now - party[3] > STALE_S]:
                 self._forget(sid, except_cid=None)
             if center is not None:
-                self.centers[center[0]] = (center[1], center[2])
+                self.centers[center[0]] = tuple(center[1:])
             if troops is not None:
                 sid, stacks = troops
                 # until the server applied a battle result, its report is older than the player's
@@ -374,11 +379,11 @@ class World:
                 return nums, wanted if nums[0] == 7 else None
             # whom centers belong to, as it changes (not for the host: its game is the world)
             if not p.on_server and p.requests % 5 == 3:
-                news = [(c, f, l) for c, (f, l) in sorted(self.centers.items()) if p.centers_sent.get(c) != (f, l)]
+                news = [(c, *v) for c, v in sorted(self.centers.items()) if p.centers_sent.get(c) != v]
                 if news:
                     news = news[:CENTERS_PER_REPLY]
-                    for c, f, l in news:
-                        p.centers_sent[c] = (f, l)
+                    for c, *v in news:
+                        p.centers_sent[c] = tuple(v)
                     return [12, len(news)] + [v for entry in news for v in entry], None
             if mp is not None and mp["op"] in (1, 2, 3):
                 # the waiting window: how the battle stands
@@ -451,7 +456,19 @@ class World:
             self.battle_seq += 1
             b = Battle(self.battle_seq, p.cid, now)
             defender = None
-            if mp.get("center", -1) > 0:  # center ids are never 0 (the player's party)
+            if mp.get("center", -1) > 0 and mp.get("defend") and mp["sid"] > 0:
+                # a defence: the players and the garrison hold the walls (team 0) against the
+                # besieger and the parties attached to it, its army (team 1)
+                b.center, b.defence, b.player_team = mp["center"], True, 0
+                b.sides = {p.cid: 0}
+                b.enemy_sid = mp["sid"]  # who takes the defeated defenders prisoner
+                garrison = self.troops.get(b.center, (0, None))[1] or []
+                b.npc_stacks = [(0, b.center, t, n) for t, n in garrison]
+                army = [mp["sid"]] + sorted(s for s, e in self.parties.items() if e[6] == mp["sid"] + 1)
+                for sid in army:
+                    stacks = self.troops.get(sid, (0, None))[1] or (mp["troops"] if sid == mp["sid"] else [])
+                    b.npc_stacks += [(1, sid, t, n) for t, n in stacks]
+            elif mp.get("center", -1) > 0:  # center ids are never 0 (the player's party)
                 # a siege: the players storm the walls (team 1), the garrison holds them (team 0)
                 b.center = mp["center"]
                 b.player_team = 1
@@ -511,7 +528,10 @@ class World:
             q = self.players.get(cid)
             for troop, n in (q.stacks_last or []) if q is not None else []:
                 stacks.append([team, cid, troop, n, 0])
-        stacks += [[1 - b.player_team, None, troop, n, 0] for troop, n in b.enemy_stacks]
+        if b.defence:
+            stacks += [[team, ("npc", sid), troop, n, 0] for team, sid, troop, n in b.npc_stacks]
+        else:
+            stacks += [[1 - b.player_team, None, troop, n, 0] for troop, n in b.enemy_stacks]
         stacks = [s for s in stacks if s[3] > 0][:MP_MAX_STACKS]
         total = sum(s[3] for s in stacks)
         scale = min(1.0, MP_MAX_BOTS / total) if total else 1.0
@@ -557,6 +577,7 @@ class World:
         losses = {cid: [] for cid in b.sides}
         left = {cid: [] for cid in b.sides}  # what each player has after the battle
         enemy_left = []
+        npc_left = {}  # a defence: world party -> what it has after the battle
         fell_by_team = {0: 0, 1: 0}
         for i, (team, owner, troop, count, spawned) in enumerate(b.stacks):
             fell = fallen.get(i, 0)
@@ -565,6 +586,10 @@ class World:
             if owner is None:
                 if count - lost > 0:
                     enemy_left.append((troop, count - lost))
+            elif isinstance(owner, tuple):  # a defence: a world party, the garrison or a besieger
+                npc_left.setdefault(owner[1], [])
+                if count - lost > 0:
+                    npc_left[owner[1]].append((troop, count - lost))
             else:
                 wounded = lost * WOUNDED_PCT // 100
                 if lost:
@@ -599,7 +624,18 @@ class World:
             captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1  # a failed storm: no capture
             if hp >= 0 or captor >= 0:
                 q.mp_out.append([10, b.bid, hp, captor])
-        if b.center is not None:
+        if b.defence:
+            # the besiegers keep what survived (a party with nobody left is gone); the garrison too,
+            # unless the walls fell: then the center goes to the besiegers' kingdom
+            for sid, kept in sorted(npc_left.items()):
+                if sid == b.center:
+                    continue
+                self._record_result((sid, 0 if kept else 1, kept, []), None, now)
+            if winner == b.player_team:
+                self._record_result((b.center, 0, npc_left.get(b.center, []), []), None, now)
+            else:
+                self.captures.append((b.center, -1))
+        elif b.center is not None:
             starter = self.players.get(b.starter)
             if winner == b.player_team:
                 # the walls are taken: the host's own game takes the center as Native does; a
@@ -720,9 +756,11 @@ def parse_entries(d):
 
 
 def parse_center(text):
-    """'center,faction,lord' -> (center, faction, lord) or None"""
+    """'center,faction,lord[,besieger+1]' -> (center, faction, lord, besieger+1) or None"""
     v = parse_ints(text) if text else None
-    return tuple(v) if v and len(v) == 3 else None
+    if v and len(v) == 3:
+        v.append(0)
+    return tuple(v) if v and len(v) == 4 else None
 
 
 def parse_hours(q):
@@ -824,7 +862,7 @@ def handle_request(world, role, target, now, cid="local"):
             troops = q.get("mpt", "").lstrip(",")
             hero = parse_ints(q.get("hero", ""))
             mp = {"op": query_int(q, "mp", 0), "bid": query_int(q, "bid", 0), "sid": query_int(q, "mpe", -1),
-                  "slot": query_int(q, "mpp", -1), "center": query_int(q, "mpc", -1),
+                  "slot": query_int(q, "mpp", -1), "center": query_int(q, "mpc", -1), "defend": q.get("mpd") == "1",
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
                   "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,

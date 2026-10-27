@@ -317,10 +317,18 @@ def net_scripts(first_dynamic):
 
   # script_coop_server_capture: arg1 = center, arg2 = kingdom. A player stormed the center in a joint
   # siege: its garrison is gone, it now belongs to the player's kingdom (whose king grants it as usual).
+  # Kingdom -1: the defenders lost a joint defence, the center goes to its besiegers' kingdom.
   ("coop_server_capture",
    [
      (store_script_param, ":center", 1),
      (store_script_param, ":kingdom", 2),
+     (try_begin),
+       (lt, ":kingdom", 0),
+       (party_get_slot, ":besieger", ":center", slot_center_is_besieged_by),
+       (gt, ":besieger", 0),
+       (party_is_active, ":besieger"),
+       (store_faction_of_party, ":kingdom", ":besieger"),
+     (try_end),
      (try_begin),
        (is_between, ":center", walled_centers_begin, walled_centers_end),
        (is_between, ":kingdom", npc_kingdoms_begin, npc_kingdoms_end),
@@ -333,19 +341,33 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
-  # script_coop_client_apply_centers: kind 12 reply, whom centers belong to now: n|(center, faction, lord)*n
+  # script_coop_client_apply_centers: kind 12 reply, whom centers belong to now and who besieges them:
+  # n|(center, faction, lord, besieger + 1)*n
   ("coop_client_apply_centers",
    [
      (party_get_slot, ":n", "p_coop_buf", 2),
      (try_for_range, ":k", 0, ":n"),
-       (store_mul, ":at", ":k", 3),
+       (store_mul, ":at", ":k", 4),
        (val_add, ":at", 3),
        (party_get_slot, ":center", "p_coop_buf", ":at"),
        (val_add, ":at", 1),
        (party_get_slot, ":faction", "p_coop_buf", ":at"),
        (val_add, ":at", 1),
        (party_get_slot, ":lord", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":besieger", "p_coop_buf", ":at"),
        (is_between, ":center", centers_begin, centers_end),
+       (try_begin),
+         # a siege begins at a center on the player's side: say so, the player may help defend it
+         (gt, ":besieger", 0),
+         (party_slot_eq, ":center", slot_center_coop_besieger, 0),
+         (is_between, ":center", walled_centers_begin, walled_centers_end),
+         (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
+         (ge, ":relation", 0),
+         (str_store_party_name, s1, ":center"),
+         (display_message, "@CoopWorld: {s1} is under siege! Ride there to defend its walls together.", 0xFF6666),
+       (try_end),
+       (party_set_slot, ":center", slot_center_coop_besieger, ":besieger"),
        (store_faction_of_party, ":had", ":center"),
        (try_begin),
          (neq, ":had", ":faction"),

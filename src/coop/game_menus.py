@@ -81,6 +81,10 @@ def merge(menus):
   menu_options(menus, "camp")[0:0] = camp_coop_options
   # joint battles on the multiplayer server
   from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option, coop_mp_siege_option
+  from coop.mp_campaign import coop_mp_defend_option
+  menu_options(menus, "town").insert(0, coop_mp_defend_option)
+  outside = menu_options(menus, "castle_outside")
+  outside.insert(find_by_id(outside, "castle_leave"), coop_mp_defend_option)
   siege = menu_options(menus, "castle_besiege")
   siege.insert(find_by_id(siege, "castle_lead_attack") + 1, coop_mp_siege_option)
   options = menu_options(menus, "simple_encounter")

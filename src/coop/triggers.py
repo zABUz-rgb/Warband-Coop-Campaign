@@ -244,7 +244,10 @@ def net_triggers(first_dynamic):
        (assign, reg16, "$coop_center_cursor"),
        (store_faction_of_party, reg17, "$coop_center_cursor"),
        (party_get_slot, reg18, "$coop_center_cursor", slot_town_lord),
-       (str_store_string, s13, "@{s13}&cf={reg16},{reg17},{reg18}"),
+       (party_get_slot, reg19, "$coop_center_cursor", slot_center_is_besieged_by),
+       (val_max, reg19, -1),
+       (val_add, reg19, 1), #+ 1: 0 when nobody besieges it
+       (str_store_string, s13, "@{s13}&cf={reg16},{reg17},{reg18},{reg19}"),
        (assign, reg1, "$coop_net_seq"),
        (assign, reg2, ":count"),
        (store_current_hours, reg3),

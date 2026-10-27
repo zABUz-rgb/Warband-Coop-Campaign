@@ -363,7 +363,8 @@ mp_campaign_scripts = [
      (assign, reg8, "$coop_mp_target_sid"),
      (assign, reg9, "$coop_mp_target_slot"),
      (assign, reg10, "$coop_mp_target_center"),
-     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&mp={reg6}&bid={reg7}&mpe={reg8}&mpp={reg9}&mpc={reg10}{s16}{s18}&me={s12}&name={s15}"),
+     (assign, reg11, "$coop_mp_defend"),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&mp={reg6}&bid={reg7}&mpe={reg8}&mpp={reg9}&mpc={reg10}&mpd={reg11}{s16}{s18}&me={s12}&name={s15}"),
      (assign, "$coop_net_pending", 1),
      (send_message_to_url, s10, 0),
     ]),
@@ -405,6 +406,34 @@ mp_campaign_scripts = [
      (try_end),
     ]),
 
+  # script_coop_client_mp_begin_defence: arg1 = a besieged center on the player's side: defend it
+  # against its besiegers (their party and the army camped with it)
+  ("coop_client_mp_begin_defence",
+   [
+     (store_script_param, ":center", 1),
+     (assign, "$coop_mp_target_center", ":center"),
+     (assign, "$coop_mp_target_slot", -1),
+     (assign, "$coop_mp_defend", 1),
+     (assign, "$coop_mp_enemy_party", -1),
+     (try_begin),
+       (eq, "$coop_srv_player", 1),
+       (party_get_slot, "$coop_mp_target_sid", ":center", slot_center_is_besieged_by),
+       (assign, "$coop_mp_enemy_party", "$coop_mp_target_sid"),
+     (else_try),
+       (party_get_slot, "$coop_mp_target_sid", ":center", slot_center_coop_besieger),
+       (val_sub, "$coop_mp_target_sid", 1),
+       (party_get_slot, ":mirror", "p_coop_map", "$coop_mp_target_sid"), #its mirror's troops, if the server has none
+       (val_sub, ":mirror", 1),
+       (gt, ":mirror", 0),
+       (assign, "$coop_mp_enemy_party", ":mirror"),
+     (try_end),
+     (assign, "$coop_mp_bid", 0),
+     (assign, "$coop_mp_status", 0),
+     (assign, "$coop_mp_state", 1),
+     (assign, "$coop_mp_hidden", 0),
+     (jump_to_menu, "mnu_coop_mp_wait"),
+    ]),
+
   # script_coop_client_mp_begin: arg1 = the party met (a mirror of the server's world, or another
   # player's party): start a joint battle against it
   ("coop_client_mp_begin",
@@ -414,6 +443,7 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_target_sid", -1),
      (assign, "$coop_mp_target_slot", -1),
      (assign, "$coop_mp_target_center", -1),
+     (assign, "$coop_mp_defend", 0),
      (try_begin),
        (is_between, ":party_no", walled_centers_begin, walled_centers_end), #a siege: storm its walls
        (assign, "$coop_mp_target_center", ":party_no"),
@@ -435,6 +465,34 @@ mp_campaign_scripts = [
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
 ]
+
+
+# a besieged center on the player's side: defend its walls together (inside, or arriving outside)
+coop_mp_defend_option = (
+  "coop_mp_defend",
+  [
+    (this_or_next|eq, "$coop_role", coop_role_client),
+    (eq, "$coop_srv_player", 1),
+    (neg|troop_is_wounded, "trp_player"),
+    (store_encountered_party, ":center"),
+    (is_between, ":center", walled_centers_begin, walled_centers_end),
+    (store_faction_of_party, ":faction", ":center"),
+    (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
+    (ge, ":relation", 0),
+    (try_begin),
+      (eq, "$coop_srv_player", 1), #the host: the world's own siege
+      (party_get_slot, ":besieger", ":center", slot_center_is_besieged_by),
+    (else_try),
+      (party_get_slot, ":besieger", ":center", slot_center_coop_besieger), #a client: as the server reports it, + 1
+      (val_sub, ":besieger", 1),
+    (try_end),
+    (gt, ":besieger", 0),
+  ],
+  "CoopWorld: defend the walls together (joint siege on the multiplayer server).",
+  [
+    (store_encountered_party, ":center"),
+    (call_script, "script_coop_client_mp_begin_defence", ":center"),
+  ])
 
 
 # the siege menu: storm the walls together, on the battle server's Siege. Native's own conditions
@@ -511,6 +569,7 @@ mp_campaign_menus = [
         (jump_to_menu, "mnu_total_victory"),
       ]),
      ("coop_mp_siege_on", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_taken_center", 0),
+                           (eq, "$coop_mp_defend", 0),
                            (eq, "$coop_mp_last_won", 0), #the storm failed: the siege goes on
                            (le, "$coop_mp_captor", 0), (gt, "$coop_mp_target_center", 0),
                            (party_is_active, "$coop_mp_target_center"),
@@ -524,6 +583,7 @@ mp_campaign_menus = [
       [
         (try_begin),
           (gt, "$coop_mp_target_center", 0), #a siege that ended: the walls are someone else's now
+          (eq, "$coop_mp_defend", 0), #(a defence leaves the world's siege to the world)
           (call_script, "script_lift_siege", "$coop_mp_target_center", 0),
           (assign, "$g_player_besiege_town", -1),
           (assign, "$coop_mp_target_center", -1),

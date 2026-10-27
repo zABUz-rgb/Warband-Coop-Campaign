@@ -836,6 +836,7 @@ script_coop_client_mp_text = 834
 script_coop_client_mp_send = 835
 script_coop_client_mp_hero_to_s18 = 836
 script_coop_append_s18 = 837
-script_coop_client_mp_begin = 838
+script_coop_client_mp_begin_defence = 838
+script_coop_client_mp_begin = 839
 
 
