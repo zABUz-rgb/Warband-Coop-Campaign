@@ -200,8 +200,19 @@ def test_hub_and_relay():
           "a relay fetches the host's newest save, byte for byte")
     check((remote_dir / "sg90.sav.bak").read_bytes() == b"friend's own", "a save it replaces is kept as .bak")
     fresh = remote_dir / "never saved in CoopWorld" / "CoopWorld"
-    path, _ = relay.fetch_save(fresh, "sg90.sav")
+    path, _ = relay.fetch_save(fresh)
     check(path.read_bytes() == b"\x00world\xffsave", "a player with no CoopWorld save folder yet gets it created")
+    check(path.name == "sg03.sav", "the save keeps the host's name when it is free (a low slot the game lists)")
+    path, _ = relay.fetch_save(fresh)
+    check(path.name == "sg03.sav" and (fresh / "sg03.sav.bak").exists(),
+          "the next join overwrites the save it fetched before, keeping a .bak")
+    own = remote_dir / "own"
+    own.mkdir()
+    (own / "sg03.sav").write_bytes(b"the friend's own sg03")
+    (own / "sg00.sav").write_bytes(b"the friend's own sg00")
+    path, _ = relay.fetch_save(own)
+    check(path.name == "sg01.sav" and (own / "sg03.sav").read_bytes() == b"the friend's own sg03",
+          "the friend's own saves are never touched: the lowest free slot is used")
     cb.serve_http(("127.0.0.6", 18090), relay.forward, log, "relay")
     time.sleep(0.1)
     r = raw_get("127.0.0.6", 18090, "/cli?seq=1&x=5000&y=5000&busy=0&hello=1&me=41,3&name=Olga").split("|")

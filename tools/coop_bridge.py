@@ -62,6 +62,7 @@ REMOVALS_PER_REPLY = 3  # 3 header numbers + 7 per entry must stay within 128 re
 MAX_STACKS = 30         # troop stacks per party in one message
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350
+FETCHED_MARK = "coopworld_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
 PROTOCOL = 1
 
 
@@ -565,12 +566,23 @@ class Relay:
         rep = self.call({"t": "req", "id": rid, "target": target}, rid)
         return rep["body"] if rep else reply_text([0, 0])
 
-    def fetch_save(self, save_dir, slot_name):
+    def fetch_save(self, save_dir, slot_name=None):
+        """Copy the host's newest save into save_dir. Without slot_name: the file fetched last time
+        (remembered in FETCHED_MARK), else the host's own name when free, else the lowest free sgNN:
+        the game lists only the low slots, a high one such as sg90 never showed up."""
         rep = self.call({"t": "save"}, "save")
         if not rep or rep.get("error"):
             raise RuntimeError((rep or {}).get("error", "no answer"))
-        target = Path(save_dir) / slot_name
-        target.parent.mkdir(parents=True, exist_ok=True)  # a player who never saved in CoopWorld has no folder
+        folder = Path(save_dir)
+        folder.mkdir(parents=True, exist_ok=True)  # a player who never saved in CoopWorld has no folder
+        mark = folder / FETCHED_MARK
+        if slot_name is None and mark.exists() and (folder / mark.read_text().strip()).exists():
+            slot_name = mark.read_text().strip()
+        if slot_name is None:
+            free = [n for n in [rep["name"]] + [f"sg{i:02d}.sav" for i in range(100)] if not (folder / n).exists()]
+            slot_name = free[0]
+        target = folder / slot_name
+        mark.write_text(slot_name)
         if target.exists():
             target.replace(target.with_suffix(".sav.bak"))
         target.write_bytes(base64.b64decode(rep["data"]))
@@ -687,7 +699,8 @@ def main():
     j.add_argument("--client", default="127.0.0.2:80", help="address this PC's player game calls")
     j.add_argument("--fetch-save", action="store_true", help="copy the host's newest save here first")
     j.add_argument("--save-dir", default=str(default_save_dir()))
-    j.add_argument("--save-slot", default="sg90.sav", help="file name for the fetched save")
+    j.add_argument("--save-slot", default=None,
+                   help="file name for the fetched save (default: the one fetched last time, else a free low slot)")
     for p in (h, j):
         p.add_argument("--log", default=str(Path(__file__).resolve().parents[1] / "local" / "bridge.log"))
     args = ap.parse_args()

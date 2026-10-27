@@ -215,7 +215,7 @@ LAUNCHER_TEXT = {
     no_host="No host address given.",
     ask_key_join="Password the host gave you",
     no_key_join="No password given.",
-    save_hint="The host's newest save goes into your CoopWorld saves as sg90.sav: load it in the game.",
+    save_hint="The host's newest save goes into your CoopWorld saves (the window shows which slot): load it in the game.",
   ),
   "ru": dict(
     press_enter="Нажмите Enter, чтобы закрыть окно",
@@ -230,7 +230,7 @@ LAUNCHER_TEXT = {
     no_host="Адрес хоста не указан.",
     ask_key_join="Пароль, который дал хост",
     no_key_join="Пароль не указан.",
-    save_hint="Свежее сохранение хоста попадёт в ваши сохранения CoopWorld как sg90.sav - загрузите его в игре.",
+    save_hint="Свежее сохранение хоста попадёт в ваши сохранения CoopWorld (в окне будет видно, в какой слот) - загрузите его в игре.",
   ),
 }
 
@@ -286,7 +286,7 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
 
 ДРУГ
   1. Дважды щёлкните join.bat. Он спросит адрес хоста и пароль, скачает свежее сохранение хоста
-     (sg90.sav) и будет держать связь. Окно моста не закрывайте, пока играете.
+     в ваши сохранения CoopWorld и будет держать связь. Окно моста не закрывайте, пока играете.
   2. Запустите Warband с модулем CoopWorld, загрузите это сохранение,
      Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир хоста пойдёт дальше, как только вы подключитесь.
 
@@ -331,7 +331,7 @@ HOST (runs the world):
 
 FRIEND:
   1. Double-click join.bat: it asks for the host's address and password, fetches the host's
-     newest save as sg90.sav and keeps the link. Keep its window open.
+     newest save into your CoopWorld saves and keeps the link. Keep its window open.
   2. Start Warband with CoopWorld, load that save, Camp - "run this game as a CLIENT".
      The host's world runs on as soon as you joined.
 
