@@ -34,6 +34,13 @@ triggers = [
        (str_store_string, s10, "@http://127.0.0.1:{reg7}/tick?seq={reg1}&frames={reg2}&hours={reg3}&free={reg4}&x={reg5}&y={reg6}"),
        (assign, "$coop_link_frames", 0),
        (send_message_to_url, s10, 0),
+       # diagnostics: the first sends, then every 50th, with how often this trigger ran
+       (store_mod, ":every_50th", "$coop_link_seq", 50),
+       (try_begin),
+         (this_or_next|le, "$coop_link_seq", 3),
+         (eq, ":every_50th", 0),
+         (display_message, "@CoopWorld link: sent #{reg1} (trigger ran {reg2} times since the last send)", 0xAAAAAA),
+       (try_end),
      (try_end),
     ]),
 ]

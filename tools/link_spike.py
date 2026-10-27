@@ -1,8 +1,8 @@
-"""Link spike: a localhost HTTP endpoint for Warband's send_message_to_url.
+"""Link spike: a localhost endpoint for Warband's send_message_to_url.
 
-Answers every request with "<seq>|<served>|pong" (Warband splits the reply on '|' into
-reg0.. and s0..) and logs each request so we learn whether the call works in the
-single-player campaign, how often the game can call it, and what the round trip costs.
+Speaks plain sockets, not http.server, so that every connection is logged whatever the game
+sends (any method, malformed or partial requests). Answers with "<seq>|<served>|pong"
+(Warband splits the reply on '|' into reg0.. and s0..).
 
     python tools/link_spike.py [--port 7341] [--log local/link_log.csv]
 
@@ -10,45 +10,57 @@ Loopback only: it is a test endpoint, never expose it.
 """
 import argparse
 import csv
-import sys
+import socket
+import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-STATE = {"served": 0, "start": None, "last": None}
+lock = threading.Lock()
+state = {"served": 0, "start": None, "last": None}
 
 
-class Handler(BaseHTTPRequestHandler):
-    log_writer = None
-
-    def do_GET(self):
-        now = time.time()
-        url = urlparse(self.path)
-        q = {k: v[0] for k, v in parse_qs(url.query).items()}
-        STATE["served"] += 1
-        STATE["start"] = STATE["start"] or now
-        gap = now - STATE["last"] if STATE["last"] else 0.0
-        STATE["last"] = now
-        seq = q.get("seq", "0")
-        body = f"{seq}|{STATE['served']}|pong".encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-        self.log_writer.writerow([f"{now:.3f}", f"{gap:.3f}", url.path, seq, q.get("frames", ""),
-                                  q.get("hours", ""), q.get("free", ""), q.get("x", ""), q.get("y", "")])
-        self.log_file.flush()
-        if STATE["served"] % 20 == 1:
-            elapsed = now - STATE["start"]
-            rate = STATE["served"] / elapsed if elapsed > 0 else 0
-            print(f"[{STATE['served']}] {url.path} seq={seq} gap={gap:.2f}s rate={rate:.2f}/s "
-                  f"frames={q.get('frames')} hours={q.get('hours')} free={q.get('free')} "
-                  f"pos=({q.get('x')},{q.get('y')})", flush=True)
-
-    def log_message(self, *args):
-        pass  # requests go to the CSV log instead
+def handle(conn, addr, writer, log_file):
+    conn.settimeout(5)
+    raw = b""
+    try:
+        while b"\r\n\r\n" not in raw and len(raw) < 65536:
+            chunk = conn.recv(4096)
+            if not chunk:
+                break
+            raw += chunk
+    except socket.timeout:
+        pass
+    now = time.time()
+    first = raw.split(b"\r\n", 1)[0].decode("latin-1", "replace")
+    parts = first.split(" ")
+    method = parts[0] if parts else ""
+    target = parts[1] if len(parts) > 1 else ""
+    url = urlparse(target)
+    q = {k: v[0] for k, v in parse_qs(url.query).items()}
+    with lock:
+        state["served"] += 1
+        state["start"] = state["start"] or now
+        gap = now - state["last"] if state["last"] else 0.0
+        state["last"] = now
+        served = state["served"]
+        writer.writerow([f"{now:.3f}", f"{gap:.3f}", method, url.path, q.get("seq", ""), q.get("frames", ""),
+                         q.get("hours", ""), q.get("free", ""), q.get("x", ""), q.get("y", ""),
+                         raw[:300].decode("latin-1", "replace").replace("\r\n", " | ")])
+        log_file.flush()
+    body = f"{q.get('seq', '0')}|{served}|pong".encode()
+    try:
+        conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n"
+                     + f"Content-Length: {len(body)}\r\n\r\n".encode() + body)
+    except OSError:
+        pass
+    conn.close()
+    if served <= 3 or served % 20 == 0:
+        elapsed = now - state["start"]
+        rate = served / elapsed if elapsed > 0 else 0
+        print(f"[{served}] {method} {target[:90]} gap={gap:.2f}s rate={rate:.2f}/s", flush=True)
+        if served <= 3:
+            print("    raw:", raw[:300], flush=True)
 
 
 def main():
@@ -58,20 +70,24 @@ def main():
     args = ap.parse_args()
     log_path = Path(args.log)
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    f = open(log_path, "a", newline="", encoding="utf-8")
-    w = csv.writer(f)
-    if f.tell() == 0:
-        w.writerow(["time", "gap_s", "path", "seq", "frames", "hours", "map_free", "x", "y"])
-    Handler.log_writer, Handler.log_file = w, f
-    srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"link spike listening on http://127.0.0.1:{args.port}/ , log: {log_path}", flush=True)
+    log_file = open(log_path, "a", newline="", encoding="utf-8")
+    writer = csv.writer(log_file)
+    if log_file.tell() == 0:
+        writer.writerow(["time", "gap_s", "method", "path", "seq", "frames", "hours", "map_free", "x", "y", "raw"])
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(("127.0.0.1", args.port))
+    srv.listen(16)
+    print(f"link spike listening on 127.0.0.1:{args.port} (raw), log: {log_path}", flush=True)
     try:
-        srv.serve_forever()
+        while True:
+            conn, addr = srv.accept()
+            threading.Thread(target=handle, args=(conn, addr, writer, log_file), daemon=True).start()
     except KeyboardInterrupt:
         pass
     finally:
-        f.close()
-        print(f"served {STATE['served']} requests", file=sys.stderr)
+        log_file.close()
+        print(f"served {state['served']} connections", flush=True)
 
 
 if __name__ == "__main__":
