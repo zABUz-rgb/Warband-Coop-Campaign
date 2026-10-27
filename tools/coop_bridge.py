@@ -30,7 +30,8 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
                     [&me=t1,n1,...][&name=player name]
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
-    stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces.
+    stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
+    srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
     A player game's triggers do not run in menus, screens and battles: it goes silent, and a player
     silent for SILENT_PAUSE_S pauses the world just like a busy one.
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...   positions of world parties (tmpl REMOVED: gone)
@@ -139,6 +140,7 @@ class Player:
         self.status_sent = None  # (paused, slot, why) this player was last told
         self.status_age = 0
         self.mp_out = []        # joint-battle replies waiting for this player
+        self.on_server = False  # the host playing in the world server game: no puppet there
 
 
 class Battle:
@@ -238,7 +240,7 @@ class World:
                     self.version += 1
                     self.troops[sid] = (self.version, stacks)
             puppets = [(p.slot, p.pos[0], p.pos[1]) for p in self.players.values()
-                       if p.slot is not None and p.pos is not None]
+                       if p.slot is not None and p.pos is not None and not p.on_server]
             name = None
             pending_troops = [p for p in self.players.values() if p.slot is not None and p.stacks is not None]
             pending_names = [p for p in self.players.values() if p.slot is not None and p.name_pending]
@@ -283,7 +285,8 @@ class World:
             if cid in self.players:
                 self.players[cid].troops_sent[sid] = self.version
 
-    def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None):
+    def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
+                       on_server=False):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
@@ -291,6 +294,7 @@ class World:
                 self.players.pop(cid, None)
                 return [0], None
             p = self._player(cid)
+            p.on_server = on_server
             p.requests += 1
             p.pos = (x, y)
             p.busy = busy
@@ -648,7 +652,8 @@ def handle_request(world, role, target, now, cid="local"):
                   "slot": query_int(q, "mpp", -1),
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else []}
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
-                                            hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp)
+                                            hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp,
+                                            on_server=q.get("srvp") == "1")
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),

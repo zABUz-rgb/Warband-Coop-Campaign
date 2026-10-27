@@ -2,7 +2,8 @@
 # Keep {s1}, {reg0}, {playername}, {sir/my lady} and the like exactly as they are.
 #
 # ---- CoopWorld
-game_menus|mno_coop_role_server|CoopWorld: сделать эту игру СЕРВЕРОМ МИРА.
+game_menus|mno_coop_role_host|CoopWorld: сделать эту игру СЕРВЕРОМ МИРА и играть в ней (хост).
+game_menus|mno_coop_role_server|CoopWorld: сделать эту игру только СЕРВЕРОМ МИРА (без игры в ней).
 game_menus|mno_coop_role_client|CoopWorld: сделать эту игру КЛИЕНТОМ.
 game_menus|mno_coop_role_hold|CoopWorld: удержать мир для подключения игрока.
 game_menus|mno_coop_role_stop|CoopWorld: остановить кооператив.
@@ -15,8 +16,9 @@ quick_strings|qstr_CoopWorld:_the_clien|CoopWorld: игрок подключил
 quick_strings|qstr_CoopWorld:_world_spe|CoopWorld: скорость мира {reg1}%
 quick_strings|qstr_To_battle!|В бой!
 quick_strings|qstr_You_cannot_pay_for_y|Вам нечем заплатить за ночлег в {s1}. Стража выставляет вас за ворота до рассвета.
-quick_strings|qstr_CoopWorld:_this_game|CoopWorld: эта игра теперь СЕРВЕР МИРА. Оставьте её отдыхать.
-quick_strings|qstr_CoopWorld:_this_game_|CoopWorld: эта игра теперь КЛИЕНТ сервера мира.
+quick_strings|qstr_CoopWorld:_this_game|CoopWorld: эта игра теперь СЕРВЕР МИРА, и вы играете в ней.
+quick_strings|qstr_CoopWorld:_this_game_|CoopWorld: эта игра теперь СЕРВЕР МИРА. Оставьте её отдыхать.
+quick_strings|qstr_CoopWorld:_this_game_i|CoopWorld: эта игра теперь КЛИЕНТ сервера мира.
 quick_strings|qstr_CoopWorld:_the_world|CoopWorld: мир УДЕРЖАН до подключения игрока.
 quick_strings|qstr_Save_the_game_now__E|Сохраните игру (Esc - Сохранить игру). В игре клиента загрузите это сохранение и выберите «сделать эту игру КЛИЕНТОМ».
 quick_strings|qstr_CoopWorld:_co_op_sto|CoopWorld: кооператив остановлен (ответов: {reg1}, копий отрядов: {reg2}, итогов боёв отправлено: {reg3}, применено: {reg4}).

@@ -47,8 +47,12 @@ town_auto_lodging = [
 
 # Camp menu: co-op roles (prototype; the bridge is tools/coop_bridge.py)
 camp_coop_options = [
-  ("coop_role_server", [(eq, "$coop_role", coop_role_single)], "CoopWorld: run this game as the WORLD SERVER.",
-   [(call_script, "script_coop_become_server"), (change_screen_return)]),
+  ("coop_role_host", [(eq, "$coop_role", coop_role_single)],
+   "CoopWorld: run this game as the WORLD SERVER and play in it (host).",
+   [(call_script, "script_coop_become_server", 1), (change_screen_return)]),
+  ("coop_role_server", [(eq, "$coop_role", coop_role_single)],
+   "CoopWorld: run this game as the WORLD SERVER only (unattended).",
+   [(call_script, "script_coop_become_server", 0), (change_screen_return)]),
   # a client game that loaded the held server's save starts in the held role: it may switch at once
   ("coop_role_client", [(this_or_next|eq, "$coop_role", coop_role_single), (eq, "$coop_role", coop_role_held)],
    "CoopWorld: run this game as a CLIENT.",
@@ -75,4 +79,9 @@ def merge(menus):
   from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option
   options = menu_options(menus, "simple_encounter")
   options.insert(find_by_id(options, "encounter_leave"), coop_mp_encounter_option)
+  # another player's party is fought only in a joint battle, never in a local one against its puppet
+  from coop.triggers import puppet_range
+  first, end = puppet_range()
+  for option_id in ("encounter_attack", "encounter_order_attack"):
+    options[find_by_id(options, option_id)][1].insert(0, (neg | is_between, "$g_encountered_party", first, end))
   menus.extend(mp_campaign_menus)

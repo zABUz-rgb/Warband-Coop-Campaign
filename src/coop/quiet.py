@@ -2,10 +2,10 @@
 
 Every operation that opens a window (dialog and tutorial boxes, presentations such as the weekly
 budget, menus such as the war and notification menus) is wrapped so that it only runs when this
-game is not the world server.
+game is not the world server (or the host plays in it).
 """
-from header_operations import (try_begin, try_end, neq, dialog_box, tutorial_box, start_presentation,
-                               jump_to_menu)
+from header_operations import (try_begin, try_end, neq, eq, this_or_next, dialog_box, tutorial_box,
+                               start_presentation, jump_to_menu)
 from coop.constants import coop_role_server
 
 WINDOW_OPS = {dialog_box, tutorial_box, start_presentation, jump_to_menu}
@@ -24,8 +24,9 @@ def quiet_block(block, ops=WINDOW_OPS):
   i = 0
   while i < len(block):
     if opcode(block[i]) in ops:
-      block[i:i + 1] = [(try_begin), (neq, "$coop_role", coop_role_server), block[i], (try_end)]
-      i += 4
+      block[i:i + 1] = [(try_begin), (this_or_next | neq, "$coop_role", coop_role_server),
+                        (eq, "$coop_srv_player", 1), block[i], (try_end)]
+      i += 5
       count += 1
     else:
       i += 1

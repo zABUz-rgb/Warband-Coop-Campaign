@@ -337,6 +337,18 @@ def test_joint_battle_decline_cancel_pvp():
     check(w.battle is None, "a battle server that forgot the battle frees it")
 
 
+def test_host_plays_on_server():
+    w = cb.World()
+    req(w, "local", x=100, y=200, now=0.0, me=[(31, 3)], name="Host", on_server=True)
+    req(w, "b", x=5000, now=0.0, name="Olga")
+    puppets = w.server_report([], None, 0.1)[2]
+    check([s for s, _, _ in puppets] == [w.players["b"].slot], "the host's own party gets no puppet on the server")
+    seen = [req(w, "b", x=5000, now=0.2 + i * 0.01)[0] for i in range(8)]
+    check(any(r[0] == 4 and r[1] == w.players["local"].slot for r in seen), "the other players see the host")
+    check(w.pause_cause(2.0, but=w.players["b"]) == (w.players["local"].slot, 2),
+          "the host's game falling silent (a menu, a battle) pauses the others")
+
+
 if __name__ == "__main__":
     test_positions()
     test_players_and_puppets()
@@ -344,6 +356,7 @@ if __name__ == "__main__":
     test_shared_pause()
     test_troops_results_tombstones()
     test_clock()
+    test_host_plays_on_server()
     test_joint_battle()
     test_joint_battle_scaled_and_lost()
     test_joint_battle_decline_cancel_pvp()

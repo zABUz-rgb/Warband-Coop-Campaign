@@ -25,14 +25,51 @@ def net_scripts(first_dynamic):
   puppets_end = puppet_range()[1]
   return [
   # script_coop_become_server: this game owns the world; it rests so that time keeps flowing.
+  # arg1 = 1: the host plays in this game (the world runs while the host moves or stands still,
+  # as for every player); 0: it runs unattended
   ("coop_become_server",
    [
+     (store_script_param, "$coop_srv_player", 1),
      (assign, "$coop_role", coop_role_server),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_net_cursor", -1),
      (assign, "$coop_srv_paused", 0),
-     (display_message, "@CoopWorld: this game is now the WORLD SERVER. Leave it resting.", 0x66CCFF),
-     (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0), #rest while not attackable
+     (assign, "$coop_mp_state", 0),
+     (try_begin),
+       (eq, "$coop_srv_player", 1),
+       (display_message, "@CoopWorld: this game is now the WORLD SERVER, and you play in it.", 0x66CCFF),
+     (else_try),
+       (display_message, "@CoopWorld: this game is now the WORLD SERVER. Leave it resting.", 0x66CCFF),
+       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0), #rest while not attackable
+     (try_end),
+    ]),
+
+  # script_coop_host_player_request: s10 = the host's own player request (the world server the
+  # host plays in). s17: a joint battle's cancel or decline. srvp: this player is the server's own
+  # party, so the server shows no puppet for it.
+  ("coop_host_player_request",
+   [
+     (str_clear, s14),
+     (val_add, "$coop_own_troops_frames", coop_host_cli_every),
+     (try_begin),
+       (ge, "$coop_own_troops_frames", coop_own_troops_frames),
+       (assign, "$coop_own_troops_frames", 0),
+       (call_script, "script_coop_troops_to_s12", "p_main_party", 1),
+       (str_store_troop_name, s15, "trp_player"),
+       (str_store_string, s14, "@&me={s12}&name={s15}"), #name last: it may hold spaces
+     (try_end),
+     (set_fixed_point_multiplier, 100),
+     (party_get_position, pos1, "p_main_party"),
+     (position_get_x, reg2, pos1),
+     (position_get_y, reg3, pos1),
+     (assign, reg1, "$coop_net_seq"),
+     (store_current_hours, reg5),
+     (assign, reg6, 0),
+     (try_begin),
+       (map_free),
+       (assign, reg6, 1),
+     (try_end),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy=0&srvp=1{s17}{s14}"),
     ]),
 
   # script_coop_become_client: the world simulation stops here; parties follow the server.
@@ -40,6 +77,7 @@ def net_scripts(first_dynamic):
   ("coop_become_client",
    [
      (assign, "$coop_role", coop_role_client),
+     (assign, "$coop_srv_player", 0),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_busy", 0),
      (assign, "$coop_hello", 1), #the server holds the world until this client says hello
@@ -90,6 +128,7 @@ def net_scripts(first_dynamic):
        (send_message_to_url, s10, 0),
      (try_end),
      (assign, "$coop_srv_paused", 0),
+     (assign, "$coop_srv_player", 0),
      (assign, "$coop_role", coop_role_single),
      (assign, reg1, "$coop_net_replies"),
      (assign, reg2, "$coop_net_spawned"),
@@ -253,7 +292,10 @@ def net_scripts(first_dynamic):
        (eq, ":pause", 0),
        (eq, "$coop_srv_paused", 1),
        (assign, "$coop_srv_paused", 0),
-       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0),
+       (try_begin),
+         (eq, "$coop_srv_player", 0), #the host rests again once standing still
+         (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0),
+       (try_end),
        (display_message, "@CoopWorld: the world runs again.", 0x66CCFF),
      (try_end),
     ]),

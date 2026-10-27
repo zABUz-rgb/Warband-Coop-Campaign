@@ -274,15 +274,14 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
 ХОСТ (на его компьютере живёт мир)
   1. Дважды щёлкните host.bat - запустится мост. Он спросит пароль: придумайте любой и сообщите
      друзьям (Enter без пароля - играть только на этом компьютере). Окно не закрывайте.
-  2. Запустите Warband два раза, оба с модулем CoopWorld, в оконном режиме
-     (Configure - Video - Start Windowed).
-     Окно 1 - сервер мира: загрузите свою кампанию,
-       Лагерь - "CoopWorld: сделать эту игру СЕРВЕРОМ МИРА". Дальше это окно не трогайте.
-     Окно 2 - ваша собственная игра.
-  3. Для каждого подключающегося игрока: на сервере
+  2. Запустите Warband с модулем CoopWorld, загрузите свою кампанию,
+       Лагерь - "CoopWorld: сделать эту игру СЕРВЕРОМ МИРА и играть в ней (хост)".
+     Вы играете прямо в этом окне: мир живёт в нём, друзья видят ваш отряд на карте.
+  3. Для каждого подключающегося игрока:
        Лагерь - "CoopWorld: удержать мир для подключения игрока", затем сохраните игру (Esc - Сохранить).
-  4. В своей игре (окно 2): загрузите это сохранение,
-       Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир на сервере пойдёт дальше сам.
+     Сохранение отдайте другу (join.bat скачает его сам). Как только друг подключится, мир пойдёт дальше.
+  Можно и по-старому: отдельное окно - только сервер мира ("...только СЕРВЕРОМ МИРА (без игры в ней)"),
+  а играть во втором окне клиентом. Это тяжелее для компьютера, зато мир не зависит от ваших меню.
 
 ДРУГ
   1. Дважды щёлкните join.bat. Он спросит адрес хоста и пароль, скачает свежее сохранение хоста
@@ -301,10 +300,10 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
 СОВМЕСТНЫЕ БОИ (сервер мультиплеера)
   Бой из кампании можно провести на сервере мультиплеера Warband: каждый игрок сражается сам,
   его отряды - боты под его командованием.
-  1. Хост запускает ещё одно окно Warband (модуль CoopWorld) - сервер боя:
+  1. Хост запускает второе окно Warband (модуль CoopWorld) - сервер боя, и сам в нём сражается:
        Мультиплеер - Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0.
      Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
-  2. Каждый игрок (и хост) заходит на этот сервер из ещё одного окна Warband (модуль CoopWorld):
+  2. Каждый друг заходит на этот сервер из второго окна Warband (модуль CoopWorld):
        Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
      Имя в мультиплеере должно совпадать с именем вашего героя в кампании: тогда мост сам ставит
      вас в нужную команду и отдаёт вам ваших солдат. Окно игры остаётся на сервере между боями.
@@ -343,12 +342,12 @@ The host's PC must let Python accept connections on TCP port 7350 (Windows asks 
 HOST (runs the world):
   1. Double-click host.bat: it asks for a password (any, tell it your friends; Enter without one
      = this PC only) and starts the bridge. Keep its window open.
-  2. Start Warband twice, both with the CoopWorld module, in windowed mode.
-     Window 1 = the world server: load your campaign, Camp - "run this game as the WORLD SERVER".
-     Window 2 = your own game.
-  3. For each joining player: on the server, Camp - "hold the world for a joining client",
-     then save the game (Esc - Save).
-  4. Your own game (window 2): load that save, Camp - "run this game as a CLIENT".
+  2. Start Warband with CoopWorld, load your campaign,
+     Camp - "run this game as the WORLD SERVER and play in it (host)". You play in this window.
+  3. For each joining player: Camp - "hold the world for a joining client", then save the game
+     (Esc - Save). The world runs on as soon as that player joined.
+  (Or the old way: one window only the world server ("...WORLD SERVER only (unattended)"),
+  and you play in a second window as a CLIENT. Heavier, but the world does not wait for your menus.)
 
 FRIEND:
   1. Double-click join.bat: it asks for the host's address and password, fetches the host's
@@ -357,9 +356,9 @@ FRIEND:
      The host's world runs on as soon as you joined.
 
 JOINT BATTLES (multiplayer server):
-  1. The host starts one more Warband window (CoopWorld): Multiplayer - Host a game,
-     game type Battle, any field map, 0 bots. The bridge finds it by itself.
-  2. Every player (the host too) joins that server from one more Warband window (CoopWorld):
+  1. The host starts a second Warband window (CoopWorld) and fights in it: Multiplayer -
+     Host a game, game type Battle, any field map, 0 bots. The bridge finds it by itself.
+  2. Every friend joins that server from a second Warband window (CoopWorld):
      the LAN server list, or Favorites with the host's address, e.g. 26.x.x.x:7240.
      Use your campaign hero's name as your multiplayer name: the bridge then puts you on your
      side and gives you command of your soldiers.

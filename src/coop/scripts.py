@@ -17,6 +17,11 @@ scripts = [
        (eq, "$coop_world_paused", 1),
        (set_trigger_result, coop_paused_speed_percent),
      (else_try),
+       (eq, "$coop_role", coop_role_server),
+       (eq, "$coop_srv_player", 1), #the host plays on the server: same for the host
+       (eq, "$coop_srv_paused", 1),
+       (set_trigger_result, coop_paused_speed_percent),
+     (else_try),
        (set_trigger_result, coop_world_speed_percent),
      (try_end),
      # shows once per campaign (globals are saved) that the engine really calls this hook

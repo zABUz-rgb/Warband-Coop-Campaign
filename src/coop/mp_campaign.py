@@ -178,6 +178,9 @@ mp_campaign_scripts = [
        (store_sub, "$coop_mp_target_slot", ":party_no", "p_coop_puppet_1"),
        (assign, "$coop_mp_enemy_party", -1), #a player brings his own troops
      (else_try),
+       (eq, "$coop_role", coop_role_server), #the host meets the world's own party
+       (assign, "$coop_mp_target_sid", ":party_no"),
+     (else_try),
        (party_get_slot, ":sid", ":party_no", slot_party_coop_sid),
        (store_sub, "$coop_mp_target_sid", ":sid", 1),
      (try_end),
@@ -193,16 +196,21 @@ mp_campaign_scripts = [
 coop_mp_encounter_option = (
   "coop_mp_battle",
   [
-    (eq, "$coop_role", coop_role_client),
+    (this_or_next|eq, "$coop_role", coop_role_client),
+    (eq, "$coop_srv_player", 1),
     (neg|troop_is_wounded, "trp_player"),
-    (this_or_next|is_between, "$g_encountered_party", "p_coop_puppet_1", puppet_end()),
-    (party_slot_ge, "$g_encountered_party", slot_party_coop_sid, 1),
+    (assign, ":ok", 0),
     (try_begin),
       (is_between, "$g_encountered_party", "p_coop_puppet_1", puppet_end()),
+      (assign, ":ok", 1),
       (str_store_string, s1, "@CoopWorld: fight this player (joint battle on the multiplayer server)."),
     (else_try),
+      (this_or_next|party_slot_ge, "$g_encountered_party", slot_party_coop_sid, 1), #a client's mirror
+      (eq, "$coop_role", coop_role_server), #the host meets the world's own party
+      (assign, ":ok", 1),
       (str_store_string, s1, "@CoopWorld: fight together with your friends (joint battle on the multiplayer server)."),
     (try_end),
+    (eq, ":ok", 1),
   ],
   "{s1}",
   [
@@ -361,14 +369,17 @@ def reply_branches():
   return [
     (else_try),
       (eq, ":kind", 6),
-      (eq, "$coop_role", coop_role_client),
+      (this_or_next|eq, "$coop_role", coop_role_client),
+      (eq, "$coop_srv_player", 1), #the host's own player requests
       (call_script, "script_coop_client_mp_invite"),
     (else_try),
       (eq, ":kind", 7),
-      (eq, "$coop_role", coop_role_client),
+      (this_or_next|eq, "$coop_role", coop_role_client),
+      (eq, "$coop_srv_player", 1), #the host's own player requests
       (call_script, "script_coop_client_mp_status"),
     (else_try),
       (eq, ":kind", 8),
-      (eq, "$coop_role", coop_role_client),
+      (this_or_next|eq, "$coop_role", coop_role_client),
+      (eq, "$coop_srv_player", 1), #the host's own player requests
       (call_script, "script_coop_client_mp_result"),
   ]

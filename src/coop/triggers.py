@@ -47,16 +47,39 @@ def net_triggers(first_dynamic):
    ],
    [
      # resting keeps the world's time flowing; a click on the server's map (or a menu) ends the
-     # rest, so the server goes back to resting after a moment on the free map, unless paused
+     # rest, so the server goes back to resting after a moment on the free map, unless paused.
+     # The host playing here rests like a player: only while standing still.
      (try_begin),
        (eq, "$coop_srv_paused", 0),
        (map_free),
-       (val_add, "$coop_srv_idle_frames", 1),
+       (assign, ":still", 1),
+       (try_begin),
+         (eq, "$coop_srv_player", 1),
+         (set_fixed_point_multiplier, 100),
+         (party_get_position, pos2, "p_main_party"),
+         (position_get_x, ":x", pos2),
+         (position_get_y, ":y", pos2),
+         (this_or_next|neq, ":x", "$coop_last_x"),
+         (neq, ":y", "$coop_last_y"),
+         (assign, ":still", 0),
+         (assign, "$coop_last_x", ":x"),
+         (assign, "$coop_last_y", ":y"),
+       (try_end),
+       (try_begin),
+         (eq, ":still", 1),
+         (val_add, "$coop_srv_idle_frames", 1),
+       (else_try),
+         (assign, "$coop_srv_idle_frames", 0),
+       (try_end),
        (ge, "$coop_srv_idle_frames", coop_client_idle_frames),
        (assign, "$coop_srv_idle_frames", 0),
-       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0),
+       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, "$coop_srv_player"), #the host may be attacked
      (else_try),
        (assign, "$coop_srv_idle_frames", 0),
+     (try_end),
+     (try_begin),
+       (eq, "$coop_srv_player", 1),
+       ] + client_map_tick() + [
      (try_end),
      (val_add, "$coop_net_frames", 1),
      (try_begin),
@@ -65,6 +88,15 @@ def net_triggers(first_dynamic):
        (assign, "$coop_net_pending", 1),
        (assign, "$coop_net_frames", 0),
        (val_add, "$coop_net_seq", 1),
+       (store_mod, ":turn", "$coop_net_seq", coop_host_cli_every),
+     (try_begin),
+       (eq, "$coop_srv_player", 1),
+       (eq, ":turn", 0),
+       # the host as a player: position, troops, name, joint battles
+       ] + client_request_suffix() + [
+       (call_script, "script_coop_host_player_request"),
+       (send_message_to_url, s10, 0),
+     (else_try),
        (set_fixed_point_multiplier, 100),
        (str_clear, s11),
        (assign, ":count", 0),
@@ -177,6 +209,7 @@ def net_triggers(first_dynamic):
        (store_current_hours, reg3),
        (str_store_string, s10, "@" + coop_server_url + "/srv?seq={reg1}&h={reg3}&n={reg2}&d={s11}{s13}"),
        (send_message_to_url, s10, 0),
+     (try_end),
      (try_end),
     ]),
 
