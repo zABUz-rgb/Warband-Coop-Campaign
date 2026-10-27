@@ -679,12 +679,25 @@ def send_http_body(conn, text):
                  + f"Content-Length: {len(body)}\r\n\r\n".encode() + body)
 
 
+def listen_socket(host, port):
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+        # with SO_REUSEADDR Windows lets another program bind the same address and silently take
+        # the games' requests away: claim it alone, so a clash (another bridge) fails loudly
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+    else:
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        srv.bind((host, port))
+    except OSError as e:
+        raise SystemExit(f"{host}:{port} is taken by another program ({e}): close it (another bridge window?) and start again")
+    return srv
+
+
 def serve_http(addr, answer, log, name):
     """Accept the games' HTTP requests on addr; answer(target) -> reply text."""
     host, port = addr
-    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind((host, port))
+    srv = listen_socket(host, port)
     srv.listen(32)
     log(f"{name}: listening on {host}:{port}")
 
@@ -735,9 +748,7 @@ def newest_save(save_dir):
 def serve_relays(addr, world, key, save_dir, log):
     """The hub side of the network: each relay connection is one player."""
     host, port = addr
-    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind((host, port))
+    srv = listen_socket(host, port)
     srv.listen(8)
     log(f"net: listening for players on {host}:{port}")
     counter = [0]
