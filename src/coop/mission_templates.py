@@ -5,14 +5,29 @@ from header_triggers import *
 from module_constants import *
 from coop.constants import *
 
-# Field-battle preparation: for coop_battle_prep_seconds every hostile team pair is neutral,
-# so the player sees the battlefield and the enemy before anyone strikes.
+# Field-battle preparation: for coop_battle_prep_seconds the two sides are neutral and the AI
+# stands still, so the player sees the battlefield and the enemy before anyone strikes.
+# The ceasefire is set before mission start (AI agents never pick targets); when it ends every
+# agent rethinks, as Native does after changing team relations mid-mission.
 # A hit by anyone during the preparation starts the battle at once.
 battle_prep_triggers = [
-  (ti_after_mission_start, 0, 0, [],
+  (ti_before_mission_start, 0, 0, [],
    [
      (assign, "$coop_prep_seconds_left", coop_battle_prep_seconds),
      (call_script, "script_coop_battle_ceasefire", 1),
+    ]),
+
+  (ti_on_agent_spawn, 0, 0,
+   [
+     (gt, "$coop_prep_seconds_left", 0),
+   ],
+   [
+     (store_trigger_param_1, ":agent_no"),
+     (agent_set_speed_limit, ":agent_no", 0), #AI only: the player still moves
+    ]),
+
+  (ti_after_mission_start, 0, 0, [],
+   [
      (assign, reg1, coop_battle_prep_seconds),
      (display_message, "@The enemy is forming up. You have {reg1} seconds to prepare!", 0xFFDD66),
     ]),

@@ -12,46 +12,27 @@ scripts = [
      (store_script_param, ":party_no", 1),
      (assign, ":unused", ":party_no"),
      (set_trigger_result, coop_world_speed_percent),
+     # shows once per campaign (globals are saved) that the engine really calls this hook
+     (try_begin),
+       (eq, "$coop_speed_hook_seen", 0),
+       (assign, "$coop_speed_hook_seen", 1),
+       (assign, reg1, coop_world_speed_percent),
+       (display_message, "@CoopWorld: world speed {reg1}%", 0x66CCFF),
+     (try_end),
     ]),
 
   # script_coop_battle_ceasefire
-  # Input: arg1 = 1 to make all hostile team pairs neutral, 0 to restore the pairs made neutral before.
-  # The pairs are remembered as bits in $coop_ceasefire_pairs (bit = team_a * 4 + team_b).
+  # Input: arg1 = 1 to make the two sides of a field battle neutral, 0 to make them enemies again.
+  # Field battles use teams 0 and 1, with allies of each side on 2 and 3 (Native agent_reassign_team).
+  # Called before mission start for 1, so the AI never picks targets; agents rethink when it ends.
   ("coop_battle_ceasefire",
    [
      (store_script_param, ":on", 1),
-     (try_begin),
-       (eq, ":on", 1),
-       (assign, "$coop_ceasefire_pairs", 0),
-       (try_for_range, ":team_a", 0, 4),
-         (store_add, ":first_b", ":team_a", 1),
-         (try_for_range, ":team_b", ":first_b", 4),
-           (teams_are_enemies, ":team_a", ":team_b"),
-           (team_set_relation, ":team_a", ":team_b", 0),
-           (team_set_relation, ":team_b", ":team_a", 0),
-           (store_mul, ":bit_no", ":team_a", 4),
-           (val_add, ":bit_no", ":team_b"),
-           (assign, ":bit", 1),
-           (val_lshift, ":bit", ":bit_no"),
-           (val_or, "$coop_ceasefire_pairs", ":bit"),
-         (try_end),
-       (try_end),
-     (else_try),
-       (try_for_range, ":team_a", 0, 4),
-         (store_add, ":first_b", ":team_a", 1),
-         (try_for_range, ":team_b", ":first_b", 4),
-           (store_mul, ":bit_no", ":team_a", 4),
-           (val_add, ":bit_no", ":team_b"),
-           (assign, ":bit", 1),
-           (val_lshift, ":bit", ":bit_no"),
-           (store_and, ":is_set", "$coop_ceasefire_pairs", ":bit"),
-           (neq, ":is_set", 0),
-           (team_set_relation, ":team_a", ":team_b", -1),
-           (team_set_relation, ":team_b", ":team_a", -1),
-         (try_end),
-       (try_end),
-       (assign, "$coop_ceasefire_pairs", 0),
-     (try_end),
+     (store_sub, ":relation", ":on", 1), #1 -> 0 (neutral), 0 -> -1 (enemy)
+     (team_set_relation, 0, 1, ":relation"),
+     (team_set_relation, 0, 3, ":relation"),
+     (team_set_relation, 2, 1, ":relation"),
+     (team_set_relation, 2, 3, ":relation"),
     ]),
 
   # script_coop_end_battle_prep: ends the preparation phase early or on time.
@@ -61,6 +42,11 @@ scripts = [
        (eq, "$coop_prep_seconds_left", 0), #keeps the call idempotent: only runs once
        (assign, "$coop_prep_seconds_left", -1),
        (call_script, "script_coop_battle_ceasefire", 0),
+       (try_for_agents, ":agent_no"),
+         (agent_is_alive, ":agent_no"),
+         (agent_set_speed_limit, ":agent_no", 100),
+         (agent_force_rethink, ":agent_no"),
+       (try_end),
        (display_message, "@To battle!", 0xFF4444),
      (try_end),
     ]),
