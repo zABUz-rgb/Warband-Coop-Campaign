@@ -87,7 +87,9 @@ def merge(orig_scripts):
         (store_mod, ":every_20th", "$coop_link_replies", 20),
         (eq, ":every_20th", 1),
         (assign, reg20, "$coop_link_replies"),
-        (display_message, "@CoopWorld link: reply {reg0}, bridge served {reg1}, replies here {reg20}", 0x66CCFF),
+        (store_script_param, reg21, 1),
+        (store_script_param, reg22, 2),
+        (display_message, "@CoopWorld link: reply #{reg20}: {reg21} numbers, {reg22} strings, reg0={reg0} reg1={reg1} s0={s0}", 0x66CCFF),
       (try_end),
   ])
   # a new arrival (not the automatic return after resting) starts a new stay

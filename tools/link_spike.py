@@ -44,7 +44,7 @@ def handle(conn, addr, writer, log_file):
         gap = now - state["last"] if state["last"] else 0.0
         state["last"] = now
         served = state["served"]
-        writer.writerow([f"{now:.3f}", f"{gap:.3f}", method, url.path, q.get("seq", ""), q.get("frames", ""),
+        writer.writerow([f"{now:.3f}", f"{gap:.3f}", conn.getsockname()[1], q.get("form", ""), method, url.path, q.get("seq", ""), q.get("frames", ""),
                          q.get("hours", ""), q.get("free", ""), q.get("x", ""), q.get("y", ""),
                          raw[:300].decode("latin-1", "replace").replace("\r\n", " | ")])
         log_file.flush()
@@ -63,9 +63,17 @@ def handle(conn, addr, writer, log_file):
             print("    raw:", raw[:300], flush=True)
 
 
+def accept_loop(srv, writer, log_file):
+    while True:
+        conn, addr = srv.accept()
+        threading.Thread(target=handle, args=(conn, addr, writer, log_file), daemon=True).start()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=7341)
+    ap.add_argument("--extra-port", type=int, action="append", default=[],
+                    help="also listen here (e.g. 80, in case the game ignores the port in the URL)")
     ap.add_argument("--log", default=str(Path(__file__).resolve().parents[1] / "local" / "link_log.csv"))
     args = ap.parse_args()
     log_path = Path(args.log)
@@ -73,12 +81,18 @@ def main():
     log_file = open(log_path, "a", newline="", encoding="utf-8")
     writer = csv.writer(log_file)
     if log_file.tell() == 0:
-        writer.writerow(["time", "gap_s", "method", "path", "seq", "frames", "hours", "map_free", "x", "y", "raw"])
-    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind(("127.0.0.1", args.port))
-    srv.listen(16)
-    print(f"link spike listening on 127.0.0.1:{args.port} (raw), log: {log_path}", flush=True)
+        writer.writerow(["time", "gap_s", "port", "form", "method", "path", "seq", "frames", "hours", "map_free", "x", "y", "raw"])
+    servers = []
+    for port in [args.port] + args.extra_port:
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.bind(("127.0.0.1", port))
+        srv.listen(16)
+        servers.append(srv)
+        print(f"link spike listening on 127.0.0.1:{port} (raw), log: {log_path}", flush=True)
+    for srv in servers[1:]:
+        threading.Thread(target=accept_loop, args=(srv, writer, log_file), daemon=True).start()
+    srv = servers[0]
     try:
         while True:
             conn, addr = srv.accept()
