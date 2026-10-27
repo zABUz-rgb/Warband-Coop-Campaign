@@ -54,6 +54,18 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
+  # script_coop_count_news: reg0 = notifications waiting for the host (the queue of notification menus)
+  ("coop_count_news",
+   [
+     (assign, reg0, 0),
+     (assign, ":end", 1),
+     (try_for_range, ":slot", 0, ":end"),
+       (troop_slot_ge, "trp_notification_menu_types", ":slot", 1),
+       (val_add, reg0, 1),
+       (val_add, ":end", 1),
+     (try_end),
+    ]),
+
   # script_coop_host_player_request: s10 = the host's own player request (the world server the
   # host plays in). s17: a joint battle's cancel or decline. srvp: this player is the server's own
   # party, so the server shows no puppet for it.

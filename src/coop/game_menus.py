@@ -60,6 +60,10 @@ camp_coop_options = [
   ("coop_role_hold", [(eq, "$coop_role", coop_role_server)],
    "CoopWorld: hold the world for a joining client.",
    [(call_script, "script_coop_server_hold"), (change_screen_return)]),
+  ("coop_read_news", [(eq, "$coop_role", coop_role_server), (eq, "$coop_srv_player", 1),
+                      (call_script, "script_coop_count_news"), (gt, reg0, 0)],
+   "CoopWorld: read the news held back ({reg0}). The world waits meanwhile.",
+   [(assign, "$coop_read_news", 1), (store_current_hours, "$coop_news_since"), (change_screen_return)]),
   ("coop_role_stop", [(neq, "$coop_role", coop_role_single)], "CoopWorld: stop co-op.",
    [(call_script, "script_coop_stop"), (change_screen_return)]),
 ]

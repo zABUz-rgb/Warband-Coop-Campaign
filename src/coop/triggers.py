@@ -80,6 +80,26 @@ def net_triggers(first_dynamic):
      (try_end),
      (try_begin),
        (eq, "$coop_srv_player", 1),
+       # news held back: say so when more arrives; reading ends once the map was free a while
+       (try_begin),
+         (call_script, "script_coop_count_news"),
+         (gt, reg0, "$coop_news_told"),
+         (eq, "$coop_read_news", 0),
+         (display_message, "@CoopWorld: news held back ({reg0}): Camp - read the news, when it suits you.", 0xFFDD66),
+       (try_end),
+       (assign, "$coop_news_told", reg0),
+       # reading lasts until the queue is empty and three game hours have passed (companions and
+       # the marshal's messengers come at such intervals)
+       (try_begin),
+         (eq, "$coop_read_news", 1),
+         (call_script, "script_coop_count_news"),
+         (eq, reg0, 0),
+         (store_current_hours, ":now"),
+         (store_sub, ":reading", ":now", "$coop_news_since"),
+         (ge, ":reading", 3),
+         (assign, "$coop_read_news", 0),
+         (display_message, "@CoopWorld: all news read.", 0xFFDD66),
+       (try_end),
        ] + client_map_tick() + [
        # the world is held by another player: remind now and then why nothing moves
        (try_begin),
