@@ -10,8 +10,12 @@ the compiled files over it. The Russian one also adds CoopWorld's Russian texts
     python tools/make_ru.py && python tools/make_package.py
 """
 import datetime
+import sys
 import zipfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tools/dplmc_assets.py, also under python -I
+from dplmc_assets import assets  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "game" / "Modules" / "CoopWorld"
@@ -273,6 +277,8 @@ def launcher_bat(kind):
 
 README_RU = '''CoopWorld - кооперативная кампания для Mount & Blade: Warband 1.174
 ====================================================================
+Основа - мод Diplomacy 1.174 (с Freelancer). Нужна новая кампания: старые сохранения
+CoopWorld без Diplomacy с этой версией не работают.
 
 ЧТО НУЖНО
   - Warband 1.174 (Steam или GOG) и Python 3 (python.org, при установке отметьте "Add to PATH")
@@ -360,6 +366,7 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
   Игроки враждующих королевств сражаются друг с другом в совместных боях; приглашение в бой
   против ваших союзников отклоняется само. Владения (замки, города, деревни) пока получает только
   хост: клиенту король их не выдаёт - игра сообщит об этом, присяга и звание при этом остаются.
+  Дипломатия (договоры между королевствами, послы, дары, патрули, вербовщики) - тоже только у хоста.
 
 ОСТАНОВКА
   В своей игре: Лагерь - "CoopWorld: остановить кооператив", затем закройте окно моста.
@@ -373,6 +380,8 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
 
 README = '''CoopWorld - co-op campaign for Mount & Blade: Warband 1.174
 =============================================================
+Built on the Diplomacy 1.174 mod (with Freelancer). It needs a new campaign: saves of CoopWorld
+without Diplomacy do not work with this version.
 
 Needs: Warband 1.174 (Steam or GOG) and Python 3 (python.org) on every PC.
 Install: unpack the archive, close Warband, double-click install.bat. It finds the game
@@ -442,7 +451,6 @@ def build(name, files, russian=False):
         for f in sorted(MODULE.glob("*.txt")):
             if f.name not in BUILD_ONLY:
                 z.write(f, f"{name}/CoopWorld/{f.name}")
-        from dplmc_assets import assets
         for source, rel in assets():  # Diplomacy's textures and changed scenes
             z.write(source, f"{name}/CoopWorld/{rel}")
         z.write(ROOT / "tools" / "coop_bridge.py", f"{name}/coop_bridge.py")

@@ -225,3 +225,1418 @@ quick_strings|qstr_CoopWorld:_you_take_|CoopWorld: вы берёте в плен
 quick_strings|qstr_^^Your_name_on_the_b|^^На сервере боя ваше имя должно быть {s3} (Мультиплеер - Профили): тогда ваши солдаты будут вас слушаться.
 quick_strings|qstr_CoopWorld:_in_co_op_|CoopWorld: в кооперативе владения пока получает только хост. {s1} остаётся за своим лордом в общем мире; ваша присяга, звание и отношения остаются при вас.
 quick_strings|qstr_CoopWorld:_a_call_to|CoopWorld: вас зовут в бой против ваших союзников ({s1}) — приглашение отклонено.
+# Diplomacy 1.174: texts neither the russifier nor MRCMOD's translation has
+game_menus|mno_town_none|смело отправиться туда, где не ступал{/а} ни один человек...
+game_menus|mno_start_priest|Смутное воспоминание.
+game_menus|mno_mummer|Скоморох.
+game_menus|mno_courtier|Придворный.
+game_menus|mno_noble|Нежданный наследник.
+game_menus|mno_acolyte|Послушник при храме.
+game_menus|mno_bravo|Странствующий головорез.
+game_menus|mno_merc|Наёмник в чужих краях.
+game_menus|mno_preacher|Бродячий проповедник.
+game_menus|mno_fervor|Религиозный пыл.
+game_menus|mno_start|Обзор спутников...
+game_menus|mno_camp_cheat_weather|Сменить погоду...
+game_menus|mno_camp_cheat_heal|Вылечить отряд.
+game_menus|mno_camp_cheat_xp|Добавить опыт отряду.
+game_menus|mno_camp_cheat_prisoner|Завербовать всех пленных.
+game_menus|mno_camp_change_name|Переименовать свой отряд.
+game_menus|mno_cattle_drag_with|Увести скот с собой.
+game_menus|mno_siege_defender_manage_troops|Распоряжаться гарнизоном {s10}.
+game_menus|mno_village_cheat|Использовать читы.
+game_menus|menu_village_hunt_down_fugitive_persuaded|Как самый убедительный в отряде, {reg3?вы:{s3}} сумели выведать у неразговорчивой родни, где скрывается {s50}. Подкреплённые превосходящей силой оружия, ваши справедливые доводы подействовали, и селяне нехотя присоединились к поимке беглеца. {reg4?Но весть о вашем приближении дошла до беглеца, и он, похоже, наложил на себя руки:Не прошло и часа, как вы схватили беглеца по поручению {s4}}.
+game_menus|mno_center_cancel_build|Отменить постройку: {s7}.
+game_menus|mno_village_enslave|Догнать оставшихся селян и обратить их в рабство.
+game_menus|menu_village_enslave_complete|По вашему приказу воины рыщут по деревне, вытаскивают крестьян из лачуг и отнимают у них всё имущество. За несколько часов вы сгоняете {reg1} пленников, оставив немощных и детей. Когда вы уводите связанных селян прочь от остывающих углей их разорённых очагов, вдали слышится протяжный вой...
+game_menus|mno_loot_yes|Да.
+game_menus|mno_loot_no|Нет.
+game_menus|mno_town_cheat|Использовать читы.
+game_menus|mno_continue_court|С позором вернуться ко двору...
+game_menus|mno_continue_ransomer|Вернуться с сопровождением {s10}...
+game_menus|mno_skip_quest|Хорошенько прогуляться по {s1}...
+game_menus|mno_surrender|Сдаться...
+game_menus|mno_check_inv|Посмотреть имущество вашего дома
+game_menus|mno_dplmc_loot_player|Открыть инвентарь капитана.
+game_menus|mno_dplmc_loot_spouse|Открыть инвентарь супруга.
+game_menus|mno_dplmc_auto_loot_reset_player|Вернуть выбор бойца к игроку
+game_menus|mno_dplmc_autoloot_personal|Да, улучшать снаряжение только у {s1}.
+game_menus|mno_dplmc_presentation|Окно настроек
+game_menus|mno_dplmc_cheat_mode|{reg0?Выключить:Включить} режим читов.
+game_menus|mno_dplmc_horse_speed|{reg0?Включить:Выключить} скорость коней и отбраковку по Diplomacy.
+game_menus|mno_dplmc_battle_continuation|{reg0?Включить:Выключить} продолжение боя по Diplomacy.
+game_menus|mno_dplmc_player_disguise|{reg0?Выключить:Включить} систему маскировки.
+game_menus|mno_dplmc_charge_when_dead|{reg0?Выключить:Включить} атаку войск при продолжении боя.
+game_menus|mno_dplmc_deathcam_keys|Переназначить клавиши камеры.
+game_menus|mno_dplmc_start_prejudice_mixed|Я хочу, чтобы на поле боя были и женщины.
+game_menus|menu_town_cheats|Выберите действие с этим городом
+game_menus|mno_debug|Читы для отряда.
+game_menus|mno_camp_cheat_gather|Собрать всех неактивных персонажей.
+game_menus|mno_summon_drunk|{reg10?Прогнать:Позвать} пьянчугу.
+game_menus|mno_summon_ass|{reg11?Спугнуть:Нанять} убийцу.
+game_menus|mno_summon_bandit|{reg12?Выгнать:Попасть в засаду, устроенную} {s12}.
+game_menus|mno_summon_village_bandit|{reg13?Очистить деревню от:Наслать на деревню} {s13}.
+game_menus|mno_summon_insurgent|Возглавить крестьянское восстание.
+game_menus|mno_center_refresh|Обновить торговцев (везде).
+game_menus|mno_village_refresh|Обновить деревенские товары.
+game_menus|mno_village_recruits|Обновить новобранцев.
+game_menus|mno_center_recruits|Обновить наёмников.
+game_menus|menu_town_cheats_2|Выберите действие с самим поселением. Процветание: {reg1}, отношение: {reg2}, отрядов в городе: {reg3}.
+game_menus|mno_toggle_state|{reg1?Восстановить:Разорить} эту деревню.
+game_menus|mno_increase_rel|Повысить отношение.
+game_menus|mno_decrease_rel|Понизить отношение.
+game_menus|mno_increase_prosp|Повысить процветание.
+game_menus|mno_decrease_prosp|Понизить процветание.
+game_menus|mno_cheat_town_start_siege|Осадить поселение...
+game_menus|mno_center_reports|Показать отчёты.
+game_menus|menu_export_import|Нажмите C, чтобы открыть окно персонажа {s1}, а затем кнопку статистики внизу слева.
+game_menus|mno_rename|Мне никогда не нравилось имя {s1}...
+game_menus|mno_display_slots|Покажи мне все свои тайны...
+game_menus|mno_notes|Открыть заметки.
+game_menus|mno_previous|Предыдущий отряд ({s2}).
+game_menus|mno_next|Следующий отряд ({s2}).
+game_menus|mno_change|Изменить слоты.
+game_menus|mno_talk|Встретиться с отрядом (Shift — переместиться к нему).
+game_menus|mno_slots|Вывести все значения слотов.
+game_menus|mno_reinf|Пополнить отряд.
+game_menus|mno_exp|Повысить отряд.
+game_menus|mno_wound|Ранить отряд.
+game_menus|mno_heal|Вылечить отряд.
+game_menus|mno_exchange|Обмен с отрядом.
+game_menus|mno_bandits|Создать бандитов поблизости.
+game_menus|mno_prev_range|Начало ({s3}).
+game_menus|mno_next_range|Конец ({s3}).
+game_menus|mno_prev|Предыдущий боец ({s2}).
+game_menus|mno_encounter|Найти отряд, которым он командует.
+game_menus|mno_inventory|Изменить инвентарь (Shift — экипировка).
+game_menus|mno_gender|Сменить пол.
+game_menus|mno_recruit|Добавить в отряд (Shift — пленником).
+game_menus|menu_dplmc_choose_disguise|Вы собираетесь тайно пробраться в {s1}. Не берите с собой подозрительных вещей и лишних денег — их могут отобрать. {s2}
+game_menus|mno_disguise_pilgrim|Облачиться в рубище бедного паломника.
+game_menus|mno_disguise_farmer|Смириться с участью забитого крестьянина.
+game_menus|mno_disguise_hunter|Переодеться опытным {охотником/охотницей}.
+game_menus|mno_disguise_guard|Выдать себя за охранника каравана.
+game_menus|mno_disguise_merchant|Принять облик торговца.
+game_menus|mno_disguise_bard|Попытать счастья в роли барда.
+game_menus|mno_back|Неважно...
+dialogs|dlga_start:center_captured_rebellion|{s1} сейчас никем не управляется. Кого назначить наместником?
+dialogs|dlga_dplmc_drunk_attempt_placate:drunk_fight_start|Сейчас я сотру эту ухмылку с твоего лица!
+dialogs|dlga_drunk_player_high_renown:drunk_fight_start.3|Что ж, хочешь драки — будет тебе драка!
+dialogs|dlga_ramun_talk:ramun_buy|А этот скот вы тоже продаёте?
+dialogs|dlga_tavernkeeper_talk:ramun_buy|ЧИТ: говорят, у тебя есть бойцы.
+dialogs|dlga_ramun_buy:ramun_faction|Конечно. Каких желаете?
+dialogs|dlga_ramun_faction:ramun_select|Мне бы {s1}, пожалуйста.
+dialogs|dlga_ramun_faction:close_window|Неважно.
+dialogs|dlga_ramun_select:ramun_troops|Значит, вам нужны бойцы из {s1}?
+dialogs|dlga_ramun_troops:ramun_buy|Давай посмотрим других вояк.
+dialogs|dlga_supported_pretender_talk:pretender_view_char_requested|Если вам будет угодно, расскажите о своих умениях.
+dialogs|dlga_pretender_view_char_requested:supported_pretender_pretalk|Что ж, хорошо.
+dialogs|dlga_member_trade:do_member_equip_trade|Хорошо, вот всё здесь...
+dialogs|dlga_do_member_equip_trade:member_talk|А где моя одежда?
+dialogs|dlga_do_member_equip_trade:member_talk.1|Что-нибудь ещё?
+dialogs|dlga_spouse_leave:spouse_leave_confirm.1|Ты уверен{/а}, {s0}?
+dialogs|dlga_member_question_2:member_delegate_quest|У меня есть для тебя поручение...
+dialogs|dlga_member_intelgathering_1:do_member_trade|Да, {s0}, у меня остались друзья в {s17}... Но не думаю, что {reg18?{s18} отнесётся благосклонно к таким тёмным делишкам:сейчас, когда расклад сил так быстро меняется, это разумно}. Все знают, что {s19}
+dialogs|dlga_member_intelgathering_3:member_intelgathering_rescue|Отлично. Раз уж ты будешь там, проведай нашего закованного друга {s10} и убедись, что {reg4?она:он} цел{reg4?а:}.
+dialogs|dlga_member_intelgathering_3:member_intelgathering_rescue.1|Ходят слухи, что там держат в темнице знатного человека из {s10}.
+dialogs|dlga_member_intelgathering_rescue:close_window|Да, этим можно воспользоваться, чтобы заслужить расположение {s20}. Я постараюсь придумать план спасения, {s21}. Вестей от меня ждите примерно через неделю.
+dialogs|dlga_member_delegate_quest:do_member_trade|Увы, {s5}, мои раны ещё не зажили. Дай мне несколько дней прийти в себя, и тогда я смогу быть полезнее.
+dialogs|dlga_member_delegate_quest:do_member_trade.1|Думаю, пока разумнее держаться вместе: {s4} ещё не вернулся из {s8}.
+dialogs|dlga_member_delegate_quest:do_member_trade.2|Я не на это подписывался, когда вступал в твой отряд, {s5}. {s6}
+dialogs|dlga_member_delegate_quest:close_window|Слушай, {s5}, если хочешь ненадолго от меня избавиться — только скажи, и я охотно уйду. Но не жди, что я буду оказывать тебе услуги, пока меня нет.
+dialogs|dlga_member_delegate_quest:member_delegate_quest_list|Хорошо, {s5}, что мне сделать?
+dialogs|dlga_member_delegate_quest_list:redo_member_quest|Неважно.
+dialogs|dlga_member_delegate_quest_list:member_delegate_quest_details|{s2} для {s3}.
+dialogs|dlga_member_delegate_quest_details:member_delegate_quest_select|целевое поселение: {s10} целевой персонаж: {s11} целевая фракция: {s12}^ объект-персонаж: {s13} объект-поселение: {s15} объект-фракция: {s20}^ заказчик: {s14}^ поселение заказчика: {s18} целевой отряд: {s16} целевой шаблон: {s17}^ целевой предмет: {s19}^ количество: {reg10} целевая ДНК: {reg13}^ текущее состояние: {reg11} целевое состояние: {reg16} состояние объекта: {reg17}^ убеждение: {reg19} важность: {reg20}^ награда опытом: {reg21} награда золотом: {reg22}^ дней до истечения: {reg23}^ период запрета: {reg24} дней запрета: {reg25} последствие провала: {reg26}^ временный слот: {reg27}^ уровень поручения: {reg28}
+dialogs|dlga_member_delegate_quest_select:member_delegate_quest_destination|Да, всё верно.
+dialogs|dlga_member_delegate_quest_select:member_delegate_quest|Хотя, пожалуй, лучше я займусь этим сам{/а}.
+dialogs|dlga_member_delegate_quest_destination:member_delegate_quest_inventory|Хорошо. Я отправляюсь в {s10}. Вернусь примерно через {reg10} дн., но на то, чтобы как следует справиться с делом, может понадобиться ещё несколько дней.
+dialogs|dlga_member_delegate_quest_destination:redo_member_quest|Если честно, я не представляю, куда мне идти. У тебя случайно нет карты этих мест?
+dialogs|dlga_member_delegate_quest_inventory:member_delegate_quest_ask_for_items|Конечно, дело пойдёт лучше, если я приду не с пустыми руками. У нас ведь ещё есть {reg12} ед. {s11}?
+dialogs|dlga_member_delegate_quest_ask_for_items:member_delegate_quest_confirm|Конечно, береги это.
+dialogs|dlga_member_delegate_quest_ask_for_items:member_delegate_quest_confirm.1|Докупишь по дороге. Мне сейчас некогда этим заниматься.
+dialogs|dlga_member_delegate_quest_ask_for_items:redo_member_quest|Нет, спасибо, что напомнил пополнить запасы.
+dialogs|dlga_member_delegate_quest_soldiers:member_delegate_quest_ask_for_troops|Хорошо, соберу бойцов и отправлюсь. Думаю, для нужного числа нам понадобится {reg10} {s10}.
+dialogs|dlga_member_delegate_quest_ask_for_troops:member_delegate_quest_confirm|Да, вот бойцы.
+dialogs|dlga_member_delegate_quest_ask_for_troops:member_delegate_quest_confirm.1|Хорошо, вот пленные.
+dialogs|dlga_member_delegate_quest_ask_for_troops:member_delegate_quest_confirm.2|Подожди с этим.
+dialogs|dlga_member_delegate_quest_confirm:do_member_quest|Удачи тебе.
+dialogs|dlga_member_delegate_quest_confirm:redo_member_quest|Нет, я передумал{/а}.
+dialogs|dlga_do_member_quest:close_window|Тогда я в путь.
+dialogs|dlga_redo_member_quest:do_member_trade|Чем ещё я могу помочь?
+dialogs|dlga_minister_talk:minister_rename_court|Я хочу переименовать нашу столицу.
+dialogs|dlga_minister_rename_court:minister_pretalk|Мы уже переименовали старую столицу по вашей воле. Второй раз горожане этого не потерпят.
+dialogs|dlga_minister_rename_court:minister_pretalk.1|К сожалению, мы не можем решать это за народ: наше государство недостаточно централизовано и не признает {s1} столицей.
+dialogs|dlga_minister_rename_court:minister_rename_confirm|Вы уверены, мой государь? Добрые жители {s1} могут не обрадоваться такой прихоти. Придётся снимать вывески, переписывать грамоты, и для того чтобы узаконить решение, в казне должно быть не меньше 10 000 динаров. Либо мы можем устроить здесь пир для горожан и всех прибывших лордов, чтобы весть разошлась быстрее. Ах да, моя племянница как раз сплела кружевную салфетку для вашего стола — нам нужен рулон льна на новый комплект.
+dialogs|dlga_minister_rename_confirm:minister_pretalk|Здесь начинается новая эпоха — шлите глашатаев и мастеров вывесок!
+dialogs|dlga_minister_rename_confirm:minister_pretalk.1|Хорошо — пусть все лорды и горожане узнают о нашем решении.
+dialogs|dlga_minister_rename_confirm:minister_pretalk.2|Нам это пока не по карману.
+dialogs|dlga_minister_rename_confirm:spouse_organize_feast|Пора начинать готовиться к пиру.
+dialogs|dlga_minister_rename_confirm:minister_pretalk.3|Что ж, тогда схожу за покупками.
+dialogs|dlga_dplmc_recruiter_talk:dplmc_recruiter_enough_talk|Пока бойцов у нас достаточно.
+dialogs|dlga_dplmc_recruiter_enough_talk:dplmc_recruiter_enough_option|Отлично, я уйду, как только доставлю этих {reg1} новобранцев в {s1}. Не хотите взять часть с собой?
+dialogs|dlga_dplmc_recruiter_enough_talk:close_window|Что ж, похоже, моя работа здесь окончена. Передайте коннетаблю мой поклон.
+dialogs|dlga_dplmc_recruiter_enough_option:close_window|Нет, поторопись.
+dialogs|dlga_dplmc_recruiter_enough_option:dplmc_recruiter_enough_recruits|Да, мне нужно пополнить свои силы.
+dialogs|dlga_dplmc_recruiter_enough_recruits:dplmc_recruiter_talk|Надеюсь, эта партия новобранцев вам по душе.
+dialogs|dlga_dplmc_chancellor_message_ask:close_window|Кхм, {s6} как раз здесь. Может, вы сами скажете, если вам не слишком неловко?
+dialogs|dlga_dplmc_constable_status_info:dplmc_constable_status|Там нет нашего гарнизона. К счастью, одного вида нашего знамени должно хватить, чтобы отпугнуть разбойников.
+dialogs|dlga_dplmc_constable_train_improved_ask:dplmc_constable_train_center|Если хотите, я найму ещё наставников, чтобы обучать новобранцев быстрее и лучше. Это будет стоить {reg10} динаров в день сверх обычного.
+dialogs|dlga_dplmc_constable_train_improved:dplmc_constable_train_center.2|Думаю, мы заслуживаем наставника: {s1}.
+dialogs|dlga_dplmc_constable_train_improved:dplmc_constable_train_center.3|Не скупись, нам нужен наставник: {s1}.
+dialogs|dlga_dplmc_constable_train_improved:dplmc_constable_train_center.4|Нет, обучай их сам.
+dialogs|dlga_dplmc_constable_recruits_and_training:dplmc_constable_gender_ratio|Я хочу заняться соотношением мужчин и женщин в войске.
+dialogs|dlga_dplmc_constable_gender_ratio:dplmc_constable_gender_ratio_select|Хорошо. Сейчас на каждые 100 мужчин в нашем войске приходится {reg10} женщин. Как вы хотите распределить набор?
+dialogs|dlga_dplmc_constable_gender_ratio_select:dplmc_constable_gender_ratio|Меньше.
+dialogs|dlga_dplmc_constable_gender_ratio_select:dplmc_constable_gender_ratio.1|Больше.
+dialogs|dlga_dplmc_constable_gender_ratio_select:dplmc_constable_gender_ratio.2|Поровну.
+dialogs|dlga_dplmc_constable_gender_ratio_select:dplmc_constable_pretalk|Думаю, теперь всё хорошо.
+dialogs|dlga_dplmc_constable_talk:dplmc_constable_garrison_prisoner_manage|В темнице есть пленники — давай на них посмотрим.
+dialogs|dlga_dplmc_constable_garrison_prisoner_manage:dplmc_constable_garrison_prisoner_sell|Конечно, {s0}. Осталось пленников: {reg0}{reg1?, и ещё {reg1} знатных в заточении:}.
+dialogs|dlga_dplmc_constable_garrison_prisoner_sell:dplmc_constable_garrison_prisoner_manage|Продаём дальше.
+dialogs|dlga_dplmc_constable_garrison_prisoner_sell:dplmc_constable_garrison_prisoner_done|На этом всё.
+dialogs|dlga_dplmc_constable_garrison_prisoner_done:dplmc_constable_pretalk|Надеюсь, они займутся честным трудом, а не будут чахнуть в темнице.
+dialogs|dlga_dplmc_constable_dismiss_confirm_ask:dplmc_constable_dismiss_inventory|Как пожелаете, {s0}. У меня ещё хранится снаряжение, которое вы мне доверили, и я пренебрёг бы долгом, если бы ушёл, не позаботившись о нём.
+dialogs|dlga_dplmc_constable_dismiss_inventory:dplmc_constable_dismiss_confirm_ask|Ну-ка, посмотрим...
+dialogs|dlga_dplmc_constable_dismiss_inventory:dplmc_constable_pretalk|Хотя нет, ты ещё нужен на своём посту.
+dialogs|dlga_dplmc_chamberlain_dismiss_confirm_ask:dplmc_chamberlain_dismiss_inventory|Вы оставили у меня на хранении кое-какие вещи. Если вы уверены, не будете ли любезны сначала просмотреть их и решить, что оставить себе?
+dialogs|dlga_dplmc_chamberlain_dismiss_inventory:dplmc_chamberlain_dismiss_confirm_ask|Дай посмотреть...
+dialogs|dlga_dplmc_chamberlain_dismiss_inventory:dplmc_chamberlain_pretalk|У меня есть дела поважнее — оставайся на службе.
+dialogs|dlga_dplmc_spouse_talk_buy_food_amount_ask:dplmc_spouse_talk_buy_food_amount|Сколько хлеба тебе нужно?
+dialogs|dlga_dplmc_spouse_talk_buy_food_amount:spouse_pretalk|Неважно.
+dialogs|dlga_lord_talk:dplmc_lord_declare_peace|{s66}, вам следует заключить перемирие в этой войне.
+dialogs|dlga_dplmc_lord_declare_peace:close_window|Да кто ты такой, чтобы диктовать мне, как вести войну? Больше ни слова не желаю слышать!
+dialogs|dlga_dplmc_lord_declare_peace:close_window.1|Ты принимаешь меня за глупца, {playername}? Мои шпионы доносят о твоих проступках в этом походе, и не думай, что сладкие речи загладят твоё скверное поведение. {reg10?Я знаю о твоих шашнях с нашим врагом, {s10}. :}Твоя трусость замечена, и в просьбе тебе отказано.
+dialogs|dlga_dplmc_lord_declare_peace:dplmc_lord_declare_pax_why|Ты считаешь, что нам следует прекратить войну с {s1}?
+dialogs|dlga_dplmc_lord_declare_peace:dplmc_lord_declare_peace_kingdoms_select|Так и быть, выслушаю. С кем из наших противников, по-твоему, стоит заключить перемирие?
+dialogs|dlga_dplmc_lord_declare_peace_kingdoms_select:lord_pretalk|Неважно.
+dialogs|dlga_dplmc_lord_declare_peace_kingdoms_select:dplmc_lord_declare_peace|{s10} из {s11}
+dialogs|dlga_dplmc_lord_declare_pax_why:dplmc_lord_declare_peace_anything_else|У них куда больше владений, а мы почти не продвигаемся.
+dialogs|dlga_dplmc_lord_declare_pax_why:dplmc_lord_declare_peace_anything_else.1|Мы уже достигли цели этой войны.
+dialogs|dlga_dplmc_lord_declare_pax_why:dplmc_lord_declare_peace_anything_else.2|Кровопролитие длится слишком долго. Народ страдает.
+dialogs|dlga_dplmc_lord_declare_pax_why:dplmc_lord_declare_peace_anything_else.3|Мы воюем на слишком многих фронтах сразу.
+dialogs|dlga_dplmc_lord_declare_pax_why:dplmc_lord_declare_pax_decision|Я назвал{/а} все причины, по которым нашему государству нужен мир с {s11}. Я искренне считаю, что это необходимо.
+dialogs|dlga_dplmc_lord_declare_pax_why:lord_pretalk|Я вернусь с новыми доводами.
+dialogs|dlga_dplmc_lord_declare_peace_anything_else:dplmc_lord_declare_pax_why|Любопытно. Что-нибудь ещё хочешь добавить?
+dialogs|dlga_dplmc_lord_declare_pax_decision:close_window|Твои слова меня убедили. Я разошлю глашатаев — мы больше не воюем с {s11}.
+dialogs|dlga_dplmc_lord_declare_pax_decision:close_window.1|Нет, ты меня ничуть не убедил{/а}. Мы должны продолжать войну с {s11}.
+dialogs|dlga_dplmc_minister_gift_fief_select:minister_pretalk|Хотя нет, пожалуй, я оставлю эти владения себе.
+dialogs|dlga_minister_talk:minister_brief_employee|Я хочу получать свежие донесения о том, как развиваются дела.
+dialogs|dlga_minister_brief_employee:minister_brief_employee_choose|Понимаю. С кем вы желаете совещаться в первую очередь?
+dialogs|dlga_minister_brief_employee_choose:minister_brief_employee_chosen|Неважно, все мои советники для меня одинаково важны.
+dialogs|dlga_minister_brief_employee_choose:minister_brief_employee_chosen.1|Я встречусь с камергером, чтобы заняться внутренними делами.
+dialogs|dlga_minister_brief_employee_choose:minister_brief_employee_chosen.2|С коннетаблем — поговорить о войне.
+dialogs|dlga_minister_brief_employee_choose:minister_brief_employee_chosen.3|С канцлером — обсудить положение в государстве.
+dialogs|dlga_minister_brief_employee_choose:minister_brief_employee_chosen.4|С тобой, разумеется.
+dialogs|dlga_minister_brief_employee_chosen:minister_pretalk|Как пожелаете. На следующем совете вас выслушает {s1}.
+dialogs|dlga_minister_declare_war:dplmc_minister_nevermind|Об этом вам стоит сначала поговорить с {s0}.
+dialogs|dlga_dplmc_minister_nevermind:close_window|Пожалуй, так и сделаю.
+dialogs|dlga_dplmc_minister_nevermind:minister_pretalk|Неважно.
+dialogs|dlga_event_triggered:companion_rejoin_response.8|Что ж, {s21}, было непросто, но я доставил{/а} {s11} целым и невредимым. Стража в {s12} ещё долго будет рассказывать о нашем дерзком побеге, но, скажу так, они так и не поняли, что на них обрушилось.
+dialogs|dlga_event_triggered:companion_rejoin_response.9|Ты хочешь, чтобы я снова присоединился к тебе?
+dialogs|dlga_event_triggered:close_window.3|Вот! Вдали видны стены {s3}. Мы добрались благополучно. Вот, возьми кошель с {reg3} динарами, как я и обещал. Надеюсь, когда-нибудь мы снова отправимся в путь вместе.
+dialogs|dlga_lord_start:lord_pay_debt_2.1|А, {playername}. Кажется, в прошлый раз ты просил{/а} {reg1} динаров на выкуп? Раз то дело улажено, не желаешь ли вернуть долг?
+dialogs|dlga_lord_talk:lord_ask_about_ransom|Я хочу предложить выкуп за {s11}, которого держат в плену в {s12}
+dialogs|dlga_lord_ask_about_ransom:lord_ask_to_ransom_prisoner|Значит, {s10} нажаловал{reg3?ась:ся} на моё гостеприимство {reg3?своему:своему} {s11}? Удивляюсь, что {s12} вообще утруждает себя. С какой стати мне заботиться о благополучии этого глупца после того жалкого предложения, что {reg3?она:он} мне прислал{reg3?а:}?
+dialogs|dlga_lord_ask_to_ransom_prisoner:convince_begin|Может, я сумею тебя уговорить...
+dialogs|dlga_lord_ask_to_ransom_prisoner:lord_pretalk|Неважно, думаю, условия там не такие уж плохие.
+dialogs|dlga_convince_accept:lord_ask_to_ransom_prisoner_convinced|Хорошо, {playername}, я не лишён милосердия и готов пересмотреть выкуп за {s10}. Ты принес{/ла} {s1}, которые я просил у {s12}?
+dialogs|dlga_lord_ask_to_ransom_prisoner_convinced:lord_ask_to_ransom_prisoner_released|Конечно, вот.
+dialogs|dlga_lord_ask_to_ransom_prisoner_convinced:lord_ask_to_ransom_prisoner_portion|Мы с {s12} собрали только {reg1} динаров...
+dialogs|dlga_lord_ask_to_ransom_prisoner_convinced:lord_ask_to_ransom_prisoner_not_paid|Мне это не по средствам.
+dialogs|dlga_lord_ask_to_ransom_prisoner_not_paid:close_window|Не беспокойся, {playername}, времени найти ещё денег предостаточно.
+dialogs|dlga_lord_ask_to_ransom_prisoner_not_paid:close_window.1|Только время зря потратили... Что ж, {playername}, в следующий раз лёгкой сделки не жди.
+dialogs|dlga_lord_ask_to_ransom_prisoner_portion:lord_ask_to_ransom_prisoner_portion_payment|Надо же, я и не знал, что у {s10} такие бедные друзья! На эти гроши можно выкупить разве что пару пальцев — как раз на нищенские похороны, над которыми поплачет {s12}.
+dialogs|dlga_lord_ask_to_ransom_prisoner_portion_payment:lord_ask_to_ransom_prisoner_released|Остальное я доплачу из своего кармана...
+dialogs|dlga_lord_ask_to_ransom_prisoner_portion_payment:lord_ask_to_ransom_prisoner_portion_lord|Уж наверное {s10} может отдать часть своего богатства?
+dialogs|dlga_lord_ask_to_ransom_prisoner_portion_payment:lord_ask_to_ransom_prisoner_not_paid|Неважно, мне надо подумать...
+dialogs|dlga_lord_ask_to_ransom_prisoner_portion_lord:lord_ask_to_ransom_prisoner_released|Что ж, я и не рассчитывал много выжать из {s10}. {reg4?Её:Его} оружие и конь на торгах почти ничего не стоили, но придётся довольствоваться этим. Думаю, теперь {s10} — твоя забота.
+dialogs|dlga_lord_ask_to_ransom_prisoner_released:close_window|Отличный выбор, {playername}. Вскоре {s10} будет освобождён.
+dialogs|dlga_lord_talk_ask_something_2:lord_talk_ask_about_capture_prisoners|Мне нужны пленники: {s1}.
+dialogs|dlga_lord_talk_ask_about_capture_prisoners:lord_talk_ask_about_capture_prisoners_count|У меня здесь {reg11} {s11}. Можешь забрать {reg10?{reg4?её:его} бесплатно:их по {s1} за каждого}.
+dialogs|dlga_lord_talk_ask_about_capture_prisoners_count:lord_talk_ask_something_again|Неважно.
+dialogs|dlga_lord_talk_ask_about_capture_prisoners_count:lord_talk_ask_about_capture_prisoners_bought|Спасибо, но мне нужно только {reg2}.
+dialogs|dlga_lord_talk_ask_about_capture_prisoners_count:lord_talk_ask_about_capture_prisoners_bought.1|Мы с {s1} благодарим вас за помощь в войне.
+dialogs|dlga_lord_talk_ask_about_capture_prisoners_bought:lord_pretalk|Как пожелаешь.
+dialogs|dlga_lord_talk_ask_something_2:lord_talk_ask_about_ransom|Вы готовы помочь с выкупом вашего {s11}, {s1}?
+dialogs|dlga_lord_talk_ask_about_ransom:lord_talk_ask_something_again|Я беспокоюсь о судьбе {s1}, но не считаю тебя достойным поручения {s2}, пока ты не вернул{/а} мне свой долг.
+dialogs|dlga_lord_talk_ask_about_ransom:lord_pretalk|Что, снова пришёл? Разве я уже не дал тебе {s1}? Предупреждаю, {playername}: если ты подведёшь моего {s11}, я потребую вернуть всё до последнего динара.
+dialogs|dlga_lord_talk_ask_about_ransom:lord_pretalk.1|Да, я слышал о бедах {s1}. Но {reg4?она:он} мне лишь дальн{reg4?яя:ий} {s11}, и я не считаю себя обязанным помогать.
+dialogs|dlga_lord_talk_ask_about_ransom:lord_pretalk.2|Я предпочитаю держаться подальше от глупостей {s1} в {s2} — ты же видишь, я за них не отвечаю.
+dialogs|dlga_lord_talk_ask_about_ransom:close_window|Как ты смеешь просить меня за этого {s43}, {playername}? Ты испытываешь моё терпение...
+dialogs|dlga_lord_talk_ask_about_ransom:lord_pretalk.3|Я не питаю к {s1} никакой любви — пусть гниёт.
+dialogs|dlga_lord_talk_ask_about_ransom:lord_pretalk.4|Думаю, вы с {s12} собрали достаточно, чтобы выкупить {s11}. Больше я ничего не могу дать, кроме благословения.
+dialogs|dlga_lord_talk_ask_about_ransom:lord_calculated_ransom|Конечно, {playername}. {s1} — мой {s4}, и я помогу, чем смогу...
+dialogs|dlga_lord_calculated_ransom:lord_pretalk|Однако моя казна сейчас почти пуста — {s1} придётся ещё немного подождать.
+dialogs|dlga_lord_calculated_ransom:lord_ask_calculated_ransom|{s1} хватит?
+dialogs|dlga_lord_ask_calculated_ransom:lord_lend_ransom_accept|Конечно.
+dialogs|dlga_lord_ask_calculated_ransom:lord_lend_ransom_reject|Неважно.
+dialogs|dlga_lord_lend_ransom_accept:lord_pretalk|Тогда бери с моим благословением, {playername}. Передай {s1} мой поклон.
+dialogs|dlga_lord_lend_ransom_reject:lord_pretalk|Что за игру ты ведёшь, {playername}? Мы ведь оба хотим освободить {s1}?
+dialogs|dlga_lord_active_mission_2:lord_hunt_down_fugitive_prompt|Я нашёл {s4}: он прятался в {s3}...
+dialogs|dlga_lord_hunt_down_fugitive_prompt:lord_hunt_down_fugitive_status|Хорошо. Надеюсь, ты в точности исполнил{/а} мои указания?
+dialogs|dlga_lord_hunt_down_fugitive_status:lord_hunt_down_fugitive_success|Разумеется. Он получил своё наказание.
+dialogs|dlga_lord_hunt_down_fugitive_status:lord_hunt_down_fugitive_brought_back|Я схватил{/а} {s4} и привёл{/а} сюда, чтобы свершилось правосудие.
+dialogs|dlga_lord_hunt_down_fugitive_status:lord_hunt_down_fugitive_not_brought_back|Я поймал{/а} {s4}, но по дороге он выпутался из верёвок...
+dialogs|dlga_lord_hunt_down_fugitive_status:lord_hunt_down_fugitive_burnt_village|Я нашёл{/ла} беглеца в {s3} и сжёг{/ла} это гнездо порока.
+dialogs|dlga_lord_hunt_down_fugitive_status:lord_hunt_down_fugitive_concluded|Боюсь, {s3} сжёг кто-то другой. Мне не удалось найти его семью.
+dialogs|dlga_lord_hunt_down_fugitive_status:lord_hunt_down_fugitive_fail|Боюсь, он ушёл.
+dialogs|dlga_lord_hunt_down_fugitive_burnt_village:lord_hunt_down_fugitive_success_2|Ты разорил{/а} целую деревню, чтобы добраться до одного человека?! Смею сказать, {s10} будет недоволен... Мы сегодня убили двух зайцев одним выстрелом, не так ли, {playername}?
+dialogs|dlga_lord_hunt_down_fugitive_burnt_village:close_window|Ты в своём уме, {playername}? {reg10?Это были мои крестьяне, болван:Эта деревня принадлежала моему {s11}}! {reg11?Если от тебя ждать такого, я боюсь за будущее нашего государства:Не стоило доверять такому ретивому человеку, как ты}. Забирай эти кровавые деньги и убирайся...
+dialogs|dlga_lord_hunt_down_fugitive_burnt_village:lord_hunt_down_fugitive_success_2.1|Но зачем?! Полагаю, дело ты сделал{/а}, хотя твои методы, мягко говоря, сомнительны...
+dialogs|dlga_lord_hunt_down_fugitive_not_brought_back:lord_pretalk|Я крайне недоволен, {playername}. {reg10?Неужели бывают люди настолько бестолковые, как ты?:} Я велел убить {s4}, а не устраивать посмешище из защиты моей чести, чтобы потом упустить этого мерзавца. Хорошую же кашу ты заварил{/а}...{reg11? Или ты нарочно ослабил{/а} его путы мне назло?:}
+dialogs|dlga_lord_hunt_down_fugitive_brought_back:lord_hunt_down_fugitive_success_2|Хорошо. Благодаря тебе правосудие наконец свершится. Ты заслужил{/а} мою благодарность и, как обещано, кошель с 300 динарами.
+dialogs|dlga_lord_hunt_down_fugitive_brought_back:lord_hunt_down_fugitive_success_2.1|Превосходно, {playername}. Надо будет наточить ножи, прежде чем браться за {s4}. Ах да, тебе ведь нужна награда...
+dialogs|dlga_lord_hunt_down_fugitive_brought_back:lord_hunt_down_fugitive_success_2.2|Хорошо. Голову ему с плеч! Я знал, что ты меня не подведёшь, {playername}, вот твоя награда — 300 динаров.
+dialogs|dlga_lord_hunt_down_fugitive_concluded:lord_pretalk|Что ж, видно, судьба сама лишила меня этой мести. Хотел бы я увидеть труп этого {s43} своими глазами, но придётся поверить тебе на слово.
+dialogs|dlga_lord_mission_rescue_prisoner_method:lord_mission_rescue_prisoner_method_connection|Я думаю воспользоваться своими связями в {s24}.
+dialogs|dlga_lord_mission_rescue_prisoner_method_ransom:lord_mission_rescue_other_ideas|Конечно. Если моих писем к {s14} оказалось недостаточно, всегда можно собрать больше золота. А если и это не поможет, ты наверняка сможешь уговорить тюремщика или обратиться к посреднику по выкупам. Думаю, тогда и другие члены нашей семьи согласятся внести свою долю в выкуп {s13}.
+dialogs|dlga_lord_mission_rescue_prisoner_method_connection:lord_mission_rescue_other_ideas|Хорошо сказано, {playername}. Если ты или твои спутники знаете, как устроен {s24}, можно устроить отвлекающий манёвр, а в суматохе срезать замки нужными инструментами. Но тот, кого мы пошлём спасать {s13}, должен быть быстр на ногу и сообразителен, чтобы уговорить или нанять местных помочь.
+dialogs|dlga_lord_talk:dplmc_prisoner_chat_let_go|Ты свободен.
+dialogs|dlga_spouse_join:close_window.1|Ты хочешь, чтобы я отправилась с тобой на войну? Я читала в книгах и слышала от менестрелей о женщинах, что сражались наравне с мужчинами. И я знаю, что простолюдинки, которых захватила война, бьются в рядах Сестёр меча или идут за армией в обозе. Но я и не думала, что такая возможность выпадет мне. Я никогда не видела битвы вблизи — разве что на арене, — и при мысли, что на меня бросится мужчина с занесённым топором, меня охватывает ужас.^^И всё же спать под звёздами рядом с {s0}, повидать мир, мчаться к победе на добром коне... такие возможности редко выпадают женщинам. Было бы нечестно по отношению к моему полу их упустить. Я поеду с тобой.
+dialogs|dlga_spouse_join:close_window.2|Конечно, {s0}! С удовольствием. Интересно, что же мне надеть в такой поход... Может, как-нибудь сходим за покупками вместе?
+dialogs|dlga_spouse_join:spouse_pretalk|Поехать с тобой на войну? Признаюсь, искушение велико — хотя бы для того, чтобы ты и твои люди не предавались порокам, к которым так склонен ваш пол: пьянству, распутству, грабежам и избиению пленных. Но я женщина, дама благородного происхождения, а для калрадийской женщины выезжать на войну просто немыслимо.^^Это не моё место. Моё место здесь: вести твой дом, беречь твои интересы, пока тебя нет, и следить, чтобы к твоему возвращению очаг был тёплым.^^Такова моя роль как женщины, и я ею довольна.
+dialogs|dlga_spouse_join:spouse_pretalk.1|Что? Ездить на войну, как простая обозная девка? Проводить дни в резне, словно какая-нибудь распутная Сестра меча? Ты много на себя берёшь, {s0}. Я не трактирная девка и не наёмница-сорвиголова. Я дама Калрадии, с рождения воспитанная помогать мужу управлять домом и землями. Я ищу славы в деяниях своего мужа, а не в собственных.^^Если я начну играть мужскую роль, это унизит меня и навлечёт презрение каждого знатного калрадийца. Мне не нравится это предложение, и я не хочу, чтобы меня об этом спрашивали снова.
+dialogs|dlga_spouse_join:spouse_pretalk.2|Ох, {s0}, зачем ты об этом просишь? Я не могу ехать с тобой в бой! Я ни разу в жизни не держала меча! Я буду совершенно бесполезна! Мало кто из знатных калрадийцев учит дочерей сражаться, и не уверена, что я научилась бы, даже будь у меня такая возможность. Самый слабый новобранец в твоём войске стоит в бою больше, чем я, ведь страшнее вышивальной иглы я ничего в руках не держала. Твои люди погибнут, пытаясь меня защитить.^^Ты мой {s0}, и я тебя уважаю, но если тебе нужна была жена, которая встанет рядом плечом к плечу и щит к щиту, — тебе следовало жениться на другой.
+dialogs|dlga_talk_caravan_escort_2b:close_window.1|Я вздохну спокойно, только когда мы доберёмся до {s1}, и ни мгновением раньше. Двигаемся дальше.
+dialogs|dlga_merchant_talk_offer_else:merchant_talk_offer_2|Хотите спросить что-нибудь ещё?
+dialogs|dlga_merchant_talk_offer_2:caravan_offer_paydebt|Я хочу выплатить {s1}, которые задолжал{/а} гильдии торговцев.
+dialogs|dlga_caravan_offer_paydebt:merchant_pretalk|Конечно, {s0}. Даю слово, ваши деньги будут доставлены в гильдию.
+dialogs|dlga_merchant_talk_offer_2:caravan_offer_disguise|Я хочу попасть в {s12} вместе с вашим караваном.
+dialogs|dlga_caravan_offer_disguise:merchant_talk_offer_else|Кажется, за вами числится должок перед гильдией торговцев. Я не возьму в дорогу того, кто не платит по своим долгам.
+dialogs|dlga_caravan_offer_disguise:merchant_talk_offer_else.1|Прости, друг, мы не берём чужаков так легко, да и стража, думаю, тоже.
+dialogs|dlga_caravan_offer_disguise:merchant_talk_offer_else.2|Простите, совесть не позволяет мне помочь вам проникнуть в {s12}.
+dialogs|dlga_caravan_offer_disguise:merchant_pretalk|Я не могу вам помочь. Если мы возьмём вас, {playername}, когда ваши намерения так очевидны, это поставит под угрозу наши дела в {s12}. Придётся вам обойтись без нас.
+dialogs|dlga_caravan_offer_disguise:caravan_choose_disguise|За разумную плату мы найдём вам место в караване. Если вы ладите с цифрами, легко сойдёте за одного из торговцев. А если вы человек военный, милости просим в охрану каравана.
+dialogs|dlga_caravan_choose_disguise:caravan_offer_disguise_continue|Я приготовлю оружие и буду начеку.
+dialogs|dlga_caravan_choose_disguise:caravan_offer_disguise_continue.1|Да, у меня явно важные торговые дела.
+dialogs|dlga_caravan_offer_disguise_continue:close_window|Хорошо. Мы направляемся в {s12}. Приятной дороги, {s0}, но поглядывайте, нет ли разбойников...
+dialogs|dlga_caravan_offer_protection:close_window|Сопровождение? Да мы почти уже в {s10}! Но спасибо за предложение.
+dialogs|dlga_prison_guard_players:dplmc_guard_talk_replace|Ты пренебрегаешь своими обязанностями. Сдай пост, я выберу тебе замену.
+dialogs|dlga_castle_guard_players:dplmc_guard_talk_replace|Вольно, солдат. Замок будет охранять кто-нибудь другой.
+dialogs|dlga_start:castle_guard_sneaked_intro_ask|Прочь с глаз моих, нищий! От тебя воняет!
+dialogs|dlga_castle_guard_sneaked_intro_ask:close_window|Проваливай, пока я не вышел из себя!
+dialogs|dlga_castle_guard_sneaked_intro_ask:castle_guard_sneaked_intro_1|Прочь с глаз моих, нищий! От тебя воняет!
+dialogs|dlga_castle_guard_sneaked_intro_ask:castle_guard_sneaked_intro_1.1|И куда это ты собрался?
+dialogs|dlga_castle_guard_sneaked_intro_2:close_window.1|Не смеши меня. Возвращайся в грязь, где тебе самое место, мужик!
+dialogs|dlga_castle_guard_sneaked_intro_2:close_window.2|Что?! Лорду не о чем говорить с браконьерами. Хочешь продать свой товар — иди через вход для слуг!
+dialogs|dlga_castle_guard_sneaked_intro_2:close_window.3|Ступай прочь, лорд не имеет дел с мелочными торгашами. Если у тебя здесь дело, обращайся к главе гильдии.
+dialogs|dlga_castle_guard_sneaked_intro_2:close_window.4|Ошибаешься, приятель. Наёмникам в большом зале не место.
+dialogs|dlga_castle_guard_sneaked_intro_2:close_window.5|Последнего менестреля, что пытался сюда пробраться, вываляли в смоле и перьях и выгнали из города. Сомневаюсь, что ты хочешь того же.
+dialogs|dlga_deserter_talk:deserter_recruit|Я награжу вас и дам защиту, если вы {reg10?вступите в моё:вернётесь в} {reg10?:{s10} }войско.
+dialogs|dlga_deserter_recruit:deserter_recruit_2|Как щедро, {s0}. Покажи нам {reg5} динаров, тогда мы подумаем.
+dialogs|dlga_deserter_recruit_2:deserter_recruit_3a|Хорошо, вот ваши {reg5} динаров.
+dialogs|dlga_deserter_recruit_2:deserter_barter_3b|У меня с собой нет столько денег
+dialogs|dlga_deserter_recruit_3a:close_window|Отныне мы к твоим услугам.
+dialogs|dlga_tavernkeeper_buy_drinks:close_window|На какие деньги, приятель? Ты, похоже, и на обед еле наскребёшь, куда уж угощать всех выпивкой.
+dialogs|dlga_tavernkeeper_buy_drinks:close_window.1|Право, {playername}, думаю, это пустая трата времени. Местные парни выльют свою отличную выпивку, как только узнают, что она от тебя. Лучше поищи другие места, где потратить свои кровавые деньги...
+dialogs|dlga_tavernkeeper_buy_drinks:close_window.2|Без обид, {playername}, но я бы долго не продержался в своём деле, прознай {s1}, что ты здесь. Более того, советую тебе поглядывать за спину, если собираешься ночевать в этом городе... Кто знает, какие головорезы могут нагрянуть посреди ночи?
+dialogs|dlga_ransom_broker_talk:ransom_kingdom_hero|Я хочу выкупить одного из знатных пленников в здешней темнице.
+dialogs|dlga_ransom_kingdom_hero:ransom_broker_pretalk|Больше я ничего не могу сделать, {s0}: эти пленники и так ваши, распоряжайтесь ими как угодно.
+dialogs|dlga_ransom_kingdom_hero:ransom_broker_pretalk.1|Простите, {s0}, даже с моими связями, боюсь, {s1} не примет вашего золота.
+dialogs|dlga_ransom_kingdom_hero:ransom_kingdom_hero_choose|Кого вы хотите выкупить?
+dialogs|dlga_ransom_kingdom_hero_choose:ransom_broker_pretalk|Неважно.
+dialogs|dlga_ransom_kingdom_hero_chosen:ransom_kingdom_hero|Простите, {s0}, но раз {s1} враждует с {s2}, вряд ли я смогу договориться об освобождении {s3}.
+dialogs|dlga_ransom_kingdom_hero_chosen:ransom_kingdom_hero_pay|Кажется, свобода {s11} сейчас стоит {s1}?
+dialogs|dlga_ransom_kingdom_hero_pay:close_window|Разумеется. Я хочу немедленно поговорить с {s11}.
+dialogs|dlga_ransom_kingdom_hero_pay:ransom_kingdom_hero_choose|Боюсь, пока я не могу столько заплатить.
+dialogs|dlga_tavern_traveler_tell_kingdoms_3:tavern_traveler_pretalk|Мне незачем вам что-то рассказывать, {s0}. Уверен, {s1} поведает вам об этом подробнее, чем я.
+dialogs|dlga_tavern_traveler_tell_kingdoms_3:tavern_traveler_tell_kingdoms_4b|Что ж, {s0}, похоже, мне нечему учить вас в мире политики. Но, может, вам будет любопытно узнать о судьбах тех, кого провидение, скажем так, одарило меньше, чем вас?
+dialogs|dlga_tavern_traveler_tell_kingdoms_4b:tavern_traveler_tell_kingdoms_5|В Калрадии немало претендентов на престол — тех, кто родился в нужной семье и ищет сторонников своих прав против ложных притязаний нынешнего короля. При должной поддержке с вашей стороны и паре толчков там и сям они легко развяжут междоусобицу, а может, однажды и сменят короля. Конечно, ваши права ничуть не хуже их, да и совместное правление Калрадией — дело не неслыханное.
+dialogs|dlga_tavern_traveler_talk:tavern_traveler_minstrel_location|Я ищу менестрелей...
+dialogs|dlga_tavern_traveler_minstrel_location:tavern_traveler_pretalk|Простите, я не большой любитель их музыки.
+dialogs|dlga_tavern_traveler_minstrel_location:tavern_traveler_minstrel_location_ask_money|Я недавно слышал кое-какие похабные песенки. За 30 динаров скажу где.
+dialogs|dlga_tavern_traveler_minstrel_location_ask_money:tavern_traveler_npc_location_tell|Хорошо. Вот 30 динаров.
+dialogs|dlga_tavern_traveler_minstrel_location_ask_money:tavern_traveler_pretalk|Неважно.
+dialogs|dlga_tavern_traveler_bookseller_location_ask_money:tavern_traveler_npc_location_tell|Хорошо. Вот 100 динаров.
+dialogs|dlga_tavern_traveler_ransom_broker_location_ask_money:tavern_traveler_npc_location_tell|Хорошо. Вот 50 динаров.
+dialogs|dlga_tavern_traveler_npc_location_tell:tavern_traveler_pretalk|Их можно найти в {s11}.
+dialogs|dlga_start:minstrel_1.1|Приветствую вас, {благороднейший господин/благороднейшая госпожа}.
+dialogs|dlga_minstrel_courtship_poem:minstrel_disguise_teach|Думаю, стихи, которым я лучше всего умею учить, вы уже знаете. Но вижу, вам не терпится узнать больше — я могу научить вас придворным манерам и игре на лире. И всё это за скромную плату в 1000 динаров, ведь мне не очень хочется расставаться с этой старинной лирой...
+dialogs|dlga_minstrel_disguise_teach:close_window|Да — покажи, что умеешь.
+dialogs|dlga_minstrel_disguise_teach:minstrel_pretalk|Неважно.
+dialogs|dlga_mercenary_after_recruited:mercenary_after_recruited_1|Готовьтесь. Выступаем на рассвете.
+dialogs|dlga_mercenary_after_recruited_1:close_window|Конечно, {господин/госпожа}. Скоро выступаем.
+dialogs|dlga_novicemaster_finish_training_2:close_window.1|Желаю удачи на турнирах. И не забывай: захочешь поупражняться с мечом — просто приходи и скажи.
+dialogs|dlga_master_craftsman_talk:master_craftsman_disguise_asked|Мне понадобится купеческое платье, чтобы вести дела.
+dialogs|dlga_master_craftsman_disguise_asked:master_craftsman_pretalk|Как пожелаете, {милорд/миледи}. Как только портные снимут мерки, вам его доставят.
+dialogs|dlga_mayor_investment_possible:mayor_investment_advice.3|Очень хорошо, {s0}. Мы в гильдии знаем вас и доверяем вам; думаю, я найду, кто продаст вам нужную землю.
+dialogs|dlga_mayor_investment_confirm:mayor_investment_advice|Нет — сейчас мне это невыгодно.
+dialogs|dlga_mayor_info_begin:mayor_info_talk.1|Я глава гильдии {s9}. Можно сказать, я предводитель добрых людей {s9}. {reg5?Вы, может, обо мне и не слышали, а вот я наслышан о ваших {reg4?подлых:добрых} делах, {playername}:Если ищете честную работу, я помогу её найти}.
+dialogs|dlga_mayor_war_description_2:mayor_prepolitics|На деле война — изнурительное занятие. Опустошить вражеские поля нетрудно, но урожай вырастет снова, а вот захватить вражескую крепость и удержать её — совсем другое дело. Поэтому правители Калрадии немного повоюют, заключат перемирие, снова повоюют и так далее. Нередко правитель начинает войну, когда его вызывает другое государство. В такие времена дурные люди, желающие нажиться на выкупах и грабеже, требуют возмездия, и ущерб казне от войны оказывается меньше, чем ущерб власти правителя от бездействия... Впрочем, ваше высочество куда опытнее в этих делах — я и здешний простой люд не смеем рассуждать о стратегии...
+dialogs|dlga_mayor_politics_assess:mayor_friendly_pretalk|Какие государства? {reg10?Ваше величество:Наш государь} покорил{reg10?и:} их все!
+dialogs|dlga_mayor_internal_politics_5:mayor_prepolitics.1|Люди не доверяют вассалу, который легко меняет сторону, но не доверяют и королю, который бросается обвинениями в измене. Эти две вещи и удерживают государство вместе. Но если отношения вассала и сюзерена испортятся всерьёз, дело может принять очень напряжённый оборот... В других землях, разумеется. В {s4} такого не случится никогда.
+dialogs|dlga_mayor_political_questions:mayor_politics_policy|Что вы можете сказать о внутренней политике государства?
+dialogs|dlga_mayor_politics_policy:mayor_political_questions|Что ж, давайте посмотрим... {s20}
+dialogs|dlga_merchant_quest_brief:merchant_quest_brief_deliver_wine.1|У меня есть партия {s6}, которую нужно доставить торговцу товарами в {s4}. Если отвезёшь {reg5} ед. {s6} в {s4} за 7 дней, заработаешь {reg8} динаров. Что скажешь?
+dialogs|dlga_start:close_window.46|Остаток пути мы пройдём сами. Спасибо.
+dialogs|dlga_start:close_window.47|Что ж, мы почти добрались до {s21}. Остаток пути пройдём сами. Вот ваша плата... {reg14} динаров. Спасибо, что сопроводили нас. Удачи.
+dialogs|dlga_start:close_window.48|Огромное спасибо, что вернули меня! Не могу дождаться встречи с семьёй. Прощайте.
+dialogs|dlga_start:close_window.49|Прошу, {playername}, умоляю, оставьте нас в покое... Чем мы вас обидели?!
+dialogs|dlga_village_elder_talk:village_elder_ask_chamberlain|Я ищу своего камергера. Мне сказали, что он прибыл сюда раньше меня.
+dialogs|dlga_village_elder_ask_chamberlain:village_elder_found_chamberlain|Придворные то и дело бывают в нашей деревне, {господин/госпожа}. Если он здесь отдыхает, подождите немного — непременно его найдёте.
+dialogs|dlga_village_elder_found_chamberlain:dplmc_chamberlain_talk|О, здравствуйте... Не ждал, что вы так часто объезжаете свои владения, вот и решил прогуляться в милую деревеньку {s9}, собрать налоги и прочее. Хотите, чтобы я здесь что-то сделал? Иначе поговорите со старостой вон там.
+dialogs|dlga_village_elder_ask_fugitive:close_window.1|Чужаки то и дело бывают в нашей деревне, {s0}. Если он здесь прячется, поищите получше — непременно найдёте.
+dialogs|dlga_village_elder_trade_talk:village_elder_buy_clothing|Вообще-то мне нужна такая одежда, как у ваших крестьян.
+dialogs|dlga_village_elder_buy_clothing:village_elder_pretalk|Конечно, {s0}. Можете распоряжаться этой одеждой с моего плеча как угодно.
+dialogs|dlga_village_elder_buy_clothing:village_elder_pretalk.1|Никаких затруднений, я распоряжусь, чтобы вам принесли свежевыстиранные рубахи.
+dialogs|dlga_village_elder_talk:village_elder_ask_enemies_local|Не видели ли вы здесь врагов в последнее время?
+dialogs|dlga_village_elder_ask_enemies_local:village_elder_ask_enemies|На нас напали {s1} {reg7?{reg7} дн. назад:совсем недавно}...
+dialogs|dlga_village_elder_ask_enemies_local:village_elder_ask_enemies.1|Хм. Дайте подумать...
+dialogs|dlga_arena_master_melee_talk:arena_master_melee_weapon_select|Хорошо. Сперва посмотрю на стойку с оружием.
+dialogs|dlga_arena_master_melee_weapon_select:arena_player_melee_weapon_select|Что ж, выберите оружие для схватки.
+dialogs|dlga_arena_player_melee_weapon_select:arena_melee_weapon_select_end|Двуручный меч.
+dialogs|dlga_arena_player_melee_weapon_select:arena_melee_weapon_select_end.1|Посох.
+dialogs|dlga_arena_player_melee_weapon_select:arena_melee_weapon_select_end.2|Меч и щит.
+dialogs|dlga_arena_player_melee_weapon_select:arena_melee_weapon_select_end.3|Лук и стрелы.
+dialogs|dlga_arena_melee_weapon_select_end:close_window|Удачи вам.
+dialogs|dlga_start:reinforcements_intro|Кто идёт? Мы — {s20}, направляемся в {s21}.
+dialogs|dlga_reinforcements_intro:close_window|Я {playername}. Просто проезжаю мимо.
+dialogs|dlga_reinforcements_intro:reinforcements_reinforce|Какое совпадение. Я тоже еду в {s21}. Вот, возьмите у меня бойцов.
+dialogs|dlga_reinforcements_reinforce:close_window|Благодарим, {господин/госпожа}. Мы продолжим путь.
+dialogs|dlga_reinforcements_intro:reinforcement_hostile|Я {playername}. И я здесь, чтобы вы не добрались до цели!
+dialogs|dlga_reinforcement_hostile:reinforcements_attack|Что?! Мы под защитой {s3}! Будь уверен{/а}, {reg3?она:он} отомстит!
+dialogs|dlga_reinforcements_attack:close_window|Пусть мстит! Разберусь с вами — и возьмусь за {reg3?эту стерву:этого негодяя}!
+dialogs|dlga_reinforcements_attack:close_window.1|Ладно, идите! Но вы ещё услышите о {playername}!
+dialogs|dlga_prisoner_chat:prisoner_chat_2.1|Не пытайся бежать и не делай глупостей. Я буду за тобой следить.
+dialogs|dlga_prisoner_chat_2:fugitive_chat|Постой, {playername}, мне нужно кое-что тебе сказать.
+dialogs|dlga_fugitive_chat:fugitive_chat_2|Пусть тебе кажется, что я нарушил клятву служить {s5}, но клянусь: меня сделали козлом отпущения за преступления, в которых обвинил меня {s4}.
+dialogs|dlga_fugitive_chat_2:close_window|Не думаю. Слову {s4} я поверю скорее, чем таким жалким оправданиям.
+dialogs|dlga_fugitive_chat_2:close_window.1|Если подумать, история и правда не сходится... Ступай, пока я не передумал{/а}.
+dialogs|dlga_start:close_window.50|Добрый день, {s0}. Всегда честь видеть вас в {s10}.
+dialogs|dlga_start:close_window.51|Ведите себя прилично в стенах города, и всё будет хорошо.
+dialogs|dlga_start:close_window.52|Нам не положено разговаривать на посту, {s0}.
+dialogs|dlga_hall_guard_talk:dplmc_guard_talk_reenter_court|Пусть постоянные члены двора вернутся к нам.
+dialogs|dlga_hall_guard_talk:dplmc_guard_talk_enter_court|Я приму безземельных лордов, просящих аудиенции.
+dialogs|dlga_hall_guard_talk:dplmc_guard_talk_enter_court.1|Я хочу поговорить со знатными дамами, которые здесь гостят.
+dialogs|dlga_hall_guard_talk:dplmc_guard_talk_enter_court.2|Освободите зал, мне нужна частная беседа с министрами.
+dialogs|dlga_dplmc_guard_talk_enter_court:close_window|К сожалению, просителей, ожидающих вашей милости, нет, {s0}.
+dialogs|dlga_dplmc_guard_talk_enter_court:close_window.1|Как пожелаете. Я попрошу камергера объявить о вашем прибытии.
+dialogs|dlga_dplmc_guard_talk_reenter_court:close_window|Как пожелаете. Двор сейчас соберётся.
+dialogs|dlga_hall_guard_talk:dplmc_guard_talk_replace|Ты не годишься охранять эти залы. Прочь с глаз моих.
+dialogs|dlga_dplmc_guard_talk_replace:dplmc_guard_plyr_replace|Понимаю... И кем вы меня замените?
+dialogs|dlga_dplmc_guard_plyr_replace:close_window|Неважно. За работу!
+dialogs|dlga_dplmc_guard_troop_replaced:close_window|Спасибо, что дали нам ещё один шанс, {s0}.
+dialogs|dlga_dplmc_guard_troop_replaced:close_window.1|Не думаю, что {reg10?{s10}:мы} смо{reg10?гут:жем} охранять оба места одновременно.
+dialogs|dlga_dplmc_guard_troop_replaced:close_window.2|Как пожелаете, {s0}. Теперь {s1} будут нести службу в вашей страже.
+dialogs|dlga_hall_guard_talk:hall_guard_employee_wait|Передай {s1}, что {reg0?ей:ему} больше не нужно встречать меня у дверей.
+dialogs|dlga_hall_guard_employee_wait:close_window|Как пожелаете, {s0}.
+dialogs|dlga_regular_member_talk:close_window.1|Ничего. Проходи.
+quick_strings|qstr_Kingdom_of_{s7}|Королевство {s7}
+quick_strings|qstr_Red:|Красный:
+quick_strings|qstr_Green:|Зелёный:
+quick_strings|qstr_Blue:|Синий:
+quick_strings|qstr_You_paid_{reg0}_dena|Вы заплатили {reg0} динаров наличными в погашение долга
+quick_strings|qstr_cut|рубящий
+quick_strings|qstr_pierce|колющий
+quick_strings|qstr_blunt|дробящий
+quick_strings|qstr_Damage_preference|Предпочтительный урон
+quick_strings|qstr_Item_meta_type|Метатип предмета
+quick_strings|qstr_Upgrade_armor|Улучшать доспехи
+quick_strings|qstr_Upgrade_horse|Улучшать коня
+quick_strings|qstr_High_mercantilistic_|Высокий меркантилизм максимизирует вывоз и сокращает ввоз, а также усиливает государственное регулирование ремёсел.
+quick_strings|qstr_{s10}s|{s10}
+quick_strings|qstr_Default_camera_mode|Режим камеры по умолчанию
+quick_strings|qstr_Keyboard|Клавиатура
+quick_strings|qstr_Mouse|Мышь
+quick_strings|qstr_Follower|Следование
+quick_strings|qstr_Raise_camera|Поднять камеру
+quick_strings|qstr_Lower_camera|Опустить камеру
+quick_strings|qstr_Lower_sensitivity|Уменьшить чувствительность
+quick_strings|qstr_Tilt_left|Наклон влево
+quick_strings|qstr_Prev_troop|Пред. боец
+quick_strings|qstr_Raise_sensitivity|Увеличить чувствительность
+quick_strings|qstr_Tilt_right|Наклон вправо
+quick_strings|qstr_Next_troop|След. боец
+quick_strings|qstr_Zoom_in|Приблизить
+quick_strings|qstr_Rotate_up|Повернуть вверх
+quick_strings|qstr_Zoom_out|Отдалить
+quick_strings|qstr_Rotate_down|Повернуть вниз
+quick_strings|qstr_Rotate_left|Повернуть влево
+quick_strings|qstr_Rotate_right|Повернуть вправо
+quick_strings|qstr_Press_a_key|Нажмите клавишу
+quick_strings|qstr_Export/Import|Экспорт/импорт
+quick_strings|qstr_Reselect_Banner|Выбрать знамя заново
+quick_strings|qstr__Renown:_{reg1}^_Hon| Известность: {reg1}^ Честь: {reg2}^ Право на власть: {reg3}
+quick_strings|qstr__Renown:_{reg2}^{s2}| Известность: {reg2}^{s2}^{s1}из {s0}
+quick_strings|qstr_Name:_{s4}^Level:_{r|Имя: {s4}^Уровень: {reg3}^Здоровье: {reg2}/{reg0}^^{s0}
+quick_strings|qstr_Arms|Оружие
+quick_strings|qstr_Outfit|Одежда
+quick_strings|qstr_Horse|Конь
+quick_strings|qstr_Attributes:|Атрибуты:
+quick_strings|qstr_{s3}^STR:_{reg1}^AGI|{s3}^СИЛ: {reg1}^ЛОВ: {reg2}^ИНТ: {reg3}^ХАР: {reg4}
+quick_strings|qstr_{s3}^^Proficiencies:|{s3}^^Владение оружием:^Одноручное: {reg1}^Двуручное: {reg2}^{s13}: {reg3}^{s14}: {reg4}^{s15}: {reg5}^Метательное: {reg6}
+quick_strings|qstr_Skills:|Навыки:
+quick_strings|qstr_{s4}^{s1}_:_{reg1}|{s4}^{s1} : {reg1}
+quick_strings|qstr_{reg1}^value|{reg1}^значение
+quick_strings|qstr_{reg2}^index|{reg2}^индекс
+quick_strings|qstr_{reg6}^money_in_the_|{reg6}^денег в {reg5?казне:сундуке}
+quick_strings|qstr_{reg4}^money_in_your|{reg4}^денег у вас
+quick_strings|qstr_Withdraw|Взять
+quick_strings|qstr_Deposit|Положить
+quick_strings|qstr_Horse_Speed_Fix:|Исправление скорости коней:
+quick_strings|qstr_Horse_Culling:|Отбраковка коней:
+quick_strings|qstr_Battle_Continuation:|Продолжение боя:
+quick_strings|qstr_Charge_When_Dead:|Атака после гибели героя:
+quick_strings|qstr_Terrain_Advantages:|Преимущества местности:
+quick_strings|qstr_Lords_Returning_From|Возвращение лордов из изгнания:
+quick_strings|qstr_AI_Changes:|Изменения ИИ:
+quick_strings|qstr_Economics_&_Behavior|Экономика и поведение:
+quick_strings|qstr_Prejudice_Level:|Уровень предубеждений:
+quick_strings|qstr_Disable_Companions_C|Отключить жалобы спутников:
+quick_strings|qstr_Disguise_System:|Система маскировки:
+quick_strings|qstr_Cheat_Mode:|Режим читов:
+quick_strings|qstr_DIPLOMACY^4.3+_for_S|DIPLOMACY^4.3+ для Steam^Настройки
+quick_strings|qstr_Reinforcements_from_|Подкрепление из {s12} для {s13} перехвачено{s10}!
+quick_strings|qstr_Domestic_policy:_^^|Внутренняя политика: ^^
+quick_strings|qstr_Deliver_{reg5}_units|Доставить {reg5} ед. в {s5}
+quick_strings|qstr_item_score:{reg0}_va|оценка предмета: {reg0}, стоимость: {reg1}
+quick_strings|qstr_Attach|Присоединить
+quick_strings|qstr_Inspect|Осмотреть
+quick_strings|qstr_Detach_{s1}_at_{reg1|Отсоединить {s1} в {reg1},{reg2}
+quick_strings|qstr_Detach_All|Отсоединить всё
+quick_strings|qstr_Win_Battle|Выиграть бой
+quick_strings|qstr_Lose_Battle|Проиграть бой
+quick_strings|qstr__Deserted_|(Дезертировал)
+quick_strings|qstr_Captured_{reg1}_vill|Захвачено селян: {reg1}.
+quick_strings|qstr_The_village_of_{s1}_h|Деревню {s1} разграбил {s2}.
+quick_strings|qstr_{s2}_now_has_{reg2}_|У {s2} теперь {reg2} динаров от набегов
+quick_strings|qstr_{s2}_now_has_{reg2}_d|У {s2} теперь {reg2} динаров после разграбления
+quick_strings|qstr_{s10}_constructs_a_{|{s10} строит {s0} в {s4}
+quick_strings|qstr_{s10}_hires_{reg2}_{|{s10} нанимает {reg2} {s12} в {s11}
+quick_strings|qstr_{s10}_upgrades_{s3}{|{s10} улучшает {s3}{s11} (стоимость {s1}) в {s4}, осталось {reg0} динаров.
+quick_strings|qstr_{s1}_spends_time_in_|{s1} проводит время в {s2}, {reg1} -> {reg2} динаров
+quick_strings|qstr_{s4}_is_present_at_t|{s4} находится в поселении как пленник
+quick_strings|qstr_CoopWorld:_in_co_op_o|CoopWorld: в кооперативе дела с королевствами (договоры, послы, дары, патрули, вербовщики) пока ведёт только хост.
+quick_strings|qstr_equipped_{s10}{s20}|надето: {s10}{s20}
+quick_strings|qstr_discarded_{s10}{s20}|выброшено: {s10}{s20}
+quick_strings|qstr_{playername}_I_am_gr|{playername}, я вам благодарна, но в глазах народа у вас недостаточно законных прав, чтобы стать соправителем. Брак с вами подорвал бы мои собственные права на престол.
+quick_strings|qstr_{playername}_I_know_|{playername}, я знаю, что без вас не сидела бы на этом троне, но ваше имя мало известно в Калрадии. Брак с вами сочли бы неравным, и это поставило бы под сомнение мои права на престол.
+quick_strings|qstr_{playername}_I_am_gra|{playername}, я благодарна за помощь в возвращении законного трона, но у вас слишком мало собственных владений, чтобы быть мне достойной парой. Это был бы неравный союз.
+quick_strings|qstr_{playername}_I_am_grat|{playername}, я вам благодарна, но, согласившись сейчас, я рискую оскорбить могущественных лордов, например {s15}, которые могут считать свою честь равной вашей или выше.
+quick_strings|qstr_{playername}_I_am_grate|{playername}, я вам благодарна, но, согласившись сейчас, я рискую оскорбить великих лордов, например {s15}, которые могут считать свою честь равной вашей или выше.
+quick_strings|qstr_sworn_{man/woman}|присягнувш{ий/ая}
+quick_strings|qstr_free_{man/woman}|свободн{ый/ая}
+quick_strings|qstr_A_{s0}_is_being_buil|Идёт строительство: {s0}. Будет завершено через {reg6} дн.
+quick_strings|qstr_{s20}{reg2?Our_gover|{s20}{reg2?Наше правление:Правление в {s5}}: {s0}.{reg3?^: }
+quick_strings|qstr_{s20}The_upper_class|{s20}Знать: {s0}.{reg3?^: }
+quick_strings|qstr_{s20}{reg2?Our:The}_|{s20}{reg2?Наш народ:Народ}: {s0}.{reg3?^: }
+quick_strings|qstr_{s20}{reg2?Our:The}_t|{s20}{reg2?Наши войска:Войска}: {s0}.{reg3?^: }
+quick_strings|qstr_{s20}{reg2?Our:The_g|{s20}{reg2?Наша торговая политика:Торговая политика правительства}: {s0}.{reg3?^: }
+quick_strings|qstr_You_can_find_{s10}s_|{s10} можно найти в {s11}.
+quick_strings|qstr_You_have_raised_{reg|Собрано на выкуп: {reg0}/{reg1} динаров
+quick_strings|qstr_Selected_Troop:_{s1}|Выбранный боец: {s1}
+quick_strings|qstr_No_Troops_Left.|Бойцов не осталось.
+quick_strings|qstr_{s1}_troops|бойцы {s1}
+quick_strings|qstr_hero|герой
+quick_strings|qstr_companion|спутник
+quick_strings|qstr_king|король
+quick_strings|qstr_pretender|претендент
+quick_strings|qstr_lady|дама
+quick_strings|qstr_bandit|разбойник
+quick_strings|qstr_minstrel|менестрель
+quick_strings|qstr_bookseller|книготорговец
+quick_strings|qstr_traveler|путешественник
+quick_strings|qstr_ransom_broker|посредник по выкупам
+quick_strings|qstr_mercenary|наёмник
+quick_strings|qstr_multiplayer_troop|боец мультиплеера
+quick_strings|qstr_quick_battler|боец быстрого боя
+quick_strings|qstr_arena_master|распорядитель арены
+quick_strings|qstr_walker|прохожий
+quick_strings|qstr_merchant|торговец
+quick_strings|qstr_armor_merchant|торговец доспехами
+quick_strings|qstr_weapon_merchant|торговец оружием
+quick_strings|qstr_tavernkeeper|трактирщик
+quick_strings|qstr_goods_merchant|торговец товарами
+quick_strings|qstr_horse_merchant|торговец лошадьми
+quick_strings|qstr_guildmaster|глава гильдии
+quick_strings|qstr_village_elder|староста
+quick_strings|qstr_startup_merchant|купец из начала игры
+quick_strings|qstr_tournament_fighter|участник турнира
+quick_strings|qstr_craftsman|ремесленник
+quick_strings|qstr_court_chests|сундуки двора
+quick_strings|qstr_chest_or_array|сундук или массив
+quick_strings|qstr_log_array|массив журнала
+quick_strings|qstr_quest_troop|персонаж задания
+quick_strings|qstr_coop_troop|боец кооператива
+quick_strings|qstr_court_member|придворный
+quick_strings|qstr_fighter|боец
+quick_strings|qstr_tutorial_fighter|боец обучения
+quick_strings|qstr_Acquired_{s0}_s_clot|Получена одежда: {s0}
+quick_strings|qstr_adding_{s1}_to_entry|добавление {s1} в точку
+quick_strings|qstr_Performing_2017_upda|Применяются обновления 2017 года, спасибо за терпение!
+quick_strings|qstr_Performing_2019_upda|Применяются обновления 2019 года, спасибо за терпение!
+quick_strings|qstr_{s0}_will_be_under_y|{s0} переходит под ваше командование
+quick_strings|qstr_Returning|Возвращается
+quick_strings|qstr_Recruit|Набрать
+quick_strings|qstr_{reg10}_{s10}s_neede|Нужно {s10}: {reg10}
+quick_strings|qstr_Townsman|Горожанин
+quick_strings|qstr_Townsmen|Горожане
+quick_strings|qstr_Townswoman|Горожанка
+quick_strings|qstr_Townswomen|Горожанки
+quick_strings|qstr_Dispatch_your_oppone|Сначала разделайтесь с противниками!
+quick_strings|qstr_You_got_keys_to_the_|Вы получили ключи от темницы.
+quick_strings|qstr_Sensitivity___25%__{|Чувствительность −25% ({reg8}, {reg9})
+quick_strings|qstr_Sensitivity_+_25%__{|Чувствительность +25% ({reg8}, {reg9})
+quick_strings|qstr_You_got_the_keys_to_|Вы получили ключи от темницы.
+quick_strings|qstr_Perhaps_you_have_for|Быть может, вы забыли лицо своего отца.
+quick_strings|qstr_Morale_for_{s9}_troo|Боевой дух бойцов {s9}: {reg6}
+quick_strings|qstr_Monarch:_+{reg6}^|Монарх: +{reg6}^
+quick_strings|qstr_Marshal:_+{reg6}^|Маршал: +{reg6}^
+quick_strings|qstr_Policy:_{reg6}%^|Политика: {reg6}%^
+quick_strings|qstr_Castellan:_+{reg6}^|Кастелян: +{reg6}^
+quick_strings|qstr_Current_party_size_i|Размер отряда: {reg10}/{reg5}.^Что влияет на размер отряда:^^Основа:  +30^Лидерство: {s2}{reg1}^Харизма: {s3}{reg2}^Известность: {s4}{reg3}^^{s8}{s7}{s6}{s9}ИТОГО:  {reg5}
+quick_strings|qstr_nowhere_in_particula|непонятно где
+quick_strings|qstr_all|все
+quick_strings|qstr_troop|боец
+quick_strings|qstr_economic|экономический
+quick_strings|qstr_political|политический
+quick_strings|qstr_Grazing|Пасётся
+quick_strings|qstr_The_battle_was_lost.|Битва проиграна. Ваши силы наголову разбиты.
+quick_strings|qstr_Removing_disguise...|Снимаем маскировку...
+quick_strings|qstr__The_peasants_{reg8?| Крестьяне {reg8?наняли {reg8} наёмников и :}восстали против вас.
+quick_strings|qstr__From_your_vantage_p| Со своего места вы видите, как человек, похожий по описанию на {s50}, в суматохе хватается за меч. Если не поторопитесь, беглец ускользнёт!
+quick_strings|qstr__Your_{reg1?capital_| {reg1?Ваша столица:Ваш двор} — здесь{reg0?, здесь же живёт ваш супруг {s0}:}.
+quick_strings|qstr__Your_household_can_| Ваш дом находится здесь.
+quick_strings|qstr_{s1}^{reg0}:_{s2}|{s1}^{reg0}: {s2}
+quick_strings|qstr_{s2}^{reg2?:{reg1}_}|{s2}^{reg2?:{reg1} }{s1} получает {reg0} опыта.
+quick_strings|qstr__Unfortunately_when_| К несчастью, когда стражники стали расспрашивать о драке в таверне, вас узнали по описанию, а отбиться вы были не в состоянии.
+quick_strings|qstr_{reg1}/{reg2}:_{s1}|{reg1}/{reg2}: {s1}
+quick_strings|qstr_{s1}^{reg1}:_{reg0}|{s1}^{reg1}: {reg0}
+quick_strings|qstr_{reg1}:_{s1}_{s2}_cl|{reg1}: {s1}, {s2}: уровень {reg2}, {s3} {s4}
+quick_strings|qstr_{s1}^becomes_{s2}|{s1}^становится {s2}
+quick_strings|qstr_{s1}_and_{s2}|{s1} и {s2}
+quick_strings|qstr_{s1}^costs_{reg11}_t|{s1}^улучшение стоит {reg11} при {reg10} опыта
+quick_strings|qstr_{s1}^wage_of_{reg12}|{s1}^жалованье {reg12}, покупка {reg13}, продажа {reg14}
+quick_strings|qstr_{s1}_is_a_{s2}|{s1} — {s2}
+quick_strings|qstr_{s1}_with_{reg1}_gol|{s1}, золота: {reg1}
+quick_strings|qstr_{s2}^{reg1}:_{reg0}|{s2}^{reg1}: {reg0}
+quick_strings|qstr_Select_a_suitable_di|Выберите подходящую маскировку.
+quick_strings|qstr_As_a_poor_pilgrim_wi|В облике бедного паломника с крепкой палкой и парой уловок в запасе вы легко затеряетесь в толпе, но много ценного с собой не пронесёте.
+quick_strings|qstr_As_a_farmer_you_will|В облике крестьянина вы сможете провести скот и пронести съестное.
+quick_strings|qstr_As_a_hunter_provisio|От охотника ждут провизии и сырья, а также лошадей.
+quick_strings|qstr_As_a_caravan_guard_y|В облике охранника каравана вы сможете носить оружие, но взять с собой лишь немного личных вещей.
+quick_strings|qstr_As_a_merchant_you_wi|В облике торговца вы сможете пронести любые товары.
+quick_strings|qstr_As_a_bard_you_will_b|В облике барда вам позволят взять немного личных вещей и инструмент.
+quick_strings|qstr_{s17}_has_{reg17}_de|У {s17} {reg17} динаров
+quick_strings|qstr_There_has_been_a_rio|В {s6} вспыхнул бунт!
+quick_strings|qstr_You_are_unable_to_pa|Вам нечем заплатить за ночлег!
+quick_strings|qstr_realm|государство
+quick_strings|qstr_We_ve_barely_gotten_|Мы едва успели познакомиться, а ты уже меня отсылаешь!
+quick_strings|qstr_I_am_certainly_not_y|Я тебе не {reg65?девочка:мальчик} на побегушках...
+quick_strings|qstr_How_do_I_know_there_|А откуда мне знать, что, когда я вернусь, для меня ещё найдётся место?
+quick_strings|qstr_I_believe_I_would_be|Думаю, от меня будет больше пользы, если я останусь с остальными бойцами.
+quick_strings|qstr_You_have_assigned_th|Вы поручили это дело {s1}
+quick_strings|qstr_{s1}_at_{s2}|{s1} в {s2}
+quick_strings|qstr_{s6}_{reg2}_{reg1?to|{s6} {reg2} {reg1?городов:город}{reg3? и:.}
+quick_strings|qstr_{s6}_{reg3}_{reg1?ca|{s6} {reg3} {reg1?замков:замок}.
+quick_strings|qstr_{reg0?She:He}_fields|{reg0?Она:Он} выставляет {reg2} бойцов.
+quick_strings|qstr_Since_we_are_close_t|Раз мы рядом с {reg11?{reg10} учебными лагерями:учебным лагерем}, можно поговорить с наставниками, чтобы обучить новобранцев побольше.
+quick_strings|qstr__preferring_{s12}_un|, предпочитая бойцов {s12}.
+quick_strings|qstr_{s11}_peasants|крестьяне {s11}
+quick_strings|qstr_no_outstanding_amoun|долгов нет
+quick_strings|qstr_{s6}__{s50}_|{s6} ({s50})
+quick_strings|qstr_Since_you_are_worthy|Раз вы достойны нашего уважения, добро пожаловать в нашу семью.
+quick_strings|qstr_{s40}_I__d_rather_st|{s40} Я предпочту остаться со своим нынешним сюзереном.
+quick_strings|qstr_our_undivided|наше безраздельное
+quick_strings|qstr_my_immediate|моё немедленное
+quick_strings|qstr_I_see._Perhaps_circu|Понимаю. Возможно, через несколько дней обстоятельства изменятся, а пока я благодарен за ваше щедрое гостеприимство.
+quick_strings|qstr_{s1}_at_the_behest_o|{s1} по велению {s2}
+quick_strings|qstr_yet_to_be_announced|ещё не объявлено
+quick_strings|qstr_{s9}_of_{s3}_asked_yo|{s9} из {s3} попросил вас за 7 дней доставить {reg5} ед. {s6} в лавку торговца в {s4}.
+quick_strings|qstr_{reg4?She:He}_is_not|Сейчас {reg4?она:он} не командует бойцами.
+quick_strings|qstr_{reg4?She:He}_curren|Сейчас {reg4?она:он} командует {reg0} бойцами{reg1?, из них около {reg1} ранены:}.
+quick_strings|qstr_Current|Сейчас
+quick_strings|qstr_Court_Guard|Стража двора
+quick_strings|qstr_Prison_Guard|Тюремная стража
+quick_strings|qstr_Castle_Guard|Стража замка
+game_strings|str_npc2_kingsupport_3|Если хотите, капитан, я могу за несколько недель объехать гильдии и караван-сараи, где у меня есть знакомые, и объяснить им, что в вас они получат {короля/правителя}, который обуздает алчную знать, готовую задушить торговлю пошлинами и налогами ради лишних динаров на свои войны и пиры. Что скажете, капитан?
+game_strings|str_npc5_turn_against|{playername}-багадур! Я ел твою соль и был за это щедро вознаграждён! Но напомню тебе старую истину: хергит может быть пылким последователем и преданным другом, но рабом твоим он не станет никогда... Так или иначе, сегодня я выхожу против тебя с поднятым мечом. Но надеюсь, однажды мы поднимем чаши за возобновлённую дружбу.
+game_strings|str_comment_I_defeated_you_enemy_spiteful|Опять пришёл? Заставишь меня снова драться — скормлю твои потроха своим псам.
+game_strings|str_comment_I_defeated_you_enemy_chivalrous|Снова пришли испытать свою доблесть, {playername}?
+game_strings|str_comment_I_defeated_you_enemy_benevolent|Снова нападаешь на меня? Ты когда-нибудь научишься?
+game_strings|str_comment_I_defeated_you_enemy_coldblooded|Ты упорен, но лишь досаждаешь.
+game_strings|str_comment_I_defeated_you_enemy|Сколько раз мне ещё тебя проучить, чтобы ты держался подальше?
+game_strings|str_comment_you_were_defeated_allied_unfriendly_dupe|Я слышал, что {s54} тебя разбил. Послушай, постарайся не губить столько наших людей, ладно?
+game_strings|str_comment_you_were_defeated_allied_dupe|Я слышал, что {s54} тебя разбил. Но не падай духом — скоро всё переменится!
+game_strings|str_rebellion_agree_default|Хорошо — я готов присягнуть {s45} как {reg3?своей королеве:своему королю}.
+game_strings|str_rebellion_refuse_pitiless|Нет. Я не примкну к вашему мятежу. По мне, это не более чем истерика ребёнка, которому не дали безделушку, якобы принадлежащую {reg3?ей:ему}. Я останусь с {s46}, чьё умение править проверено временем.
+game_strings|str_rebellion_refuse_cunning|Простите. Вы не даёте мне повода верить в вашу победу. Многие погибнут, а я не хочу быть среди них. Я по-прежнему поддерживаю {s46}.
+game_strings|str_rebellion_refuse_sadistic|Нет. Я не стану играть в вашу игру. Вы тянетесь к короне, но, думаю, вместо неё быстро попадёте на эшафот, а я буду стоять рядом с {s46} и смотреть, как опускается топор палача.
+game_strings|str_rebellion_refuse_goodnatured|Простите. Мне кажется неправильным отвернуться от {s46}. Без обид, когда встретимся на поле боя.
+game_strings|str_rebellion_refuse_upstanding|Простите. Права {s45} недостаточно сильны, чтобы я обрёк несчастных жителей этой земли на проклятие смуты. Я по-прежнему поддерживаю {s46}. Да простят меня Небеса, если я ошибаюсь.
+game_strings|str_trade_explanation_dates_village|Я ухаживаю за финиковой рощей. Не сочтите за хвастовство, {s0}, но для этого нужно немалое умение: приходится забираться на макушки пальм, чтобы деревья зацвели. Плоды мы вывозим во все концы — хорошо высушенные, они хранятся много месяцев. Сладкие, как мёд, они дают здоровье и силу.
+game_strings|str_trade_explanation_dates_town|Я ухаживаю за финиковой рощей. Мы поливаем её из колодцев, а плоды вывозим во все концы — хорошо высушенные, они хранятся много месяцев. Сладкие, как мёд, они дают здоровье и бодрость.
+game_strings|str_s4_is_at_s5|{s4} находится в {s5}
+game_strings|str__family_dupe|^Семья:
+game_strings|str_betrothed_dupe| Помолвлен(а)
+game_strings|str_hire_deserters|взять этих негодяев под наше знамя
+game_strings|str_rotten_food|есть эту гнильё и находить насекомых в каждом куске
+game_strings|str_repress_farmers|подавить этих крестьян и насаждать насилие, присущее системе
+game_strings|str_stop_cheating|тратить время на «консоль», когда всё это можно просто поменять в настройках лагеря
+game_strings|str_dplmc_hero_wpn_slot_morningstar|Двуручное/одноручное
+game_strings|str_dplmc_hero_wpn_slot_lance|Кавалерийские копья
+game_strings|str_dplmc_hero_wpn_slot_pikes|Пики
+game_strings|str_dplmc_hero_wpn_slot_halberd|Древковое с клинком
+game_strings|str_dplmc_hero_wpn_slot_no_metatype|Без предпочтений
+game_strings|str_camera_keyboard|Чтобы наблюдать за боем, двигайте камеру стрелками по горизонтали, клавишами + и − на цифровой клавиатуре по вертикали, а цифровыми клавишами вращайте её.
+game_strings|str_camera_mouse|Вращайте камеру мышью или цифровой клавиатурой, двигайте стрелками (с зажатым приближением — быстрее). Наклоном меняется чувствительность, цифровой клавиатурой — поворот и высота.
+game_strings|str_camera_follow|Клавишами наклона или колесом мыши переключайтесь между союзными бойцами. Удерживайте Ctrl с цифровой клавиатурой, чтобы менять угол обзора.
+game_strings|str_ai_bhvr_hold|Стоит на месте
+game_strings|str_ai_bhvr_travel_to_party|Идёт к отряду
+game_strings|str_ai_bhvr_patrol_location|Патрулирует местность
+game_strings|str_ai_bhvr_patrol_party|Патрулирует вокруг отряда
+game_strings|str_ai_bhvr_track_party|Преследует отряд
+game_strings|str_ai_bhvr_attack_party|Атакует отряд
+game_strings|str_ai_bhvr_avoid_party|Избегает отряда
+game_strings|str_ai_bhvr_travel_to_point|Идёт к точке
+game_strings|str_ai_bhvr_negotiate_party|Ведёт переговоры с отрядом
+game_strings|str_ai_bhvr_in_town|В городе
+game_strings|str_ai_bhvr_travel_to_ship|Идёт к кораблю
+game_strings|str_ai_bhvr_escort_party|Сопровождает отряд
+game_strings|str_ai_bhvr_driven_by_party|Его гонят
+game_strings|str_s5_transfer|Переброска в {s5}
+game_strings|str_s5_reinf|Подкрепление из {s5}
+game_strings|str_s5_scout|Разведчик {s5}
+game_strings|str_s5_patrol|Патруль {s5}
+game_strings|str_preparing_prison_break|Готовит побег из темницы в {s9}
+game_strings|str_on_loan|Одолжен
+game_strings|str_accompanying_s5|Сопровождает {s5}
+game_strings|str_key_a|A
+game_strings|str_key_b|B
+game_strings|str_key_c|C
+game_strings|str_key_d|D
+game_strings|str_key_e|E
+game_strings|str_key_f|F
+game_strings|str_key_g|G
+game_strings|str_key_h|H
+game_strings|str_key_i|I
+game_strings|str_key_j|J
+game_strings|str_key_k|K
+game_strings|str_key_l|L
+game_strings|str_key_m|M
+game_strings|str_key_n|N
+game_strings|str_key_o|O
+game_strings|str_key_p|P
+game_strings|str_key_q|Q
+game_strings|str_key_r|R
+game_strings|str_key_s|S
+game_strings|str_key_t|T
+game_strings|str_key_u|U
+game_strings|str_key_v|V
+game_strings|str_key_w|W
+game_strings|str_key_x|X
+game_strings|str_key_y|Y
+game_strings|str_key_z|Z
+game_strings|str_key_numpad_0|Цифр. 0
+game_strings|str_key_numpad_1|Цифр. 1
+game_strings|str_key_numpad_2|Цифр. 2
+game_strings|str_key_numpad_3|Цифр. 3
+game_strings|str_key_numpad_4|Цифр. 4
+game_strings|str_key_numpad_5|Цифр. 5
+game_strings|str_key_numpad_6|Цифр. 6
+game_strings|str_key_numpad_7|Цифр. 7
+game_strings|str_key_numpad_8|Цифр. 8
+game_strings|str_key_numpad_9|Цифр. 9
+game_strings|str_key_num_lock|Num Lock
+game_strings|str_key_numpad_slash|Цифр. /
+game_strings|str_key_numpad_multiply|Цифр. *
+game_strings|str_key_numpad_minus|Цифр. −
+game_strings|str_key_numpad_plus|Цифр. +
+game_strings|str_key_numpad_enter|Цифр. Enter
+game_strings|str_key_numpad_period|Цифр. точка
+game_strings|str_key_insert|Insert
+game_strings|str_key_delete|Delete
+game_strings|str_key_home|Home
+game_strings|str_key_end|End
+game_strings|str_key_page_up|Page up
+game_strings|str_key_page_down|Page down
+game_strings|str_key_up|Вверх
+game_strings|str_key_down|Вниз
+game_strings|str_key_left|Влево
+game_strings|str_key_right|Вправо
+game_strings|str_key_f1|F1
+game_strings|str_key_f2|F2
+game_strings|str_key_f3|F3
+game_strings|str_key_f4|F4
+game_strings|str_key_f5|F5
+game_strings|str_key_f6|F6
+game_strings|str_key_f7|F7
+game_strings|str_key_f8|F8
+game_strings|str_key_f9|F9
+game_strings|str_key_f10|F10
+game_strings|str_key_f11|F11
+game_strings|str_key_f12|F12
+game_strings|str_key_space|Пробел
+game_strings|str_key_escape|Escape
+game_strings|str_key_enter|Enter
+game_strings|str_key_tab|Tab
+game_strings|str_key_back_space|Backspace
+game_strings|str_key_open_braces|Открывающая скобка
+game_strings|str_key_close_braces|Закрывающая скобка
+game_strings|str_key_comma|Запятая
+game_strings|str_key_period|Точка
+game_strings|str_key_slash|Косая черта
+game_strings|str_key_back_slash|Обратная косая черта
+game_strings|str_key_equals|Равно
+game_strings|str_key_minus|Минус
+game_strings|str_key_semicolon|Точка с запятой
+game_strings|str_key_apostrophe|Апостроф
+game_strings|str_key_tilde|Тильда
+game_strings|str_key_caps_lock|Caps Lock
+game_strings|str_key_left_shift|Левый Shift
+game_strings|str_key_right_shift|Правый Shift
+game_strings|str_key_left_control|Левый Ctrl
+game_strings|str_key_right_control|Правый Ctrl
+game_strings|str_key_left_alt|Левый Alt
+game_strings|str_key_right_alt|Правый Alt
+game_strings|str_story_parent_noble|Вы появились на свет {reg11?дочерью:сыном} обедневшего дворянского рода, у которого остался лишь дом, где жила семья. Но, несмотря на трудности, родные дали вам хорошее образование и с детства готовили к нелёгкой жизни аристократа и придворного.
+game_strings|str_story_parent_merchant|Вы родились {reg11?дочерью:сыном} странствующих торговцев, вечно переезжавших с места на место в поисках выгоды. Родители были богаче многих и дали вам лучшее образование, какое могли, но в дороге было мало случаев завести друзей, и жили вы в основном ради тех мгновений, когда удавалось кому-нибудь что-нибудь продать.
+game_strings|str_story_parent_guard|В детстве ваша семья едва сводила концы с концами на жалованье отца, служившего стражником у местного лорда. Жизнь была нелёгкой, а на образование не хватало денег. В основном вы научились защищать себя на улицах — с оружием в руках или без.
+game_strings|str_story_parent_forester|Вы были {reg11?дочерью:сыном} семьи, жившей лесом и делавшей всё, чтобы свести концы с концами: охотились, рубили дрова, мастерили стрелы, а в тяжёлые времена и браконьерствовали. Зима никогда не была для вашей семьи доброй порой: холод забирал и зверей, и людей. Но вы всегда доживали до нового рассвета, хотя братьям и сёстрам везло не всегда.
+game_strings|str_story_parent_nomad|Вы были дитя степей и родились в племени кочевников, что ставили огромные станы по всем засушливым равнинам. Как и все соплеменники, ваша семья почитала коней превыше почти всего на свете, и ездить верхом вас научили едва ли не раньше, чем ходить.
+game_strings|str_story_parent_thief|Как {reg11?дочь:сын} вора, вы почти не получили «правильного» образования. Всё детство вы провели на улице: просили милостыню, пока не научились срезать кошельки, срезали кошельки, пока не научились вскрывать замки. Зато эти долгие годы сделали вас тёртым калачом, знающим все тайны городов и тёмных закоулков.
+game_strings|str_story_parent_priest|Никому не нужн{reg11?ой дочерью:ым сыном}, вас младенцем оставили при храме, и вас, подкидыша, растили по своим обычаям жрецы и монахини. Вы были лишь одним из многих подкидышей и сирот, но вам всё же уделяли немало внимания, и долгие годы вы учились в храмовой библиотеке и у алтаря. Вас научили многому. Постепенно вера стала такой же частью вашей жизни, как кровь, что течёт в ваших жилах.
+game_strings|str_story_childhood_page|вас отправили жить ко двору одного из знатных господ края. Там вашими первыми уроками стали уроки смирения: вы прислуживали лордам и дамам дома. Но по их шахматным партиям, сплетням и даже стихам о великих подвигах и куртуазной любви вы быстро узнали о взрослом мире соперничества и борьбы. Учились вы и в грубых играх других детей, которые лупили друг друга палками, подражая мечам старших.
+game_strings|str_story_childhood_apprentice|вы пошли в ученики к местному ремесленнику, чтобы освоить ремесло. После долгих лет упорного труда и учёбы мастер сделал вас подмастерьем и нанял ремесленником с полным жалованьем, сколько бы вы ни пожелали у него оставаться.
+game_strings|str_story_childhood_urchin|вы оказались на улице и делали всё, чтобы выжить. Попрошайничали, воровали и работали на шайки ради куска хлеба, жили одним днём в этом жестоком мире, всегда на шаг опережая закон и тех, кто желал вам зла.
+game_strings|str_story_childhood_nomad|вы скакали по бескрайним степям на собственном коне, постигая законы трав и пустынь. Порой вы голодали, но стали умелым охотником и следопытом в этих краях без дорог. Тело ваше тоже окрепло и налилось силой, когда вы стали кочевни{reg11?цей:ком}.
+game_strings|str_story_childhood_stockboy|вы пошли в ученики к богатому купцу и годами постигали торговлю, работая в лавках и водя караваны. Вскоре вы научились искусству покупать дёшево, продавать дорого и оставлять покупателя в уверенности, что выгодную сделку заключил он.
+game_strings|str_story_childhood_mummer|вы прибились к труппе бродячих артистов и ходили из города в город, устраивая представления. Это была тяжёлая жизнь: вы продавали, выпрашивали и выманивали себе на хлеб у зевак, сбегавшихся поглазеть на ваши выходки. Со временем вы стали артистом, умеющим собрать толпу.
+game_strings|str_story_childhood_courtier|вы провели бо́льшую часть жизни при дворе, пробиваясь в тесные кружки знати. С годами вы всё глубже погружались в политику и интриги, которых ожидают от высокородн{reg11?ой женщины:ого мужчины}. Даже если бы захотели, вы не могли позволить себе оставаться в стороне от предательств и политической жестокости.
+game_strings|str_story_childhood_noble|{reg11?вас учили и готовили к обязанностям знатной дамы. Вы многое узнали о ведении дома, но ещё больше — о дипломатии и приличиях и обо всём, о чём может пожелать беседовать будущий муж. Право, вы стали ничуть не менее проницательной, чем любой лорд, хотя признаваться в этом вслух было бы невежливо:вас учили и готовили исполнять обязанности и пользоваться правами знатного землевладельца. Управление налогами и податями было в вашем обучении столь же важно, как дипломатия и даже умение постоять за себя. Вы узнали всё необходимое, чтобы стать лордом в собственном зале}.
+game_strings|str_story_childhood_acolyte|вы стали послушником в храме — на самой низшей ступени пути к священству. Последовали годы строгой учёбы и тяжёлого труда. Вы были одним из нескольких послушников, выполняли бо́льшую часть чёрной работы в храме и готовились к более священным обязанностям. В ночь вашего совершеннолетия вам позволили провести первую службу. После этого вы были уже не послушни{reg11?цей:ком}, а готовились принести обеты на служение Богу.
+game_strings|str_story_job_bravo|Вы оставили прежнюю жизнь и отправились по дорогам наёмником-головорезом: охраняли караваны за медяки или проламывали головы за серебро. Вы стали {reg11?дочерью:сыном} дорог и работали с разбойниками так же часто, как против них. Переходя от одной драки к другой, вы набрались боевого опыта и узнали, что значит убивать.
+game_strings|str_story_job_merc|Вы поступили в наёмный отряд и ушли далеко от дома. Жизнь там была суровой и простой: вы маршировали под бой чужих барабанов и учились непривычным приёмам боя. Нашлись люди, научившие вас владеть любым оружием, какое только пожелаете, и было вдоволь сражений, чтобы отточить мастерство. Вы были одним из немногих счастливчиков, что пережили все походы, в которых участвовали.
+game_strings|str_story_job_poacher|Не желая, как все, отчаянно гнаться за грошами, вы отправились в леса местного лорда и решили сами взять их дары — и к чёрту законы. Вы охотились на оленей, кабанов и гусей и тайком продавали драгоценное мясо. Рубили деревья под носом у лесничих и превращали их в дрова, которые зимой согревали множество промёрзших домов. За пару серебряков, разумеется.
+game_strings|str_story_job_craftsman|Вы стали кузнецом и делали из простого металла вещи полезные и красивые. Со временем вы стали мастером своего дела, и тонкая работа начала приносить хорошие деньги. Сытый желудок и дрова в очаге позволяли вам гордиться своим трудом и растущей славой.
+game_strings|str_story_job_peddler|Повинуясь зову дороги, вы ходили из деревни в деревню, покупая и продавая что придётся. Богатством это не назовёшь, но вы научились выторговывать хорошую цену даже у самых прижимистых старост. Скоро, знали вы, у вас будет всё, чтобы основать собственную торговую империю...
+game_strings|str_story_job_preacher|Вы собрали свои скромные пожитки и отправились в мир нести слово Божье. Вы проповедовали всякому, кто был готов слушать, и многих поражал пыл ваших проповедей. Хотя в годы странствий вы дали обет бедности, вы никогда не знали нужды в еде, питье и крове: крестьяне всегда щедро привечали восходящ{reg11?ую служительницу:его служителя} Божь{reg11?ю:его}.
+game_strings|str_story_job_troubadour|Вы отправились в путь одни, не имея ничего, кроме инструмента за спиной и собственного голоса. Жилось бедно, и не одну ночь вы провели голодными, когда люди не ценили вашу игру, но вам удавалось жить одной лишь музыкой. С годами вы научились играть для пьяной публики в тавернах и ещё лучше — выманивать у кого угодно что угодно.
+game_strings|str_story_job_squire|Когда вас назначили оруженосцем знатного господина при дворе, вы долгие часы упражнялись с оружием, учась наносить крепкие удары и держать их. Вас наставляли в обязанностях перед сюзереном и перед теми, кто однажды мог стать вашими вассалами. Но кроме рыцарских идеалов вы узнали и их менее возвышенную сторону — рассказы старых воинов о безжалостной борьбе за власть, о предательствах и узурпациях, о людях, добивавшихся своего не только доблестью, но и хитростью.
+game_strings|str_story_job_lady|Вы вошли в тесный круг придворных дам, где все занимались подобающими даме делами: жёны и любовницы знатных мужей и девицы, ещё не нашедшие мужа. Но и здесь вы увидели политику в действии: дамы плели интриги ради положения и яростно соперничали, чтобы привлечь взгляд того неженатого кавалера, что был в моде при дворе. Вскоре вы научились обращать такие положения себе на пользу. А вместе с этим пришло понимание, что вы и сами можете иметь огромное влияние в мире, стоит лишь действовать чуть тоньше.
+game_strings|str_story_job_student|Вы стали студентом университета в одном из великих городов и изучали богословие, философию и медицину. Но не все уроки вы получили в аудиториях. Может, вы и бродили с товарищами по переулкам в поисках вина, женщин и хорошей драки, а может, и нет. Зато вы точно видели, как вправляют сломанную челюсть и как уговорить разъярённого горожанина опустить дубину и принять деньги в возмещение за разгромленную лавку.
+game_strings|str_story_reason_revenge|И всё же уйти было нетрудно: в вашем сердце пылает ярость. Вы жаждете мести. Жаждете справедливости. Сделанного с вами не исправить, а такие долги оплачиваются только кровью...
+game_strings|str_story_reason_death|Вы можете сказать лишь одно: оставаться было невыносимо — слишком близки и слишком мучительны были воспоминания о тех, кого вы любили. Может, новая жизнь позволит забыть или почтить имя, которое вы больше не в силах произносить...
+game_strings|str_story_reason_wanderlust|Вы и сами не знаете, когда дом стал тюрьмой, а привычное — скучным, но мечты о странствиях захватили всю вашу жизнь. Тянет ли вас в какие-то дальние края или просто на открытую дорогу, к свободе пути — оставаться на одном месте вы больше не могли. Вы просто ушли и ни разу не оглянулись...
+game_strings|str_story_reason_fervor|Так или иначе, пламенная вера в вашей душе не давала вам обрести покой на одном месте. В мире были и другие — души, которые нужно омыть в свете Божьем. Теперь вы проповедуете повсюду, неся спасение и откровение людям, верующим и язычникам. К тому времени, как вы закончите, все они познают славу Божью...
+game_strings|str_story_reason_disown|Но вы знаете, что вернуться нельзя. Возвращаться не к чему. Какой бы дом у вас ни был, его больше нет, и придётся признать: вы одни в огромном диком мире. Выплывете или утонете — зависит только от вас...
+game_strings|str_story_reason_greed|Всем вокруг ясно, что теперь вами движет лишь собственная выгода. Вы хотите быть богатым, могущественным, уважаемым, внушающим страх. Хотите, чтобы вам спешили повиноваться. Хотите, чтобы люди знали ваше имя и трепетали, услышав его. Вы хотите всего и никому не позволите вам помешать...
+game_strings|str_story_all|{s10}^^Вы начали познавать мир едва ли не с тех пор, как научились ходить и говорить. Когда вы, {reg11?девочка:мальчик}, вышли из детского возраста, {s11}^^Хотя вам это показалось внезапным, где-то на этом пути вы стали {reg11?женщиной:мужчиной}, и весь мир вокруг словно изменился. {s12}^^Лишь вы знаете, что именно заставило вас бросить прежнюю жизнь и стать искателем приключений. {s13}
+game_strings|str_continue_dot|Продолжить...
+game_strings|str_chest_info|Подойдите к сундуку и подержите правую кнопку мыши — тогда можно положить или взять из сундука деньги. Если у вас есть камергер, можно распоряжаться и казной.
+game_strings|str_mercenary_intro_1|Хороший выбор, {s0}. {reg1?Мои {reg65?товарищи:ребята}:Я} умеют держать слово и отрабатывать свою плату.
+game_strings|str_mercenary_intro_2|Отлично, {s0}. Не скупись на деньги и вино для {reg1?меня:нас}, и тебе не страшен ни один враг в Калрадии.
+game_strings|str_mercenary_intro_3|{reg1?Мы:Я} к твоим услугам, {s0}. Укажи, кого надо проучить, а остальное {reg1?мы:я} сделаем сами.
+game_strings|str_mercenary_intro_4|Ты не пожалеешь, {s0}. Во всей Калрадии не найти {reg1?воинов лучше:бойца лучше}.
+game_strings|str_bandit_intro_1|Толстый кошелёк я за версту чую. Сдаётся мне, твой не мешало бы облегчить, а?
+game_strings|str_bandit_intro_2|Гляди-ка, ещё один путник, случайно встреченный на дороге! Должен предупредить: места тут опасные для {доброго малого/доброй женщины} вроде тебя. Но за небольшое пожертвование мы с ребятами проследим, чтобы ты добрал{ся/ась} куда надо, а?
+game_strings|str_bandit_intro_3|Так-так, кто это тут у нас! Лучше начинай выкладывать серебро, приятель, иначе нам с ребятами придётся тебя поломать.
+game_strings|str_bandit_intro_4|За проезд по этой земле положена пошлина, и платят её нам, так что, с твоего позволения, мы возьмём своё из твоего кошелька...
+game_strings|str_bandit_outro_1|Ещё оди{н глупец/на глупая} решил{/а} броситься на моё оружие, а? Ладно, давай драться!
+game_strings|str_bandit_outro_2|Мы тебя не боимся, {сударь/девка}. Пора проламывать головы!
+game_strings|str_bandit_outro_3|Это была ошибка. Теперь твоя смерть будет долгой и мучительной.
+game_strings|str_bandit_outro_4|Громкие слова. Посмотрим, подкрепишь ли ты их делом, собака!
+game_strings|str_bandit_outro_5|Чтоб ты сдох в канаве.
+game_strings|str_name_presentation_text|Как будет называться {s1}?
+game_strings|str_default_kingdom|ваше государство
+game_strings|str_default_town|столица
+game_strings|str_default_party|отряд
+game_strings|str_default_troop|этот спутник
+game_strings|str_tier_reg|Молод{ец/чина}. Этой победой ты перешёл{/ла} на следующую ступень обучения. Теперь твоими противниками будут настоящие бойцы, а не уличный сброд, так что будь начеку.
+game_strings|str_tier_vet|Так держать! Добро пожаловать на третью ступень обучения. Теперь против тебя будут бывалые бойцы: солдаты, завсегдатаи арены и им подобные. Эти ребята знают грязные приёмы, так что не опускай защиту.
+game_strings|str_tier_champ|У тебя сердце чемпиона и рука под стать. Теперь твоими противниками будут чемпионы — лучшие из лучших, лучшие воины, каких я обучал. Одолеешь троих подряд — встанешь в их ряды.
+game_strings|str_ctm_melee|Противник{reg0?и готовы: готов} к бою.
+game_strings|str_ctm_ranged|Стойте за чертой на земле и стреляйте по мишеням. Старайтесь не тратить выстрелы зря.
+game_strings|str_ctm_mounted|Постарайтесь поразить как можно больше мишеней. На всю дорожку у вас две с половиной минуты.
+game_strings|str_imod_cracked|Треснувший
+game_strings|str_imod_rusty|Ржавый
+game_strings|str_imod_bent|Погнутый
+game_strings|str_imod_chipped|Зазубренный
+game_strings|str_imod_battered|Побитый
+game_strings|str_imod_poor|Плохой
+game_strings|str_imod_crude|Грубый
+game_strings|str_imod_old|Старый
+game_strings|str_imod_cheap|Дешёвый
+game_strings|str_imod_fine|Хороший
+game_strings|str_imod_well_made|Добротный
+game_strings|str_imod_sharp|Острый
+game_strings|str_imod_balanced|Сбалансированный
+game_strings|str_imod_tempered|Закалённый
+game_strings|str_imod_deadly|Смертоносный
+game_strings|str_imod_exquisite|Изысканный
+game_strings|str_imod_masterwork|Шедевр
+game_strings|str_imod_heavy|Тяжёлый
+game_strings|str_imod_strong|Крепкий
+game_strings|str_imod_powerful|Мощный
+game_strings|str_imod_tattered|Изодранный
+game_strings|str_imod_ragged|Потрёпанный
+game_strings|str_imod_rough|Грубой выделки
+game_strings|str_imod_sturdy|Прочный
+game_strings|str_imod_thick|Толстый
+game_strings|str_imod_hardened|Укреплённый
+game_strings|str_imod_reinforced|Усиленный
+game_strings|str_imod_superb|Превосходный
+game_strings|str_imod_lordly|Королевский
+game_strings|str_imod_lame|Хромой
+game_strings|str_imod_swaybacked|Провислый
+game_strings|str_imod_stubborn|Упрямый
+game_strings|str_imod_timid|Пугливый
+game_strings|str_imod_meek|Смирный
+game_strings|str_imod_spirited|Резвый
+game_strings|str_imod_champion|Чемпион
+game_strings|str_imod_fresh|Свежий
+game_strings|str_imod_day_old|Вчерашний
+game_strings|str_imod_two_day_old|Позавчерашний
+game_strings|str_imod_smelling|Пахнущий
+game_strings|str_imod_rotten|Гнилой
+game_strings|str_imod_large_bag|Большой мешок
+game_strings|str_pilgrim_disguise|паломник
+game_strings|str_farmer_disguise|крестьянин
+game_strings|str_hunter_disguise|охотник
+game_strings|str_guard_disguise|охранник
+game_strings|str_merchant_disguise|торговец
+game_strings|str_bard_disguise|бард
+game_strings|str_html|HTML-код: {s0}
+game_strings|str_color_of|Цвет {s0}:
+game_strings|str_color_banner|фона вашего знамени
+game_strings|str_color_group|группы {s0} на мини-карте
+game_strings|str_setting_of|Текущая настройка: {s1}
+game_strings|str_multi_scene_25|Холодный берег
+game_strings|str_s1_team|отряд {s1}
+game_strings|str_mp_add_troop|Спутники
+game_strings|str_next_wave_in_reg0_mins|Следующая волна через {reg0} мин...
+game_strings|str_wave_info|ВОЛНА
+game_strings|str_wave_no_reg1|Волна №{reg1}
+game_strings|str_veteran_wave_no_reg1|Волна ветеранов №{reg1}
+game_strings|str_elite_wave_no_reg1|Волна элиты №{reg1}
+game_strings|str_time_left_reg2_mins_reg1_secs|Осталось: {reg2} мин {reg1} с
+game_strings|str_time_left_reg1_secs|Осталось: {reg1} с
+game_strings|str_enemies_reg1_total_reg2_arriving|Врагов: {reg1} живы, {reg2} на подходе
+game_strings|str_ccoop_enemy_info|   {reg4} {s0} ({reg3} на подходе)
+game_strings|str_ccoop_wave_reg1_is_coming_in_reg0_seconds|Волна {reg1} подойдёт через {reg0} с
+game_strings|str_ccoop_veteran_wave_reg1_is_coming_in_reg0_seconds|Волна ветеранов {reg1} подойдёт через {reg0} с
+game_strings|str_ccoop_elite_wave_reg1_is_coming_in_reg0_seconds|Волна элиты {reg1} (ступень {reg2}) подойдёт через {reg0} с
+game_strings|str_prison_cart_hint|Разбейте повозку с пленными или продержитесь до конца раунда, чтобы спасти павших товарищей.
+game_strings|str_wave_reg1|Волна {reg1}
+game_strings|str_veteran_wave_hint|Осторожно: ветеранов больше, и у них больше здоровья!
+game_strings|str_elite_wave_hint|Осторожно: у элиты больше здоровья, и бьёт она сильнее!
+game_strings|str_ask_for_help_to_respawn_hint|Вы вернётесь в бой, когда товарищи разобьют повозку с пленными или продержатся до конца раунда.
+game_strings|str_wait_for_next_turn_to_respawn_hint|Вы вернётесь в бой в следующем раунде.
+game_strings|str_default|По умолчанию
+game_strings|str_coop_open_chest|Открыть сундук
+game_strings|str_coop_already_opened|Уже открыт!
+game_strings|str_ccoop_difficulty|Сложность:
+game_strings|str_ccoop_easy|Лёгкая
+game_strings|str_ccoop_normal|Обычная
+game_strings|str_ccoop_endless|Бесконечная
+game_strings|str_ccoop_difficulty_s0|Сложность: {s0}
+game_strings|str_ccoop_victory|Победа!
+game_strings|str_ccoop_s0_enemy_defeated_s1|{s0} разбит{reg1?:ы} ({s1})
+game_strings|str_ccoop_s0_enemy_defeated_endless_reg0|{s0} пока отбит{reg1?:ы}...^Готовьтесь к элите ступени {reg0}
+game_strings|str_ccoop_lord_s0_wave_hint|Приближается войско {s0}!
+game_strings|str_ccoop_king_s0_wave_hint|Приближается гвардия {s0}! (последняя волна)
+game_strings|str_ccoop_assign_drop|Кому отдать выпавший предмет:
+game_strings|str_ccoop_select_companion|Выберите и снарядите спутников:
+game_strings|str_ccoop_select_companion_class|Снарядите спутников:
+game_strings|str_ccoop_lvl_reg0|Ур. {reg0}
+game_strings|str_ccoop_dropping_item_on_ground|Свободных ячеек для оружия не хватило, и предмет упал на землю.
+game_strings|str_ccoop_king_name|Король {s0}
+game_strings|str_ccoop_queen_name|Королева {s0}
+game_strings|str_javelin_bow|Лук, стреляющий дротиками
+game_strings|str_knockdown_mace|Сбивает с ног любого, по кому попадёт
+game_strings|str_blood_drain_throwing_knives|Удачные попадания восстанавливают здоровье метателю
+game_strings|str_doom_javelins|Постепенно отнимают здоровье у того, кого пронзят
+game_strings|str_disarming_throwing_axe|Обезоруживает при попадании
+game_strings|str_instakill_knife|Убивает от малейшего касания
+game_strings|str_backstabber|Убивает любого врага ударом в спину
+game_strings|str_weak_beserker_dart|Отнимает здоровье, но вызывает опасное неистовство
+game_strings|str_team_change_dart|Заставляет поражённого перейти на другую сторону
+game_strings|str_awesome_spear|Потрясающее
+game_strings|str_running_boots|Ускоряют бег
+game_strings|str_power_gloves|Усиливают удар
+game_strings|str_invulnerable_helmet|Лучше бережёт голову
+game_strings|str_kicking_boots|Позволяют лягнуть как следует
+game_strings|str_restore_health_armour|Постепенно восстанавливает здоровье
+game_strings|str_npc1_1|-Хорош с метательным и одноручным^-Слаб с двуручным и арбалетом
+game_strings|str_npc2_1|-Хорош с одноручным^-Слаб с метательным
+game_strings|str_npc3_1|-Хорош с древковым^-Слаб с двуручным
+game_strings|str_npc4_1|-Хорош с оружием ближнего боя^-Слаб со стрелковым
+game_strings|str_npc5_1|-Хорош с луком и метательным^-Слаб с двуручным и арбалетом
+game_strings|str_npc6_1|-Хорош с одноручным и двуручным^-Слаб с луком и арбалетом
+game_strings|str_npc7_1|-Хороша с луком и древковым^-Слаба с одноручным и двуручным
+game_strings|str_npc8_1|-Хорош с метательным и двуручным^-Слаб с древковым и арбалетом
+game_strings|str_npc9_1|-Хорош с двуручным и луком^-Слаб с одноручным и арбалетом
+game_strings|str_npc10_1|-Хорош с арбалетом^-Слаб с двуручным и древковым
+game_strings|str_npc11_1|-Хорош с двуручным и арбалетом^-Слаб с луком
+game_strings|str_npc12_1|-Хорош с древковым^-Слаб с луком
+game_strings|str_npc13_1|-Хорош с одноручным и луком^-Слаб с двуручным
+game_strings|str_npc14_1|-Хороша с одноручным^-Хороша во всём
+game_strings|str_npc15_1|-Хорош с двуручным и луком^-Слаб с арбалетом и метательным
+game_strings|str_npc16_1|-Хорош с метательным и одноручным^-Слаб с двуручным и арбалетом
+game_strings|str_faction_leader_title_male_player|Король {s0}
+game_strings|str_faction_leader_title_male_1|Король {s0}
+game_strings|str_faction_leader_title_male_2|Король {s0}
+game_strings|str_faction_leader_title_male_3|{s0}-хан
+game_strings|str_faction_leader_title_male_4|Король {s0}
+game_strings|str_faction_leader_title_male_5|Король {s0}
+game_strings|str_faction_leader_title_male_6|Султан {s0}
+game_strings|str_faction_leader_title_female_player|Королева {s0}
+game_strings|str_faction_leader_title_female_1|Королева {s0}
+game_strings|str_faction_leader_title_female_2|Королева {s0}
+game_strings|str_faction_leader_title_female_3|{s0}-хатун
+game_strings|str_faction_leader_title_female_4|Королева {s0}
+game_strings|str_faction_leader_title_female_5|Королева {s0}
+game_strings|str_faction_leader_title_female_6|Султанша {s0}
+game_strings|str_dplmc_setting_2|Высокий
+game_strings|str_dplmc_setting_1|Средний
+game_strings|str_dplmc_setting_0|Низкий
+game_strings|str_dplmc_setting_off|Выключено
+game_strings|str_dplmc_setting_on|Включено
+game_strings|str_dplmc_setting_freq|Часто
+game_strings|str_dplmc_setting_tt0|Наведите мышь на параметр, чтобы узнать о нём больше. Подробное описание механик — в разделе «Понятия игры».
+game_strings|str_dplmc_setting_tt1|Каждый конь в бою теряет скорость пропорционально потерянному здоровью.
+game_strings|str_dplmc_setting_tt1a|Кони без всадника через минуту начинают убегать с поля боя и через 30 секунд исчезают. Обычный шаг проверки — 10 секунд, 0 отключает отбраковку. Если сесть на коня, его отсчёт сбрасывается, а кони в пределах 5 метров от игрока не исчезают.
+game_strings|str_dplmc_setting_tt2|Ваши войска продолжают сражаться, если вы пали в бою.
+game_strings|str_dplmc_setting_tt2a|Когда вы падаете в бою, все ваши войска получают приказ использовать любое оружие, стрелять по готовности и идти в атаку.
+game_strings|str_dplmc_setting_tt3|В автоматически рассчитываемых боях преимущество получают те, кто лучше воюет на этой местности.^Всадники плохо сражаются в лесу, а лучники — лучше.
+game_strings|str_dplmc_setting_tt4|Изгнанные лорды могут вернуться, чтобы служить новому сюзерену и собирать дружины без собственного поселения.
+game_strings|str_dplmc_setting_tt5|Уровень силы ИИ. Чем он выше, тем умнее ИИ. Высокий уровень экспериментальный и может вызывать ошибки.
+game_strings|str_dplmc_setting_tt6|Делает экономику и поведение реалистичнее. Высокий уровень экспериментальный и может вызывать ошибки.
+game_strings|str_dplmc_setting_tt7|Уровень предубеждений по отношению к женщинам в игре.
+game_strings|str_dplmc_setting_tt8|Страдают ли спутники от несовместимости взглядов и штрафов за обиды.
+game_strings|str_dplmc_setting_tt9|Более сложная система маскировки при проникновении во враждебные поселения.
+game_strings|str_dplmc_setting_tt10|Включает различные меню читов и отладочные функции.
+game_strings|str_mayor_wealth_compare|Здесь, в {s3}, мы {s4}, чем {reg4} других городов{reg6?, и {s5}, чем {reg5}:}.
+game_strings|str_mayor_wealth_no_data|В целом мы ничем не хуже других городов Калрадии.
+game_strings|str_mayor_wealth_rank_1|ещё не подсчитано
+game_strings|str_mayor_wealth_rank_2|известно, что это {s2}
+game_strings|str_mayor_wealth_rank_3|здесь
+game_strings|str_mayor_wealth_rank_4|мы не знаем, какой город мог бы
+game_strings|str_mayor_wealth_rank_5|считается, что город {s2} может
+game_strings|str_mayor_wealth_rank_6|мы считаем, что можем
+game_strings|str_mayor_wealth_compare_less_1|беднее
+game_strings|str_mayor_wealth_compare_less_2|производим меньше
+game_strings|str_mayor_wealth_compare_less_3|имеем окрестные деревни, производящие меньше
+game_strings|str_mayor_wealth_compare_less_4|реже посещаемы
+game_strings|str_mayor_wealth_compare_less_5|меньше страдаем от разбойников
+game_strings|str_mayor_wealth_compare_more_1|богаче
+game_strings|str_mayor_wealth_compare_more_2|производим больше
+game_strings|str_mayor_wealth_compare_more_3|имеем селян, производящих больше
+game_strings|str_mayor_wealth_compare_more_4|чаще посещаемы
+game_strings|str_mayor_wealth_compare_more_5|больше страдаем от налётчиков
+game_strings|str_mayor_wealth_comparison_1|В целом самый богатый город Калрадии — {s2}. {s1}
+game_strings|str_mayor_wealth_comparison_2|По местным ремёслам самый производительный город Калрадии — {s2}. {s1} Производство, конечно, зависит и от подвоза сырья, и от общего процветания города.
+game_strings|str_mayor_wealth_comparison_3|По доходам окрестных деревень самым богатым в Калрадии {s2} считаться. {s1} Богатство округи, разумеется, сильно зависит от превратностей войны: грабежи, разорения и смена границ могут многое изменить.
+game_strings|str_mayor_wealth_comparison_4|По торговле за последние месяцы больше всего караванов побывало в {s2}. {s1}
+game_strings|str_mayor_wealth_comparison_5|По нападениям на путников самым опасным {s2} считаться. {s1}
+game_strings|str_npc_mission_delegate_quest|Выполняет поручение от вашего имени
+game_strings|str_dplmc_npc_qst_deliver_message|Доставить мирное послание
+game_strings|str_dplmc_npc_qst_deliver_message_to_enemy_lord|Доставить военное послание
+game_strings|str_dplmc_npc_qst_raise_troops|Набрать бойцов
+game_strings|str_dplmc_npc_qst_escort_lady|Сопроводить даму
+game_strings|str_dplmc_npc_qst_deal_with_bandits_at_lords_village|Спасти деревню
+game_strings|str_dplmc_npc_qst_collect_taxes|Собрать налоги
+game_strings|str_dplmc_npc_qst_hunt_down_fugitive|Выследить беглеца
+game_strings|str_dplmc_npc_qst_kill_local_merchant|Проучить купца
+game_strings|str_dplmc_npc_qst_bring_back_runaway_serfs|Вернуть беглых крепостных
+game_strings|str_dplmc_npc_qst_follow_spy|Выследить встречу шпиона
+game_strings|str_dplmc_npc_qst_capture_enemy_hero|Взять лорда в заложники
+game_strings|str_dplmc_npc_qst_lend_companion|Одолжить спутника
+game_strings|str_dplmc_npc_qst_collect_debt|Взыскать долг
+game_strings|str_dplmc_npc_qst_incriminate_loyal_commander|Оклеветать военачальника
+game_strings|str_dplmc_npc_qst_meet_spy_in_enemy_town|Получить донесение шпиона
+game_strings|str_dplmc_npc_qst_capture_prisoners|Взять пленных
+game_strings|str_dplmc_npc_qst_deliver_message_to_prisoner_lord|Доставить тайное послание
+game_strings|str_dplmc_npc_qst_duel_for_lady|Бросить вызов лорду
+game_strings|str_dplmc_npc_qst_duel_courtship_rival|Сразиться с лордом на дуэли
+game_strings|str_dplmc_npc_qst_duel_avenge_insult|Вызвать лорда на поединок
+game_strings|str_dplmc_npc_qst_move_cattle_herd|Перегнать скот
+game_strings|str_dplmc_npc_qst_escort_merchant_caravan|Сопроводить караван
+game_strings|str_dplmc_npc_qst_deliver_wine|Доставить товар
+game_strings|str_dplmc_npc_qst_troublesome_bandits|Выследить разбойников
+game_strings|str_dplmc_npc_qst_kidnapped_girl|Выкупить девушку
+game_strings|str_dplmc_npc_qst_persuade_lords_to_make_peace|Добиться мира
+game_strings|str_dplmc_npc_qst_deal_with_looters|Разобраться с мародёрами
+game_strings|str_dplmc_npc_qst_deal_with_night_bandits|Прогнать разбойников
+game_strings|str_dplmc_npc_qst_deliver_grain|Собрать припасы
+game_strings|str_dplmc_npc_qst_deliver_cattle|Доставить скот
+game_strings|str_dplmc_npc_qst_train_peasants_against_bandits|Обучить крестьян
+game_strings|str_dplmc_reputation_roguish|Шепчутся, что {s46} живёт на широкую ногу.
+game_strings|str_dplmc_reputation_benefactor|Всем известно, что {s46} — друг простого народа.
+game_strings|str_dplmc_reputation_custodian|Считается, что {s46} — мудрый вкладчик.
+game_strings|str_skl_trade|Торговля
+game_strings|str_skl_leadership|Лидерство
+game_strings|str_skl_prisoner_management|Управление пленными
+game_strings|str_skl_reserved_1|Резервный навык 1
+game_strings|str_skl_reserved_2|Резервный навык 2
+game_strings|str_skl_reserved_3|Резервный навык 3
+game_strings|str_skl_reserved_4|Резервный навык 4
+game_strings|str_skl_persuasion|Убеждение
+game_strings|str_skl_engineer|Инженерное дело
+game_strings|str_skl_first_aid|Первая помощь
+game_strings|str_skl_surgery|Хирургия
+game_strings|str_skl_wound_treatment|Лечение ран
+game_strings|str_skl_inventory_management|Управление инвентарём
+game_strings|str_skl_spotting|Зоркость
+game_strings|str_skl_pathfinding|Поиск пути
+game_strings|str_skl_tactics|Тактика
+game_strings|str_skl_tracking|Следопыт
+game_strings|str_skl_trainer|Тренер
+game_strings|str_skl_reserved_5|Резервный навык 5
+game_strings|str_skl_reserved_6|Резервный навык 6
+game_strings|str_skl_reserved_7|Резервный навык 7
+game_strings|str_skl_reserved_8|Резервный навык 8
+game_strings|str_skl_looting|Мародёрство
+game_strings|str_skl_horse_archery|Стрельба с коня
+game_strings|str_skl_riding|Верховая езда
+game_strings|str_skl_athletics|Атлетика
+game_strings|str_skl_shield|Щит
+game_strings|str_skl_weapon_master|Владение оружием
+game_strings|str_skl_reserved_9|Резервный навык 9
+game_strings|str_skl_reserved_10|Резервный навык 10
+game_strings|str_skl_reserved_11|Резервный навык 11
+game_strings|str_skl_reserved_12|Резервный навык 12
+game_strings|str_skl_reserved_13|Резервный навык 13
+game_strings|str_skl_power_draw|Мощный выстрел
+game_strings|str_skl_power_throw|Мощный бросок
+game_strings|str_skl_power_strike|Мощный удар
+game_strings|str_skl_ironflesh|Железная кожа
+game_strings|str_skl_reserved_14|Резервный навык 14
+game_strings|str_skl_reserved_15|Резервный навык 15
+game_strings|str_skl_reserved_16|Резервный навык 16
+game_strings|str_skl_reserved_17|Резервный навык 17
+game_strings|str_skl_reserved_18|Резервный навык 18
+troops|trp_player|Игрок
+troops|trp_player_pl|Игрок
+troops|trp_Constable_Hareck|Коннетабль Харек
+troops|trp_Constable_Hareck_pl|Коннетабль Харек
+troops|trp_Ramun_the_slave_trader|Рамун, работорговец
+troops|trp_Ramun_the_slave_trader_pl|Рамун, работорговец
+troops|trp_Xerina|Ксерина
+troops|trp_Xerina_pl|Ксерина
+troops|trp_Dranton|Дрантон
+troops|trp_Dranton_pl|Дрантон
+troops|trp_Kradus|Крадус
+troops|trp_Kradus_pl|Крадус
+troops|trp_Galeas|Галеас
+troops|trp_Galeas_pl|Галеас
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_1|Свадийский арбалетчик
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_1_pl|Свадийские арбалетчики
+troops|trp_swadian_infantry_multiplayer_coop_tier_1|Свадийская пехота
+troops|trp_swadian_infantry_multiplayer_coop_tier_1_pl|Свадийская пехота
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_1|Свадийский латник
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_1_pl|Свадийские латники
+troops|trp_vaegir_archer_multiplayer_coop_tier_1|Вегирский лучник
+troops|trp_vaegir_archer_multiplayer_coop_tier_1_pl|Вегирские лучники
+troops|trp_vaegir_spearman_multiplayer_coop_tier_1|Вегирский копейщик
+troops|trp_vaegir_spearman_multiplayer_coop_tier_1_pl|Вегирские копейщики
+troops|trp_vaegir_horseman_multiplayer_coop_tier_1|Вегирский всадник
+troops|trp_vaegir_horseman_multiplayer_coop_tier_1_pl|Вегирские всадники
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_1|Хергитский конный лучник
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_1_pl|Хергитские конные лучники
+troops|trp_khergit_infantry_multiplayer_coop_tier_1|Хергитский пехотинец
+troops|trp_khergit_infantry_multiplayer_coop_tier_1_pl|Хергитская пехота
+troops|trp_khergit_lancer_multiplayer_coop_tier_1|Хергитский копейщик-всадник
+troops|trp_khergit_lancer_multiplayer_coop_tier_1_pl|Хергитские копейщики-всадники
+troops|trp_nord_archer_multiplayer_coop_tier_1|Нордский лучник
+troops|trp_nord_archer_multiplayer_coop_tier_1_pl|Нордские лучники
+troops|trp_nord_veteran_multiplayer_coop_tier_1|Нордский хускарл
+troops|trp_nord_veteran_multiplayer_coop_tier_1_pl|Нордские хускарлы
+troops|trp_nord_scout_multiplayer_coop_tier_1|Нордский разведчик
+troops|trp_nord_scout_multiplayer_coop_tier_1_pl|Нордские разведчики
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_1|Родокский арбалетчик
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_1_pl|Родокские арбалетчики
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_1|Родокский сержант
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_1_pl|Родокские сержанты
+troops|trp_rhodok_horseman_multiplayer_coop_tier_1|Родокский всадник
+troops|trp_rhodok_horseman_multiplayer_coop_tier_1_pl|Родокские всадники
+troops|trp_sarranid_archer_multiplayer_coop_tier_1|Сарранидский лучник
+troops|trp_sarranid_archer_multiplayer_coop_tier_1_pl|Сарранидские лучники
+troops|trp_sarranid_footman_multiplayer_coop_tier_1|Сарранидский пехотинец
+troops|trp_sarranid_footman_multiplayer_coop_tier_1_pl|Сарранидские пехотинцы
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_1|Сарранидский мамлюк
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_1_pl|Сарранидские мамлюки
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_2|Свадийский арбалетчик
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_2_pl|Свадийские арбалетчики
+troops|trp_swadian_infantry_multiplayer_coop_tier_2|Свадийский пехотинец
+troops|trp_swadian_infantry_multiplayer_coop_tier_2_pl|Свадийская пехота
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_2|Свадийский латник
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_2_pl|Свадийские латники
+troops|trp_vaegir_archer_multiplayer_coop_tier_2|Вегирский лучник
+troops|trp_vaegir_archer_multiplayer_coop_tier_2_pl|Вегирские лучники
+troops|trp_vaegir_spearman_multiplayer_coop_tier_2|Вегирский копейщик
+troops|trp_vaegir_spearman_multiplayer_coop_tier_2_pl|Вегирские копейщики
+troops|trp_vaegir_horseman_multiplayer_coop_tier_2|Вегирский всадник
+troops|trp_vaegir_horseman_multiplayer_coop_tier_2_pl|Вегирские всадники
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_2|Хергитский конный лучник
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_2_pl|Хергитские конные лучники
+troops|trp_khergit_infantry_multiplayer_coop_tier_2|Хергитский пехотинец
+troops|trp_khergit_infantry_multiplayer_coop_tier_2_pl|Хергитская пехота
+troops|trp_khergit_lancer_multiplayer_coop_tier_2|Хергитский улан
+troops|trp_khergit_lancer_multiplayer_coop_tier_2_pl|Хергитские уланы
+troops|trp_nord_archer_multiplayer_coop_tier_2|Нордский лучник
+troops|trp_nord_archer_multiplayer_coop_tier_2_pl|Нордские лучники
+troops|trp_nord_veteran_multiplayer_coop_tier_2|Нордский хускарл
+troops|trp_nord_veteran_multiplayer_coop_tier_2_pl|Нордские хускарлы
+troops|trp_nord_scout_multiplayer_coop_tier_2|Нордский разведчик
+troops|trp_nord_scout_multiplayer_coop_tier_2_pl|Нордские разведчики
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_2|Родокский арбалетчик
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_2_pl|Родокские арбалетчики
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_2|Родокский сержант
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_2_pl|Родокские сержанты
+troops|trp_rhodok_horseman_multiplayer_coop_tier_2|Родокский всадник
+troops|trp_rhodok_horseman_multiplayer_coop_tier_2_pl|Родокские всадники
+troops|trp_sarranid_archer_multiplayer_coop_tier_2|Сарранидский лучник
+troops|trp_sarranid_archer_multiplayer_coop_tier_2_pl|Сарранидские лучники
+troops|trp_sarranid_footman_multiplayer_coop_tier_2|Сарранидский пехотинец
+troops|trp_sarranid_footman_multiplayer_coop_tier_2_pl|Сарранидские пехотинцы
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_2|Сарранидский мамлюк
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_2_pl|Сарранидские мамлюки
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_3|Свадийский арбалетчик
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_3_pl|Свадийские арбалетчики
+troops|trp_swadian_infantry_multiplayer_coop_tier_3|Свадийский пехотинец
+troops|trp_swadian_infantry_multiplayer_coop_tier_3_pl|Свадийская пехота
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_3|Свадийский латник
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_3_pl|Свадийские латники
+troops|trp_vaegir_archer_multiplayer_coop_tier_3|Вегирский лучник
+troops|trp_vaegir_archer_multiplayer_coop_tier_3_pl|Вегирские лучники
+troops|trp_vaegir_spearman_multiplayer_coop_tier_3|Вегирский копейщик
+troops|trp_vaegir_spearman_multiplayer_coop_tier_3_pl|Вегирские копейщики
+troops|trp_vaegir_horseman_multiplayer_coop_tier_3|Вегирский всадник
+troops|trp_vaegir_horseman_multiplayer_coop_tier_3_pl|Вегирские всадники
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_3|Хергитский конный лучник
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_3_pl|Хергитские конные лучники
+troops|trp_khergit_infantry_multiplayer_coop_tier_3|Хергитский пехотинец
+troops|trp_khergit_infantry_multiplayer_coop_tier_3_pl|Хергитская пехота
+troops|trp_khergit_lancer_multiplayer_coop_tier_3|Хергитский улан
+troops|trp_khergit_lancer_multiplayer_coop_tier_3_pl|Хергитские уланы
+troops|trp_nord_archer_multiplayer_coop_tier_3|Нордский лучник
+troops|trp_nord_archer_multiplayer_coop_tier_3_pl|Нордские лучники
+troops|trp_nord_veteran_multiplayer_coop_tier_3|Нордский хускарл
+troops|trp_nord_veteran_multiplayer_coop_tier_3_pl|Нордские хускарлы
+troops|trp_nord_scout_multiplayer_coop_tier_3|Нордский разведчик
+troops|trp_nord_scout_multiplayer_coop_tier_3_pl|Нордские разведчики
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_3|Родокский арбалетчик
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_3_pl|Родокские арбалетчики
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_3|Родокский сержант
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_3_pl|Родокские сержанты
+troops|trp_rhodok_horseman_multiplayer_coop_tier_3|Родокский всадник
+troops|trp_rhodok_horseman_multiplayer_coop_tier_3_pl|Родокские всадники
+troops|trp_sarranid_archer_multiplayer_coop_tier_3|Сарранидский лучник
+troops|trp_sarranid_archer_multiplayer_coop_tier_3_pl|Сарранидские лучники
+troops|trp_sarranid_footman_multiplayer_coop_tier_3|Сарранидский пехотинец
+troops|trp_sarranid_footman_multiplayer_coop_tier_3_pl|Сарранидские пехотинцы
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_3|Сарранидский мамлюк
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_3_pl|Сарранидские мамлюки
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_4|Свадийский арбалетчик
+troops|trp_swadian_crossbowman_multiplayer_coop_tier_4_pl|Свадийские арбалетчики
+troops|trp_swadian_infantry_multiplayer_coop_tier_4|Свадийский пехотинец
+troops|trp_swadian_infantry_multiplayer_coop_tier_4_pl|Свадийская пехота
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_4|Свадийский латник
+troops|trp_swadian_man_at_arms_multiplayer_coop_tier_4_pl|Свадийские латники
+troops|trp_vaegir_archer_multiplayer_coop_tier_4|Вегирский лучник
+troops|trp_vaegir_archer_multiplayer_coop_tier_4_pl|Вегирские лучники
+troops|trp_vaegir_spearman_multiplayer_coop_tier_4|Вегирский копейщик
+troops|trp_vaegir_spearman_multiplayer_coop_tier_4_pl|Вегирские копейщики
+troops|trp_vaegir_horseman_multiplayer_coop_tier_4|Вегирский всадник
+troops|trp_vaegir_horseman_multiplayer_coop_tier_4_pl|Вегирские всадники
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_4|Хергитский конный лучник
+troops|trp_khergit_veteran_horse_archer_multiplayer_coop_tier_4_pl|Хергитские конные лучники
+troops|trp_khergit_infantry_multiplayer_coop_tier_4|Хергитский пехотинец
+troops|trp_khergit_infantry_multiplayer_coop_tier_4_pl|Хергитская пехота
+troops|trp_khergit_lancer_multiplayer_coop_tier_4|Хергитский улан
+troops|trp_khergit_lancer_multiplayer_coop_tier_4_pl|Хергитские уланы
+troops|trp_nord_archer_multiplayer_coop_tier_4|Нордский лучник
+troops|trp_nord_archer_multiplayer_coop_tier_4_pl|Нордские лучники
+troops|trp_nord_veteran_multiplayer_coop_tier_4|Нордский хускарл
+troops|trp_nord_veteran_multiplayer_coop_tier_4_pl|Нордские хускарлы
+troops|trp_nord_scout_multiplayer_coop_tier_4|Нордский разведчик
+troops|trp_nord_scout_multiplayer_coop_tier_4_pl|Нордские разведчики
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_4|Родокский арбалетчик
+troops|trp_rhodok_veteran_crossbowman_multiplayer_coop_tier_4_pl|Родокские арбалетчики
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_4|Родокский сержант
+troops|trp_rhodok_sergeant_multiplayer_coop_tier_4_pl|Родокские сержанты
+troops|trp_rhodok_horseman_multiplayer_coop_tier_4|Родокский всадник
+troops|trp_rhodok_horseman_multiplayer_coop_tier_4_pl|Родокские всадники
+troops|trp_sarranid_archer_multiplayer_coop_tier_4|Сарранидский лучник
+troops|trp_sarranid_archer_multiplayer_coop_tier_4_pl|Сарранидские лучники
+troops|trp_sarranid_footman_multiplayer_coop_tier_4|Сарранидский пехотинец
+troops|trp_sarranid_footman_multiplayer_coop_tier_4_pl|Сарранидские пехотинцы
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_4|Сарранидский мамлюк
+troops|trp_sarranid_mamluke_multiplayer_coop_tier_4_pl|Сарранидские мамлюки
+troops|trp_npc1_1|Борча
+troops|trp_npc1_1_pl|Борча
+troops|trp_npc2_1|Марнид
+troops|trp_npc2_1_pl|Марнид
+troops|trp_npc3_1|Имира
+troops|trp_npc3_1_pl|Имира
+troops|trp_npc4_1|Рольф
+troops|trp_npc4_1_pl|Рольф
+troops|trp_npc5_1|Бахештур
+troops|trp_npc5_1_pl|Бахештур
+troops|trp_npc6_1|Фирентис
+troops|trp_npc6_1_pl|Фирентис
+troops|trp_npc7_1|Дешави
+troops|trp_npc7_1_pl|Дешави
+troops|trp_npc8_1|Мательд
+troops|trp_npc8_1_pl|Мательд
+troops|trp_npc9_1|Алаен
+troops|trp_npc9_1_pl|Алаен
+troops|trp_npc10_1|Бундук
+troops|trp_npc10_1_pl|Бундук
+troops|trp_npc11_1|Катрин
+troops|trp_npc11_1_pl|Катрин
+troops|trp_npc12_1|Джеремус
+troops|trp_npc12_1_pl|Джеремус
+troops|trp_npc13_1|Низар
+troops|trp_npc13_1_pl|Низар
+troops|trp_npc14_1|Лезалит
+troops|trp_npc14_1_pl|Лезалит
+troops|trp_npc15_1|Артименнер
+troops|trp_npc15_1_pl|Артименнер
+troops|trp_npc16_1|Клети
+troops|trp_npc16_1_pl|Клети
+troops|trp_npc1_2|Борча
+troops|trp_npc1_2_pl|Борча
+troops|trp_npc2_2|Марнид
+troops|trp_npc2_2_pl|Марнид
+troops|trp_npc3_2|Имира
+troops|trp_npc3_2_pl|Имира
+troops|trp_npc4_2|Рольф
+troops|trp_npc4_2_pl|Рольф
+troops|trp_npc5_2|Бахештур
+troops|trp_npc5_2_pl|Бахештур
+troops|trp_npc6_2|Фирентис
+troops|trp_npc6_2_pl|Фирентис
+troops|trp_npc7_2|Дешави
+troops|trp_npc7_2_pl|Дешави
+troops|trp_npc8_2|Мательд
+troops|trp_npc8_2_pl|Мательд
+troops|trp_npc9_2|Алаен
+troops|trp_npc9_2_pl|Алаен
+troops|trp_npc10_2|Бундук
+troops|trp_npc10_2_pl|Бундук
+troops|trp_npc11_2|Катрин
+troops|trp_npc11_2_pl|Катрин
+troops|trp_npc12_2|Джеремус
+troops|trp_npc12_2_pl|Джеремус
+troops|trp_npc13_2|Низар
+troops|trp_npc13_2_pl|Низар
+troops|trp_npc14_2|Лезалит
+troops|trp_npc14_2_pl|Лезалит
+troops|trp_npc15_2|Артименнер
+troops|trp_npc15_2_pl|Артименнер
+troops|trp_npc16_2|Клети
+troops|trp_npc16_2_pl|Клети
+troops|trp_npc1_3|Борча
+troops|trp_npc1_3_pl|Борча
+troops|trp_npc2_3|Марнид
+troops|trp_npc2_3_pl|Марнид
+troops|trp_npc3_3|Имира
+troops|trp_npc3_3_pl|Имира
+troops|trp_npc4_3|Рольф
+troops|trp_npc4_3_pl|Рольф
+troops|trp_npc5_3|Бахештур
+troops|trp_npc5_3_pl|Бахештур
+troops|trp_npc6_3|Фирентис
+troops|trp_npc6_3_pl|Фирентис
+troops|trp_npc7_3|Дешави
+troops|trp_npc7_3_pl|Дешави
+troops|trp_npc8_3|Мательд
+troops|trp_npc8_3_pl|Мательд
+troops|trp_npc9_3|Алаен
+troops|trp_npc9_3_pl|Алаен
+troops|trp_npc10_3|Бундук
+troops|trp_npc10_3_pl|Бундук
+troops|trp_npc11_3|Катрин
+troops|trp_npc11_3_pl|Катрин
+troops|trp_npc12_3|Джеремус
+troops|trp_npc12_3_pl|Джеремус
+troops|trp_npc13_3|Низар
+troops|trp_npc13_3_pl|Низар
+troops|trp_npc14_3|Лезалит
+troops|trp_npc14_3_pl|Лезалит
+troops|trp_npc15_3|Артименнер
+troops|trp_npc15_3_pl|Артименнер
+troops|trp_npc16_3|Клети
+troops|trp_npc16_3_pl|Клети
+troops|trp_npc1_4|Борча
+troops|trp_npc1_4_pl|Борча
+troops|trp_npc2_4|Марнид
+troops|trp_npc2_4_pl|Марнид
+troops|trp_npc3_4|Имира
+troops|trp_npc3_4_pl|Имира
+troops|trp_npc4_4|Рольф
+troops|trp_npc4_4_pl|Рольф
+troops|trp_npc5_4|Бахештур
+troops|trp_npc5_4_pl|Бахештур
+troops|trp_npc6_4|Фирентис
+troops|trp_npc6_4_pl|Фирентис
+troops|trp_npc7_4|Дешави
+troops|trp_npc7_4_pl|Дешави
+troops|trp_npc8_4|Мательд
+troops|trp_npc8_4_pl|Мательд
+troops|trp_npc9_4|Алаен
+troops|trp_npc9_4_pl|Алаен
+troops|trp_npc10_4|Бундук
+troops|trp_npc10_4_pl|Бундук
+troops|trp_npc11_4|Катрин
+troops|trp_npc11_4_pl|Катрин
+troops|trp_npc12_4|Джеремус
+troops|trp_npc12_4_pl|Джеремус
+troops|trp_npc13_4|Низар
+troops|trp_npc13_4_pl|Низар
+troops|trp_npc14_4|Лезалит
+troops|trp_npc14_4_pl|Лезалит
+troops|trp_npc15_4|Артименнер
+troops|trp_npc15_4_pl|Артименнер
+troops|trp_npc16_4|Клети
+troops|trp_npc16_4_pl|Клети
+item_kinds|itm_long_voulge|Длинный вуж
+item_kinds|itm_long_voulge_pl|Длинные вужи
+item_kinds|itm_javelin_bow|Лук для дротиков
+item_kinds|itm_javelin_bow_pl|Луки для дротиков
+item_kinds|itm_knockdown_mace|Сокрушающая булава
+item_kinds|itm_knockdown_mace_pl|Сокрушающие булавы
+item_kinds|itm_blood_drain_throwing_knives|Кровопийные метательные ножи
+item_kinds|itm_blood_drain_throwing_knives_pl|Кровопийные метательные ножи
+item_kinds|itm_doom_javelins|Роковые дротики
+item_kinds|itm_doom_javelins_pl|Роковые дротики
+item_kinds|itm_disarming_throwing_axe|Обезоруживающий метательный топор
+item_kinds|itm_disarming_throwing_axe_pl|Обезоруживающие метательные топоры
+item_kinds|itm_instakill_knife|Смертельный нож
+item_kinds|itm_instakill_knife_pl|Смертельные ножи
+item_kinds|itm_backstabber|Нож для удара в спину
+item_kinds|itm_backstabber_pl|Ножи для удара в спину
+item_kinds|itm_weak_beserker_dart|Слабый дротик берсерка
+item_kinds|itm_weak_beserker_dart_pl|Слабые дротики берсерка
+item_kinds|itm_team_change_dart|Дротик перебежчика
+item_kinds|itm_team_change_dart_pl|Дротики перебежчика
+item_kinds|itm_awesome_spear|Потрясающее копьё
+item_kinds|itm_awesome_spear_pl|Потрясающие копья
+item_kinds|itm_running_boots|Сапоги-скороходы
+item_kinds|itm_running_boots_pl|Сапоги-скороходы
+item_kinds|itm_power_gloves|Перчатки силы
+item_kinds|itm_power_gloves_pl|Перчатки силы
+item_kinds|itm_invulnerable_helmet|Неуязвимый шлем
+item_kinds|itm_invulnerable_helmet_pl|Неуязвимые шлемы
+item_kinds|itm_kicking_boots|Сапоги для пинков
+item_kinds|itm_kicking_boots_pl|Сапоги для пинков
+item_kinds|itm_restore_health_armour|Целебный доспех
+item_kinds|itm_restore_health_armour_pl|Целебные доспехи
+item_kinds|itm_javelin_bow_ammo|Дротики для лука
+item_kinds|itm_javelin_bow_ammo_pl|Дротики для лука
+item_kinds|itm_ccoop_new_items_end|Конец предметов
+item_kinds|itm_ccoop_new_items_end_pl|Конец предметов
+factions|fac_ccoop_all_stars|Звёзды
+info_pages|ip_dplmc_policy|Возможность: политика государства
+info_pages|ip_dplmc_policy_text|Централизация/децентрализация:^+3 — очень централизованное. Налоговые потери правителя снижены на 15%, у его вассалов — повышены на 15%. Отношения правителя с вассалами каждый месяц падают на 3. Армия короля больше на 30%, армии лордов меньше на 9%.^+2 — довольно централизованное. Налоговые потери правителя снижены на 10%, у вассалов повышены на 10%. Отношения правителя с вассалами каждый месяц падают на 2. Армия короля больше на 20%, армии лордов меньше на 6%.^+1 — слегка централизованное. Налоговые потери правителя снижены на 5%, у вассалов повышены на 5%. Отношения правителя с вассалами каждый месяц падают на 1. Армия короля больше на 10%, армии лордов меньше на 3%.^−1 — слегка децентрализованное. Налоговые потери правителя повышены на 5%. Отношения правителя с вассалами каждый месяц растут на 1. Армия короля меньше на 10%, армии лордов больше на 3%.^−2 — довольно децентрализованное. Налоговые потери правителя повышены на 10%. Отношения с вассалами растут на 2 в месяц. Армия короля меньше на 20%, армии лордов больше на 6%.^−3 — очень децентрализованное. Налоговые потери правителя повышены на 15%. Отношения с вассалами растут на 3 в месяц. Армия короля меньше на 30%, армии лордов больше на 9%.^^Аристократия/плутократия:^+3 — очень аристократическое. Торговля меньше на 15%. Отношения короля с лордами растут на 3 в месяц. Армии вассалов больше на 9%.^+2 — довольно аристократическое. Торговля меньше на 10%. Отношения растут на 2 в месяц. Армии вассалов больше на 6%.^+1 — отчасти аристократическое. Торговля меньше на 5%. Отношения растут на 1 в месяц. Армии вассалов больше на 3%.^−1 — отчасти плутократическое. Торговля больше на 10%. Отношения короля с лордами падают на 1 в месяц. Армии вассалов меньше на 3%.^−2 — довольно плутократическое. Торговля больше на 15%. Отношения падают на 2 в месяц. Армии вассалов меньше на 6%.^−3 — очень плутократическое. Торговля больше на 20%. Отношения падают на 3 в месяц. Армии вассалов меньше на 9%.^^Крепостные/свободные подданные:^+3 — почти все крепостные. Налоговые потери короля и вассалов меньше на 9%. Войска фракции на 6% слабее в автобоях, армия королевства больше на 6%.^+2 — в основном крепостные. Налоговые потери меньше на 6%. Войска на 4% слабее в автобоях, армия больше на 4%.^+1 — чаще крепостные. Налоговые потери меньше на 3%. Войска на 2% слабее в автобоях, армия больше на 2%.^−1 — чаще свободные. Налоговые потери больше на 3%. Войска на 2% сильнее в автобоях, армия меньше на 2%.^−2 — в основном свободные. Налоговые потери больше на 6%. Войска на 4% сильнее в автобоях, армия меньше на 4%.^−3 — все свободные. Налоговые потери больше на 9%. Войска на 6% сильнее в автобоях, армия меньше на 6%.^^Качество/количество:^+3 — легендарное качество. Сила войск в автобоях больше на 12%, армии лордов меньше на 12%.^+2 — высокое качество. Сила больше на 8%, армии лордов меньше на 8%.^+1 — хорошее качество. Сила больше на 4%, армии лордов меньше на 4%.^−1 — большое количество. Сила меньше на 4%, армии лордов больше на 4%.^−2 — очень большое количество. Сила меньше на 8%, армии лордов больше на 8%.^−3 — легендарное количество. Сила меньше на 12%, армии лордов больше на 12%.
+info_pages|ip_dplmc_deathcamera|Возможность: продолжение боя
+info_pages|ip_dplmc_deathcamera_text|Продолжение боя позволяет смотреть, как разворачивается битва, после того как вас оглушили. Клавиши камеры настраиваются в меню настроек Diplomacy. Обычно цифровая клавиатура вращает камеру, а клавиши движения её перемещают. Доступны три режима камеры.
+info_pages|ip_dplmc_disguise|Возможность: маскировка игрока
+info_pages|ip_dplmc_disguise_text|Система маскировки позволяет игроку выдавать себя за разных простолюдинов, чтобы тайно проникнуть в город. Кроме прежнего рубища паломника, новые наряды можно купить у торговцев и получить у камергера.^ В Native вероятность разоблачения зависела от числа людей в отряде. Новая система рассчитывает её по выбранной роли, но ограничивает, сколько денег и вещей можно пронести в город и вынести из него. После выхода из города инвентарь объединяется.
+info_pages|ip_dplmc_ai_changes|Настройка: ИИ кампании
+info_pages|ip_dplmc_ai_changes_text|Низкий:^^- Очки поселений при распределении владений считаются как деревня 1 / замок 2 / город 3 вместо 1 / 1 / 2.^- В заданиях «спасти пленника» и «преподнести дар» целью могут стать и дяди, тёти и свойственники.^- Изменён подсчёт ценности поселений в задании претендента.^- Выбирая новую фракцию, лорды чаще возвращаются в прежнюю (кроме той, из которой их изгоняют), если выполнены обычные условия возвращения. На решение лорда могут влиять и его отношения с другими лордами фракций, а не только с их правителями.^^Средний:^^- Изменены прибавки и потери отношений лордов при распределении владений.^- Короли чуть реже идут против мнения лордов в делах фракции.^- При выборе, кого поддержать в споре за владение, слегка изменены параметры для некоторых характеров. Некоторые лорды всё равно отдают предпочтение безземельным лордам или тому, кто захватил поселение, даже при слегка отрицательных отношениях (обычно порог — 0 для всех характеров).^- Если лорд не находит подходящего кандидата на владение по обычным правилам, он не поддерживает автоматически себя, а использует взвешенную систему очков.^- В некоторых местах вместо «средняя известность × 3/2» используется другой расчёт.^- Лорды в городах дополнительно улучшают войска и нанимают наёмников в зависимости от характера.^^Высокий:^^- Вес известности, когда лорд или игрок ухаживает за дамой, зависит от знатности её опекуна.^- Если у фракции есть безземельные лорды, а свободных владений нет, при некоторых условиях король перераспределяет свою деревню.^- При разграблении деревни все находившиеся в ней добровольцы гибнут — и для игрока, и для лордов.
+info_pages|ip_dplmc_gold_changes|Настройка: экономика ИИ
+info_pages|ip_dplmc_gold_changes_text|Низкий:^^- Политика фракции влияет на налоговые потери и сюзерена, и вассала (централизация).^- Торговля караванов выгодна и месту отправления, и месту назначения.^- Если игрок сдаётся, есть шанс, что его личное снаряжение не отберут; это зависит от того, кто принял сдачу, и от сложности. (Это исправляет игровую проблему: в первые 700 дней сдаваться вместо того, чтобы биться до последнего, было бессмысленно.) Также исправлена ошибка, из-за которой можно было лишиться книг и т. п.^- ИИ-караваны выбирают следующую цель с учётом расстояния и чуть чаще ходят в свою фракцию. Это смешано со стратегией Native, так что торговые пути изменятся, но не сильно.^- Деньги городских торговцев зависят от процветания (до 40%).^- В городах, осаждённых не меньше 48 часов, дорожает еда.^- Пересчитан торговый штраф в городах: товар выгоднее продавать торговцам, которые на нём специализируются.^- Еда может не портиться благодаря управлению инвентарём.^- Набеги на деревни задерживают строительство.^- Торговые отряды оставляют пленников в укреплённых поселениях.^^Средний:^^- Супруг и столица позволяют держать на одно поселение больше, сдвигая предел налоговых потерь.^- Потребление еды в городах растёт с процветанием и размером гарнизона.^- Разграбление деревни больше не даёт ровно 30 предметов.^- Навык мародёрства лордов влияет на то, сколько золота они отнимают у побеждённого игрока.^- Навык лидерства лордов снижает жалованье их войскам так же, как у игрока.^- Игрок, как и лорды, может терять золото при разграблении своих владений.^- Отряды наёмников растут вместе с развитием игрока, как и отряды лордов (на 1,25% за уровень).^- Если у игрока своё королевство, его супруг получает часть бонуса, положенного сюзерену; размер зависит от числа владений игрока. Этот бонус не складывается с бонусом маршала.^- Поселения лордов теряют гарнизон, если им нечем платить жалованье, но только выше определённого порога.^- Чужаки не могут приобретать предприятия (порог 1 вместо 0, так что нужно что-то сделать).^- Процветание деревни влияет на нашествие разбойников (возможен порочный круг).^- Деньги за купленный скот теперь получает староста.^- Деревенские крестьяне увозят лишние вещи старосты на продажу в торговые города.^^Высокий:^^- Общая сумма еженедельного бонуса королям Калрадии постоянна: когда короли уходят в изгнание, их доли делятся между оставшимися.^- Если у лорда после выплаты жалованья остаётся излишек, он делится между лордом и бюджетами гарнизонов (у каждого замка и города своя казна на жалованье) в зависимости от того, у кого не хватает денег. (Если хватает всем, лорд забирает всё, как раньше.)^- Потеря чести за проступок зависит от вашей чести в этот момент: чем безупречнее репутация, тем сильнее бьёт по ней один позорный поступок.^- Набеги: потерянное деревней золото сначала вычитается из несобранных налогов, а остаток — у лорда.^- Пленники, которых еженедельно убирают из поселений, на самом деле выкупаются в соотношении 1:10, обогащая округу.^- Улучшения можно отменять (деньги возвращаются в местную экономику, но отношения страдают).

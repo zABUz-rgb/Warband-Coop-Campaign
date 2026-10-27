@@ -8,6 +8,7 @@
 - Общие паузы: когда кто-то в бою или в городе, мир стоит у всех.
 - Бои — через мультиплеер Warband, союзники рядом приходят подкреплением.
 - Freelancer: служба наёмником у NPC и у другого игрока (запрос → принять/отказать).
+- Основа модуля — Diplomacy 1.174 (вместо чистого Native).
 
 ## Механики мода (однопользовательская основа)
 - 10 секунд на подготовку в начале боя.
@@ -15,7 +16,8 @@
 - Скорость мира ×0.8, отряды нейтралов (бандиты и т.п.) вдвое меньше.
 
 ## Структура
-- `src/` — исходники модуля (модульная система 1.171 + изменения).
+- `src/` — исходники модуля: Diplomacy 1.174, перенесённая на Python 3 (`compiler.py` заменяет модуль
+  компилятора W.R.E.C.K.), плюс пакеты слияния `dplmc_fix/`, `freelancer/`, `coop/` (`coop_mods.MODS`).
 - `vendor/` — сторонние загрузки (не в git).
 - `game/` — тестовая копия игры, модуль `Modules/CoopWorld` (не в git).
 - `local/` — личные заметки (не в git).
@@ -25,6 +27,9 @@
   (SHA256 `b8d5095031ed2b9df0a4020097bea06b6137022a52cd24a9d5c6b575444b16e1`)
 - Freelancer 1.51 modmerger source (Taragoth): https://www.moddb.com/downloads/freelancer-mod-ver-151-modmerger-source
   (MD5 `681f41ba0916287e89a22dbcada03a58`)
+- Diplomacy 1.174 prejudice patch (исходники в `Source`, текстуры и сцены в `Compiled`, в `vendor/dplmc_1174`,
+  MD5 архива `03f6b7da4116643e7d1d04ea85fa58e4`); русский перевод Diplomacy 4.3 MRCMOD (`vendor/dplmc_ru_mrcmod`,
+  MD5 `3b7f76de4e01c16fa43c1675e7ea8543`).
 
 ## Кооператив (уровень 2): до 4 игроков
 - `tools/coop_bridge.py host --key СЕКРЕТ` — хаб у хоста: сервер мира (127.0.0.1:80), своя игра хоста
@@ -37,7 +42,7 @@
 - Пакеты для друзей (без файлов игры): `python tools/make_ru.py && python tools/make_package.py` →
   `dist/CoopWorld-<дата>.zip` (английский) и `dist/CoopWorld-ru-<дата>.zip` (русские тексты игры,
   установщик и инструкция на русском).
-- Русский перевод того, что CoopWorld добавляет к Native (Freelancer, кооператив, а также строки 1.174,
-  которых нет в русском Native): `lang/ru.csv`. `python tools/make_ru.py --missing` покажет новые
+- Русский: русификатор Native, затем перевод Diplomacy (MRCMOD), затем `lang/ru.csv` (Freelancer,
+  кооператив и всё, чего нет в первых двух). `python tools/make_ru.py --missing` покажет новые
   непереведённые строки после изменений в моде.
 - Тесты моста: `python -I tools/test_coop_bridge.py`.
