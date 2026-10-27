@@ -33,6 +33,10 @@
   (127.0.0.2:80) и загрузка свежего сохранения хоста как `sg90.sav`.
 - Порядок: сервер — Лагерь → «WORLD SERVER»; для каждого входящего — «hold the world…» и сохранить;
   игрок загружает это сохранение → Лагерь → «CLIENT». Мир идёт дальше сам.
-- Пакет для друзей (без файлов игры): `python tools/make_package.py` → `dist/CoopWorld-<дата>.zip`
-  (install.ps1, host.bat, join.bat, README.txt).
+- Пакеты для друзей (без файлов игры): `python tools/make_ru.py && python tools/make_package.py` →
+  `dist/CoopWorld-<дата>.zip` (английский) и `dist/CoopWorld-ru-<дата>.zip` (русские тексты игры,
+  установщик и инструкция на русском).
+- Русский перевод того, что CoopWorld добавляет к Native (Freelancer, кооператив, а также строки 1.174,
+  которых нет в русском Native): `lang/ru.csv`. `python tools/make_ru.py --missing` покажет новые
+  непереведённые строки после изменений в моде.
 - Тесты моста: `python -I tools/test_coop_bridge.py`.

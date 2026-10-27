@@ -1,0 +1,185 @@
+# Russian for what CoopWorld adds on top of Native's languages/ru: file|id|text (tools/make_ru.py)
+# Keep {s1}, {reg0}, {playername}, {sir/my lady} and the like exactly as they are.
+#
+# ---- CoopWorld
+game_menus|mno_coop_role_server|CoopWorld: сделать эту игру СЕРВЕРОМ МИРА.
+game_menus|mno_coop_role_client|CoopWorld: сделать эту игру КЛИЕНТОМ.
+game_menus|mno_coop_role_hold|CoopWorld: удержать мир для подключения игрока.
+game_menus|mno_coop_role_stop|CoopWorld: остановить кооператив.
+parties|p_coop_puppet_1|Игрок 1
+parties|p_coop_puppet_2|Игрок 2
+parties|p_coop_puppet_3|Игрок 3
+parties|p_coop_puppet_4|Игрок 4
+parties|p_main_party|Ваш отряд
+quick_strings|qstr_CoopWorld:_the_clien|CoopWorld: игрок подключился. Мир снова идёт.
+quick_strings|qstr_CoopWorld:_world_spe|CoopWorld: скорость мира {reg1}%
+quick_strings|qstr_To_battle!|В бой!
+quick_strings|qstr_You_cannot_pay_for_y|Вам нечем заплатить за ночлег в {s1}. Стража выставляет вас за ворота до рассвета.
+quick_strings|qstr_CoopWorld:_this_game|CoopWorld: эта игра теперь СЕРВЕР МИРА. Оставьте её отдыхать.
+quick_strings|qstr_CoopWorld:_this_game_|CoopWorld: эта игра теперь КЛИЕНТ сервера мира.
+quick_strings|qstr_CoopWorld:_the_world|CoopWorld: мир УДЕРЖАН до подключения игрока.
+quick_strings|qstr_Save_the_game_now__E|Сохраните игру (Esc - Сохранить игру). В игре клиента загрузите это сохранение и выберите «сделать эту игру КЛИЕНТОМ».
+quick_strings|qstr_CoopWorld:_co_op_sto|CoopWorld: кооператив остановлен (ответов: {reg1}, копий отрядов: {reg2}, итогов боёв отправлено: {reg3}, применено: {reg4}).
+quick_strings|qstr_CoopWorld:_battle_re|CoopWorld: итог боя применён к отряду {s1}.
+quick_strings|qstr_CoopWorld:_the_world_|CoopWorld: мир на паузе, игрок в бою.
+quick_strings|qstr_CoopWorld:_the_world_r|CoopWorld: мир снова идёт.
+quick_strings|qstr_The_enemy_is_forming|Враг строится. У вас {reg1} секунд на подготовку!
+quick_strings|qstr_The_gates_of_{s1}_ar|Ворота {s1} закрыты для вас до рассвета.
+quick_strings|qstr_You_take_lodgings_in|Вы остановились на постой в {s1}. Пока вы здесь, время идёт; щёлкните, чтобы пройтись по городу.
+#
+# ---- Freelancer
+game_menus|mno_join_wounded|Вы слишком изранены, чтобы сражаться.
+game_menus|menu_world_map_soldier|Что прикажете, солдат?
+game_menus|mno_join_commander_battle|Последовать за командиром в бой.
+game_menus|mno_enter_town|Войти в город, где стоит отряд.
+game_menus|mno_commander|Просить аудиенции у командира.
+game_menus|mno_revolt|Поднять бунт против командира!
+game_menus|mno_desert|Дезертировать (снаряжение останется, отношения испортятся).
+game_menus|mno_report|Отчёт командира
+game_menus|mno_return_to_duty|Вернуться к службе.
+game_menus|menu_commander_aud|Ваша просьба о встрече передана в лагерь командира, и наконец {s6} выходит из шатра, чтобы поговорить с вами.
+game_menus|mno_reject_talk_lord|Нет, неважно.
+game_menus|menu_ask_revolt|Вы уверены, что хотите поднять бунт?
+game_menus|mno_confirm_revolt|Да, {s6} всех нас погубит, пора действовать!
+game_menus|mno_reject_revolt|Нет, я верен {s6}.
+game_menus|menu_revolt|Освободить пленников, чтобы они помогли вашим людям?
+game_menus|mno_revolt_prisoners|Да, я рискну ради преимущества.
+game_menus|mno_revolt_no_prisoners|Нет, я не доверяю пленникам.
+game_menus|menu_ask_desert|Вы хотите дезертировать?
+game_menus|mno_confirm_desert|Да, всё это бессмысленно.
+game_menus|mno_reject_desert|Нет, я верен своему командиру.
+game_menus|menu_desert|За время службы вы завели в армии хороших друзей. Кто-то из них может последовать за вами.
+game_menus|mno_desert_party|Попытаться уговорить их уйти с вами.
+game_menus|mno_desert_alone|Нет, одному у меня больше шансов.
+game_menus|menu_upgrade_path|За отличную службу вас повысили в звании.
+game_menus|mno_upgrade_path_1|{s66}
+game_menus|mno_upgrade_path_2|{s67}
+quests|qst_freelancer_enlisted|На службе в отряде {s13}
+quests|qst_freelancer_vacation|На службе: в отпуске
+quests|qst_freelancer_captured|На службе: в плену
+dialogs|dlga_lord_talk:lord_request_enlistment|Милорд, я хотел бы поступить к вам на службу.
+dialogs|dlga_lord_talk:lord_request_retire|Милорд, я хотел бы уйти со службы.
+dialogs|dlga_lord_talk:lord_request_vacation|Милорд, я хотел бы попросить отпуск.
+dialogs|dlga_lord_talk:ask_return_from_leave|Милорд, я готов вернуться под ваше командование.
+dialogs|dlga_lord_request_enlistment:lord_request_enlistment_confirm|В моих рядах найдётся место для {человека/женщины} вашего склада, {playername}. Могу взять вас как {s1} с жалованьем {s2} в неделю. И кормёжка, разумеется. Есть куда расти по службе, а снаряжение получите по званию. Да и свою долю добычи с поля боя тоже. Что скажете?
+dialogs|dlga_lord_request_enlistment_confirm:close_window|Честная доля и верная работа в этих краях. Я с вами, милорд.
+dialogs|dlga_lord_request_enlistment_confirm:lord_pretalk|Пожалуй, милорд, я ещё попытаю счастья в одиночку. Благодарю.
+dialogs|dlga_lord_request_enlistment:lord_pretalk|Я не настолько вам доверяю, чтобы принять вас на службу.
+dialogs|dlga_lord_request_retire:lord_pretalk|Хорошо, {playername}. Вы освобождены от службы.
+dialogs|dlga_lord_request_vacation:lord_pretalk|Хорошо, {playername}. Можете отдохнуть от службы. Возвращайтесь через две недели.
+dialogs|dlga_ask_return_from_leave:lord_pretalk|С возвращением, {playername}. Ваш полк, смею сказать, по вам скучал. Возвращайтесь на свой пост.
+quick_strings|qstr_Lv._{reg0}|Ур. {reg0}
+quick_strings|qstr_CURRENT_COMMANDER_S_|ОТЧЁТ ТЕКУЩЕГО КОМАНДИРА
+quick_strings|qstr_Your_Commander:_{s19|Ваш командир: {s19}
+quick_strings|qstr_Commander_Relation:_|Отношение командира: {reg0}
+quick_strings|qstr_Enlisted_Faction:_{s|Фракция службы: {s20}
+quick_strings|qstr_Current_Rank:_{s21}|Текущее звание: {s21}
+quick_strings|qstr_Experience_to_next_p|Опыта до повышения: {s1}
+quick_strings|qstr_Days_in_service:_{re|Дней на службе: {reg20}
+quick_strings|qstr_Current_Wage:_{reg23|Жалованье: {reg23} динаров.
+quick_strings|qstr_Pay_and_promotion_ch|Жалованье и повышение: раз в неделю
+quick_strings|qstr_Army_size:_{reg26}|Численность армии: {reg26}
+quick_strings|qstr_Commander_s_Army|Армия командира
+quick_strings|qstr_Done|Готово
+quick_strings|qstr_You_have_been_enlist|Вы поступили на службу!
+quick_strings|qstr_Current_rank:_{s5}|Текущее звание: {s5}
+quick_strings|qstr_You_have_left_your_c|Вы покинули своего командира!
+quick_strings|qstr_You_have_been_grante|Вам дали отпуск!
+quick_strings|qstr_You_have_rejoined_yo|Вы вернулись к своему командиру!
+quick_strings|qstr_The_equipment_of_a_{|Вам выдано снаряжение ({s1}): {s2}
+quick_strings|qstr_The_equipment_of_a_{s|У вас забрали снаряжение ({s1}): {s2}
+quick_strings|qstr_You_have_deserted_an|Вы дезертировали, и теперь вас разыскивают!
+quick_strings|qstr_You_are_not_strong_e|Вам не хватает силы, чтобы поднять оружие нового звания!
+quick_strings|qstr_You_are_not_strong_en|Вам не хватает силы, чтобы носить доспехи нового звания!
+quick_strings|qstr_Your_arms_are_to_wea|Ваши руки пока слишком слабы для стрелков.
+quick_strings|qstr_You_require_more_hor|Для нового звания нужно лучше ездить верхом!
+quick_strings|qstr_The_released_prisone|Освобождённым пленникам нельзя было доверять: они готовятся напасть на вас!
+quick_strings|qstr_Warning!|Внимание!
+quick_strings|qstr_The_released_prisoner|Освобождённые пленники разбежались сразу после боя. Больше вы их не увидите.
+quick_strings|qstr_Notice!|Известие
+quick_strings|qstr_The_released_prisoners|Освобождённые пленники остались верны вам и вступают в ваш отряд.
+quick_strings|qstr_You_have_{reg0}_days_|Осталось {reg0} дн., после чего вас объявят дезертиром!
+quick_strings|qstr_You_have_now_been_de|Вас объявили дезертиром!
+#
+# ---- Native texts missing from Native's own Russian (it was made for an older Warband)
+game_menus|mno_town_enterprise|Посетить ваше предприятие: {s3}.
+game_menus|mno_walled_center_move_court|Перенести двор сюда.
+game_menus|mno_visit_lady_7|Навестить {s12}
+game_menus|mno_visit_lady_8|Навестить {s12}
+game_menus|mno_appoint_npc10|Назначить {s10}
+quick_strings|qstr_Accompany|Сопровождать
+quick_strings|qstr__{s1}__{s11}:_{s14}|({s1}) {s11}: {s14}
+quick_strings|qstr_{s14}__{s21}_|{s14} ({s21})
+quick_strings|qstr_Added_money_for_your|Добавлены деньги за вашу старую лошадь
+quick_strings|qstr_{s3}_{s2}|{s3}, {s2}
+quick_strings|qstr_{reg1}...|{reg1}...
+quick_strings|qstr_On_loan|Взято взаймы,
+dialogs|dlga_supported_pretender_talk:supported_pretender_grant_fief|Предлагаю вам решить, кому достанется владение, у которого нет лорда.
+dialogs|dlga_supported_pretender_grant_fief:supported_pretender_grant_fief_select|Какое владение вы имеете в виду?
+dialogs|dlga_supported_pretender_grant_fief_select:supported_pretender_grant_fief_choose_recipient|{s4}
+dialogs|dlga_supported_pretender_grant_fief_choose_recipient:center_captured_rebellion|И кто должен его получить?
+dialogs|dlga_supported_pretender_grant_fief_select:supported_pretender_pretalk|Неважно.
+dialogs|dlga_minister_talk:offer_gift_quest_complete|У меня есть всё для подарка {s4}.
+dialogs|dlga_minister_talk:minister_cancel_political_quest|Давайте откажемся от плана: {s10}.
+dialogs|dlga_minister_cancel_political_quest:minister_cancel_political_quest_confirm|Вы уверены, что хотите отказаться от этой затеи?
+dialogs|dlga_minister_cancel_political_quest_confirm:minister_pretalk|Да, уверен. Откажемся от этой затеи.
+dialogs|dlga_minister_cancel_political_quest_confirm:minister_pretalk.1|Впрочем, неважно.
+dialogs|dlga_minister_diplomatic_kingdoms_select:minister_pretalk|Неважно
+dialogs|dlga_pretender_discuss_rebellion_3:close_window.3|Вы и сами монарх, {сударь/сударыня}. Если вы поддержите меня, я буду всего лишь вашей марионеткой.
+dialogs|dlga_start:lord_start.10|Рад снова вас видеть, {playername}...
+dialogs|dlga_start:lord_start.11|Снова встретились, {playername}...
+dialogs|dlga_start:lord_start.12|{s8}
+dialogs|dlga_lord_recruit_3_why:lord_pretalk|Ни у вас, ни у меня нет ни одной крепости. Вы что, собираетесь править королевством из разбойничьего логова в лесу?
+dialogs|dlga_lord_give_order:lord_give_order_stop.1|Больше не нужно меня сопровождать.
+dialogs|dlga_lord_start:lord_talk.5|Что такое?
+dialogs|dlga_lord_join_rebellion_suggest_cheat:close_window|Чит: Ладно.
+dialogs|dlga_spouse_talk:offer_gift_quest_complete|У меня есть всё для подарка {s4}.
+dialogs|dlga_spouse_talk:spouse_cancel_political_quest|Давай откажемся от плана: {s10}.
+dialogs|dlga_spouse_cancel_political_quest:spouse_cancel_political_quest_confirm|Ты уверен, что хочешь отказаться от этой затеи?
+dialogs|dlga_spouse_cancel_political_quest_confirm:spouse_pretalk|Да, уверен. Откажемся от этой затеи.
+dialogs|dlga_spouse_cancel_political_quest_confirm:spouse_pretalk.1|Впрочем, неважно.
+dialogs|dlga_spouse_organize_feast:spouse_pretalk|Прекрасная мысль, мой {муж/жена}. Но давай дождёмся конца нынешнего пира, прежде чем устраивать новый.
+dialogs|dlga_spouse_organize_feast:spouse_pretalk.1|Прекрасная мысль, мой {муж/жена}. Но прежде чем устраивать пир, нам нужно обзавестись двором.
+dialogs|dlga_spouse_organize_feast:spouse_pretalk.2|Прекрасная мысль, мой {муж/жена}. Но в нашем королевстве недавно уже был пир. Пожалуй, стоит подождать ещё {reg3} дн., прежде чем устраивать следующий.
+dialogs|dlga_spouse_feast_confirm_yes:spouse_pretalk.1|Что ж, хорошо. Пусть пир начнётся немедленно при нашем дворе {reg4?здесь:} в {s9}. Пожалуй, тебе стоит и дальше пополнять наши кладовые, чтобы мы не уронили славу гостеприимных хозяев. Ты можешь объявить пир оконченным когда угодно: выступив в поход или дав знать вассалам, что они могут разъезжаться по домам.
+dialogs|dlga_lady_stranded_next:close_window|Приветствую, {сударь/сударыня}. Превратности войны оставили меня в этой крепости, но скоро я уеду.
+dialogs|dlga_lady_duel_rep_1:lady_start|Что ж, {playername}, вы победили {s10} в поединке. Ах, какая глупость, что мужчины дерутся из-за меня! Вздох... Хотя, пожалуй, в этом есть что-то романтичное.
+dialogs|dlga_lady_duel_rep_2:lady_start|Что ж, {playername}, вы победили {s10} в поединке. Честь теперь требует, чтобы мы с ним больше не встречались... А ведь он был мне дорог. Этим поединком вы не оказали мне услуги, сударь.
+dialogs|dlga_ransom_broker_talk:ransom_broker_ransom_companion|Я хочу выкупить одного из своих спутников.
+dialogs|dlga_ransom_broker_ransom_companion:ransom_broker_ransom_companion_choose|Кого вы хотите выкупить?
+dialogs|dlga_ransom_broker_ransom_companion_choose:ransom_broker_ransom_companion_name_sum|{s4}
+dialogs|dlga_ransom_broker_ransom_companion_choose:ransom_broker_pretalk|Неважно
+dialogs|dlga_ransom_broker_ransom_companion_name_sum:ransom_broker_ransom_companion_verify|Сейчас загляну в свои записи... Да. Ваш друг сидит в темнице в {s7}. Любопытно! Говорят, крысы там необычайно крупные, прямо как мастифы... Так вот. За весьма разумную сумму в {reg5} динаров, куда входят и выкуп, и мои комиссионные с расходами, мы устроим так, что {s5} снова обретёт свободу. Что скажете?
+dialogs|dlga_ransom_broker_ransom_companion_verify:ransom_broker_ransom_companion_accept|Вот деньги.
+dialogs|dlga_ransom_broker_ransom_companion_verify:ransom_broker_ransom_companion_refuse|Сейчас мне это не по карману.
+dialogs|dlga_ransom_broker_ransom_companion_accept:ransom_broker_talk|Превосходно! Думаю, через несколько дней {s5} прискачет к вам, щурясь на солнце и, без сомнения, полный благодарности! Чем ещё могу помочь?
+dialogs|dlga_ransom_broker_ransom_companion_refuse:ransom_broker_talk|Конечно, конечно... И не слушайте, что болтают про крыс: сам я ни одной не видел, там ведь кромешная тьма. Как бы то ни было, уверен, {s5} поймёт, что вам нужно следить за расходами. Итак... Что-нибудь ещё?
+dialogs|dlga_start_craftsman_soon:close_window|Добрый день, {милорд/миледи}. Мы надеемся начать работу примерно через {reg4} дн.
+dialogs|dlga_start:master_craftsman_talk|Добрый день, {милорд/миледи}. Для нас честь, что вы нас посетили. Что вам угодно?
+dialogs|dlga_master_craftsman_pretalk:master_craftsman_talk|Очень хорошо, {милорд/миледи}. Что-нибудь ещё?
+dialogs|dlga_master_craftsman_talk:master_craftsman_accounts|Давайте посмотрим счета.
+dialogs|dlga_master_craftsman_talk:master_craftsman_pretalk|Давайте проверим запасы.
+dialogs|dlga_master_craftsman_talk:master_craftsman_pretalk.1|Продавайте товар, как только он готов.
+dialogs|dlga_master_craftsman_talk:master_craftsman_pretalk.2|Храните весь товар на складе до моего приезда.
+dialogs|dlga_master_craftsman_accounts:master_craftsman_pretalk|Сейчас мы производим {s3} на {reg1} динаров в неделю, при этом {s4} для производства стоит {reg2}, а работа и содержание обходятся в {reg3}.{s9} Значит, в теории наша {s12} составляет {reg0} динаров в неделю, если на складе нет сырья и мы продаём товар прямо на рынке.
+dialogs|dlga_master_craftsman_talk:master_craftsman_production_options|Расскажите, какие у меня есть возможности по производству.
+dialogs|dlga_master_craftsman_production_options:master_craftsman_production_options_2|Разумеется, {милорд/миледи}. Чаще всего выгоднее всего позволить нам самим покупать сырьё и продавать готовый товар прямо на рынке. Благодаря давним связям с местными купцами мы обычно получаем очень хорошую цену.
+dialogs|dlga_master_craftsman_production_options_2:master_craftsman_pretalk|Но если вы найдёте сырьё дешевле за пределами {s5}, можете положить его на склад, и мы будем работать с ним, а не покупать на рынке. А если считаете, что в другом месте продадите товар дороже, можете попросить нас складывать всё произведённое для вас.
+dialogs|dlga_master_craftsman_talk:master_craftsman_auction_price|Я больше не смогу содержать это предприятие.
+dialogs|dlga_master_craftsman_auction_price:master_craftsman_auction_decide|Жаль, {милорд/миледи}. Если продать землю и оборудование и распродать запасы, думаю, выручим {reg4} динаров.
+dialogs|dlga_master_craftsman_auction_decide:master_craftsman_liquidation|Звучит разумно. Продавайте.
+dialogs|dlga_master_craftsman_auction_decide:master_craftsman_pretalk|Хм. Давайте пока повременим.
+dialogs|dlga_master_craftsman_liquidation:close_window|Как пожелаете. Служить вам было честью.
+dialogs|dlga_master_craftsman_talk:close_window.1|Пока это всё.
+dialogs|dlga_investment_choose_enterprise:investment_summary.6|Ткацкую и красильню: делать бархат из шёлка и красителей
+dialogs|dlga_investment_choose_enterprise:investment_summary.7|Ткацкую: делать шерстяное сукно из шерсти
+dialogs|dlga_investment_choose_enterprise:investment_summary.8|Ткацкую: делать полотно изо льна
+dialogs|dlga_mayor_investment_confirm:mayor_investment_purchase|Да. Вот деньги за землю.
+dialogs|dlga_mayor_investment_confirm:mayor_pretalk|Нет, сейчас мне это невыгодно.
+dialogs|dlga_mayor_investment_purchase:mayor_pretalk|Очень хорошо. Ваше предприятие должно заработать примерно через неделю. Когда приедете в следующий раз, по всем делам обращайтесь к своему управляющему ({s4}).
+dialogs|dlga_sell_prisoner_outlaws:close_window|Пожалуй, на этом всё.
+dialogs|dlga_start:close_window.42|Ведите себя прилично в городе, и неприятностей не будет.
+dialogs|dlga_start:close_window.43|Нам не положено разговаривать на посту, {сударь/сударыня}.
+dialogs|dlga_mayor_wealth_comparison_5:mayor_pretalk|По нападениям на путников самым опасным считается {s4}. Здесь, в {s5}, разбойники и налётчики донимают нас меньше, чем {reg4} других городов, и больше, чем {reg5}.
+dialogs|dlga_free:close_window| До свидания.
+dialogs|dlga_free:close_window.1| [Уйти]
