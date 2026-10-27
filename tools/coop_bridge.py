@@ -570,6 +570,7 @@ class Relay:
         if not rep or rep.get("error"):
             raise RuntimeError((rep or {}).get("error", "no answer"))
         target = Path(save_dir) / slot_name
+        target.parent.mkdir(parents=True, exist_ok=True)  # a player who never saved in CoopWorld has no folder
         if target.exists():
             target.replace(target.with_suffix(".sav.bak"))
         target.write_bytes(base64.b64decode(rep["data"]))
@@ -592,8 +593,27 @@ def parse_addr(text, default_port):
     return host, int(port or default_port)
 
 
+def documents_dir():
+    """The Documents folder as Windows knows it: it may be moved (OneDrive, another drive), and
+    Warband keeps its saves there."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        folder_id = ctypes.c_byte * 16
+        documents = folder_id.from_buffer_copy(bytes.fromhex("d09ad3fd8f23af46adb46c85480369c7"))  # FOLDERID_Documents
+        path = wintypes.LPWSTR()
+        if ctypes.windll.shell32.SHGetKnownFolderPath(ctypes.byref(documents), 0, None, ctypes.byref(path)) == 0:
+            try:
+                return Path(path.value)
+            finally:
+                ctypes.windll.ole32.CoTaskMemFree(path)
+    except (AttributeError, OSError, ValueError):
+        pass
+    return Path.home() / "Documents"
+
+
 def default_save_dir():
-    return Path.home() / "Documents" / "Mount&Blade Warband Savegames" / "CoopWorld"
+    return documents_dir() / "Mount&Blade Warband Savegames" / "CoopWorld"
 
 
 def make_log(path):

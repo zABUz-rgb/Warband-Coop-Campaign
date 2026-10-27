@@ -199,6 +199,9 @@ def test_hub_and_relay():
     check(name == "sg03.sav" and path.read_bytes() == b"\x00world\xffsave",
           "a relay fetches the host's newest save, byte for byte")
     check((remote_dir / "sg90.sav.bak").read_bytes() == b"friend's own", "a save it replaces is kept as .bak")
+    fresh = remote_dir / "never saved in CoopWorld" / "CoopWorld"
+    path, _ = relay.fetch_save(fresh, "sg90.sav")
+    check(path.read_bytes() == b"\x00world\xffsave", "a player with no CoopWorld save folder yet gets it created")
     cb.serve_http(("127.0.0.6", 18090), relay.forward, log, "relay")
     time.sleep(0.1)
     r = raw_get("127.0.0.6", 18090, "/cli?seq=1&x=5000&y=5000&busy=0&hello=1&me=41,3&name=Olga").split("|")
