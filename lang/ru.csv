@@ -209,3 +209,12 @@ quick_strings|qstr_CoopWorld:_fight_thi|CoopWorld: сразиться с эти�
 quick_strings|qstr_CoopWorld:_fight_tog|CoopWorld: сразиться вместе с друзьями (совместный бой на сервере мультиплеера).
 quick_strings|qstr_{s1}_attacks_you!^^T|{s1} нападает на вас!^^Бой идёт на сервере мультиплеера. Зайдите туда; если не зайдёте, ваши отряды будут сражаться без вас.
 quick_strings|qstr_{s1}_begins_a_battle|{s1} начинает бой рядом с вами и зовёт на помощь.^^Бой идёт на сервере мультиплеера: ваши отряды сражаются на стороне {s1}.
+quick_strings|qstr_One_handed_weapons|Одноручное оружие
+quick_strings|qstr_Two_handed_weapons|Двуручное оружие
+quick_strings|qstr_Polearms|Древковое оружие
+quick_strings|qstr_Archery|Луки
+quick_strings|qstr_Crossbows|Арбалеты
+quick_strings|qstr_Throwing|Метательное оружие
+quick_strings|qstr_Firearms|Огнестрельное оружие
+quick_strings|qstr_{s1}:_+{reg1}__{reg2|{s1}: +{reg1} ({reg2}) за {reg3} попаданий в совместном бою.
+quick_strings|qstr_{s1}:_{reg2}_no_gain|{s1}: {reg2}, без роста ({reg3} попаданий; предел задаёт навык «Владение оружием»).

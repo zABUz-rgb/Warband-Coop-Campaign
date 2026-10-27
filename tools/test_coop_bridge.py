@@ -294,11 +294,15 @@ def test_joint_battle():
     check(nums == [1, bid, 4, 2, 0, 0, 1, 0], f"then the start, with the players' sides: {nums}")
     check(req(w, "a", now=3.3, busy=True, mp=mp(2, bid))[0] == [7, bid, 1, 0], "the players learn it is being fought")
     check(req(w, "c", x=50000, now=3.3, busy=False, mp=mp(1, sid=601))[0] == [7, 0, 2, 0], "one battle at a time")
-    check(w.mp_request(4, bid, 0, {0: 4, 1: 2, 3: 20}, {}, 9.0) == [4, bid], "the outcome is acknowledged")
+    w.mp_players = {0: "ivan", 1: "Olga "}
+    check(w.mp_request(4, bid, 0, {0: 4, 1: 2, 3: 20}, {0: "ivan", 1: "Olga "}, 9.0,
+                       [(0, 0, 7, 180), (0, 3, 2, 60), (5, 1, 1, 30)]) == [4, bid], "the outcome is acknowledged")
     check(w.battle is None, "the battle is over")
     xp = 20 * cb.XP_PER_ENEMY // 2
     check(req(w, "a", now=9.1)[0] == [8, bid, 1, xp, 2, 31, 2, 2, 32, 1, 1],
           "the starter gets the losses (half wounded) and half the experience (two players won)")
+    check(req(w, "a", now=9.1)[0] == [9, bid, 2, 0, 7, 180, 3, 2, 60],
+          "and how the hero fought, by weapon proficiency (another player's blows are not the starter's)")
     check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, xp, 0],
           "a player who lost nobody still hears the outcome, after the news it was fought")
     check(w.results[-1] == (600, 1, []) and 600 in w.tombstones, "the defeated world party is destroyed")

@@ -81,3 +81,11 @@ coop_hero_items = 9              # ek_item_0 .. ek_horse
 coop_hero_numbers = 9 + 4 + 9 + 7
 slot_player_coop_hero = 100      # on the battle server: which borrowed troop is this player's hero, + 1
 coop_mp_event_hero_stat = 140    # network event: (troop, stat code, value) so every game knows the hero's stats
+slot_player_coop_hits = 110      # on the battle server: a hero's hits on enemies by weapon proficiency (+ wpt)
+slot_player_coop_damage = 120    # and the damage they did (+ wpt)
+# Weapon proficiency from a joint battle, as Native raises it in battle: for each kind of weapon used,
+# (damage + coop_wpt_hit_bonus * hits) * coop_wpt_gain / (proficiency + coop_wpt_softness) points, so
+# a weapon already mastered grows slowly; the engine still keeps it within the weapon master limit
+coop_wpt_hit_bonus = 10
+coop_wpt_gain = 3
+coop_wpt_softness = 60

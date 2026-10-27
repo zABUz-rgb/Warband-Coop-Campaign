@@ -3,6 +3,7 @@ from header_operations import *
 from header_game_menus import *
 from header_presentations import *
 from header_triggers import *
+from header_troops import *
 from module_constants import *
 from coop.constants import *
 
@@ -16,6 +17,7 @@ from coop.constants import *
 #                  2 cancelled, 3 no battle server, 4 over
 # Bridge replies (tools/coop_bridge.py): 6 invite bid|type|slot (type 1 may join, 2 attacked)
 #   7 status bid|status|team   8 outcome bid|won|xp|n|(troop, killed, wounded)*n
+#   9 the hero's blows bid|n|(weapon proficiency, hits, damage)*n
 
 
 def puppet_end():
@@ -107,6 +109,63 @@ mp_campaign_scripts = [
          (assign, "$coop_mp_state", 5),
        (else_try),
          (assign, "$coop_mp_state", 0),
+       (try_end),
+     (try_end),
+    ]),
+
+  # script_coop_client_mp_weapons: kind 9 reply, how the hero fought: (wpt, hits, damage)*n.
+  # Each weapon proficiency grows as Native's does in battle: by the blows that hit, and less the
+  # better the hero already is with it; troop_raise_proficiency keeps it within the weapon master limit.
+  ("coop_client_mp_weapons",
+   [
+     (party_get_slot, ":n", "p_coop_buf", 3),
+     (try_for_range, ":k", 0, ":n"),
+       (store_mul, ":at", ":k", 3),
+       (val_add, ":at", 4),
+       (party_get_slot, ":wpt", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":hits", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":damage", "p_coop_buf", ":at"),
+       (is_between, ":wpt", 0, coop_hero_profs),
+       (store_proficiency_level, ":before", "trp_player", ":wpt"),
+       (store_mul, ":points", ":hits", coop_wpt_hit_bonus),
+       (val_add, ":points", ":damage"),
+       (val_mul, ":points", coop_wpt_gain),
+       (store_add, ":softness", ":before", coop_wpt_softness),
+       (val_div, ":points", ":softness"),
+       (gt, ":points", 0),
+       (troop_raise_proficiency, "trp_player", ":wpt", ":points"),
+       (store_proficiency_level, ":after", "trp_player", ":wpt"),
+       (store_sub, reg1, ":after", ":before"),
+       (assign, reg2, ":after"),
+       (assign, reg3, ":hits"),
+       (try_begin),
+         (eq, ":wpt", wpt_one_handed_weapon),
+         (str_store_string, s1, "@One handed weapons"),
+       (else_try),
+         (eq, ":wpt", wpt_two_handed_weapon),
+         (str_store_string, s1, "@Two handed weapons"),
+       (else_try),
+         (eq, ":wpt", wpt_polearm),
+         (str_store_string, s1, "@Polearms"),
+       (else_try),
+         (eq, ":wpt", wpt_archery),
+         (str_store_string, s1, "@Archery"),
+       (else_try),
+         (eq, ":wpt", wpt_crossbow),
+         (str_store_string, s1, "@Crossbows"),
+       (else_try),
+         (eq, ":wpt", wpt_throwing),
+         (str_store_string, s1, "@Throwing"),
+       (else_try),
+         (str_store_string, s1, "@Firearms"),
+       (try_end),
+       (try_begin),
+         (gt, reg1, 0),
+         (display_message, "@{s1}: +{reg1} ({reg2}) for {reg3} hits in the joint battle.", 0x66FF66),
+       (else_try),
+         (display_message, "@{s1}: {reg2}, no gain ({reg3} hits; the weapon master skill limits it).", 0xCCCCCC),
        (try_end),
      (try_end),
     ]),
@@ -412,7 +471,7 @@ def client_request_suffix():
 
 
 def reply_branches():
-  """else_try branches for net_reply_handler: kinds 6, 7, 8."""
+  """else_try branches for net_reply_handler: kinds 6 to 9."""
   return [
     (else_try),
       (eq, ":kind", 6),
@@ -424,6 +483,11 @@ def reply_branches():
       (this_or_next|eq, "$coop_role", coop_role_client),
       (eq, "$coop_srv_player", 1), #the host's own player requests
       (call_script, "script_coop_client_mp_status"),
+    (else_try),
+      (eq, ":kind", 9),
+      (this_or_next|eq, "$coop_role", coop_role_client),
+      (eq, "$coop_srv_player", 1),
+      (call_script, "script_coop_client_mp_weapons"),
     (else_try),
       (eq, ":kind", 8),
       (this_or_next|eq, "$coop_role", coop_role_client),

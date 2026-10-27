@@ -50,10 +50,12 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|7|bid|status|team     0 gathering, 1 fought on the battle server (team 0 or 1),
                                      2 cancelled or another battle is on, 3 no battle server
           7777|8|bid|won|xp|n|troop|killed|wounded|...   the player's losses, and battle experience
+          7777|9|bid|n|(wpt,hits,damage)*n   how the player's hero fought, by weapon proficiency
 
-Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...]&pl=no~name;...
+Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&wx=no,wpt,hits,damage;...]&pl=no~name;...
     PHASE 0 an ordinary round, 1-3 a battle of the campaign, 4 over (w: winning team, r: the bots
-    each stack lost); pl: the players on the server, matched to the players of the campaign by name.
+    each stack lost; wx: the heroes' hits and damage by weapon proficiency);
+    pl: the players on the server, matched to the players of the campaign by name.
     reply 7778|0                                  nothing
           7778|2|bid|offset|n|(team,player,troop,count)*n   stacks to spawn (player: who commands them, -1 the AI)
           7778|5|bid|player|hero...               a player fights as the campaign hero (after the stacks)
@@ -463,7 +465,7 @@ class World:
                 return no
         return -1
 
-    def _finish(self, b, winner, fallen, now):
+    def _finish(self, b, winner, fallen, now, weapons=()):
         losses = {cid: [] for cid in b.sides}
         enemy_left = []
         fell_by_team = {0: 0, 1: 0}
@@ -490,12 +492,16 @@ class World:
             if not won:
                 xp //= 3
             q.mp_out.append([8, b.bid, won, xp, len(lost)] + [v for entry in lost for v in entry])
+            no = self._mp_player_number(cid)
+            used = [(wpt, hits, damage) for player, wpt, hits, damage in weapons if player == no >= 0]
+            if used:
+                q.mp_out.append([9, b.bid, len(used)] + [v for entry in used for v in entry])
         if b.enemy_sid is not None:
             destroyed = 1 if winner == 0 or not enemy_left else 0
             self._record_result((b.enemy_sid, destroyed, enemy_left), None, now)
         self.battle = None
 
-    def mp_request(self, phase, bid, winner, fallen, players, now):
+    def mp_request(self, phase, bid, winner, fallen, players, now, weapons=()):
         """The battle server asks; returns the reply numbers after the marker."""
         with self.lock:
             self.mp_last = now
@@ -503,7 +509,7 @@ class World:
             b = self.battle
             if phase == 4:
                 if b is not None and b.bid == bid and b.state == "running":
-                    self._finish(b, winner, fallen, now)
+                    self._finish(b, winner, fallen, now, weapons)
                 return [4, bid]
             self._battle_tick(now)
             b = self.battle
@@ -634,6 +640,16 @@ def parse_fallen(text):
     return fallen
 
 
+def parse_weapons(text):
+    """'player,wpt,hits,damage;...' -> [(player, wpt, hits, damage)]"""
+    out = []
+    for chunk in text.split(";"):
+        v = parse_ints(chunk)
+        if v and len(v) == 4 and 0 <= v[1] < 7:
+            out.append(tuple(v))
+    return out
+
+
 def query_int(q, key, default):
     try:
         return int(q.get(key, default))
@@ -686,7 +702,8 @@ def handle_request(world, role, target, now, cid="local"):
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
-                                parse_fallen(q.get("r", "")), parse_mp_players(q.get("pl", "")), now)
+                                parse_fallen(q.get("r", "")), parse_mp_players(q.get("pl", "")), now,
+                                parse_weapons(q.get("wx", "")))
         return reply_text([MP_MARKER] + nums)
     return reply_text([0, 0])  # unknown path: no marker, the game ignores it
 

@@ -316,7 +316,9 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
      ранена, половина убита; разбитый отряд мира исчезает у всех. Пока идёт бой, мир стоит.
   Вы сражаетесь своим героем: его снаряжение (оружие, броня, конь), атрибуты, боевые навыки и
   владение оружием переносятся на сервер боя (до 4 героев в бою). После боя герой и отряд получают
-  опыт за павших врагов (проигравшие - треть). Компаньоны пока в бой не выходят.
+  опыт за павших врагов (проигравшие - треть). Владение оружием растёт, как в обычном бою: за
+  попадания по врагам и нанесённый урон тем видом оружия, которым вы сражались; чем выше владение,
+  тем медленнее рост, предел задаёт навык "Владение оружием". Компаньоны пока в бой не выходят.
   Большие армии уменьшаются до 150 ботов на поле, потери пересчитываются обратно.
   Для мультиплеера Warband нужен серийный ключ игры (GOG: в библиотеке у игры, Steam: выдаётся сам).
 
@@ -372,7 +374,9 @@ JOINT BATTLES (multiplayer server):
      are wounded); a defeated world party is gone for everybody. The world stands still meanwhile.
   You fight as your hero: equipment (weapons, armour, horse), attributes, combat skills and
   weapon proficiencies go to the battle server (up to 4 heroes a battle). Afterwards the hero and
-  the troops gain experience for the fallen enemies (the losers a third). Companions stay behind for now.
+  the troops gain experience for the fallen enemies (the losers a third). Weapon proficiencies grow
+  as in a Native battle: by the hits and damage you did with each kind of weapon, slower the better
+  you are, within the weapon master limit. Companions stay behind for now.
 
 Stopping: Camp - "CoopWorld: stop co-op" in your game, then close the bridge window.
 '''
