@@ -26,12 +26,13 @@
 - Freelancer 1.51 modmerger source (Taragoth): https://www.moddb.com/downloads/freelancer-mod-ver-151-modmerger-source
   (MD5 `681f41ba0916287e89a22dbcada03a58`)
 
-## Прототип сервера мира (уровень 2)
-Две копии игры на одном ПК: `game` (сервер мира) и `game2` (клиент, модуль — ссылка на `game`).
-1. `python -I tools/coop_bridge.py` — мост: сервер мира звонит на 127.0.0.1:80, клиент на 127.0.0.2:80
-   (`send_message_to_url` игнорирует порт в адресе).
-2. Сервер: загрузить сохранение, Лагерь → «run this game as the WORLD SERVER».
-3. Подключение клиента: на сервере Лагерь → «hold the world for a joining client» (мир встаёт),
-   затем сохранить игру на сервере.
-4. Клиент: загрузить **это** сохранение, Лагерь → «run this game as a CLIENT». Сервер сам продолжит.
-Тесты моста: `python -I tools/test_coop_bridge.py`.
+## Кооператив (уровень 2): до 4 игроков
+- `tools/coop_bridge.py host --key СЕКРЕТ` — хаб у хоста: сервер мира (127.0.0.1:80), своя игра хоста
+  (127.0.0.2:80) и друзья по TCP 7350. Без `--key` — только этот ПК.
+- `tools/coop_bridge.py join АДРЕС_ХОСТА --key СЕКРЕТ --fetch-save` — у друга: ретранслятор для его игры
+  (127.0.0.2:80) и загрузка свежего сохранения хоста как `sg90.sav`.
+- Порядок: сервер — Лагерь → «WORLD SERVER»; для каждого входящего — «hold the world…» и сохранить;
+  игрок загружает это сохранение → Лагерь → «CLIENT». Мир идёт дальше сам.
+- Пакет для друзей (без файлов игры): `python tools/make_package.py` → `dist/CoopWorld-<дата>.zip`
+  (install.ps1, host.bat, join.bat, README.txt).
+- Тесты моста: `python -I tools/test_coop_bridge.py`.

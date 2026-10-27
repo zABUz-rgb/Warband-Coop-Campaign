@@ -8,3 +8,6 @@ vendor/
 
 __pycache__/
 *.pyc
+
+# Packages for players (built by tools/make_package.py)
+dist/
