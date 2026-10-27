@@ -272,13 +272,17 @@ mp_campaign_scripts = [
    [
      (assign, ":captor", "$coop_mp_captor"),
      (assign, "$coop_mp_captor", 0),
-     (party_is_active, ":captor"),
-     (assign, "$g_encountered_party", ":captor"),
-     (assign, "$g_enemy_party", ":captor"),
-     (assign, "$g_ally_party", -1),
-     (assign, "$g_player_surrenders", 0),
-     (assign, "$g_next_menu", "mnu_captivity_start_wilderness"),
-     (jump_to_menu, "mnu_total_defeat"),
+     (try_begin),
+       (party_is_active, ":captor"),
+       (assign, "$g_encountered_party", ":captor"),
+       (assign, "$g_enemy_party", ":captor"),
+       (assign, "$g_ally_party", -1),
+       (assign, "$g_player_surrenders", 0),
+       (assign, "$g_next_menu", "mnu_captivity_start_wilderness"),
+       (jump_to_menu, "mnu_total_defeat"),
+     (else_try),
+       (change_screen_return), #the captor is gone: back to the map
+     (try_end),
     ]),
 
   # script_coop_client_mp_text: s1 = what the waiting window says now

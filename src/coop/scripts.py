@@ -86,6 +86,16 @@ scripts = [
 ]
 
 
+# Diplomacy's scripts that change the shared world on a player's word (absent from Native: skipped)
+DIPLOMACY_WORLD_ACTS = (
+  "dplmc_start_alliance_between_kingdoms", "dplmc_start_defensive_between_kingdoms",
+  "dplmc_start_trade_between_kingdoms", "dplmc_start_nonaggression_between_kingdoms",
+  "dplmc_send_messenger_to_troop", "dplmc_send_messenger_to_party", "dplmc_send_gift",
+  "dplmc_send_gift_to_center", "dplmc_send_patrol", "dplmc_send_patrol_party", "dplmc_send_scout_party",
+  "dplmc_send_recruiter",
+)
+
+
 def merge(orig_scripts):
   from coop_merge import script_block, insert_after
   from coop.net import net_scripts, net_reply_handler
@@ -107,6 +117,24 @@ def merge(orig_scripts):
   orig_scripts.extend(mp_campaign_scripts)
   response[:0] = mp_reply_hook()
   script_block(orig_scripts, "game_receive_network_message")[:0] = mp_network_hook()
+  # Diplomacy's own acts on the world (treaties, envoys, gifts, patrols, recruiters, scouts) would
+  # happen in a client's game only: on a client they are refused (the world server and the host
+  # keep them, and the world's kingdoms still use them)
+  diplomacy_acts = [s for s in DIPLOMACY_WORLD_ACTS if any(r[0] == s for r in orig_scripts)]
+  for script_id in diplomacy_acts:
+    block = script_block(orig_scripts, script_id)
+    block[:] = [
+        (assign, ":coop_refused", 0),
+        (try_begin),
+          (eq, "$coop_role", coop_role_client),
+          (assign, ":coop_refused", 1),
+          (display_message, "@CoopWorld: in co-op only the host deals with kingdoms for now (treaties, envoys, gifts, patrols, recruiters).", 0xFFDD66),
+        (try_end),
+        (try_begin),
+          (eq, ":coop_refused", 0),
+    ] + block + [
+        (try_end),
+    ]
   # a client's fief would exist in its own game only: the world server's center keeps its lord
   block = script_block(orig_scripts, "give_center_to_lord")
   if [op[0] for op in block[:3]] != [store_script_param] * 3:
