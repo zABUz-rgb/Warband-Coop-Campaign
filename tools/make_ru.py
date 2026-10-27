@@ -17,7 +17,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 MODULE = ROOT / "game" / "Modules" / "CoopWorld"
-NATIVE_RU = ROOT / "game" / "Modules" / "Native" / "languages" / "ru"
+# The base Russian for Native: the russifier (vendor/l10n_ru, plain text) when it is there. The game's
+# own Native ru is marked up for declension (@Pd[...], @L[...]) that this edition shows as raw codes.
+RUSSIFIER = ROOT / "vendor" / "l10n_ru"
+NATIVE_RU = (RUSSIFIER / "Modules" / "Native" / "languages" / "ru"
+             if (RUSSIFIER / "Modules" / "Native" / "languages" / "ru").exists()
+             else ROOT / "game" / "Modules" / "Native" / "languages" / "ru")
 OURS = ROOT / "lang" / "ru.csv"
 ADDITIONS = ROOT / "dist" / "ru_additions"
 
@@ -116,13 +121,16 @@ def main():
     ADDITIONS.mkdir(parents=True, exist_ok=True)
     for path in sorted(NATIVE_RU.glob("*.csv")):
         f = path.stem
-        add = [(k, v) for (ff, k), v in sorted(ours.items()) if ff == f and k in texts.get(f, {})]
+        base_ids = load_csv(path)
+        # the base's own translation wins: ours only fills what it lacks
+        add = [(k, v) for (ff, k), v in sorted(ours.items())
+               if ff == f and k in texts.get(f, {}) and k not in base_ids]
         base = path.read_text("utf-8-sig").rstrip("\r\n")
         lines = "".join(f"\r\n{k}|{v}" for k, v in add)
         (target / path.name).write_text("﻿" + base + lines + "\r\n", "utf-8", newline="")
         if add:
             (ADDITIONS / path.name).write_text(lines.lstrip("\r\n") + "\r\n", "utf-8", newline="")
-    print(f"languages/ru written: {len(ours) - len(unused)} CoopWorld texts on top of Native's; "
+    print(f"languages/ru written from {NATIVE_RU.relative_to(ROOT)}: CoopWorld fills what it lacks; "
           f"{len(gaps)} untranslated, {len(unused)} unused")
 
 

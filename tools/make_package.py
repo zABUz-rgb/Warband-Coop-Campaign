@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "game" / "Modules" / "CoopWorld"
+RUSSIFIER_UI = ROOT / "vendor" / "l10n_ru" / "languages" / "ru"  # the russifier's engine interface
 BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler state; quick_strings.txt is read by the game
 
 # One installer, two languages: install.ps1 (and install.bat, which starts it and keeps the window
@@ -87,7 +88,13 @@ try {{
     Write-Host "{kept_old}"
   }}
   Copy-Item $native $target -Recurse
-  Copy-Item (Join-Path $here "CoopWorld\*") $target -Force
+  # file by file: Copy-Item of a folder onto an existing one (languages) would nest it instead
+  $source = Join-Path $here "CoopWorld"
+  foreach ($file in Get-ChildItem $source -Recurse -File) {{
+    $dest = Join-Path $target $file.FullName.Substring($source.Length + 1)
+    New-Item -ItemType Directory -Force (Split-Path $dest -Parent) | Out-Null
+    Copy-Item $file.FullName $dest -Force
+  }}
 {ru_part}  Write-Host ""
   Write-Host "{done1}" -ForegroundColor Green
   Write-Host "{done2}"
@@ -101,22 +108,15 @@ try {{
 }}
 """
 
-RU_PART = r"""  # Russian texts of CoopWorld on top of Native's Russian
-  $ru = Join-Path $target "languages\ru"
-  New-Item -ItemType Directory -Force $ru | Out-Null
-  $utf8 = New-Object System.Text.UTF8Encoding($false)
-  foreach ($f in Get-ChildItem (Join-Path $here "ru_additions") -Filter *.csv) {
-    $dest = Join-Path $ru $f.Name
-    $text = [IO.File]::ReadAllText($f.FullName, $utf8)
-    if (Test-Path $dest) { [IO.File]::AppendAllText($dest, "`r`n" + $text, $utf8) }
-    else { [IO.File]::WriteAllText($dest, [char]0xFEFF + $text, $utf8) }
-  }
-  # so that Russian can be chosen in the launcher: some editions (GOG) have no languages\ru
+RU_PART = r"""  # the Russian engine interface (the russifier): some editions (GOG) have none; any old one is kept
   $uiRu = Join-Path $Warband "languages\ru"
-  if (-not (Test-Path $uiRu) -and (Test-Path (Join-Path $Warband "languages\en"))) {
-    Copy-Item (Join-Path $Warband "languages\en") $uiRu -Recurse
-    Write-Host "Добавлена папка languages\ru: интерфейс движка останется английским, тексты игры будут русскими."
+  if (Test-Path $uiRu) {
+    $uiBackup = "$uiRu.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+    Rename-Item $uiRu $uiBackup
+    Write-Host "Прежняя папка languages\ru сохранена как $uiBackup"
   }
+  Copy-Item (Join-Path $here "languages\ru") $uiRu -Recurse
+  Write-Host "Установлен русский интерфейс игры (languages\ru)."
 """
 
 MESSAGES = {
@@ -267,9 +267,9 @@ README_RU = '''CoopWorld - кооперативная кампания для Mo
      можно прочитать. Всё, что он делал, записано в install.log.
   Если install.bat не запускается: откройте PowerShell и выполните
     powershell -ExecutionPolicy Bypass -File "<папка пакета>\\install.ps1" "<папка с Warband>"
+  Установщик ставит полный русификатор: интерфейс игры (папка languages\ru, прежняя
+  сохраняется как резервная копия) и русские тексты модуля CoopWorld. Ваш Native не меняется.
   В лаунчере Warband: модуль CoopWorld, Configure - Game - Language: ru.
-  Тексты игры будут на русском. Если у вашего издания нет русского интерфейса, кнопки движка
-  останутся английскими.
 
 ХОСТ (на его компьютере живёт мир)
   1. Дважды щёлкните host.bat - запустится мост. Он спросит пароль: придумайте любой и сообщите
@@ -342,7 +342,7 @@ Stopping: Camp - "CoopWorld: stop co-op" in your game, then close the bridge win
 BOM = "\ufeff"
 
 
-def build(name, files, ru_additions=None):
+def build(name, files, russian=False):
     out = ROOT / "dist" / f"{name}.zip"
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(MODULE.glob("*.txt")):
@@ -351,8 +351,13 @@ def build(name, files, ru_additions=None):
         z.write(ROOT / "tools" / "coop_bridge.py", f"{name}/coop_bridge.py")
         for arcname, text in files.items():
             z.writestr(f"{name}/{arcname}", text.encode("utf-8"))
-        for f in sorted((ru_additions or Path("-")).glob("*.csv")) if ru_additions else []:
-            z.write(f, f"{name}/ru_additions/{f.name}")
+        if russian:
+            # the module's Russian texts, complete (the russifier's Native plus CoopWorld's), and the
+            # russifier's engine interface for the game's own languages folder
+            for f in sorted((MODULE / "languages" / "ru").glob("*.csv")):
+                z.write(f, f"{name}/CoopWorld/languages/ru/{f.name}")
+            for f in sorted(RUSSIFIER_UI.glob("*.csv")):
+                z.write(f, f"{name}/languages/ru/{f.name}")
     print(f"{out} ({out.stat().st_size // 1024} KB)")
 
 
@@ -365,12 +370,11 @@ def main():
                         "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join")} for lang in ("en", "ru")}
     build(f"CoopWorld-{day}", {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
                                "README.txt": README, **launchers["en"]})
-    additions = ROOT / "dist" / "ru_additions"
-    if not any(additions.glob("*.csv")):
-        raise SystemExit("no Russian texts: run python tools/make_ru.py first")
+    if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
+        raise SystemExit("no Russian: put the russifier in vendor/l10n_ru and run python tools/make_ru.py")
     # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
     build(f"CoopWorld-ru-{day}", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
-                                  "README.txt": BOM + README_RU, **launchers["ru"]}, additions)
+                                  "README.txt": BOM + README_RU, **launchers["ru"]}, russian=True)
 
 
 if __name__ == "__main__":
