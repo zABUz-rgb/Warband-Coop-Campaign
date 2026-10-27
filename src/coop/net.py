@@ -5,7 +5,7 @@ The wire format is described in tools/coop_bridge.py.
 from header_common import *
 from header_operations import *
 from module_constants import *
-from header_parties import ai_bhvr_hold
+from header_parties import ai_bhvr_hold, ai_bhvr_travel_to_point
 from coop.constants import *
 
 
@@ -18,7 +18,7 @@ def net_scripts(first_dynamic):
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_net_cursor", -1),
      (display_message, "@CoopWorld: this game is now the WORLD SERVER. Leave it resting.", 0x66CCFF),
-     (rest_for_hours_interactive, 24 * 365, 5, 0), #rest while not attackable
+     (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 0), #rest while not attackable
     ]),
 
   # script_coop_become_client: the world simulation stops here; parties follow the server.
@@ -102,6 +102,13 @@ def net_scripts(first_dynamic):
            (spawn_around_party, "p_main_party", ":tmpl"),
            (assign, ":cid", reg0),
            (party_set_ai_behavior, ":cid", ai_bhvr_hold),
+           # some templates spawn empty (lord parties get their troops by script): meeting an empty
+           # party crashes the game, so a mirror always has someone in it
+           (try_begin),
+             (party_get_num_companions, ":members", ":cid"),
+             (eq, ":members", 0),
+             (party_add_members, ":cid", "trp_farmer", 1),
+           (try_end),
            (store_add, ":mapped", ":cid", 1),
            (party_set_slot, "p_coop_map", ":sid", ":mapped"),
            (assign, ":have", 1),
@@ -111,7 +118,23 @@ def net_scripts(first_dynamic):
          (init_position, pos1),
          (position_set_x, pos1, ":x"),
          (position_set_y, pos1, ":y"),
-         (party_set_position, ":cid", pos1),
+         # near: walk there, so the map shows movement between updates; far: jump
+         (party_get_position, pos2, ":cid"),
+         (position_get_x, ":cur_x", pos2),
+         (position_get_y, ":cur_y", pos2),
+         (store_sub, ":dx", ":x", ":cur_x"),
+         (store_sub, ":dy", ":y", ":cur_y"),
+         (val_abs, ":dx"),
+         (val_abs, ":dy"),
+         (try_begin),
+           (this_or_next|gt, ":dx", coop_mirror_snap),
+           (gt, ":dy", coop_mirror_snap),
+           (party_set_position, ":cid", pos1),
+           (party_set_ai_behavior, ":cid", ai_bhvr_hold),
+         (else_try),
+           (party_set_ai_behavior, ":cid", ai_bhvr_travel_to_point),
+           (party_set_ai_target_position, ":cid", pos1),
+         (try_end),
        (try_end),
      (try_end),
     ]),

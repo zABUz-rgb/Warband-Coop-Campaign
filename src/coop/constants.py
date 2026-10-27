@@ -30,3 +30,8 @@ coop_net_removed = 9999         # template value meaning "this party is gone on 
 coop_net_batch = 8              # parties per server report (URL length)
 coop_net_max_entries = 28       # entries in one client reply: 3 + 4 * 28 numbers <= 128 registers
 coop_net_resend_frames = 200    # trigger runs to wait for a lost reply
+
+# Time on the map flows only while the player moves or rests: both roles rest when idle
+coop_world_time_speed = 5        # rest time speed, as Native's "Wait here"
+coop_client_idle_frames = 30     # map frames without moving before the client rests
+coop_mirror_snap = 500           # a mirror further than this (map units * 100) jumps instead of walking
