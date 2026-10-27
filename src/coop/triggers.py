@@ -30,21 +30,8 @@ triggers = [
        (party_get_position, pos1, "p_main_party"),
        (position_get_x, reg5, pos1),
        (position_get_y, reg6, pos1),
-       (assign, reg7, coop_link_port),
-       # which URL form the engine accepts is unknown: rotate through four of them
-       (store_mod, reg8, "$coop_link_seq", 4),
-       (try_begin),
-         (eq, reg8, 0),
-         (str_store_string, s10, "@http://127.0.0.1:{reg7}/tick?form=0&seq={reg1}&frames={reg2}&hours={reg3}&free={reg4}&x={reg5}&y={reg6}"),
-       (else_try),
-         (eq, reg8, 1),
-         (str_store_string, s10, "@http://127.0.0.1/tick?form=1&seq={reg1}&frames={reg2}&hours={reg3}&free={reg4}&x={reg5}&y={reg6}"),
-       (else_try),
-         (eq, reg8, 2),
-         (str_store_string, s10, "@127.0.0.1:{reg7}/tick?form=2&seq={reg1}&frames={reg2}&hours={reg3}&free={reg4}&x={reg5}&y={reg6}"),
-       (else_try),
-         (str_store_string, s10, "@http://localhost:{reg7}/tick?form=3&seq={reg1}&frames={reg2}&hours={reg3}&free={reg4}&x={reg5}&y={reg6}"),
-       (try_end),
+       # the engine ignores any port in the URL and always connects to port 80 (link spike, 2026-10-27)
+       (str_store_string, s10, "@http://127.0.0.1/tick?seq={reg1}&frames={reg2}&hours={reg3}&free={reg4}&x={reg5}&y={reg6}"),
        (assign, "$coop_link_frames", 0),
        (send_message_to_url, s10, 0),
        # diagnostics: the first sends, then every 50th, with how often this trigger ran

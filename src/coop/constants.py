@@ -15,6 +15,6 @@ coop_dawn_hour = 6
 # Mission templates that get the preparation phase
 coop_prep_mission_templates = ("lead_charge", "village_attack_bandits", "village_raid")
 
-# Link spike: local bridge port, and how many trigger runs to wait for a lost reply
-coop_link_port = 7341
+# Link spike: how many trigger runs to wait for a lost reply.
+# The bridge must listen on port 80: send_message_to_url ignores the port in the URL.
 coop_link_resend_frames = 200

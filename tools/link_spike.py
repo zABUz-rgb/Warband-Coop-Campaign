@@ -4,7 +4,7 @@ Speaks plain sockets, not http.server, so that every connection is logged whatev
 sends (any method, malformed or partial requests). Answers with "<seq>|<served>|pong"
 (Warband splits the reply on '|' into reg0.. and s0..).
 
-    python tools/link_spike.py [--port 7341] [--log local/link_log.csv]
+    python tools/link_spike.py [--port 80] [--log local/link_log.csv]
 
 Loopback only: it is a test endpoint, never expose it.
 """
@@ -71,7 +71,7 @@ def accept_loop(srv, writer, log_file):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=7341)
+    ap.add_argument("--port", type=int, default=80, help="the game always connects to 80")
     ap.add_argument("--extra-port", type=int, action="append", default=[],
                     help="also listen here (e.g. 80, in case the game ignores the port in the URL)")
     ap.add_argument("--log", default=str(Path(__file__).resolve().parents[1] / "local" / "link_log.csv"))
