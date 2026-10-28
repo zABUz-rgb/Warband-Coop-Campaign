@@ -374,7 +374,7 @@ mp_campaign_scripts = [
        (party_get_current_terrain, reg13, "p_main_party"),
        (str_store_string, s18, "@{s18}&compn={reg12}&ter={reg13}"),
      (else_try),
-       (str_store_string, s20, "@"),
+       (str_clear, s20),
        (call_script, "script_coop_client_mp_companion_to_s20"),
      (try_end),
      (call_script, "script_coop_troops_to_s12", "p_main_party", 1),

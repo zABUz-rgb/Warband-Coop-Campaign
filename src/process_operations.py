@@ -327,6 +327,11 @@ def search_quick_string_keys(key, quick_strings):
   return index
 
 def insert_quick_string_with_auto_id(sentence,quick_strings):
+  # CoopWorld: an empty "@" string becomes an entry without text, which the next build step drops
+  # when it reads quick_strings.txt back: every quick string after it then shifts by one against
+  # the code already written (a request URL read as "&hero=", messages showing the wrong text)
+  if not sentence.strip():
+    raise ValueError('an empty quick string "@": use (str_clear, <string register>) instead')
   index = 0
   text = convert_to_identifier_with_no_lowercase(sentence)
   sentence = replace_spaces(sentence)
