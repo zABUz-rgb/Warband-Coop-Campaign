@@ -127,30 +127,32 @@ profile_scripts = [
   # offset|total|n|values (total 0: none kept, this is a new player)
   ("coop_profile_receive",
    [
-     (party_get_slot, ":offset", "p_coop_buf", 2),
-     (party_get_slot, ":total", "p_coop_buf", 3),
-     (party_get_slot, ":n", "p_coop_buf", 4),
-     (eq, "$coop_profile_state", 0), #settled already: a late copy must not take the hero back
-     (try_begin),
-       (eq, ":offset", 0),
-       (assign, "$coop_profile_got", 0),
-     (try_end),
-     (val_add, "$coop_profile_got", ":n"),
-     (try_for_range, ":k", 0, ":n"),
-       (store_add, ":src", ":k", 5),
-       (store_add, ":dst", ":k", ":offset"),
-       (party_get_slot, ":v", "p_coop_buf", ":src"),
-       (troop_set_slot, PROFILE_IN, ":dst", ":v"),
-     (try_end),
-     (try_begin),
-       (eq, ":total", 0),
-       (assign, "$coop_profile_state", 1), #nothing to put back: this hero is the player's from now on
-       (display_message, "@CoopWorld: a new hero - from now on it is kept between sessions.", 0x66CCFF),
-     (else_try),
-       (store_add, ":end", ":offset", ":n"),
-       (ge, ":end", ":total"),
-       (ge, "$coop_profile_got", ":total"), #a part went missing: asked for again (client_tick)
-       (assign, "$coop_profile_ready", 1),
+     (try_begin), #an early way out, not a failure of the caller
+       (party_get_slot, ":offset", "p_coop_buf", 2),
+       (party_get_slot, ":total", "p_coop_buf", 3),
+       (party_get_slot, ":n", "p_coop_buf", 4),
+       (eq, "$coop_profile_state", 0), #settled already: a late copy must not take the hero back
+       (try_begin),
+         (eq, ":offset", 0),
+         (assign, "$coop_profile_got", 0),
+       (try_end),
+       (val_add, "$coop_profile_got", ":n"),
+       (try_for_range, ":k", 0, ":n"),
+         (store_add, ":src", ":k", 5),
+         (store_add, ":dst", ":k", ":offset"),
+         (party_get_slot, ":v", "p_coop_buf", ":src"),
+         (troop_set_slot, PROFILE_IN, ":dst", ":v"),
+       (try_end),
+       (try_begin),
+         (eq, ":total", 0),
+         (assign, "$coop_profile_state", 1), #nothing to put back: this hero is the player's from now on
+         (display_message, "@CoopWorld: a new hero - from now on it is kept between sessions.", 0x66CCFF),
+       (else_try),
+         (store_add, ":end", ":offset", ":n"),
+         (ge, ":end", ":total"),
+         (ge, "$coop_profile_got", ":total"), #a part went missing: asked for again (client_tick)
+         (assign, "$coop_profile_ready", 1),
+       (try_end),
      (try_end),
     ]),
 

@@ -5,12 +5,17 @@ from coop.constants import *
 
 scripts = [
   # script_game_get_party_speed_multiplier
-  # Called by the engine for party speed (commented out in Native). Output: trigger_result in percent.
-  # CoopWorld: the whole world moves at coop_world_speed_percent.
+  # Called by the engine for party speed. Output: trigger_result in percent. The base module's own
+  # speed (Diplomacy: pathfinding, fast travel) comes from script_coop_base_party_speed (see merge);
+  # CoopWorld: the whole world moves at coop_world_speed_percent of it.
   ("game_get_party_speed_multiplier",
    [
      (store_script_param, ":party_no", 1),
-     (assign, ":unused", ":party_no"),
+     (assign, reg0, 100),
+     (call_script, "script_coop_base_party_speed", ":party_no"),
+     (assign, ":speed", reg0),
+     (val_mul, ":speed", coop_world_speed_percent),
+     (val_div, ":speed", 100),
      (try_begin),
        # another player is in battle or a menu: the world stands still for everyone, so here too
        (eq, "$coop_role", coop_role_client),
@@ -22,7 +27,7 @@ scripts = [
        (eq, "$coop_srv_paused", 1),
        (set_trigger_result, coop_paused_speed_percent),
      (else_try),
-       (set_trigger_result, coop_world_speed_percent),
+       (set_trigger_result, ":speed"),
      (try_end),
      # shows once per campaign (globals are saved) that the engine really calls this hook
      (try_begin),
@@ -100,7 +105,23 @@ def merge(orig_scripts):
   from coop_merge import script_block, insert_after
   from coop.net import net_scripts, net_reply_handler
   from coop.triggers import first_dynamic_party
-  # the engine hook is commented out in Native, so it is simply added
+  # the engine's speed hook: Native has it commented out, Diplomacy has its own. The engine calls the
+  # first script of that name, so the base module's one becomes script_coop_base_party_speed (its
+  # result in reg0) and CoopWorld's hook, which calls it, takes the name.
+  from header_operations import set_trigger_result, store_script_param, assign
+  from header_common import reg0 as _reg0
+  base = [s for s in orig_scripts if s[0] == "game_get_party_speed_multiplier"]
+  for s in base:
+    orig_scripts.remove(s)
+  body = [(store_script_param, ":party_no", 1), (assign, _reg0, 100)]
+  if base:
+    body = []
+    for op in base[0][1]:
+      if isinstance(op, (list, tuple)) and op[0] == set_trigger_result:
+        body.append((assign, _reg0, op[1]))
+      else:
+        body.append(op)
+  orig_scripts.append(("coop_base_party_speed", body))
   orig_scripts.extend(scripts)
   orig_scripts.extend(net_scripts(first_dynamic_party()))
   # the unattended world server opens no dialog boxes

@@ -792,7 +792,6 @@ mp_campaign_presentations = [
      (ti_on_presentation_load,
       [
         (set_fixed_point_multiplier, 1000),
-        (assign, "$coop_mp_open", 1),
         (create_mesh_overlay, reg0, "mesh_load_window"),
         (position_set_x, pos1, 0),
         (position_set_y, pos1, 0),
@@ -855,7 +854,6 @@ mp_campaign_presentations = [
         (try_end),
         # still running: the window closes, the battle goes on; "Show the battle" reopens it.
         # The menu is entered again so that its options fit the state.
-        (assign, "$coop_mp_open", 0),
         (assign, "$coop_mp_hidden", 1),
         (presentation_set_duration, 0),
         (jump_to_menu, "mnu_coop_mp_wait"),

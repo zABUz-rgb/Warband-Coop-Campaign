@@ -124,14 +124,17 @@ def load_quick_strings(export_dir):
     file = open(export_dir + "quick_strings.txt", "r")
     str_list = file.readlines()
     file.close()
-    for s in str_list:
-      s = string.strip(s)
-      if s:
-        ssplit = s.split(' ')
-        if len(ssplit) == 2:
-          quick_strings.append(ssplit)
-  except:
+  except IOError:  # CoopWorld: only a missing file starts a new list (a bare except hid lost entries)
     print("Creating new quick_strings.txt file...")
+    return quick_strings
+  for s in str_list[1:]:  # the first line is the number of entries
+    s = string.strip(s)
+    if s:
+      ssplit = s.split(' ')
+      if len(ssplit) == 2:
+        quick_strings.append(ssplit)
+      else:  # CoopWorld: dropping an entry would shift every quick string after it (see below)
+        raise ValueError("quick_strings.txt: an entry that is not 'id text': " + s)
   return quick_strings
 
 def save_quick_strings(export_dir, quick_strings):

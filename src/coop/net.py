@@ -470,11 +470,13 @@ def net_scripts(first_dynamic):
   # another player held is lifted here, else this player would stand still until the link is back.
   ("coop_client_no_answer",
    [
-     (eq, "$coop_role", coop_role_client),
-     (val_add, "$coop_net_misses", 1),
-     (eq, "$coop_net_misses", coop_net_lost_replies),
-     (assign, "$coop_world_paused", 0),
-     (display_message, "@CoopWorld: no answer from the host. Check the join.bat window and the network (Radmin); the game goes on and catches up once the host answers. Your hero is written down at the host every minute while the link works.", 0xFF6666),
+     (try_begin), #an early way out, not a failure of the caller
+       (eq, "$coop_role", coop_role_client),
+       (val_add, "$coop_net_misses", 1),
+       (eq, "$coop_net_misses", coop_net_lost_replies),
+       (assign, "$coop_world_paused", 0),
+       (display_message, "@CoopWorld: no answer from the host. Check the join.bat window and the network (Radmin); the game goes on and catches up once the host answers. Your hero is written down at the host every minute while the link works.", 0xFF6666),
+     (try_end),
     ]),
 
   # script_coop_client_set_world_pause: kind 5 reply (paused, slot, why). While another player is

@@ -45,6 +45,15 @@ def main():
         if not dest.exists() or dest.read_bytes() != source.read_bytes():
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(source.read_bytes())
+    # mistakes the compiler lets pass (empty "@" strings, unbalanced try blocks, scripts that end
+    # their caller, globals never set): see tools/check_module.py
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "check_module.py")], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    problems = [l for l in r.stdout.splitlines() if not l.startswith("note:")]
+    print("\n".join(problems))
+    if r.returncode != 0:
+        print("BUILD FAILED at check_module")
+        sys.exit(1)
     print("BUILD OK")
 
 

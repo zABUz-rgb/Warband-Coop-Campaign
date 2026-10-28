@@ -5,7 +5,16 @@ Each text comes from the first of these that has its id:
   1. the russifier's Native (vendor/l10n_ru), the base for everything Native has;
   2. the Russian translation of Diplomacy (MRCMOD's, vendor/dplmc_ru_mrcmod), for what Diplomacy adds;
   3. lang/ru.csv (kept by hand, "file|id|text"), for the rest: Freelancer, co-op, and what neither has.
+     Quick strings and dialog lines there are kept by their English: "quick_strings_en|English|text",
+     "dialogs_en|English|text".
 This tool finds every id the build has and none of them translates.
+
+Quick strings and dialog lines are matched by their English text, not by id: their ids come from
+the first characters of the text (quick strings) or from the dialog states with .1, .2 for repeats
+(dialogs), so a text added by Diplomacy, Freelancer or co-op in front of another moves that one to a
+new id, and the translation kept under the old id would show for another text. The English each
+base translation was made for comes from the game's own Native (game/Modules/Native, compiled), the
+module system 1.171 (Native's dialogs) and the compiled Diplomacy 1.174.
 
     python tools/make_ru.py --missing   list ids that still need a translation (with the English)
     python tools/make_ru.py             write game/Modules/CoopWorld/languages/ru
@@ -27,6 +36,10 @@ NATIVE_RU = (RUSSIFIER / "Modules" / "Native" / "languages" / "ru"
              if (RUSSIFIER / "Modules" / "Native" / "languages" / "ru").exists()
              else ROOT / "game" / "Modules" / "Native" / "languages" / "ru")
 DIPLOMACY_RU = ROOT / "vendor" / "dplmc_ru_mrcmod" / "ru"
+NATIVE_COMPILED = ROOT / "game" / "Modules" / "Native"
+NATIVE_MS = ROOT / "vendor" / "module_system_1171" / "Module_system 1.171"
+DIPLOMACY_COMPILED = ROOT / "vendor" / "dplmc_1174" / "Diplomacy 1.174 prejudice patch" / "Compiled" / "Diplomacy 1.174"
+BY_TEXT = ("quick_strings", "dialogs")  # matched by English text (see above)
 OURS = ROOT / "lang" / "ru.csv"
 FILES = ("game_menus", "dialogs", "quests", "parties", "quick_strings", "game_strings", "troops",
          "item_kinds", "party_templates", "factions", "info_pages", "skills")
@@ -40,6 +53,73 @@ def load_csv(path):
             if "|" in line:
                 k, v = line.split("|", 1)
                 out[k] = v
+    return out
+
+
+def dialog_ids(dialogs, convert_to_identifier):
+    """{dialog id: English}: the compiler's create_auto_id2."""
+    auto_ids = {}
+    for d in dialogs:
+        text = d[3]
+        auto_id = "dlga_" + convert_to_identifier(d[1]) + ":" + convert_to_identifier(d[4])
+        if auto_id in auto_ids and auto_ids[auto_id] != text:
+            n = 1
+            while f"{auto_id}.{n}" in auto_ids:
+                n += 1
+            auto_id = f"{auto_id}.{n}"
+        auto_ids[auto_id] = text
+    return auto_ids
+
+
+DIALOGS_DUMP = r"""
+import json, string, sys
+string.replace = lambda s, a, b, *n: s.replace(a, b, *n)
+string.lower = lambda s: s.lower()
+string.strip = lambda s, *c: s.strip(*c)
+string.find = lambda s, a, *r: s.find(a, *r)
+sys.path.insert(0, ".")
+code = open("module_dialogs.py", encoding="utf-8", errors="replace").read()
+code = code.split("# CoopWorld merge hook")[0]  # Diplomacy's own lines, without CoopWorld's
+scope = {}
+exec(compile(code, "module_dialogs.py", "exec"), scope)
+from process_common import convert_to_identifier
+sys.path.insert(0, sys.argv[1])
+from make_ru import dialog_ids
+print(json.dumps(dialog_ids(scope["dialogs"], convert_to_identifier)))
+"""
+
+
+def source_dialogs(folder):
+    """{dialog id: English} of a module system's own dialogs (run apart: its headers are its own)."""
+    import json
+    import subprocess
+    import warnings
+    r = subprocess.run([sys.executable, "-W", "ignore", "-c", DIALOGS_DUMP, str(ROOT / "tools")], cwd=folder,
+                       capture_output=True, text=True, encoding="utf-8")
+    if r.returncode != 0:
+        warnings.warn(f"dialogs of {folder}: {r.stderr[-300:]}")
+        return {}
+    return json.loads(r.stdout)
+
+
+def compiled_quick_strings(folder):
+    out = {}
+    path = folder / "quick_strings.txt"
+    if path.exists():
+        for line in path.read_text("utf-8", "replace").splitlines()[1:]:
+            if " " in line:
+                k, v = line.split(" ", 1)
+                out[k] = v.replace("_", " ")
+    return out
+
+
+def by_text(english, russian):
+    """{English: Russian} of a base translation, through the English its ids had."""
+    out = {}
+    for k, ru in russian.items():
+        en = english.get(k)
+        if en is not None:
+            out.setdefault(en, ru)
     return out
 
 
@@ -86,17 +166,7 @@ def module_texts():
         texts["game_menus"][f"menu_{m[0]}"] = m[2]
         for opt in m[5]:
             texts["game_menus"].setdefault(f"mno_{opt[0]}", opt[2])
-    auto_ids = {}
-    for d in dialogs:  # the compiler's create_auto_id2
-        text = d[3]
-        auto_id = "dlga_" + convert_to_identifier(d[1]) + ":" + convert_to_identifier(d[4])
-        if auto_id in auto_ids and auto_ids[auto_id] != text:
-            n = 1
-            while f"{auto_id}.{n}" in auto_ids:
-                n += 1
-            auto_id = f"{auto_id}.{n}"
-        auto_ids[auto_id] = text
-        texts["dialogs"][auto_id] = text
+    texts["dialogs"] = dialog_ids(dialogs, convert_to_identifier)
     for q in quests:
         texts["quests"][f"qst_{q[0]}"] = q[1]
         texts["quests"][f"qst_{q[0]}_text"] = q[3]
@@ -115,29 +185,58 @@ def internal(text):
     return "http://" in text or ("&" in text and "=" in text) or (" " not in text and not any(c.isalpha() for c in re.sub(r"\{[^}]*\}", "", text)))
 
 
-def missing(texts, bases, ours):
+def missing(texts, bases, ours, matched):
     """(file, id, English) of texts no base translation has and lang/ru.csv does not translate yet."""
     out = []
     for f, items in texts.items():
         for k, en in items.items():
-            if (not en or en.startswith("{!}") or any(k in b[f] for b in bases) or (f, k) in ours
-                    or internal(en)):
+            if f in BY_TEXT:
+                known = k in matched[f]
+            else:
+                known = any(k in b[f] for b in bases) or (f, k) in ours
+            if not en or en.startswith("{!}") or known or internal(en):
                 continue
             out.append((f, k, en))
     return out
 
 
+def match_by_text(texts, native, diplomacy, ours, ours_en):
+    """{file: {id: Russian}} for the files matched by English text: the russifier's Native first,
+    then Diplomacy's translation, then lang/ru.csv (by English; old rows by id)."""
+    english = {
+        "quick_strings": (compiled_quick_strings(NATIVE_COMPILED), compiled_quick_strings(DIPLOMACY_COMPILED)),
+        "dialogs": (source_dialogs(NATIVE_MS), source_dialogs(SRC)),
+    }
+    out = {}
+    for f in BY_TEXT:
+        native_en, diplomacy_en = english[f]
+        bases = (by_text(native_en, native[f]), by_text(diplomacy_en, diplomacy[f]))
+        out[f] = {}
+        for k, en in texts[f].items():
+            ru = next((b[en] for b in bases if en in b), None)
+            if ru is None:
+                ru = ours_en[f].get(en, ours.get((f, k)))
+            if ru is not None:
+                out[f][k] = ru
+    return out
+
+
 def main():
     ours = {}
+    ours_en = {f: {} for f in BY_TEXT}
     if OURS.exists():
         for line in OURS.read_text("utf-8-sig").splitlines():
             if line.count("|") >= 2 and not line.startswith("#"):
                 f, k, v = line.split("|", 2)
-                ours[(f, k)] = v
+                if f.endswith("_en") and f[:-3] in BY_TEXT:
+                    ours_en[f[:-3]][k] = v
+                else:
+                    ours[(f, k)] = v
     native = {f: load_csv(NATIVE_RU / f"{f}.csv") for f in FILES}
     diplomacy = {f: load_csv(DIPLOMACY_RU / f"{f}.csv") for f in FILES}
     texts = module_texts()
-    gaps = missing(texts, (native, diplomacy), ours)
+    matched = match_by_text(texts, native, diplomacy, ours, ours_en)
+    gaps = missing(texts, (native, diplomacy), ours, matched)
     if "--missing" in sys.argv:
         for f, k, en in gaps:
             print(f"{f}|{k}|{en}")
@@ -147,6 +246,7 @@ def main():
         for f, k, en in gaps:
             print(f"untranslated: {f}|{k}|{en}", file=sys.stderr)
     unused = [(f, k) for f, k in ours if k not in texts.get(f, {})]
+    unused += [(f + "_en", en) for f in BY_TEXT for en in ours_en[f] if en not in set(texts[f].values())]
     for f, k in unused:
         print(f"lang/ru.csv: {f}|{k} is not in the build (renamed or removed?)", file=sys.stderr)
     target = MODULE / "languages" / "ru"
@@ -155,6 +255,11 @@ def main():
     names = sorted({p.name for p in NATIVE_RU.glob("*.csv")} | {p.name for p in DIPLOMACY_RU.glob("*.csv")})
     for name in names:
         f = name[:-4]
+        if f in BY_TEXT:
+            lines = "".join(f"\r\n{k}|{v}" for k, v in matched[f].items())
+            (target / name).write_text("\ufeff" + lines.lstrip("\r\n") + "\r\n", "utf-8", newline="")
+            (ADDITIONS / name).write_text(lines.lstrip("\r\n") + "\r\n", "utf-8", newline="")
+            continue
         path = NATIVE_RU / name
         base_ids = load_csv(path)
         # the russifier's Native wins, then Diplomacy's translation fills its own texts, then ours
