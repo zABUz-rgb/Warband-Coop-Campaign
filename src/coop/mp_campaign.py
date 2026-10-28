@@ -513,7 +513,7 @@ mp_campaign_scripts = [
      (try_begin),
        (gt, ":n", 0),
        (assign, "$coop_loot_ready", 1),
-       (display_message, "@CoopWorld: the spoils of the joint battle are waiting for you.", 0x66FF66),
+       (display_message, "@CoopWorld: the spoils of the joint battle are waiting for you (Camp - CoopWorld: co-op...).", 0x66FF66),
      (try_end),
     ]),
 
@@ -688,7 +688,7 @@ mp_campaign_menus = [
      ("coop_loot_take", [(eq, "$coop_loot_ready", 1)], "Take it.",
       [(call_script, "script_coop_client_mp_loot_take")]),
      ("coop_loot_leave", [], "Back to the map.",
-      [(assign, "$coop_loot_ready", 0), (change_screen_return)]),
+      [(assign, "$coop_loot_ready", 0), (leave_encounter), (change_screen_return)]),
    ]),
 
   ("coop_mp_wait", 0,
@@ -741,6 +741,7 @@ mp_campaign_menus = [
           (assign, "$g_player_besiege_town", -1),
           (assign, "$coop_mp_target_center", -1),
         (try_end),
+        (assign, "$coop_busy", 2), #back on the map: the first map frame ends the battle's hold on the world
         (leave_encounter),
         (change_screen_return),
       ]),
@@ -877,11 +878,6 @@ def client_map_tick():
       (gt, "$coop_mp_captor", 0),
       (map_free),
       (call_script, "script_coop_client_mp_capture"),
-    (else_try),
-      # won it away from its window: the spoils wait in a menu
-      (eq, "$coop_loot_ready", 1),
-      (map_free),
-      (jump_to_menu, "mnu_coop_loot"),
     (try_end),
   ]
 

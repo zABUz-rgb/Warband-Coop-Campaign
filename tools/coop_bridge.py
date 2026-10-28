@@ -129,6 +129,7 @@ CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
 RENAME_EVERY = 40      # requests between asking a game to rename its hero
 PROFILE_PER_REPLY = 120 # 5 + 120 numbers
 STALE_S = 15.0          # a party not reported for this long is gone
+SRV_SILENT_S = 2.0      # a world server quiet this long was in a menu: its parties do not age meanwhile
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
 TOMBSTONE_S = 30.0
@@ -265,6 +266,7 @@ class World:
         self.centers = {}       # center -> (faction, lord, besieger + 1), as the world server reports them
         self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
         self.saves = 0          # the host's saves sent to the players since the bridge started
+        self.last_srv = None    # when the world server last reported
         self.profiles_path = Path(profiles_path) if profiles_path else None
         self.profiles = {}      # player key (multiplayer name, or hero name) -> the hero's numbers
         self.offers = {}        # id -> (giver cid, receiver cid, stacks): troops on their way
@@ -410,6 +412,13 @@ class World:
         """Returns (pause, joins, [(slot, x, y)], payload numbers, name string or None)."""
         with self.lock:
             self.stats["srv"] += 1
+            # the world server was silent (its game in a menu, or a joint battle on): the world stood
+            # still, so its parties did not go stale meanwhile
+            gap = now - self.last_srv if self.last_srv is not None else 0.0
+            self.last_srv = now
+            if gap > SRV_SILENT_S:
+                for party in self.parties.values():
+                    party[3] += gap
             for sid in [s for s, when in self.tombstones.items() if now - when > TOMBSTONE_S]:
                 del self.tombstones[sid]
             for entry in entries:
@@ -1203,6 +1212,8 @@ def worth_tracing(role, target, reply):
             return len(parts) > payload_at and parts[payload_at] not in ("0",)
         except (ValueError, IndexError):
             return True
+    if "&mp=2&" in target and kind == 7:
+        return False  # the joint battle window asking how it stands, four times a second
     return any(k in target for k in TRACE_KEYS) or kind not in QUIET_KINDS
 
 

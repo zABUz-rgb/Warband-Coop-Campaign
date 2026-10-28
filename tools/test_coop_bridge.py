@@ -53,8 +53,14 @@ def test_positions():
     out = positions(w)
     check({e[0] for e in out} == {500, 501}, "a player receives every known party")
     check(out[0] == (500, 3, 100, -200, 150, -250, 0), "nearest first: position, target, town")
-    w.server_report([(501, 4, 9000, 9000)], None, 20.0)  # 500 not reported for > STALE_S
+    for second in range(1, 21):  # the server reports on and on; 500 is not in it for > STALE_S
+        w.server_report([(501, 4, 9000, 9000)], None, float(second))
     check(positions(w, now=20.0)[0] == (500, cb.REMOVED, 0, 0, 0, 0, 0), "a stale party is sent as removed, first")
+    w2 = cb.World()
+    w2.server_report([(600, 3, 100, -200)], None, 0.0)
+    w2.server_report([(601, 3, 100, -200)], None, 150.0)  # silent for minutes: a joint battle, a menu
+    check(any(e[0] == 600 and e[1] != cb.REMOVED for e in positions(w2, now=150.0)),
+          "a world server that was silent (the world stood still) does not age its parties")
     w.server_report([(i, 1, i, i) for i in range(1000, 1100)], None, 21.0)
     seen, fits = set(), True
     for _ in range(80):

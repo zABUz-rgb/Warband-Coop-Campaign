@@ -55,6 +55,7 @@ coop_mp_max_stacks = 60          # troop stacks of one battle, both sides
 coop_mp_stride = 8               # slots per stack on the multiplayer server
 coop_mp_round_seconds = 3600     # a campaign battle's round has no practical time limit
 slot_agent_coop_stack = 40       # on a bot of the multiplayer server: its stack + 1 (Native agent slots end at 28)
+coop_mp_heroes_slot = 950        # on the battle server: the player number of each borrowed hero troop
 coop_mp_pairs_slot = 900         # on the battle server: the players' sides of the coming battle (player, team)*n
 coop_mp_switch_wait = 3          # seconds after a new battle mission starts before the sides are set
 coop_mp_resend_ms = 3000
