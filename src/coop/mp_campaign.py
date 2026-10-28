@@ -696,7 +696,7 @@ mp_campaign_menus = [
      ("coop_loot_take", [(eq, "$coop_loot_ready", 1)], "Take it.",
       [(call_script, "script_coop_client_mp_loot_take")]),
      ("coop_loot_leave", [], "Back to the map.",
-      [(assign, "$coop_loot_ready", 0), (leave_encounter), (change_screen_return)]),
+      [(assign, "$coop_loot_ready", 0), (leave_encounter), (change_screen_map)]),
    ]),
 
   ("coop_mp_wait", 0,
@@ -751,7 +751,8 @@ mp_campaign_menus = [
         (try_end),
         (assign, "$coop_busy", 2), #back on the map: the first map frame ends the battle's hold on the world
         (leave_encounter),
-        (change_screen_return),
+        # change_screen_map, not _return: after the spoils' loot screen this menu's return did nothing
+        (change_screen_map),
       ]),
      ("coop_mp_captured", [(neg|is_between, "$coop_mp_state", 1, 4), (gt, "$coop_mp_captor", 0)],
       "You are taken prisoner...",

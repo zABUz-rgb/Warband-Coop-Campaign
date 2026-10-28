@@ -21,5 +21,6 @@ Confirmed in game at `stable-2026-10-28`:
 8. Defeat: captivity; a prisoner is not called into joint battles.
 9. Troops given to a player are no longer the giver's in battles.
 
-Known and not fixed in code: two full-screen Warband windows hang when switching (launchers set
-Warband to a window); a weak PC with both windows open may run out of memory.
+Open: after the spoils' loot screen, "Back to the map" in the joint battle menu did not react
+(the friend, build 802225796); the exits now use change_screen_map - not confirmed yet.
+A weak PC with both Warband windows open may run out of memory.
