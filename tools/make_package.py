@@ -181,7 +181,10 @@ try {{
   Write-Host ""
   Write-Host "{starting}" -ForegroundColor Green
   Write-Host "{stop_hint}"
-  & $python -I (Join-Path $here "coop_bridge.py") @bridgeArgs --log (Join-Path $here "bridge.log")
+  try {{
+    & $python -I (Join-Path $here "coop_bridge.py") @bridgeArgs --log (Join-Path $here "bridge.log")
+  }} finally {{{cleanup}
+  }}
   Write-Host ""
   Write-Host "{stopped}" -ForegroundColor Yellow
 }} catch {{
@@ -196,6 +199,52 @@ HOST_BODY = r"""  $key = $First
   if (-not $key) {{ $key = Read-Host "{ask_key}" }}
   $bridgeArgs = @("host")
   if ($key) {{ $bridgeArgs += @("--key", $key) }} else {{ Write-Host "{no_key}" -ForegroundColor Yellow }}"""
+
+# host: the battle server's port 7240 opened on the router (UPnP) and in the Windows firewall, so
+# friends join it at the host's internet address: through Radmin/Hamachi Warband's key check fails
+# ("incorrect authorization key"). The router mapping is removed again when the bridge stops.
+HOST_PORTS_BODY = r"""
+  $mapped = @()
+  $upnpPorts = $null
+  try {{
+    $route = Get-NetIPConfiguration | Where-Object {{ $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq "Up" }} | Select-Object -First 1
+    $localIp = $route.IPv4Address.IPAddress | Select-Object -First 1
+    $upnpPorts = (New-Object -ComObject HNetCfg.NATUPnP).StaticPortMappingCollection
+    if (-not $localIp -or -not $upnpPorts) {{ throw "{upnp_off}" }}
+    $external = $null
+    foreach ($proto in "UDP", "TCP") {{
+      try {{ $upnpPorts.Remove(7240, $proto) | Out-Null }} catch {{}}
+      $m = $upnpPorts.Add(7240, $proto, 7240, $localIp, $true, "CoopWorld battle server")
+      $mapped += $proto
+      if ($m) {{ $external = $m.ExternalIPAddress }}
+    }}
+    Write-Host "{ports_open} $localIp" -ForegroundColor Green
+    if ($external) {{
+      if ($external -match '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.)') {{
+        Write-Host "{cgnat} $external" -ForegroundColor Yellow
+      }} else {{
+        Write-Host "{friends_join} ${{external}}:7240" -ForegroundColor Green
+      }}
+    }} else {{
+      Write-Host "{no_external}" -ForegroundColor Yellow
+    }}
+  }} catch {{
+    Write-Host "{upnp_failed} $($_.Exception.Message)" -ForegroundColor Yellow
+  }}
+  # the firewall: once, as administrator (Windows asks)
+  if (-not (Get-NetFirewallRule -DisplayName "CoopWorld 7240 UDP" -ErrorAction SilentlyContinue)) {{
+    Write-Host "{firewall_ask}"
+    $rules = 'New-NetFirewallRule -DisplayName "CoopWorld 7240 UDP" -Direction Inbound -Protocol UDP -LocalPort 7240 -Action Allow | Out-Null; ' +
+             'New-NetFirewallRule -DisplayName "CoopWorld 7240 TCP" -Direction Inbound -Protocol TCP -LocalPort 7240 -Action Allow | Out-Null'
+    try {{
+      Start-Process powershell -Verb RunAs -Wait -ArgumentList @("-NoProfile", "-Command", $rules)
+    }} catch {{
+      Write-Host "{firewall_failed}" -ForegroundColor Yellow
+    }}
+  }}"""
+
+PORTS_CLEANUP = r"""
+  foreach ($proto in $mapped) {{ try {{ $upnpPorts.Remove(7240, $proto) | Out-Null }} catch {{}} }}"""
 
 # both launchers: the player's name on the battle server, remembered in mp_name.txt
 MP_NAME_BODY = r"""
@@ -240,6 +289,14 @@ LAUNCHER_TEXT = {
     ask_mp_name="Your multiplayer name (Enter = keep the one in brackets)",
     mp_name_set="Multiplayer name:",
     no_mp_name="No multiplayer name: the bridge looks for your hero's name on the battle server.",
+    upnp_off="the router does not offer UPnP (turn it on in the router's settings) or there is no network",
+    upnp_failed="Port 7240 could not be opened on the router automatically:",
+    ports_open="Port 7240 (UDP and TCP) is open on the router for this PC:",
+    friends_join="Friends join the battle server at:",
+    cgnat="The router's internet address is not a public one (your provider shares it): opening ports cannot help. Router address:",
+    no_external="The router did not tell its internet address: look it up (for example 2ip.ru) and give it to friends with :7240.",
+    firewall_ask="Allowing port 7240 in the Windows firewall (once; Windows asks for permission)...",
+    firewall_failed="The firewall rule was not added (permission declined): Windows may ask again when the battle server starts.",
   ),
   "ru": dict(
     press_enter="Нажмите Enter, чтобы закрыть окно",
@@ -259,6 +316,14 @@ LAUNCHER_TEXT = {
     ask_mp_name="Ваше имя в мультиплеере (Enter - оставить то, что в скобках)",
     mp_name_set="Имя в мультиплеере:",
     no_mp_name="Имя в мультиплеере не задано: мост будет искать на сервере боя имя вашего героя.",
+    upnp_off="роутер не даёт UPnP (включите его в настройках роутера) или нет сети",
+    upnp_failed="Не удалось автоматически открыть порт 7240 на роутере:",
+    ports_open="Порт 7240 (UDP и TCP) открыт на роутере для этого компьютера:",
+    friends_join="Друзья заходят на сервер боя по адресу:",
+    cgnat="Интернет-адрес роутера не публичный (провайдер делит его между абонентами): открытие портов не поможет. Адрес роутера:",
+    no_external="Роутер не сообщил свой интернет-адрес: узнайте его (например, на 2ip.ru) и дайте друзьям с :7240.",
+    firewall_ask="Разрешаю порт 7240 в брандмауэре Windows (один раз; Windows спросит разрешение)...",
+    firewall_failed="Правило брандмауэра не добавлено (разрешение не дано): Windows может спросить снова при запуске сервера боя.",
   ),
 }
 
@@ -268,7 +333,11 @@ def launcher(kind, lang):
     title = {"host": {"en": "CoopWorld: host the game (the world lives on this PC)", "ru": "CoopWorld: запуск игры у хоста"},
              "join": {"en": "CoopWorld: join a friend's game", "ru": "CoopWorld: подключение к игре друга"}}[kind][lang]
     body = (HOST_BODY if kind == "host" else JOIN_BODY).format(**m) + MP_NAME_BODY.format(**m)
-    return LAUNCHER_TEMPLATE.format(title=title, body=body, **m)
+    cleanup = ""
+    if kind == "host":
+        body += HOST_PORTS_BODY.format(**m)
+        cleanup = PORTS_CLEANUP.format()
+    return LAUNCHER_TEMPLATE.format(title=title, body=body, cleanup=cleanup, **m)
 
 
 START_HERE_RU = '''CoopWorld - С ЧЕГО НАЧАТЬ (для друга)
@@ -519,8 +588,11 @@ CoopWorld без Diplomacy с этой версией не работают.
      Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0, и сражается в нём.
      Мост сам находит сервер боя; без него кнопка совместного боя скажет, что сервера нет.
      Если друг при входе получает "неверный ключ" (так бывает через Radmin/Hamachi), а к чужим
-     серверам заходит - откройте на роутере порт 7240 (UDP и TCP) на компьютер хоста, и друг
-     заходит на внешний (интернет) адрес хоста:7240.
+     серверам заходит - нужен открытый порт 7240 (UDP и TCP) на компьютер хоста, и друг
+     заходит на внешний (интернет) адрес хоста:7240. host.bat открывает его сам через UPnP роутера
+     (UPnP должен быть включён в роутере, сеть в Windows - "Частная") и пишет адрес для друзей;
+     в брандмауэре Windows порт разрешается один раз (Windows спросит). Если роутер без UPnP -
+     пробросьте порт в его настройках вручную.
   2. Каждый друг заходит на этот сервер из второго окна Warband (модуль CoopWorld):
        Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
      host.bat и join.bat спрашивают ваше имя в мультиплеере (запоминают его в mp_name.txt): заходите
