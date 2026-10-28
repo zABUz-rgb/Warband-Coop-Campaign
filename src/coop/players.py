@@ -252,6 +252,8 @@ def encounter_options():
 
 def camp_options():
   return [
+    ("coop_players", plays(), "CoopWorld: the other players (join a party, give troops)...",
+     [(jump_to_menu, "mnu_coop_players")]),
     ("coop_leave_party", plays() + [(gt, "$coop_leader", 0)] + player_name_to_s1("$coop_leader"),
      "CoopWorld: leave {s1}'s party and ride on your own.",
      [(assign, "$coop_leave_party", 1), (assign, "$coop_leader", 0), (change_screen_return)]),
@@ -261,7 +263,76 @@ def camp_options():
   ]
 
 
+def players_menu_options():
+  """The camp's players menu: for each other player, what can be done without meeting on the map."""
+  options = []
+  for k in range(coop_max_players):
+    puppet = f"p_coop_puppet_{k + 1}"
+    name = [(party_is_active, puppet), (str_store_party_name, s1, puppet)]
+    options += [
+      ("coop_pl_join_%d" % k, plays() + name + [(eq, "$coop_leader", 0)],
+       "Ask {s1} to take you into the party.",
+       [
+         (assign, "$coop_join_ask", k + 1),
+         (display_message, "@CoopWorld: you ask {s1} to take you into the party...", 0x66CCFF),
+         (change_screen_return),
+       ]),
+      ("coop_pl_give_%d" % k, plays() + name + [
+         (store_distance_to_party_from_party, ":dist", "p_main_party", puppet),
+         (le, ":dist", coop_give_distance)],
+       "Give troops to {s1}.",
+       [
+         (assign, "$coop_give_to", k + 1),
+         (party_clear, GIFT),
+         (jump_to_menu, "mnu_coop_give_troops"),
+       ]),
+    ]
+  return options + [
+    ("coop_pl_write_hero", [(eq, "$coop_role", coop_role_client), (eq, "$coop_profile_state", 1)],
+     "Write my hero down at the host now.",
+     [
+       (assign, "$coop_profile_frames", coop_profile_period_frames),
+       (display_message, "@CoopWorld: writing your hero down at the host in a few seconds.", 0x66CCFF),
+       (change_screen_return),
+     ]),
+    ("coop_pl_back", [], "Back.", [(jump_to_menu, "mnu_camp")]),
+  ]
+
+
+def players_list_to_s10():
+  """Ops: s10 = one line per other player: name, how far, in whose party."""
+  ops = [(str_clear, s10), (assign, ":any", 0)]
+  for k in range(coop_max_players):
+    puppet = f"p_coop_puppet_{k + 1}"
+    ops += [
+      (try_begin),
+        (party_is_active, puppet),
+        (assign, ":any", 1),
+        (str_store_party_name, s1, puppet),
+        (store_distance_to_party_from_party, reg1, "p_main_party", puppet),
+        (str_store_string, s10, "@{s10}^{s1}: {reg1} km away"),
+        (try_begin),
+          (eq, "$coop_leader", k + 1),
+          (str_store_string, s10, "@{s10} - you ride in this party"),
+        (try_end),
+        (str_store_string, s10, "@{s10}."),
+      (try_end),
+    ]
+  return ops + [
+    (try_begin),
+      (eq, ":any", 0),
+      (str_store_string, s10, "@^Nobody else is in the world right now."),
+    (try_end),
+  ]
+
+
 players_menus = [
+  ("coop_players", 0,
+   "CoopWorld: the players in this world:^{s10}^^Troops are given to a player who is close by (up to {reg2} km); a party can be joined from anywhere: you then ride to its leader.",
+   "none",
+   players_list_to_s10() + [(assign, reg2, coop_give_distance)],
+   players_menu_options()),
+
   ("coop_give_troops", 0,
    "CoopWorld: troops for {s1}.^^Chosen so far: {reg1}. Choose them on the exchange screen (your party on the left, the gift on the right); {s1} accepts or declines them, and declined troops come back to you. Companions stay with you.",
    "none",

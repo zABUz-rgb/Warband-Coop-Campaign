@@ -87,6 +87,18 @@ def merge(menus):
   outside.insert(find_by_id(outside, "castle_leave"), coop_mp_defend_option)
   siege = menu_options(menus, "castle_besiege")
   siege.insert(find_by_id(siege, "castle_lead_attack") + 1, coop_mp_siege_option)
+  # meeting another player's party opens the encounter menu with the co-op choices at once: Native
+  # would talk to its leader first, and a friendly talk ends the encounter before the menu shows
+  from coop.triggers import puppet_range as _puppets
+  encounter = menu_block(menus, "simple_encounter")
+  talk = find_line(encounter, (call_script, "script_setup_party_meeting", "$g_encountered_party"))
+  first_puppet, end_puppet = _puppets()
+  encounter[talk:talk + 1] = [
+    (try_begin),
+      (neg | is_between, "$g_encountered_party", first_puppet, end_puppet),
+      encounter[talk],
+    (try_end),
+  ]
   options = menu_options(menus, "simple_encounter")
   options.insert(find_by_id(options, "encounter_leave"), coop_mp_encounter_option)
   # another player's party is fought only in a joint battle, never in a local one against its puppet

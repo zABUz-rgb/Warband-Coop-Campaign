@@ -967,6 +967,18 @@ def net_reply_handler():
         (eq, "$coop_role", coop_role_client),
         (call_script, "script_coop_profile_receive"),
       (else_try),
+        (eq, ":kind", 22), #the hero's name, as its player gave it to the launcher
+        (this_or_next|eq, "$coop_role", coop_role_client),
+        (eq, "$coop_srv_player", 1),
+        (gt, ":num_strings", 0),
+        (troop_set_name, "trp_player", s0),
+        (display_message, "@CoopWorld: hero name - {s0}.", 0x66CCFF),
+        (assign, "$coop_own_troops_frames", coop_own_troops_frames), #the new name goes out with the next report
+      (else_try),
+        (eq, ":kind", 23),
+        (eq, "$coop_role", coop_role_client),
+        (display_message, "@CoopWorld: the host saved the game. Your copy of the world is updated: next time load it to start from there (your hero comes back from the host).", 0x66CCFF),
+      (else_try),
         (eq, ":kind", 5),
         (this_or_next|eq, "$coop_role", coop_role_client),
         (eq, "$coop_srv_player", 1), #the host playing on the server: who holds the world, and why

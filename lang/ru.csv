@@ -1690,3 +1690,21 @@ quick_strings|qstr_CoopWorld:_{s1}_fell|CoopWorld: {s1} пал в совмест
 quick_strings|qstr_CoopWorld:_the_spoil|CoopWorld: вас ждёт добыча совместного боя.
 quick_strings|qstr_CoopWorld:_the_host_|CoopWorld: хост снова отвечает.
 quick_strings|qstr_CoopWorld:_no_answer|CoopWorld: хост не отвечает. Проверьте окно join.bat и сеть (Radmin); игра продолжается и догонит мир, когда хост ответит. Пока связь есть, ваш герой записывается у хоста каждую минуту.
+game_menus|mno_coop_players|CoopWorld: другие игроки (вступить в отряд, передать войска)...
+game_menus|menu_coop_players|CoopWorld: игроки в этом мире:^{s10}^^Войска можно передать игроку поблизости (до {reg2} км); вступить в отряд можно откуда угодно: потом вы едете к его командиру.
+game_menus|mno_coop_pl_join_0|Попросить {s1} принять вас в отряд.
+game_menus|mno_coop_pl_join_1|Попросить {s1} принять вас в отряд.
+game_menus|mno_coop_pl_join_2|Попросить {s1} принять вас в отряд.
+game_menus|mno_coop_pl_join_3|Попросить {s1} принять вас в отряд.
+game_menus|mno_coop_pl_give_0|Передать войска игроку {s1}.
+game_menus|mno_coop_pl_give_1|Передать войска игроку {s1}.
+game_menus|mno_coop_pl_give_2|Передать войска игроку {s1}.
+game_menus|mno_coop_pl_give_3|Передать войска игроку {s1}.
+game_menus|mno_coop_pl_write_hero|Записать моего героя у хоста сейчас.
+game_menus|mno_coop_pl_back|Назад.
+quick_strings|qstr_CoopWorld:_hero_name|CoopWorld: имя героя - {s0}.
+quick_strings|qstr_CoopWorld:_the_host_s|CoopWorld: хост сохранил игру. Ваша копия мира обновлена: в следующий раз загрузите её, чтобы начать оттуда (ваш герой вернётся от хоста).
+quick_strings|qstr_{s10}^{s1}:_{reg1}_k|{s10}^{s1}: в {reg1} км
+quick_strings|qstr_{s10}___you_ride_in_|{s10} - вы едете в этом отряде
+quick_strings|qstr_^Nobody_else_is_in_t|^Кроме вас, в мире сейчас никого нет.
+quick_strings|qstr_CoopWorld:_writing_y|CoopWorld: через несколько секунд ваш герой будет записан у хоста.

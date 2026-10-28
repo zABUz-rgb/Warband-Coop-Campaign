@@ -82,6 +82,8 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|12|n|(center,faction,lord,besieger+1)*n   whom centers belong to now, who besieges them
           7777|13|bid|center                   the host stormed this center: the host's game takes it as Native does
           7777|14|offset|total|n|values...    the hero kept for this player (total 0: none, a new hero)
+          7777|22|name                         the hero's name: the one its player gave the launcher
+          7777|23                              the host saved the game; join.bat put the file in this player's saves
           7777|15|id|slot|n|(troop,count)*n    the player in slot offers these troops
           7777|16|id|accepted|n|(troop,count)*n   how this player's offer went (declined: they come back)
           7777|17|slot                         the player in slot asks to join this player's party
@@ -124,6 +126,7 @@ COORD_OFFSET = 100000
 REMOVED = 9999
 MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
 CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
+RENAME_EVERY = 40      # requests between asking a game to rename its hero
 PROFILE_PER_REPLY = 120 # 5 + 120 numbers
 STALE_S = 15.0          # a party not reported for this long is gone
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
@@ -139,6 +142,7 @@ CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350
 FETCHED_MARK = "coopworld_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
 PROTOCOL = 1
+SAVE_POLL_S = 2.0         # how often the hub looks for a new save of the host
 RECONNECT_GRACE_S = 30.0  # a relay that lost the hub keeps its player (slot, party, battle) this long
 RELAY_MISSES = 2          # replies in a row the hub did not give in time: the link is dead, reconnect
 MP_MARKER = 7778
@@ -194,6 +198,8 @@ class Player:
         self.stacks_last = None
         self.name = None
         self.name_pending = False
+        self.rename_wait = 0    # requests until the hero's name is asked for again
+        self.saves_told = None  # the host's saves this player's game was told of
         self.others_cursor = 0
         self.status_sent = None  # (paused, slot, why) this player was last told
         self.status_age = 0
@@ -253,6 +259,7 @@ class World:
         self.mp_players = {}    # player number on the battle server -> name
         self.centers = {}       # center -> (faction, lord, besieger + 1), as the world server reports them
         self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
+        self.saves = 0          # the host's saves sent to the players since the bridge started
         self.profiles_path = Path(profiles_path) if profiles_path else None
         self.profiles = {}      # player key (multiplayer name, or hero name) -> the hero's numbers
         self.offers = {}        # id -> (giver cid, receiver cid, stacks): troops on their way
@@ -361,6 +368,11 @@ class World:
             if offer is not None and offer[1] == p.cid:
                 del self.offers[oid]
                 self._offer_answer(oid, offer[0], offer[2], 1 if yes else 0)
+
+    def host_saved(self):
+        """The host saved the game (and the relays got the file): each player's game is told."""
+        with self.lock:
+            self.saves += 1
 
     def set_mp_name(self, cid, name):
         name = " ".join((name or "").split())[:40]
@@ -548,6 +560,19 @@ class World:
             if p.mp_out:
                 nums = p.mp_out.pop(0)
                 return nums, wanted if nums[0] == 7 else None
+            # the hero bears the name its player gave the launcher (join.bat, host.bat): asked for
+            # until the game reports it
+            given = self.mp_names.get(cid)
+            if p.rename_wait > 0:
+                p.rename_wait -= 1
+            elif given and " ".join((p.name or "").split()) != given:
+                p.rename_wait = RENAME_EVERY
+                return [22], given
+            if p.saves_told is None or p.on_server:
+                p.saves_told = self.saves
+            elif p.saves_told != self.saves:
+                p.saves_told = self.saves
+                return [23], None
             # whom centers belong to, as it changes (not for the host: its game is the world)
             if not p.on_server and p.requests % 5 == 3:
                 news = [(c, *v) for c, v in sorted(self.centers.items()) if p.centers_sent.get(c) != v]
@@ -627,6 +652,8 @@ class World:
             if b is not None:
                 if p.cid not in b.sides:
                     p.mp_out.append([7, 0, 2, 0])  # another battle is on
+                else:  # the answer to this player's start got lost: its battle, again
+                    p.mp_out.append([7, b.bid, 1 if b.state == "running" else 0, b.sides[p.cid]])
                 return
             if not self._mp_online(now):
                 p.mp_out.append([7, 0, 3, 0])
@@ -685,6 +712,9 @@ class World:
             b.terrain = mp.get("terrain", 0)
             self.battle = b
             p.mp_out.append([7, b.bid, 0, 0])
+        elif b is not None and bid == 0 and op == 2 and p.cid in b.sides:
+            # waiting without the battle's number (the answer to the start got lost): tell it
+            p.mp_out.append([7, b.bid, 1 if b.state == "running" else 0, b.sides[p.cid]])
         elif b is None or b.bid != bid:
             if op in (2, 3):
                 p.mp_out.append([7, bid, 2, 0])  # that battle is gone
@@ -1038,7 +1068,7 @@ def parse_mp_players(text):
     for chunk in text.split(";"):
         no, sep, name = chunk.partition("~")
         if sep and no.strip().isdigit() and name.strip():
-            players[int(no)] = name.strip()
+            players[int(no)] = game_text_in(name).strip()
     return players
 
 
@@ -1069,10 +1099,37 @@ def query_int(q, key, default):
         return default
 
 
+def game_text_in(text):
+    """A text the game sent (a name) as the real text. The game's UTF-8 reaches the bridge read as
+    the Windows code page and encoded once more ('Игрок' arrives as 'Р˜РіСЂРѕРє' in UTF-8); the
+    HTTP layer hands it over as Latin-1 characters, one per byte."""
+    try:
+        once = text.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
+    raw = bytearray()
+    for ch in once:
+        try:
+            raw += ch.encode("cp1251")
+        except UnicodeEncodeError:
+            if ord(ch) > 0xFF:
+                return once  # not the double encoding: the game sent plain UTF-8
+            raw.append(ord(ch))  # a byte cp1251 has no letter for passes as itself
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return once
+
+
+def game_text_out(text):
+    """A real text for the game: its UTF-8 bytes, as Latin-1 characters for the HTTP layer."""
+    return text.encode("utf-8").decode("latin-1")
+
+
 def reply_text(numbers, string=None):
     text = "|".join(str(int(v)) for v in numbers)
     if string and not string.lstrip("-").isdigit():  # a number would land in a register, not s0
-        text += "|" + string.replace("|", " ")
+        text += "|" + game_text_out(string.replace("|", " "))
     return text
 
 
@@ -1100,7 +1157,7 @@ def handle_request(world, role, target, now, cid="local"):
         me = None
         if "me" in q:  # present but empty: the player's party has only heroes
             me = parse_stacks(parse_ints(q["me"].lstrip(","))) if q["me"].lstrip(",") else []
-        name = q.get("name", "").replace("|", " ").strip()[:40] or None
+        name = game_text_in(q.get("name", "")).replace("|", " ").strip()[:40] or None
         mp = None
         if "mp" in q:
             troops = q.get("mpt", "").lstrip(",")
@@ -1193,6 +1250,13 @@ def serve_http(addr, answer, log, name):
 
 # ---- the network between the hub and the relays: one JSON message per line
 
+def carries_news(body):
+    """Whether a reply tells the game something it is not told again anyway: everything but the
+    positions, other players' parties and the pause status, which come round all the time."""
+    kind = body.split("|")[1] if body.count("|") >= 1 and body.startswith(str(MARKER)) else ""
+    return kind.isdigit() and int(kind) not in (0, 2, 4, 5)
+
+
 def keep_alive(sock):
     """Let the system notice a link that died without a word (a VPN dropping the route)."""
     try:
@@ -1222,6 +1286,27 @@ def read_msgs(sock):
                 yield json.loads(line)
 
 
+def store_save(save_dir, rep, slot_name=None):
+    """Write a save of the host into save_dir. Without slot_name: the file written last time
+    (remembered in FETCHED_MARK), else the host's own name when free, else the lowest free sgNN:
+    the game lists only the low slots, a high one such as sg90 never showed up. A file it replaces
+    is kept as .bak."""
+    folder = Path(save_dir)
+    folder.mkdir(parents=True, exist_ok=True)  # a player who never saved in CoopWorld has no folder
+    mark = folder / FETCHED_MARK
+    if slot_name is None and mark.exists() and (folder / mark.read_text().strip()).exists():
+        slot_name = mark.read_text().strip()
+    if slot_name is None:
+        free = [n for n in [rep["name"]] + [f"sg{i:02d}.sav" for i in range(100)] if not (folder / n).exists()]
+        slot_name = free[0]
+    target = folder / slot_name
+    mark.write_text(slot_name)
+    if target.exists():
+        target.replace(target.with_suffix(".sav.bak"))
+    target.write_bytes(base64.b64decode(rep["data"]))
+    return target
+
+
 def newest_save(save_dir):
     saves = sorted(Path(save_dir).glob("sg*.sav"), key=lambda p: p.stat().st_mtime) if save_dir else []
     return saves[-1] if saves else None
@@ -1235,6 +1320,41 @@ def serve_relays(addr, world, key, save_dir, log):
     log(f"net: listening for players on {host}:{port}")
     counter = [0]
     owners = {}  # cid -> the connection serving it now (a reconnect takes the player over)
+    links = {}   # cid -> (connection, its send lock): where a new save of the host goes
+
+    def save_message(path):
+        return {"t": "save", "name": path.name, "data": base64.b64encode(path.read_bytes()).decode()}
+
+    def push_saves():
+        """Every save the host makes goes to all players at once: the next session starts from it."""
+        def state():
+            path = newest_save(save_dir)
+            return (path, path.stat().st_mtime, path.stat().st_size) if path else None
+        known = state()
+        while True:
+            time.sleep(SAVE_POLL_S)
+            try:
+                now_state = state()
+                if now_state is None or now_state == known:
+                    continue
+                time.sleep(SAVE_POLL_S)  # the game may still be writing it
+                if state() != now_state:
+                    continue
+                known = now_state
+                msg = save_message(now_state[0])
+            except OSError:
+                continue
+            world.host_saved()
+            for cid, (conn, lock) in list(links.items()):
+                try:
+                    send_msg(conn, lock, {"t": "save_coming", "size": len(msg["data"])})
+                    send_msg(conn, lock, dict(msg, push=True))
+                    log(f"net: the host saved: {msg['name']} sent to {cid}")
+                except OSError as e:
+                    log(f"net: could not send the save to {cid}: {e}")
+
+    if save_dir:
+        threading.Thread(target=push_saves, daemon=True).start()
 
     def drop_later(cid, conn):
         time.sleep(RECONNECT_GRACE_S)
@@ -1261,6 +1381,7 @@ def serve_relays(addr, world, key, save_dir, log):
                 cid = f"net-{session}@{peer[0]}"
             again = cid in owners
             owners[cid] = conn
+            links[cid] = (conn, lock)
             send_msg(conn, lock, {"t": "welcome", "cid": cid})
             world.set_mp_name(cid, hello.get("mp_name"))
             log(f"net: player {cid} {'connected again' if again else 'connected'}"
@@ -1274,13 +1395,14 @@ def serve_relays(addr, world, key, save_dir, log):
                     if path is None:
                         send_msg(conn, lock, {"t": "save", "error": f"no save in {save_dir}"})
                     else:
-                        data = base64.b64encode(path.read_bytes()).decode()
-                        send_msg(conn, lock, {"t": "save", "name": path.name, "data": data})
+                        send_msg(conn, lock, save_message(path))
                         log(f"net: sent save {path.name} to {cid}")
         except (OSError, ValueError) as e:
             log(f"net: {cid} error {e}")
         finally:
             conn.close()
+            if links.get(cid, (None,))[0] is conn:
+                links.pop(cid, None)
             if owners.get(cid) is conn:
                 log(f"net: lost {cid}; its player waits {RECONNECT_GRACE_S:.0f} s for it to come back")
                 threading.Thread(target=drop_later, args=(cid, conn), daemon=True).start()
@@ -1307,6 +1429,9 @@ class Relay:
         self.connected = threading.Event()
         self.session = secrets.token_hex(6)  # the same player for the hub over reconnects
         self.misses = 0
+        self.save_dir = None    # where the host's saves go as the host makes them (join: --save-dir)
+        self.quiet_until = 0.0  # a save on its way: replies behind it come late, the link is fine
+        self.late = []          # replies with news that came after their request gave up: next ones
 
     def connect(self):
         sock = socket.create_connection(self.hub, timeout=10)
@@ -1328,11 +1453,19 @@ class Relay:
     def _reader(self, msgs, sock):
         try:
             for msg in msgs:
+                if msg.get("t") == "save_coming":
+                    self.quiet_until = time.time() + 15 + msg.get("size", 0) / 100_000
+                    continue
+                if msg.get("t") == "save" and msg.get("push"):
+                    self._take_pushed_save(msg)
+                    continue
                 waiter = self.waiting.pop(msg.get("id"), None) if msg.get("t") == "rep" else \
                     self.waiting.pop("save", None) if msg.get("t") == "save" else None
                 if waiter:
                     waiter[1] = msg
                     waiter[0].set()
+                elif msg.get("t") == "rep" and carries_news(msg.get("body", "")):
+                    self.late.append(msg["body"])
         except (OSError, ValueError):
             pass
         if self.sock is sock:  # not a link already replaced by a new one
@@ -1360,8 +1493,13 @@ class Relay:
         rep = self.call({"t": "req", "id": rid, "target": target}, rid)
         if rep:
             self.misses = 0
+            if self.late:  # news that came late goes first; this reply waits its turn if it has news too
+                if carries_news(rep["body"]):
+                    self.late.append(rep["body"])
+                return self.late.pop(0)
             return rep["body"]
-        self.misses += 1
+        if time.time() >= self.quiet_until:
+            self.misses += 1
         if self.misses == RELAY_MISSES and self.connected.is_set():
             # the hub went quiet without closing the link: drop it, keep_connected makes a new one
             self.log("relay: the host stopped answering; reconnecting")
@@ -1373,27 +1511,21 @@ class Relay:
                 pass
         return reply_text([0, 0])
 
+    def _take_pushed_save(self, msg):
+        if not self.save_dir:
+            return
+        try:
+            path = store_save(self.save_dir, msg)
+            self.log(f"relay: the host saved the game - {path} now holds it (load it to start from there)")
+        except (OSError, ValueError) as e:
+            self.log(f"relay: could not keep the host's new save: {e}")
+
     def fetch_save(self, save_dir, slot_name=None):
-        """Copy the host's newest save into save_dir. Without slot_name: the file fetched last time
-        (remembered in FETCHED_MARK), else the host's own name when free, else the lowest free sgNN:
-        the game lists only the low slots, a high one such as sg90 never showed up."""
+        """Copy the host's newest save into save_dir (see store_save)."""
         rep = self.call({"t": "save"}, "save")
         if not rep or rep.get("error"):
             raise RuntimeError((rep or {}).get("error", "no answer"))
-        folder = Path(save_dir)
-        folder.mkdir(parents=True, exist_ok=True)  # a player who never saved in CoopWorld has no folder
-        mark = folder / FETCHED_MARK
-        if slot_name is None and mark.exists() and (folder / mark.read_text().strip()).exists():
-            slot_name = mark.read_text().strip()
-        if slot_name is None:
-            free = [n for n in [rep["name"]] + [f"sg{i:02d}.sav" for i in range(100)] if not (folder / n).exists()]
-            slot_name = free[0]
-        target = folder / slot_name
-        mark.write_text(slot_name)
-        if target.exists():
-            target.replace(target.with_suffix(".sav.bak"))
-        target.write_bytes(base64.b64decode(rep["data"]))
-        return target, rep["name"]
+        return store_save(save_dir, rep, slot_name), rep["name"]
 
     def keep_connected(self):
         while True:
@@ -1513,6 +1645,7 @@ def run_join(args, log):
         relay.connect()
     except (OSError, ConnectionError) as e:
         log(f"relay: cannot reach the host: {e}")
+    relay.save_dir = args.save_dir if args.fetch_save else None  # each new save of the host lands here too
     threading.Thread(target=relay.keep_connected, daemon=True).start()  # retries until the host answers
     if args.fetch_save:
         if not relay.connected.is_set():

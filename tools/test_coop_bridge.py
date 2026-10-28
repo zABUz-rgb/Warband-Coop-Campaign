@@ -429,7 +429,7 @@ def test_profiles():
     path = Path(tempfile.mkdtemp()) / "profiles.json"
     w = cb.World(path)
     w.set_mp_name("a", "Ivan")
-    first = req(w, "a", now=0.0, hello=True, name="Hero")[0]
+    first = req(w, "a", now=0.0, hello=True, name="Ivan")[0]
     nums = req(w, "a", now=0.0)[0]
     check(first[0] == 5 and nums == [14, 0, 0, 0], f"a new player hears the world, then: no hero kept yet: {nums}")
     hero = list(range(1, 301))
@@ -439,7 +439,7 @@ def test_profiles():
     w2 = cb.World(path)
     check(w2.profiles.get("ivan") == hero, "and survives the bridge (profiles.json)")
     w2.set_mp_name("b", "IVAN")
-    req(w2, "b", now=0.0, hello=True, name="Hero")
+    req(w2, "b", now=0.0, hello=True, name="IVAN")
     replies = [req(w2, "b", now=0.1)[0] for _ in range(3)]
     check(replies[0] == [14, 0, 300, 120] + hero[:120] and replies[2] == [14, 240, 300, 60] + hero[240:],
           "joining again, the player's game gets its hero back")
@@ -450,6 +450,64 @@ def test_profiles():
     check(nums == [14, 0, 300, 120] + hero[:120], f"the answer got lost: asked again, the hero comes again: {nums[:4]}")
     req(w2, "h", now=0.0, hello=True, name="Host", on_server=True)
     check(not w2.players["h"].profile_out, "the host's hero lives in the world itself")
+
+
+def test_names_and_saves():
+    # the game's UTF-8 arrives read as cp1251 and encoded again; the bridge gets the real text back
+    raw = "Игрок".encode("utf-8")
+    sent = "".join(bytes([b]).decode("cp1251") if b != 0x98 else "" for b in raw).encode("utf-8")
+    check(cb.game_text_in(sent.decode("latin-1")) == "Игрок", "a Russian name from the game is read right")
+    check(cb.game_text_in("Ivan Petrov") == "Ivan Petrov", "a Latin name stays as it is")
+    check(cb.reply_text([1], "Шамфир").split("|")[1].encode("latin-1").decode("utf-8") == "Шамфир",
+          "a name goes to the game as UTF-8")
+    w = cb.World()
+    w.set_mp_name("a", "Шамфир")
+    replies = [req(w, "a", now=0.0, hello=True, name="Игрок")]
+    replies += [req(w, "a", now=0.1) for _ in range(3)]
+    check(([22], "Шамфир") in replies, f"the hero gets the name its player gave join.bat: {replies}")
+    replies = [req(w, "a", now=0.2, name="Шамфир")[0] for _ in range(cb.RENAME_EVERY + 5)]
+    check([22] not in replies, "once the game reports that name, no more renaming")
+    w.host_saved()
+    replies = [req(w, "a", now=0.3)[0] for _ in range(3)]
+    check(replies.count([23]) == 1, f"the host saved: the player's game is told once: {replies}")
+    req(w, "h", now=0.3, hello=True, name="Host", on_server=True)
+    w.host_saved()
+    check([23] not in [req(w, "h", now=0.4, on_server=True)[0] for _ in range(3)], "the host is not told of its own save")
+
+    # each save the host makes reaches the relays
+    host_saves = Path(tempfile.mkdtemp())
+    (host_saves / "sg00.sav").write_bytes(b"day 1")
+    cb.SAVE_POLL_S = 0.1
+    log = lambda m: None
+    cb.serve_relays(("127.0.0.7", 18093), w, "secret", str(host_saves), log)
+    friend = Path(tempfile.mkdtemp())
+    relay = cb.Relay(("127.0.0.7", 18093), "secret", log)
+    relay.connect()
+    relay.save_dir = str(friend)
+    path, _ = relay.fetch_save(str(friend))
+    time.sleep(0.3)
+    (host_saves / "sg00.sav").write_bytes(b"day 2, saved again")
+    for _ in range(40):
+        time.sleep(0.1)
+        if path.read_bytes() == b"day 2, saved again":
+            break
+    check(path.read_bytes() == b"day 2, saved again", "a new save of the host replaces the friend's copy")
+
+
+def test_lost_answers():
+    w = cb.World()
+    w.mp_last = 0.0
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    nums, _ = req(w, "a", now=0.1, mp=mp(1, sid=700, troops=[(5, 9)]))
+    bid = nums[1]
+    check(nums[0] == 7 and bid > 0, f"a battle begins: {nums}")
+    # that answer got lost on the way: the waiting window asks again without a number
+    nums, _ = req(w, "a", now=0.2, mp=mp(1, sid=700, troops=[(5, 9)]))
+    check(nums[:2] == [7, bid] and nums[2] < 2, f"a start sent again gets its own battle back, not a cancel: {nums}")
+    nums, _ = req(w, "a", now=0.3, mp=mp(2, bid=0))
+    check(nums[:2] == [7, bid] and nums[2] < 2, f"waiting without the number: told the battle's number: {nums}")
+    check(cb.carries_news("7777|7|1|0|0") and cb.carries_news("7777|14|0|0|0"), "battle and hero replies carry news")
+    check(not cb.carries_news("7777|2|0") and not cb.carries_news("0|0"), "positions and empty replies do not")
 
 
 def test_joining_and_giving():
@@ -637,4 +695,6 @@ if __name__ == "__main__":
     test_joint_battle_scaled_and_lost()
     test_joint_battle_decline_cancel_pvp()
     test_hub_and_relay()
+    test_names_and_saves()
+    test_lost_answers()
     print("ALL OK")
