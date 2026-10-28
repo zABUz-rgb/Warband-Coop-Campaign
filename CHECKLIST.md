@@ -34,4 +34,9 @@ the client's hero (parties seemed to come out of the client); the party met (unt
 result went out) and the captor in captivity are never removed under the game, other mirrors the
 server dropped are (the sweep no longer keeps the last party met for good). The bridge logs a
 captor that is gone. Ctrl+Space on a client in captivity hung the game once (19:58) - cause unknown.
+Open (build 139875334): the friend's game hung three times near midnight of its game time (hours 48,
+72, ~96), each time just after a burst of new parties from the host. A mirror is no longer attached
+in a loop of parties (an army formed from older news) or to a non-center static party (the host's
+hero, a puppet). The bridge logs a quiet player's last request (game hour) and replies; the report
+shows them, and silences at the end of the log however short.
 A weak PC with both Warband windows open may run out of memory.

@@ -57,6 +57,7 @@ CONNECTED = re.compile(r"^net: player (\S+) (connected again|connected), multipl
 LEFT = re.compile(r"^net: player (\S+) left")
 NET_LOST = re.compile(r"^net: lost (\S+);")
 NET_ERROR = re.compile(r"^net: (\S+) error (.*)$")
+QUIET = re.compile(r"^player (\d+):(.*?) quiet since (\d\d:\d\d:\d\d): last request (.*?); last replies (.*)$")
 CAPTOR_GONE = re.compile(r"^party (\d+) is gone, the captor of (.*)$")
 MP_FOUND = re.compile(r"^battle server: player (\d+) \((.*?)\) (NOT found|recognised as)")
 
@@ -346,7 +347,8 @@ def analyze(events, trace, silence=30):
         ep[5] = "end"
 
     for slot, name, begin, last, longest, ended, busy in episodes:
-        if longest < silence:
+        # a game that never came back is reported however short: the session may have been closed on it
+        if longest < (min(silence, 10) if ended != "back" else silence):
             continue
         cid = s.cid_of(slot, name, begin)
         req = s.last_request(cid, begin + 2) if cid else None
@@ -365,8 +367,18 @@ def analyze(events, trace, silence=30):
         if lost is not None:
             how = f"связь потеряна в {stamp(lost)}"
         text = f"игрок {name or s.who(cid)} молчал {span(longest)} ({how}){seen}"
+        told = next((m for t, m in ((t, QUIET.match(x)) for t, x in events) if m and int(m.group(1)) == slot
+                     and begin - 5 <= t <= begin + 15), None)
+        if told:
+            hour = re.search(r"h=(\d+)", told.group(4))
+            when = ""
+            if hour:
+                h = int(hour.group(1))
+                when = f" (игровой день {h // 24 + 1}, {h % 24:02d}:00)"
+            text += f". Последний запрос: {told.group(4)}{when}; последние ответы: {told.group(5)}"
         near = [f"{stamp(t)} {text_}" for t, text_ in events
-                if abs(t - begin) <= STATS_EVERY_S and not STATS.match(text_) and not text_.startswith("world ")]
+                if abs(t - begin) <= STATS_EVERY_S and not STATS.match(text_) and not text_.startswith("world ")
+                and not QUIET.match(text_)]
         if near:
             text += ". Рядом по времени: " + "; ".join(near)
         # a game that never came back after a battle is what this report is for; one that went

@@ -166,6 +166,16 @@ def test_captor_gone():
     check(any("отряд 787, взявший в плен 0:O" in line for line in marked(text, "? ")), "a captor gone from the world")
 
 
+def test_quiet_at_the_end():
+    lines = [stats("12:01:00"), "12:01:07 player 0:O quiet since 12:01:01: last request h=48 free=1 busy=0 x=1 y=2; "
+             "last replies 2:500/3@120", stats("12:01:05", friend=" silent 4s"), stats("12:01:10", friend=" silent 9s"),
+             stats("12:01:15", friend=" silent 14s")]
+    text = report(BRIDGE_START + "\n".join(lines) + "\n", "")
+    quiet = [line for line in marked(text, "? ") if "молчал 14 с" in line]
+    check(quiet and "игровой день 3, 00:00" in quiet[0] and "2:500/3@120" in quiet[0],
+          "a short silence at the end of the log, with the game hour and the last replies")
+
+
 def test_parties():
     bridge = BRIDGE_START + stats("12:00:15", parties=0) + "\n" + stats("12:00:20", parties=300) + "\n" \
         + stats("12:00:25", parties=250) + "\n"
@@ -184,4 +194,5 @@ if __name__ == "__main__":
     test_party_flow()
     test_short_holds()
     test_captor_gone()
+    test_quiet_at_the_end()
     print("ALL OK")

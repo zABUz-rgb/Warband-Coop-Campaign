@@ -585,6 +585,17 @@ def test_copy_of_the_hosts_save():
     check(nums != [24], "the host's own game is the host")
 
 
+def test_quiet_note():
+    w = cb.World()
+    reply = cb.handle_request(w, "cli", "/cli?seq=1&h=47&free=1&x=10&y=20&busy=0&fac=0&hello=1&me=&name=Olga", 100.0, "net-a")
+    p = w.players["net-a"]
+    p.recent.append((101.0, "/cli?seq=2&h=48&free=1&x=10&y=20&busy=0&fac=0",
+                     f"7777|2|2|500|3|1|1|1|1|0|501|{cb.REMOVED}|0|0|0|0|0"))
+    note = cb.quiet_note(p, 110.0)
+    check(note is not None and "h=48 free=1 busy=0" in note and "2:500/3,501/gone" in note and reply,
+          f"a quiet player's last request and replies go to the log: {note}")
+
+
 def test_blank_values():
     w = cb.World()
     cb.handle_request(w, "cli", "/cli?seq=1&x=0&y=0&busy=0&me=,49,2&name=Ivan", 0.0)
@@ -785,5 +796,6 @@ if __name__ == "__main__":
     test_notices_and_asking_again()
     test_logs()
     test_blank_values()
+    test_quiet_note()
     test_copy_of_the_hosts_save()
     print("ALL OK")

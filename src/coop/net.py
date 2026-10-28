@@ -717,6 +717,28 @@ def net_scripts(first_dynamic):
            (val_sub, ":att", 1),
            (lt, ":att", first_dynamic), #that party has no mirror here (yet)
            (assign, ":att", -1),
+         (else_try),
+           # below the dynamic ids only a center is the same party here; the server's own hero
+           # party (the host) or a puppet would be this game's hero or a player's marker
+           (is_between, ":att", 0, first_dynamic),
+           (neg|is_between, ":att", centers_begin, centers_end),
+           (assign, ":att", -1),
+         (try_end),
+         # an army formed from older news may hang the other way round here already: attaching
+         # would close a loop of parties, which the engine never gets out of
+         (try_begin),
+           (ge, ":att", 0),
+           (assign, ":up", ":att"),
+           (try_for_range, ":unused", 0, 16),
+             (ge, ":up", 0),
+             (try_begin),
+               (eq, ":up", ":cid"),
+               (assign, ":att", -1),
+               (assign, ":up", -1),
+             (else_try),
+               (party_get_attached_to, ":up", ":up"),
+             (try_end),
+           (try_end),
          (try_end),
          (party_get_attached_to, ":cur_att", ":cid"),
          (try_begin),

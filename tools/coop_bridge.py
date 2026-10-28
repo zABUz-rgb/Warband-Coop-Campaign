@@ -126,6 +126,9 @@ from urllib.parse import parse_qs, urlparse
 MARKER = 7777
 COORD_OFFSET = 100000
 REMOVED = 9999
+RECENT_KEPT = 12        # a player's last requests kept, to log when it goes quiet
+RECENT_SHOWN = 6
+QUIET_NOTE_S = 5.0      # a player game silent this long: its last requests go to the log
 MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
 CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
 RENAME_EVERY = 40      # requests between asking a game to rename its hero
@@ -194,6 +197,8 @@ class Player:
         self.pos = None
         self.busy = False
         self.last = None        # real time of its last request
+        self.recent = []        # its last requests and their replies: what it got before going quiet
+        self.quiet_told = False  # its silence is in the log already
         self.requests = 0
         self.cursor = 0
         self.troops_sent = {}   # sid -> troops version this player has
@@ -1267,7 +1272,38 @@ def make_trace(path, limit=20_000_000):
 def handle_request(world, role, target, now, cid="local"):
     reply = _handle_request(world, role, target, now, cid)
     world.trace(role, cid, target, reply)
+    if role == "cli":
+        p = world.players.get(cid)
+        if p is not None:
+            p.recent = (p.recent + [(now, target, reply)])[-RECENT_KEPT:]
     return reply
+
+
+def quiet_note(p, now):
+    """A player game that just went quiet: its last request (game hour, map state) and the replies
+    before, the parties among them by id, template and the party they are inside: a hang shows what
+    the game was handling."""
+    if not p.recent:
+        return None
+    when, target, _ = p.recent[-1]
+    query = {k: v[0] for k, v in parse_qs(urlparse(target).query, keep_blank_values=True).items()}
+    state = " ".join(f"{k}={query[k]}" for k in ("h", "free", "busy", "mp", "x", "y") if k in query)
+    replies = []
+    for _, _, reply in p.recent[-RECENT_SHOWN:]:
+        parts = reply.split("|")
+        if len(parts) > 2 and parts[1] == "2":
+            try:
+                nums = [int(v) for v in parts[3:]]
+            except ValueError:
+                continue
+            entries = [nums[i:i + 7] for i in range(0, len(nums) - 6, 7)]
+            replies.append("2:" + ",".join(f"{e[0]}/{'gone' if e[1] == REMOVED else e[1]}"
+                                           f"{'@' + str(e[6] - 1) if e[1] != REMOVED and e[6] else ''}"
+                                           for e in entries))
+        else:
+            replies.append("|".join(parts[1:6]))
+    return (f"player {p.slot}:{p.name or p.cid} quiet since {time.strftime('%H:%M:%S', time.localtime(when))}: "
+            f"last request {state}; last replies {'; '.join(replies)}")
 
 
 def _handle_request(world, role, target, now, cid="local"):
@@ -1798,6 +1834,13 @@ def run_host(args, log):
                         + ("in an encounter or battle" if cause[1] == 1 else
                            "silent - a menu, a screen, loading, or its game/link froze"))
                 last_cause = cause
+            for p in world.players.values():
+                quiet = p.last is not None and now - p.last > QUIET_NOTE_S
+                if quiet and not p.quiet_told:
+                    note = quiet_note(p, now)
+                    if note:
+                        log(note)
+                p.quiet_told = quiet
             players = ", ".join(f"{p.slot}:{p.name or p.cid}{' busy' if p.busy else ''}"
                                 f"{f' silent {now - p.last:.0f}s' if p.last is not None and now - p.last > 2 else ''}"
                                 f"{' mp:' + world.mp_names[p.cid] if p.cid in world.mp_names else ''}"
