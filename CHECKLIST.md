@@ -27,4 +27,7 @@ screen from the coop_loot menu's own code, then back to the map by itself (an op
 loot screen left the camp's and the battle menu's options dead). The spoils (kind 21) now come before
 the result (kind 8), so the joint battle menu offers them. A client drops a mirror the host has not
 mentioned for 900 requests (about 1.5 min) instead of 1500.
+Open (build 247370558, not confirmed yet): a client whose hero stands still no longer pauses the world
+"in an encounter or battle" for a second or two (its own rest was taken for a menu); the session
+report counts such short holds.
 A weak PC with both Warband windows open may run out of memory.

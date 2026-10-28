@@ -131,6 +131,7 @@ def net_scripts(first_dynamic):
      (try_end),
      (assign, "$coop_menu", 0),
      (assign, "$coop_menu_hours", -1),
+     (assign, "$coop_rest_frame", 0),
      (assign, "$coop_world_paused", 0),
      (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
        (disable_party, ":puppet"), #the others appear as their positions arrive

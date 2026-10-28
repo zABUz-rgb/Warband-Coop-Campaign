@@ -153,6 +153,14 @@ def test_party_flow():
           "parties the bridge forgot while they were alive")
 
 
+def test_short_holds():
+    holds = "".join(f"12:0{m}:00 world held by player 0 ({FRIEND}): in an encounter or battle\n"
+                    f"12:0{m}:05 world runs again\n" for m in range(1, 5))
+    text = report(BRIDGE_START + holds + stats("12:05:00") + "\n", "")
+    check(any("4 коротких пауз" in line for line in marked(text, "? ")),
+          "short holds 'in an encounter or battle' without a battle are counted")
+
+
 def test_parties():
     bridge = BRIDGE_START + stats("12:00:15", parties=0) + "\n" + stats("12:00:20", parties=300) + "\n" \
         + stats("12:00:25", parties=250) + "\n"
@@ -169,4 +177,5 @@ if __name__ == "__main__":
     test_builds_reconnect_sessions()
     test_parties()
     test_party_flow()
+    test_short_holds()
     print("ALL OK")

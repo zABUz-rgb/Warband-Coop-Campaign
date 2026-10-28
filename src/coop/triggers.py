@@ -293,12 +293,18 @@ def net_triggers(first_dynamic):
        (assign, "$coop_idle_frames", 0),
        (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 1), #rest while attackable
        (assign, "$coop_menu_hours", -2), #our own rest: time flows, it is not a menu
+       (assign, "$coop_rest_frame", 1),
      (try_end),
      # menu: off the map while time stands still (inventory, reports, a town's menus). The world
      # pauses on the server too. A rest (time flows) is not a menu; a rest this game did not start
      # (captivity, Freelancer) counts as a menu only until its first game hour has passed.
      (store_current_hours, ":hours_now"),
      (try_begin),
+       # the frame our rest began the map still counts as free: that must not end the rest's mark,
+       # or the next frame took the rest for a menu and paused the world until a game hour passed
+       (eq, "$coop_rest_frame", 1),
+       (assign, "$coop_rest_frame", 0),
+     (else_try),
        (map_free),
        (assign, "$coop_menu", 0),
        (assign, "$coop_menu_hours", -1),

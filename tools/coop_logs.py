@@ -261,6 +261,22 @@ def analyze(events, trace, silence=30):
         if "Traceback" in text or "Exception" in text:
             s.note(t, "!!", "ошибка в мосте: " + text.splitlines()[-1][:200])
 
+    # a hold "in an encounter or battle" over within seconds: a client resting on the spot used to
+    # count as one until a game hour passed
+    short, held = {}, None
+    for t, text in events:
+        m = HELD.match(text)
+        if m:
+            held = (t, m.group(2)) if m.group(3).startswith("in an encounter") else None
+        elif text == "world runs again" and held is not None:
+            if t - held[0] <= 10:
+                short.setdefault(held[1], []).append(held[0])
+            held = None
+    for cid, times in short.items():
+        if len(times) >= 3:
+            s.note(times[0], "? ", f"игрок {s.who(cid)}: {len(times)} коротких пауз мира «во встрече или бою» "
+                                   f"(до 10 с, без боя) - так выглядела остановка героя на месте")
+
     names_now = sorted(set(c for _, _, c in s.slot_cid) | set(s.names))
     out.append("Игроки:")
     for cid in names_now:
