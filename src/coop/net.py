@@ -30,7 +30,7 @@ def net_scripts(first_dynamic):
   ("coop_become_server",
    [
      (store_script_param, "$coop_srv_player", 1),
-     (assign, "$coop_hold_alive", 0), #only a held host's game is known as the host
+     (assign, "$coop_hold_alive", 0), #only the host's own game (its bridge answers it) is known as the host
      (assign, "$coop_role", coop_role_server),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_net_cursor", -1),
@@ -103,7 +103,7 @@ def net_scripts(first_dynamic):
   ("coop_become_client",
    [
      (assign, "$coop_role", coop_role_client),
-     (assign, "$coop_hold_alive", 0), #only a held host's game is known as the host
+     (assign, "$coop_hold_alive", 0), #only the host's own game (its bridge answers it) is known as the host
      (assign, "$coop_srv_player", 0),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_net_misses", 0),
@@ -156,7 +156,7 @@ def net_scripts(first_dynamic):
 
   ("coop_stop",
    [
-     (assign, "$coop_hold_alive", 0), #only a held host's game is known as the host
+     (assign, "$coop_hold_alive", 0), #only the host's own game (its bridge answers it) is known as the host
      (try_begin),
        (eq, "$coop_role", coop_role_server),
        (eq, "$coop_srv_paused", 1),
@@ -907,11 +907,11 @@ def net_reply_handler():
         (eq, ":kind", 1),
         (this_or_next|eq, "$coop_role", coop_role_server),
         (eq, "$coop_role", coop_role_held),
+        (assign, "$coop_hold_alive", coop_hold_alive), #the bridge answers: this is the host's own game
         # held: a player joined since the hold began, so the world may run again
         (party_get_slot, ":joins", "p_coop_buf", SRV_JOINS),
         (try_begin),
           (eq, "$coop_role", coop_role_held),
-          (assign, "$coop_hold_alive", coop_hold_alive), #the bridge answers: this is the host's own game
           (party_get_slot, ":players_in", "p_coop_buf", SRV_NUM_PLAYERS),
           (try_begin),
             (eq, "$coop_srv_joins_known", 0),

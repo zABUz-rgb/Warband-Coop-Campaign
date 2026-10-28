@@ -1713,7 +1713,6 @@ quick_strings_en|a CLIENT (your hero in the host's world)|КЛИЕНТ (ваш �
 quick_strings_en|the HOST (the world lives in this game, you play in it)|ХОСТ (мир живёт в этой игре, вы в ней играете)
 quick_strings_en|the WORLD SERVER only|только СЕРВЕР МИРА
 quick_strings_en|the HOST, the world HELD for a joining friend|ХОСТ, мир УДЕРЖИВАЕТСЯ для подключения друга
-quick_strings_en|the host's held save: choose CLIENT to join the host's world|сохранение хоста с удержанным миром: выберите КЛИЕНТ, чтобы войти в мир хоста
 quick_strings_en|off (an ordinary single player game)|кооператив выключен (обычная одиночная игра)
 quick_strings_en|CoopWorld: no battle server is running (Multiplayer - Host a game, game type Battle).|CoopWorld: сервер боя не запущен (Сетевая игра - Создать игру, режим «Битва»).
 quick_strings_en|CoopWorld: not started - the bridge's window says why.|CoopWorld: бой не начат - причина написана в окне моста (host.bat).
@@ -1778,3 +1777,4 @@ quick_strings_en|CoopWorld: the spoils of the joint battle are waiting for you (
 quick_strings_en|CoopWorld: a call to a joint battle - declined: you are a prisoner.|CoopWorld: приглашение в совместный бой отклонено: вы в плену.
 game_menus|mno_coop_to_map|CoopWorld: вернуться на карту (если лагерь не отпускает).
 game_menus|mno_coop_role_client_held|CoopWorld: сделать эту игру КЛИЕНТОМ.
+quick_strings_en|a copy of the host's save: choose CLIENT to join the host's world|копия сохранения хоста: выберите КЛИЕНТ, чтобы войти в мир хоста
