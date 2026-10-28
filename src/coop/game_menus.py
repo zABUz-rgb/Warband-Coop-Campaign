@@ -91,7 +91,7 @@ camp_coop_options = [
     (display_message, "@CoopWorld: the world runs again.", 0x66CCFF),
     (change_screen_return)]),
   ("coop_take_spoils", [(this_or_next|eq, "$coop_role", coop_role_client), (eq, "$coop_srv_player", 1),
-                        (eq, "$coop_loot_ready", 1)],
+                        (eq, "$coop_loot_ready", 1), (neq, "$g_player_is_captive", 1)],
    "CoopWorld: take your share of the spoils of the joint battle.",
    [(call_script, "script_coop_client_mp_loot_take")]),
   ("coop_read_news", [(eq, "$coop_role", coop_role_server), (eq, "$coop_srv_player", 1),
