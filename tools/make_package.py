@@ -305,6 +305,117 @@ More in README.txt.
 '''
 
 
+BATTLE_TEMPLATE = r"""# {title}
+# The battle server of joint battles as TaleWorlds' dedicated server (mb_warband_dedicated.exe,
+# downloaded by the host from taleworlds.com): the host joins it like every other player.
+param([string]$First)
+$ErrorActionPreference = "Stop"
+$here = $PSScriptRoot
+
+function Wait-Close {{
+  Write-Host ""
+  try {{ Read-Host "{press_enter}" | Out-Null }} catch {{}}
+}}
+
+try {{
+  $remember = Join-Path $here "dedicated_path.txt"
+  $dir = $First
+  if (-not $dir -and (Test-Path $remember)) {{ $dir = (Get-Content $remember -Raw).Trim() }}
+  if (-not $dir -or -not (Test-Path (Join-Path $dir "mb_warband_dedicated.exe"))) {{
+    $dir = (Read-Host "{ask_dir}").Trim().Trim('"')
+  }}
+  if (-not (Test-Path (Join-Path $dir "mb_warband_dedicated.exe"))) {{ throw "{no_exe}" }}
+  Set-Content -Path $remember -Value $dir -Encoding UTF8
+  $native = Join-Path $dir "Modules\Native"
+  $target = Join-Path $dir "Modules\CoopWorld"
+  if (-not (Test-Path $native)) {{ throw "{no_native}" }}
+  if (Get-Process mb_warband_dedicated -ErrorAction SilentlyContinue) {{ throw "{running}" }}
+  Write-Host "{copying}"
+  # the module as in this package, on the server's own Native (scenes, module.ini): fresh each time
+  if (Test-Path $target) {{ Remove-Item $target -Recurse -Force }}
+  Copy-Item $native $target -Recurse
+  $source = Join-Path $here "CoopWorld"
+  foreach ($file in Get-ChildItem $source -Recurse -File) {{
+    $dest = Join-Path $target $file.FullName.Substring($source.Length + 1)
+    New-Item -ItemType Directory -Force (Split-Path $dest -Parent) | Out-Null
+    Copy-Item $file.FullName $dest -Force
+  }}
+  $admin = -join ((48..57) + (97..122) | Get-Random -Count 10 | ForEach-Object {{ [char]$_ }})
+  $config = @(
+    "set_server_name CoopWorld",
+    "set_welcome_message CoopWorld",
+    "set_pass_admin $admin",
+    "set_add_to_game_servers_list 0",
+    "set_enable_valve_anti_cheat 0",
+    "set_mission multiplayer_bt",
+    "set_max_players 8 8",
+    "set_num_bots_voteable 0",
+    "set_auto_team_balance_limit 7",
+    "set_map random_multi_plain_medium",
+    "add_map random_multi_steppe_medium",
+    "set_factions fac_kingdom_1 fac_kingdom_2",
+    "set_randomize_factions 0",
+    "set_maps_voteable 0",
+    "set_factions_voteable 0",
+    "set_kick_voteable 0",
+    "set_ban_voteable 0",
+    "set_upload_limit 100000000",
+    "set_port 7240",
+    "set_server_log_folder Logs",
+    "set_server_ban_list_file Logs\ban_list.txt",
+    "start")
+  $configFile = Join-Path $dir "CoopWorld_battle.txt"
+  Set-Content -Path $configFile -Value $config -Encoding ASCII
+  Write-Host ""
+  Write-Host "{started}" -ForegroundColor Green
+  Write-Host "{join_hint}"
+  Write-Host "{admin_hint} $admin"
+  Push-Location $dir
+  try {{ & (Join-Path $dir "mb_warband_dedicated.exe") -r "CoopWorld_battle.txt" -m CoopWorld }} finally {{ Pop-Location }}
+  Write-Host ""
+  Write-Host "{stopped}" -ForegroundColor Yellow
+}} catch {{
+  Write-Host ""
+  Write-Host "{failed}" -ForegroundColor Red
+  Write-Host $_.Exception.Message -ForegroundColor Red
+}}
+Wait-Close
+"""
+
+BATTLE_TEXT = {
+    "ru": dict(
+        title="CoopWorld: сервер совместных боёв (выделенный сервер TaleWorlds)",
+        press_enter="Нажмите Enter, чтобы закрыть окно",
+        ask_dir="Папка выделенного сервера Warband (где mb_warband_dedicated.exe)",
+        no_exe="В этой папке нет mb_warband_dedicated.exe. Скачайте Mount&Blade Warband Dedicated Server 1.174 с taleworlds.com и распакуйте.",
+        no_native="В папке сервера нет Modules\\Native - распакуйте сервер целиком.",
+        running="Выделенный сервер уже запущен - закройте его окно и запустите снова.",
+        copying="Копирую модуль CoopWorld на сервер...",
+        started="Сервер боя запускается (порт 7240). Это окно не закрывайте, пока играете.",
+        join_hint="Все, и хост тоже: второе окно Warband (CoopWorld) - Мультиплеер - Избранное - адрес хоста:7240 (хосту - 127.0.0.1:7240).",
+        admin_hint="Пароль администратора на этот запуск:",
+        stopped="Сервер боя остановлен.",
+        failed="Не получилось запустить сервер боя:"),
+    "en": dict(
+        title="CoopWorld: the joint battles server (TaleWorlds' dedicated server)",
+        press_enter="Press Enter to close this window",
+        ask_dir="The Warband dedicated server folder (where mb_warband_dedicated.exe is)",
+        no_exe="No mb_warband_dedicated.exe in that folder. Download Mount&Blade Warband Dedicated Server 1.174 from taleworlds.com and unpack it.",
+        no_native="The server folder has no Modules\\Native - unpack the whole server.",
+        running="The dedicated server runs already - close its window and start again.",
+        copying="Copying the CoopWorld module to the server...",
+        started="The battle server starts (port 7240). Keep this window open while you play.",
+        join_hint="Everybody, the host too: a second Warband window (CoopWorld) - Multiplayer - Favorites - the host's address:7240 (the host: 127.0.0.1:7240).",
+        admin_hint="The admin password for this run:",
+        stopped="The battle server stopped.",
+        failed="Could not start the battle server:"),
+}
+
+
+def battle_launcher(lang):
+    return BATTLE_TEMPLATE.format(**BATTLE_TEXT[lang])
+
+
 def launcher_bat(kind):
     return f'@echo off\r\npowershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0{kind}.ps1" %*\r\n'
 
@@ -398,9 +509,18 @@ CoopWorld без Diplomacy с этой версией не работают.
   - Оба окна Warband запускайте в оконном режиме (лаунчер - Configure - Start windowed): полноэкранная
     игра при переключении сворачивается и замирает, мир встаёт у всех, а запросы не уходят.
   - Сервер боя создавайте в только что запущенном окне Warband, где не загружалась кампания.
-  1. Хост запускает второе окно Warband (модуль CoopWorld) - сервер боя, и сам в нём сражается:
-       Мультиплеер - Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0.
-     Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
+  1. Сервер боя. Лучше - выделенный сервер TaleWorlds (лёгкая консольная программа):
+     скачайте "Mount&Blade Warband Dedicated Server" 1.174 с taleworlds.com, распакуйте куда угодно
+     и дважды щёлкните battle_server.bat (первый раз он спросит папку сервера и запомнит её).
+     Он сам ставит туда модуль CoopWorld и запускает Битву на порту 7240. На этот сервер заходят
+     все, хост тоже: окно Warband (CoopWorld) - Мультиплеер - Избранное - 127.0.0.1:7240 (хосту)
+     или адрес_хоста:7240 (друзьям).
+     Можно и без него: хост запускает второе окно Warband (модуль CoopWorld) - Мультиплеер -
+     Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0, и сражается в нём.
+     Мост сам находит сервер боя; без него кнопка совместного боя скажет, что сервера нет.
+     Если друг при входе получает "неверный ключ" (так бывает через Radmin/Hamachi), а к чужим
+     серверам заходит - откройте на роутере порт 7240 (UDP и TCP) на компьютер хоста, и друг
+     заходит на внешний (интернет) адрес хоста:7240.
   2. Каждый друг заходит на этот сервер из второго окна Warband (модуль CoopWorld):
        Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
      host.bat и join.bat спрашивают ваше имя в мультиплеере (запоминают его в mp_name.txt): заходите
@@ -576,6 +696,7 @@ def main():
     (ROOT / "dist").mkdir(exist_ok=True)
     day = f"{datetime.date.today():%Y%m%d}"
     launchers = {lang: {"host.ps1": BOM + launcher("host", lang), "join.ps1": BOM + launcher("join", lang),
+                        "battle_server.ps1": BOM + battle_launcher(lang), "battle_server.bat": launcher_bat("battle_server"),
                         "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join")} for lang in ("en", "ru")}
     build(f"CoopWorld-{day}", {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
                                "README.txt": README, "START HERE.txt": START_HERE, **launchers["en"]})
