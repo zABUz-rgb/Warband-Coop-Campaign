@@ -170,7 +170,7 @@ mp_campaign_scripts = [
        (assign, "$coop_mp_status", 4),
        (assign, "$coop_mp_dirty", 1),
        (try_begin),
-         (eq, "$coop_mp_open", 1),
+         (is_presentation_active, "prsnt_coop_mp_wait"),
          (assign, "$coop_mp_state", 5),
        (else_try),
          (assign, "$coop_mp_state", 0),
@@ -690,7 +690,9 @@ mp_campaign_menus = [
    [
      (try_begin),
        (is_between, "$coop_mp_state", 1, 4),
-       (eq, "$coop_mp_open", 0),
+       # whether the window is up, not a saved flag: a window ended any other way than by its
+       # button (a load, a jump to another menu) left the flag set, and no window ever came again
+       (neg|is_presentation_active, "prsnt_coop_mp_wait"),
        (eq, "$coop_mp_hidden", 0), #closed by the player: the menu shows instead
        (start_presentation, "prsnt_coop_mp_wait"),
      (try_end),
