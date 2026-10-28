@@ -382,7 +382,8 @@ def net_triggers(first_dynamic):
        (try_begin),
          (eq, "$coop_hello", 1),
          (assign, "$coop_hello", 0),
-         (str_store_string, s13, "@{s13}&hello=1"),
+         (assign, reg19, coop_build_id),
+         (str_store_string, s13, "@{s13}&hello=1&ver={reg19}"),
          (assign, "$coop_own_troops_frames", coop_own_troops_frames), #the name goes with the hello: the bridge finds the player's hero by it
        (try_end),
        (str_clear, s14),

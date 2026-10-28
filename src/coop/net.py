@@ -93,7 +93,8 @@ def net_scripts(first_dynamic):
      (try_end),
      (call_script, "script_coop_player_kingdom"),
      (assign, reg8, reg0),
-     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy=0&srvp=1&fac={reg8}{s17}{s14}"),
+     (assign, reg9, coop_build_id),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy=0&srvp=1&fac={reg8}&ver={reg9}{s17}{s14}"),
     ]),
 
   # script_coop_become_client: the world simulation stops here; parties follow the server.

@@ -200,6 +200,7 @@ class Player:
         self.name_pending = False
         self.rename_wait = 0    # requests until the hero's name is asked for again
         self.saves_told = None  # the host's saves this player's game was told of
+        self.build = None       # the CoopWorld build its game runs (see coop/constants.py)
         self.others_cursor = 0
         self.status_sent = None  # (paused, slot, why) this player was last told
         self.status_age = 0
@@ -522,7 +523,8 @@ class World:
             pass
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
-                       on_server=False, faction=None, profile=None, together=None, profile_ask=False):
+                       on_server=False, faction=None, profile=None, together=None, profile_ask=False,
+                       build=None):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
@@ -532,6 +534,13 @@ class World:
                 return [0], None
             p = self._player(cid)
             p.on_server = on_server
+            if build is not None and build != p.build:
+                p.build = build
+                host = next((q.build for q in self.players.values() if q.on_server and q.build), None)
+                self.log(f"player {self._who(p)} runs CoopWorld build {build}"
+                         + ("" if on_server or host is None else
+                            " - the same as the host" if host == build else
+                            f" - NOT the host's ({host}): install the same package on both PCs"))
             if faction is not None:
                 p.faction = faction
             p.requests += 1
@@ -1269,7 +1278,8 @@ def _handle_request(world, role, target, now, cid="local"):
                                             on_server=q.get("srvp") == "1",
                                             faction=query_int(q, "fac", 0) if "fac" in q else None,
                                             profile=parse_profile(q.get("pf", "")),
-                                            profile_ask=q.get("pfq") == "1", together=together)
+                                            profile_ask=q.get("pfq") == "1", together=together,
+                                            build=query_int(q, "ver", 0) if "ver" in q else None)
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
