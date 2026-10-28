@@ -370,8 +370,8 @@ try {{
   Write-Host "{started}" -ForegroundColor Green
   Write-Host "{join_hint}"
   Write-Host "{admin_hint} $admin"
-  Push-Location $dir
-  try {{ & (Join-Path $dir "mb_warband_dedicated.exe") -r "CoopWorld_battle.txt" -m CoopWorld }} finally {{ Pop-Location }}
+  # the server opens a console window of its own: wait for it, else this one says "stopped" at once
+  Start-Process -FilePath (Join-Path $dir "mb_warband_dedicated.exe") -ArgumentList @("-r", "CoopWorld_battle.txt", "-m", "CoopWorld") -WorkingDirectory $dir -Wait
   Write-Host ""
   Write-Host "{stopped}" -ForegroundColor Yellow
 }} catch {{
