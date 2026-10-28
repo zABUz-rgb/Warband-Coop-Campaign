@@ -124,6 +124,7 @@ def net_scripts(first_dynamic):
        (store_add, ":mapped", ":party_no", 1),
        (party_set_slot, "p_coop_map", ":party_no", ":mapped"),
        (party_set_slot, ":party_no", slot_party_coop_sid, ":mapped"),
+       (party_set_slot, ":party_no", slot_party_coop_seen, "$coop_net_seq"),
        (party_set_ai_behavior, ":party_no", ai_bhvr_hold),
      (try_end),
      (assign, "$coop_menu", 0),
@@ -198,6 +199,7 @@ def net_scripts(first_dynamic):
          (party_remove_members, ":party_no", ":troop", ":size"),
        (try_end),
      (try_end),
+     (val_clamp, ":num_pairs", 0, coop_net_max_stacks + 1),
      (try_for_range, ":unused", 0, ":num_pairs"),
        (party_get_slot, ":troop", "p_coop_buf", ":slot"),
        (val_add, ":slot", 1),
@@ -668,6 +670,7 @@ def net_scripts(first_dynamic):
            (val_add, "$coop_net_spawned", 1),
          (try_end),
          (eq, ":have", 1),
+         (party_set_slot, ":cid", slot_party_coop_seen, "$coop_net_seq"),
          # inside a town or an army on the server: the same here (spawned parties have other ids)
          (try_begin),
            (ge, ":att", first_dynamic),

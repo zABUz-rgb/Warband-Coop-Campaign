@@ -230,6 +230,7 @@ profile_scripts = [
          (party_remove_members, "p_main_party", ":troop", ":size"),
        (try_end),
        ] + take(":n") + [
+       (val_clamp, ":n", 0, 101),
        (try_for_range, ":unused", 0, ":n"),
          ] + take(":troop") + take(":size") + take(":wounded") + [
          (party_add_members, "p_main_party", ":troop", ":size"),
@@ -243,6 +244,7 @@ profile_scripts = [
          (party_remove_prisoners, "p_main_party", ":troop", ":size"),
        (try_end),
        ] + take(":n") + [
+       (val_clamp, ":n", 0, 101),
        (try_for_range, ":unused", 0, ":n"),
          ] + take(":troop") + take(":size") + [
          (party_add_prisoners, "p_main_party", ":troop", ":size"),

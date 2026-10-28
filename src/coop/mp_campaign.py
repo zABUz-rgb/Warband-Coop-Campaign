@@ -56,8 +56,8 @@ mp_campaign_scripts = [
            (gt, ":enemy", 0),
            (party_is_active, ":enemy"),
            (store_faction_of_party, ":enemy_faction", ":enemy"),
-           (store_relation, ":relation", ":enemy_faction", "fac_player_supporters_faction"),
-           (ge, ":relation", 0),
+           (this_or_next|eq, ":enemy_faction", "fac_player_supporters_faction"),
+           (eq, ":enemy_faction", "$players_kingdom"), #only the player's own kingdom; neutrals may be fought
            (assign, ":refuse", 1),
            (str_store_party_name, s1, ":enemy"),
          (try_end),
@@ -495,6 +495,7 @@ mp_campaign_scripts = [
        (val_add, ":at", 1),
        (troop_get_slot, ":count", "trp_tutorial_student_1", ":at"),
        (neg|troop_is_hero, ":troop"), #a lord's or a hero's own gear is not spoils
+       (val_clamp, ":count", 0, 201),
        (try_for_range, ":unused", 0, ":count"),
          (troop_loot_troop, "trp_temp_troop", ":troop", ":probability"),
        (try_end),
