@@ -102,6 +102,15 @@ mp_campaign_scripts = [
        (try_begin),
          (ge, ":status", 2), #cancelled: nothing more comes
          (assign, "$coop_mp_state", 5),
+         (try_begin),
+           (eq, ":status", 3),
+           (display_message, "@CoopWorld: no battle server is running (Multiplayer - Host a game, game type Battle).", 0xFF6666),
+         (else_try),
+           (display_message, "@CoopWorld: not started - the bridge's window says why.", 0xFF6666),
+         (try_end),
+       (else_try),
+         (eq, ":status", 1),
+         (display_message, "@CoopWorld: fight now - switch to the multiplayer window, the battle is on.", 0x66FF66),
        (try_end),
      (try_end),
     ]),
@@ -547,6 +556,7 @@ mp_campaign_scripts = [
      # the start goes to the bridge right now: switching to the multiplayer window at once may stop
      # this game (a background window), and the battle must not wait for it
      (call_script, "script_coop_client_mp_send"),
+     (display_message, "@CoopWorld: request for a joint battle sent to the bridge.", 0x66CCFF),
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
 
@@ -581,6 +591,7 @@ mp_campaign_scripts = [
      # the start goes to the bridge right now: switching to the multiplayer window at once may stop
      # this game (a background window), and the battle must not wait for it
      (call_script, "script_coop_client_mp_send"),
+     (display_message, "@CoopWorld: request for a joint battle sent to the bridge.", 0x66CCFF),
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
 ]

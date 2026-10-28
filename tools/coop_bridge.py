@@ -244,6 +244,8 @@ class Battle:
 
 
 class World:
+    log = staticmethod(lambda msg: None)  # run_host sets the bridge's log: joint battles are told there
+
     def __init__(self, profiles_path=None):
         self.lock = threading.Lock()
         self.parties = {}       # sid -> [tmpl, x, y, last_seen, tx, ty, att]
@@ -643,8 +645,15 @@ class World:
     def _mp_online(self, now):
         return self.mp_last is not None and now - self.mp_last <= MP_ONLINE_S
 
+    def _who(self, p):
+        return f"{p.slot}:{p.name or p.cid}"
+
     def _mp_op(self, p, mp, now):
         op, bid, b = mp["op"], mp["bid"], self.battle
+        if op in (1, 3, 4):
+            what = {1: "starts a joint battle", 3: "accepts the invitation", 4: "declines / cancels"}[op]
+            self.log(f"joint battle: {self._who(p)} {what} (battle {bid}, enemy party {mp['sid']}, "
+                     f"player slot {mp['slot']}, center {mp['center']}{', defence' if mp.get('defend') else ''})")
         if mp.get("hero"):
             p.hero = mp["hero"]
         if mp.get("compn") is not None:  # a start or an acceptance: this battle's companions follow
@@ -655,11 +664,13 @@ class World:
         if op == 1:
             if b is not None:
                 if p.cid not in b.sides:
+                    self.log(f"joint battle: refused - battle {b.bid} ({b.state}) is still on")
                     p.mp_out.append([7, 0, 2, 0])  # another battle is on
                 else:  # the answer to this player's start got lost: its battle, again
                     p.mp_out.append([7, b.bid, 1 if b.state == "running" else 0, b.sides[p.cid]])
                 return
             if not self._mp_online(now):
+                self.log("joint battle: refused - no battle server (Multiplayer - Host a game, Battle)")
                 p.mp_out.append([7, 0, 3, 0])
                 return
             self.battle_seq += 1
@@ -686,6 +697,7 @@ class World:
             elif mp["slot"] >= 0:
                 defender = next((q for q in self.players.values() if q.slot == mp["slot"] and q is not p), None)
                 if defender is None:
+                    self.log(f"joint battle: refused - no player in slot {mp['slot']}")
                     p.mp_out.append([7, 0, 2, 0])
                     return
                 b.sides[defender.cid] = 1
@@ -695,6 +707,7 @@ class World:
                 b.enemy_sid = mp["sid"]
                 b.enemy_stacks = mp["troops"] or (self.troops.get(mp["sid"], (0, None))[1] or [])
             else:
+                self.log("joint battle: refused - the enemy is not a party of the world (no server id)")
                 p.mp_out.append([7, 0, 2, 0])
                 return
             for q in self.players.values():
@@ -715,6 +728,8 @@ class World:
                     q.mp_out.append([6, b.bid, 1, p.slot, target])
             b.terrain = mp.get("terrain", 0)
             self.battle = b
+            invited = ", ".join(self._who(self.players[c]) for c in sorted(b.invited) if c in self.players)
+            self.log(f"joint battle {b.bid}: gathering; invited: {invited or 'nobody (no other player near)'}")
             p.mp_out.append([7, b.bid, 0, 0])
         elif b is not None and bid == 0 and op == 2 and p.cid in b.sides:
             # waiting without the battle's number (the answer to the start got lost): tell it
@@ -771,6 +786,9 @@ class World:
         for s in stacks:
             s[4] = max(1, round(s[3] * scale))
         b.stacks, b.sent, b.state = stacks, 0, "loading"
+        self.log(f"joint battle {b.bid}: going to the battle server ({len(stacks)} stacks, sides "
+                 + ", ".join(f"{self._who(self.players[c])}=team {t}" for c, t in b.sides.items() if c in self.players)
+                 + ")")
 
     def _mp_wanted_name(self, cid):
         """The name a campaign player is expected under on the battle server: the one given to the
@@ -947,6 +965,7 @@ class World:
                     if no >= 0:
                         pairs += [no, team]
                 b.state, b.started = "running", now
+                self.log(f"joint battle {b.bid}: started on the battle server")
                 for cid, team in b.sides.items():
                     q = self.players.get(cid)
                     if q is not None:
@@ -956,6 +975,7 @@ class World:
                 return [1, b.bid, len(b.stacks), mode, hint, len(pairs) // 2] + pairs
             if b.state == "running" and phase == 0 and now - b.started > MP_LOST_S:
                 # the battle server restarted or changed its game: the battle is lost to it
+                self.log(f"joint battle {b.bid}: lost - the battle server went back to an ordinary round")
                 for cid in b.sides:
                     q = self.players.get(cid)
                     if q is not None:
@@ -1258,10 +1278,14 @@ def serve_http(addr, answer, log, name):
 
     def one(conn):
         conn.settimeout(5)
+        target = None
         try:
-            send_http_body(conn, answer(read_http_target(conn)))
+            target = read_http_target(conn)
+            send_http_body(conn, answer(target))
         except OSError as e:
             log(f"{name}: connection error {e}")
+        except Exception as e:  # a request the bridge cannot read: say which, the game gets no reply
+            log(f"{name}: could not handle {str(target)[:300]!r}: {e!r}")
         finally:
             conn.close()
 
@@ -1609,6 +1633,7 @@ def make_log(path):
 
 def run_host(args, log):
     world = World(args.profiles or Path(args.log).with_name("profiles.json"))
+    world.log = log
     world.set_mp_name("local", args.mp_name)
     serve_http(parse_addr(args.server, 80), lambda t: handle_request(world, "srv", t, time.time()), log, "srv")
     serve_http(parse_addr(args.client, 80), lambda t: handle_request(world, "cli", t, time.time()), log, "cli")

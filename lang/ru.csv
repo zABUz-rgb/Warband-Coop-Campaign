@@ -1719,3 +1719,8 @@ quick_strings|qstr_the_WORLD_SERVER_onl|только СЕРВЕР МИРА
 quick_strings|qstr_the_HOST_the_world_H|ХОСТ, мир УДЕРЖИВАЕТСЯ для подключения друга
 quick_strings|qstr_the_host_s_held_save|сохранение хоста с удержанным миром: выберите КЛИЕНТ, чтобы войти в мир хоста
 quick_strings|qstr_off__an_ordinary_sin|кооператив выключен (обычная одиночная игра)
+quick_strings|qstr_CoopWorld:_no_battle|CoopWorld: сервер боя не запущен (Сетевая игра - Создать игру, режим «Битва»).
+quick_strings|qstr_CoopWorld:_not_start|CoopWorld: бой не начат - причина написана в окне моста (host.bat).
+quick_strings|qstr_CoopWorld:_fight_now|CoopWorld: бой идёт - переключитесь в окно мультиплеера.
+quick_strings|qstr_CoopWorld:_request_f|CoopWorld: запрос на совместный бой отправлен мосту.
+quick_strings|qstr_CoopWorld:_team_take|CoopWorld: сервер не ответил на выбор команды - выбор засчитан.

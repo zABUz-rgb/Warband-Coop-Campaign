@@ -435,6 +435,7 @@ mp_battle_triggers = [
        (ge, "$coop_mp_confirm_wait", coop_mp_confirm_wait_s),
        (assign, "$coop_mp_confirm_wait", 0),
        (assign, "$g_confirmation_result", 1),
+       (display_message, "@CoopWorld: team taken as picked (no word from the server).", 0xFFDD66),
      (else_try),
        (assign, "$coop_mp_confirm_wait", 0),
      (try_end),
