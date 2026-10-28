@@ -30,6 +30,7 @@ def net_scripts(first_dynamic):
   ("coop_become_server",
    [
      (store_script_param, "$coop_srv_player", 1),
+     (assign, "$coop_hold_alive", 0), #only a held host's game is known as the host
      (assign, "$coop_role", coop_role_server),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_net_cursor", -1),
@@ -102,6 +103,7 @@ def net_scripts(first_dynamic):
   ("coop_become_client",
    [
      (assign, "$coop_role", coop_role_client),
+     (assign, "$coop_hold_alive", 0), #only a held host's game is known as the host
      (assign, "$coop_srv_player", 0),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_net_misses", 0),
@@ -154,6 +156,7 @@ def net_scripts(first_dynamic):
 
   ("coop_stop",
    [
+     (assign, "$coop_hold_alive", 0), #only a held host's game is known as the host
      (try_begin),
        (eq, "$coop_role", coop_role_server),
        (eq, "$coop_srv_paused", 1),

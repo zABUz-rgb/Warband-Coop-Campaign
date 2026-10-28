@@ -78,8 +78,13 @@ camp_coop_options = [
    [(call_script, "script_coop_become_server", 0), (change_screen_return)]),
   # a friend's game that loaded the held host's save starts in the held role and switches at once;
   # the host's own held game (the bridge answers it) gets the choices of a host instead
-  ("coop_role_client", [(this_or_next|eq, "$coop_role", coop_role_single),
-                        (eq, "$coop_role", coop_role_held), (le, "$coop_hold_alive", 0)],
+  # (two options: this_or_next joins only the two conditions it stands between, so "single, or held
+  # and not the host" cannot be one condition list; as one it hid the choice in every single game
+  # whose save had seen a hold)
+  ("coop_role_client", [(eq, "$coop_role", coop_role_single)],
+   "CoopWorld: run this game as a CLIENT.",
+   [(call_script, "script_coop_become_client"), (change_screen_return)]),
+  ("coop_role_client_held", [(eq, "$coop_role", coop_role_held), (le, "$coop_hold_alive", 0)],
    "CoopWorld: run this game as a CLIENT.",
    [(call_script, "script_coop_become_client"), (change_screen_return)]),
   ("coop_role_hold", [(eq, "$coop_role", coop_role_server)],
