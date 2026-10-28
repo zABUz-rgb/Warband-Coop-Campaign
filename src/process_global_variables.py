@@ -115,8 +115,12 @@ print("Compiling all global variables...")
 #MORDACHAI - Preserve previous global variable order, for save-game compatibility...
 variables = []
 variable_uses = []
+# CoopWorld: the order of the last build of this module comes first (new globals go to its end, so
+# the saves of the last version keep their values); Diplomacy's list only for a first build
+import os
+_previous = export_dir + "variables.txt"
 try:
-  file = open("variables.txt","r")
+  file = open(_previous if os.path.exists(_previous) else "variables.txt","r")
   var_list = file.readlines()
   file.close()
   for v in var_list:

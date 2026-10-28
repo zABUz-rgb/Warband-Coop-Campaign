@@ -33,6 +33,9 @@ def net_triggers(first_dynamic):
      (try_begin),
        (this_or_next|eq, "$coop_net_pending", 0),
        (ge, "$coop_net_frames", coop_net_resend_frames),
+       # the host's game hears back at once; a friend's game that loaded the held save never does
+       (val_sub, "$coop_hold_alive", 1),
+       (val_max, "$coop_hold_alive", 0),
        (assign, "$coop_net_pending", 1),
        (assign, "$coop_net_frames", 0),
        (val_add, "$coop_net_seq", 1),

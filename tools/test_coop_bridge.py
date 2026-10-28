@@ -510,6 +510,34 @@ def test_lost_answers():
     check(not cb.carries_news("7777|2|0") and not cb.carries_news("0|0"), "positions and empty replies do not")
 
 
+def test_notices_and_asking_again():
+    w = cb.World()
+    w.mp_last = 0.0
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=50, now=0.0, me=[(33, 4)], name="Olga")
+    w.set_mp_name("b", "Olga")
+    w.mp_request(0, 0, -1, {}, {0: "Ivan", 3: "Olga"}, 0.1)
+    req(w, "a", now=0.2, mp=mp(1, sid=700, troops=[(5, 9)]))
+    r = cb.handle_request(w, "mp", "/mp?seq=1&st=0&bid=0&pl=0~Ivan;3~Olga;", 0.3).split("|")
+    check(r[1:3] == ["3", "3"] and "CoopWorld" in r[3].encode("latin-1").decode("utf-8"),
+          f"an invited player on the battle server is told to answer in the campaign window: {r[:3]}")
+    r = cb.handle_request(w, "mp", "/mp?seq=2&st=0&bid=0&pl=0~Ivan;3~Olga;", 0.4).split("|")
+    check(r[1] != "3", "once")
+    # asking again to join a party one rides in already: yes at once, no new question to the leader
+    w2 = cb.World()
+    req(w2, "a", now=0.0, name="Ivan")
+    req(w2, "b", x=50, now=0.0, name="Olga")
+    sa, sb = w2.players["a"].slot, w2.players["b"].slot
+    req(w2, "b", now=1.0, together={"join": sa})
+    req(w2, "a", now=1.1)
+    req(w2, "a", now=1.2, together={"joinans": (sb, 1)})
+    w2.players["b"].mp_out.clear()
+    w2.players["a"].mp_out.clear()
+    nums, _ = req(w2, "b", now=2.0, together={"join": sa})
+    check(nums == [18, sa, 1], f"a follower asking again hears yes at once: {nums}")
+    check(not any(m[0] == 17 for m in w2.players["a"].mp_out), "and the leader is not asked again")
+
+
 def test_joining_and_giving():
     w = cb.World()
     req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
@@ -697,4 +725,5 @@ if __name__ == "__main__":
     test_hub_and_relay()
     test_names_and_saves()
     test_lost_answers()
+    test_notices_and_asking_again()
     print("ALL OK")

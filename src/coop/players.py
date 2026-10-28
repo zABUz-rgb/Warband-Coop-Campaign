@@ -84,11 +84,15 @@ players_scripts = [
        (party_get_slot, ":accepted", "p_coop_buf", 3),
        (store_add, ":leader", ":slot", 1),
        ] + player_name_to_s1(":leader") + [
+       (assign, "$coop_join_waiting", 0),
        (try_begin),
          (eq, ":accepted", 1),
+         (neq, "$coop_leader", ":leader"),
          (assign, "$coop_leader", ":leader"),
-         (display_message, "@CoopWorld: {s1} takes you into the party. You follow {s1} and fight in {s1}'s battles. Camp - leave the party, to ride on your own again.", 0x66FF66),
+         (display_message, "@CoopWorld: {s1} takes you into the party. You follow {s1} and fight in {s1}'s battles. Camp - CoopWorld - leave the party, to ride on your own again.", 0x66FF66),
        (else_try),
+         (eq, ":accepted", 0),
+         (neq, "$coop_leader", ":leader"), #a stale answer to a second ask: the party holds
          (display_message, "@CoopWorld: {s1} does not take you into the party.", 0xFFDD66),
        (try_end),
      (else_try),
@@ -229,11 +233,12 @@ def plays():
 def encounter_options():
   is_player = [(is_between, "$g_encountered_party", "p_coop_puppet_1", puppet_end())]
   return [
-    ("coop_join_ask", plays() + is_player + [(eq, "$coop_leader", 0)],
+    ("coop_join_ask", plays() + is_player + [(eq, "$coop_leader", 0), (eq, "$coop_join_waiting", 0)],
      "CoopWorld: ask to join this player's party (follow and fight together).",
      [
        (store_sub, "$coop_join_ask", "$g_encountered_party", "p_coop_puppet_1"),
        (val_add, "$coop_join_ask", 1),
+       (assign, "$coop_join_waiting", "$coop_join_ask"),
        (str_store_party_name, s1, "$g_encountered_party"),
        (display_message, "@CoopWorld: you ask {s1} to take you into the party...", 0x66CCFF),
        (leave_encounter),
@@ -270,10 +275,11 @@ def players_menu_options():
     puppet = f"p_coop_puppet_{k + 1}"
     name = [(party_is_active, puppet), (str_store_party_name, s1, puppet)]
     options += [
-      ("coop_pl_join_%d" % k, plays() + name + [(eq, "$coop_leader", 0)],
+      ("coop_pl_join_%d" % k, plays() + name + [(eq, "$coop_leader", 0), (eq, "$coop_join_waiting", 0)],
        "Ask {s1} to take you into the party.",
        [
          (assign, "$coop_join_ask", k + 1),
+         (assign, "$coop_join_waiting", k + 1),
          (display_message, "@CoopWorld: you ask {s1} to take you into the party...", 0x66CCFF),
          (change_screen_return),
        ]),
@@ -295,7 +301,11 @@ def players_menu_options():
        (display_message, "@CoopWorld: writing your hero down at the host in a few seconds.", 0x66CCFF),
        (change_screen_return),
      ]),
-    ("coop_pl_back", [], "Back.", [(jump_to_menu, "mnu_camp")]),
+    ("coop_pl_leave", plays() + [(gt, "$coop_leader", 0)] + player_name_to_s1("$coop_leader"),
+     "Leave {s1}'s party and ride on your own.",
+     [(assign, "$coop_leave_party", 1), (assign, "$coop_leader", 0), (assign, "$coop_join_waiting", 0),
+      (change_screen_return)]),
+    ("coop_pl_back", [], "Back.", [(jump_to_menu, "mnu_coop_camp")]),
   ]
 
 

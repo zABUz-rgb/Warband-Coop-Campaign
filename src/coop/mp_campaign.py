@@ -544,6 +544,9 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_status", 0),
      (assign, "$coop_mp_state", 1),
      (assign, "$coop_mp_hidden", 0),
+     # the start goes to the bridge right now: switching to the multiplayer window at once may stop
+     # this game (a background window), and the battle must not wait for it
+     (call_script, "script_coop_client_mp_send"),
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
 
@@ -575,6 +578,9 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_status", 0),
      (assign, "$coop_mp_state", 1),
      (assign, "$coop_mp_hidden", 0),
+     # the start goes to the bridge right now: switching to the multiplayer window at once may stop
+     # this game (a background window), and the battle must not wait for it
+     (call_script, "script_coop_client_mp_send"),
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
 ]

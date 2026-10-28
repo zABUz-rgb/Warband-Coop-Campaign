@@ -45,7 +45,30 @@ town_auto_lodging = [
 ]
 
 
-# Camp menu: co-op roles (prototype; the bridge is tools/coop_bridge.py)
+# Camp - CoopWorld: the co-op menu (roles, the other players, news); the bridge is tools/coop_bridge.py
+coop_role_text = [
+  (try_begin),
+    (eq, "$coop_role", coop_role_client),
+    (str_store_string, s1, "@a CLIENT (your hero in the host's world)"),
+  (else_try),
+    (eq, "$coop_role", coop_role_server),
+    (eq, "$coop_srv_player", 1),
+    (str_store_string, s1, "@the HOST (the world lives in this game, you play in it)"),
+  (else_try),
+    (eq, "$coop_role", coop_role_server),
+    (str_store_string, s1, "@the WORLD SERVER only"),
+  (else_try),
+    (eq, "$coop_role", coop_role_held),
+    (gt, "$coop_hold_alive", 0),
+    (str_store_string, s1, "@the HOST, the world HELD for a joining friend"),
+  (else_try),
+    (eq, "$coop_role", coop_role_held),
+    (str_store_string, s1, "@the host's held save: choose CLIENT to join the host's world"),
+  (else_try),
+    (str_store_string, s1, "@off (an ordinary single player game)"),
+  (try_end),
+]
+
 camp_coop_options = [
   ("coop_role_host", [(eq, "$coop_role", coop_role_single)],
    "CoopWorld: run this game as the WORLD SERVER and play in it (host).",
@@ -53,13 +76,20 @@ camp_coop_options = [
   ("coop_role_server", [(eq, "$coop_role", coop_role_single)],
    "CoopWorld: run this game as the WORLD SERVER only (unattended).",
    [(call_script, "script_coop_become_server", 0), (change_screen_return)]),
-  # a client game that loaded the held server's save starts in the held role: it may switch at once
-  ("coop_role_client", [(this_or_next|eq, "$coop_role", coop_role_single), (eq, "$coop_role", coop_role_held)],
+  # a friend's game that loaded the held host's save starts in the held role and switches at once;
+  # the host's own held game (the bridge answers it) gets the choices of a host instead
+  ("coop_role_client", [(this_or_next|eq, "$coop_role", coop_role_single),
+                        (eq, "$coop_role", coop_role_held), (le, "$coop_hold_alive", 0)],
    "CoopWorld: run this game as a CLIENT.",
    [(call_script, "script_coop_become_client"), (change_screen_return)]),
   ("coop_role_hold", [(eq, "$coop_role", coop_role_server)],
    "CoopWorld: hold the world for a joining client.",
    [(call_script, "script_coop_server_hold"), (change_screen_return)]),
+  ("coop_role_resume", [(eq, "$coop_role", coop_role_held), (gt, "$coop_hold_alive", 0)],
+   "CoopWorld: let the world run again (stop holding it).",
+   [(assign, "$coop_role", coop_role_server),
+    (display_message, "@CoopWorld: the world runs again.", 0x66CCFF),
+    (change_screen_return)]),
   ("coop_read_news", [(eq, "$coop_role", coop_role_server), (eq, "$coop_srv_player", 1),
                       (call_script, "script_coop_count_news"), (gt, reg0, 0)],
    "CoopWorld: read the news held back ({reg0}). The world waits meanwhile.",
@@ -78,7 +108,12 @@ def merge(menus):
     raise MergeError("town menu: expected try_begin before the $g_leave_town check")
   block[pos:pos] = town_auto_lodging
   from coop_merge import menu_options
-  menu_options(menus, "camp")[0:0] = camp_coop_options
+  coop_camp = list(camp_coop_options)
+  menu_options(menus, "camp")[0:0] = [
+    ("coop_camp", [], "CoopWorld: co-op...", [(jump_to_menu, "mnu_coop_camp")]),
+  ]
+  menus.append(
+    ("coop_camp", 0, "CoopWorld: co-op.^^This game is {s1}.", "none", coop_role_text, coop_camp))
   # joint battles on the multiplayer server
   from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option, coop_mp_siege_option
   from coop.mp_campaign import coop_mp_defend_option
@@ -112,5 +147,6 @@ def merge(menus):
   options.insert(find_by_id(options, "encounter_leave"), encounter_options()[0])
   options.insert(find_by_id(options, "encounter_leave"), encounter_options()[1])
   menus.extend(players_menus)
-  camp = menu_options(menus, "camp")
-  camp[find_by_id(camp, "coop_role_stop"):find_by_id(camp, "coop_role_stop")] = camp_options()
+  stop = find_by_id(coop_camp, "coop_role_stop")
+  coop_camp[stop:stop] = camp_options()
+  coop_camp.append(("coop_camp_back", [], "Back.", [(jump_to_menu, "mnu_camp")]))

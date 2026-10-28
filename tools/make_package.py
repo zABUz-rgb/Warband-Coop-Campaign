@@ -284,7 +284,7 @@ START_HERE_RU = '''CoopWorld - С ЧЕГО НАЧАТЬ (для друга)
    - дважды щёлкните join.bat: адрес хоста (из Radmin VPN), пароль хоста, ваше имя в мультиплеере
      (то же, что в игре: Мультиплеер - Профили; запомнится). Окно моста не закрывайте.
    - Запустите Warband (CoopWorld), загрузите свежее сохранение хоста (join.bat его скачал),
-     Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Ваш герой вернётся сам.
+     Лагерь - "CoopWorld: кооператив..." - "CoopWorld: сделать эту игру КЛИЕНТОМ". Ваш герой вернётся сам.
 4. Для совместных боёв запустите второе окно Warband (CoopWorld): Мультиплеер - Избранное -
    добавьте адрес хоста с портом 7240 (например 26.x.x.x:7240) и зайдите на сервер боя хоста.
 Подробности - README.txt.
@@ -298,7 +298,7 @@ START_HERE = '''CoopWorld - START HERE (for a friend)
 2. Unpack the whole archive, close Warband, double-click install.bat. Pick CoopWorld in the launcher.
 3. Every time: double-click join.bat (the host's address, the host's password, your multiplayer
    name - the one of your Multiplayer profile). Keep its window open. Start Warband (CoopWorld),
-   load the host's save join.bat fetched, Camp - "run this game as a CLIENT". Your hero comes back.
+   load the host's save join.bat fetched, Camp - "CoopWorld: co-op..." - "run this game as a CLIENT". Your hero comes back.
 4. For joint battles start a second Warband window (CoopWorld): Multiplayer - Favorites - add the
    host's address with port 7240 (e.g. 26.x.x.x:7240) and join the host's battle server.
 More in README.txt.
@@ -339,14 +339,15 @@ CoopWorld без Diplomacy с этой версией не работают.
   1. Дважды щёлкните host.bat - запустится мост. Он спросит пароль: придумайте любой и сообщите
      друзьям (Enter без пароля - играть только на этом компьютере). Окно не закрывайте.
   2. Запустите Warband с модулем CoopWorld, загрузите свою кампанию,
-       Лагерь - "CoopWorld: сделать эту игру СЕРВЕРОМ МИРА и играть в ней (хост)".
+       Лагерь - "CoopWorld: кооператив..." - "CoopWorld: сделать эту игру СЕРВЕРОМ МИРА и играть в ней (хост)".
      Вы играете прямо в этом окне: мир живёт в нём, друзья видят ваш отряд на карте.
      Окна, которые мир открывает сам, у хоста мир не останавливают: сообщения и недельный бюджет
      приходят строкой в журнал, а известия с выбором (война, приглашения, спутники, гонцы маршала)
-     копятся - откройте их, когда удобно: Лагерь - "прочитать отложенные известия".
+     копятся - откройте их, когда удобно: Лагерь - "CoopWorld: кооператив..." - "прочитать отложенные известия".
   3. Для каждого подключающегося игрока:
-       Лагерь - "CoopWorld: удержать мир для подключения игрока", затем сохраните игру (Esc - Сохранить).
-     Сохранение отдайте другу (join.bat скачает его сам). Как только друг подключится, мир пойдёт дальше.
+       Лагерь - "CoopWorld: кооператив..." - "CoopWorld: удержать мир для подключения игрока", затем сохраните игру (Esc - Сохранить).
+     Сохранение отдайте другу (join.bat скачает его сам). Как только друг подключится, мир пойдёт дальше;
+     можно и самому: там же "пустить мир дальше (перестать удерживать)".
   Можно и по-старому: отдельное окно - только сервер мира ("...только СЕРВЕРОМ МИРА (без игры в ней)"),
   а играть во втором окне клиентом. Это тяжелее для компьютера, зато мир не зависит от ваших меню.
 
@@ -354,20 +355,20 @@ CoopWorld без Diplomacy с этой версией не работают.
   1. Дважды щёлкните join.bat. Он спросит адрес хоста и пароль, скачает свежее сохранение хоста
      в ваши сохранения CoopWorld и будет держать связь. Окно моста не закрывайте, пока играете.
   2. Запустите Warband с модулем CoopWorld, загрузите это сохранение,
-     Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир хоста пойдёт дальше, как только вы подключитесь.
+     Лагерь - "CoopWorld: кооператив..." - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир хоста пойдёт дальше, как только вы подключитесь.
   Каждое сохранение хоста join.bat сам кладёт в тот же слот ваших сохранений (старое - .bak), а игра
   пишет "хост сохранил игру". В следующий раз загружайте этот слот - мир будет самым свежим.
   Герой получает имя, которое вы ввели в join.bat (у хоста - в host.bat).
 
 ИГРОКИ ВМЕСТЕ
   Всё это работает одинаково у друга и у хоста, который играет в окне сервера мира.
-  Лагерь - "CoopWorld: другие игроки": кто в мире и как далеко; попроситься в отряд (откуда угодно),
+  Лагерь - "CoopWorld: кооператив..." - "CoopWorld: другие игроки": кто в мире и как далеко; попроситься в отряд (откуда угодно),
   передать войска (если игрок рядом, до 3 км), записать своего героя у хоста прямо сейчас.
   Встретив на карте отряд другого игрока, сразу открывается меню (без разговора), где можно:
   - "сразиться с этим игроком" (совместный бой);
   - "попроситься в отряд этого игрока": он примет или откажет. Принятый следует за лидером по карте
-    и вызывается во все его совместные бои (отказаться нельзя). Покинуть отряд - Лагерь; лидер
-    может отпустить всех последователей там же.
+    и вызывается во все его совместные бои (отказаться нельзя). Покинуть отряд - Лагерь - "CoopWorld:
+    кооператив..." (или "другие игроки"); лидер может отпустить всех последователей там же.
   - "передать войска этому игроку": выберите бойцов в окне обмена и отправьте; получатель примет
     или откажется, отвергнутые бойцы вернутся (даже если вы успели выйти - при следующем входе).
 
@@ -408,7 +409,8 @@ CoopWorld без Diplomacy с этой версией не работают.
      ваших солдат. Мост пишет в своём окне, кого он узнал на сервере боя ("recognised") и кого нет
      ("NOT found"). Имена у всех разные! Это же имя получает и ваш герой в кампании.
      Окно игры остаётся на сервере между боями.
-  3. Во встрече с отрядом на карте выберите "CoopWorld: сразиться вместе с друзьями".
+  3. Во встрече с отрядом на карте выберите "CoopWorld: сразиться вместе с друзьями". Запрос уходит
+     сразу; приглашённым, кто стоит на сервере боя, сервер пишет, что ответить нужно в окне кампании.
      Игроки поблизости получают приглашение ("В бой!" или "Отказаться"); через несколько секунд
      раунд на сервере боя начинается заново с армиями из кампании. Переключитесь в окно мультиплеера.
   4. Встреча с отрядом другого игрока: "CoopWorld: сразиться с этим игроком". Его вызывают в бой,
@@ -451,7 +453,7 @@ CoopWorld без Diplomacy с этой версией не работают.
   Дипломатия (договоры между королевствами, послы, дары, патрули, вербовщики) - тоже только у хоста.
 
 ОСТАНОВКА
-  В своей игре: Лагерь - "CoopWorld: остановить кооператив", затем закройте окно моста.
+  В своей игре: Лагерь - "CoopWorld: кооператив..." - "CoopWorld: остановить кооператив", затем закройте окно моста.
 
 ЕСЛИ ЧТО-ТО НЕ ТАК
   - Мост пишет журнал в bridge.log в папке пакета и каждые 5 секунд выводит строку состояния.
@@ -478,8 +480,8 @@ HOST (runs the world):
   1. Double-click host.bat: it asks for a password (any, tell it your friends; Enter without one
      = this PC only) and starts the bridge. Keep its window open.
   2. Start Warband with CoopWorld, load your campaign,
-     Camp - "run this game as the WORLD SERVER and play in it (host)". You play in this window.
-  3. For each joining player: Camp - "hold the world for a joining client", then save the game
+     Camp - "CoopWorld: co-op..." - "run this game as the WORLD SERVER and play in it (host)". You play in this window.
+  3. For each joining player: Camp - "CoopWorld: co-op..." - "hold the world for a joining client", then save the game
      (Esc - Save). The world runs on as soon as that player joined.
   (Or the old way: one window only the world server ("...WORLD SERVER only (unattended)"),
   and you play in a second window as a CLIENT. Heavier, but the world does not wait for your menus.)
@@ -487,7 +489,7 @@ HOST (runs the world):
 FRIEND:
   1. Double-click join.bat: it asks for the host's address and password, fetches the host's
      newest save into your CoopWorld saves and keeps the link. Keep its window open.
-  2. Start Warband with CoopWorld, load that save, Camp - "run this game as a CLIENT".
+  2. Start Warband with CoopWorld, load that save, Camp - "CoopWorld: co-op..." - "run this game as a CLIENT".
      The host's world runs on as soon as you joined.
 
 JOINT BATTLES (multiplayer server):
@@ -542,7 +544,7 @@ YOUR HERO BETWEEN SESSIONS: a friend loads the host's save every time but plays 
   same name. Experience only grows (the level stays at least the host's hero's); unspent points are
   not kept. Clients now get the weekly budget (wages, income) too and can read books.
 
-Stopping: Camp - "CoopWorld: stop co-op" in your game, then close the bridge window.
+Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op" in your game, then close the bridge window.
 '''
 
 

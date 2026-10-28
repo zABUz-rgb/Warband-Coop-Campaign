@@ -139,6 +139,7 @@ def net_scripts(first_dynamic):
   ("coop_server_hold",
    [
      (assign, "$coop_role", coop_role_held),
+     (assign, "$coop_hold_alive", coop_hold_alive),
      (assign, "$coop_srv_joins_known", 0),
      (try_begin),
        (eq, "$coop_srv_paused", 0),
@@ -901,15 +902,19 @@ def net_reply_handler():
         (party_get_slot, ":joins", "p_coop_buf", SRV_JOINS),
         (try_begin),
           (eq, "$coop_role", coop_role_held),
+          (assign, "$coop_hold_alive", coop_hold_alive), #the bridge answers: this is the host's own game
+          (party_get_slot, ":players_in", "p_coop_buf", SRV_NUM_PLAYERS),
           (try_begin),
             (eq, "$coop_srv_joins_known", 0),
             (assign, "$coop_srv_joins_known", 1),
             (assign, "$coop_srv_joins", ":joins"), #joins before the hold do not count
-          (else_try),
-            (neq, ":joins", "$coop_srv_joins"),
-            (assign, "$coop_role", coop_role_server),
-            (display_message, "@CoopWorld: the client joined. The world runs.", 0x66CCFF),
           (try_end),
+          # a player joined since the hold began, or one is in the world already (joined while this
+          # game was in a menu, before its first word with the bridge): the world runs again
+          (this_or_next|gt, ":players_in", 0),
+          (neq, ":joins", "$coop_srv_joins"),
+          (assign, "$coop_role", coop_role_server),
+          (display_message, "@CoopWorld: the client joined. The world runs.", 0x66CCFF),
         (try_end),
         (eq, "$coop_role", coop_role_server),
         (party_get_slot, ":pause", "p_coop_buf", SRV_PAUSE),

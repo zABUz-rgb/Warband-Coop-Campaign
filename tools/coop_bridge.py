@@ -240,6 +240,7 @@ class Battle:
         self.terrain = 0
         self.created = now
         self.started = None
+        self.told = set()         # invited players told on the battle server to answer in the campaign
 
 
 class World:
@@ -331,8 +332,11 @@ class World:
         if together.get("join") is not None:
             leader = self._player_in_slot(together["join"], but=p)
             if leader is not None and p.slot is not None:
-                p.join_asked = leader.cid
-                leader.mp_out.append([17, p.slot])
+                if p.leader == leader.cid:  # in that party already (the answer got lost): yes again
+                    p.mp_out.append([18, leader.slot, 1])
+                else:
+                    p.join_asked = leader.cid
+                    leader.mp_out.append([17, p.slot])
         if together.get("joinans") is not None:
             slot, yes = together["joinans"]
             asker = self._player_in_slot(slot, but=p)
@@ -959,6 +963,23 @@ class World:
                 self.battle = None
             return [0]
 
+    def mp_notice(self):
+        """(battle server player number, text) for an invited player who stands on the battle server
+        while the invitation waits in that player's campaign window, or None."""
+        with self.lock:
+            b = self.battle
+            if b is None or b.state != "gathering":
+                return None
+            starter = self.players.get(b.starter)
+            name = starter.name if starter is not None and starter.name else "?"
+            for cid in sorted(b.invited - b.told):
+                no = self._mp_player_number(cid)
+                if no >= 0:
+                    b.told.add(cid)
+                    return no, (f"CoopWorld: {name} - совместный бой, ответьте в окне кампании (Alt+Tab) / "
+                                f"a joint battle, answer in the campaign window")
+            return None
+
     # ---- clocks
 
     def clock(self, role, hours, now):
@@ -1182,7 +1203,12 @@ def handle_request(world, role, target, now, cid="local"):
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
                                 parse_fallen(q.get("r", "")), parse_mp_players(q.get("pl", "")), now,
                                 parse_weapons(q.get("wx", "")), parse_fallen(q.get("hp", "")))
-        return reply_text([MP_MARKER] + nums)
+        string = None
+        if nums == [0]:
+            notice = world.mp_notice()
+            if notice is not None:
+                nums, string = [3, notice[0]], notice[1]
+        return reply_text([MP_MARKER] + nums, string)
     return reply_text([0, 0])  # unknown path: no marker, the game ignores it
 
 

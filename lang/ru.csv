@@ -1708,3 +1708,14 @@ quick_strings|qstr_{s10}^{s1}:_{reg1}_k|{s10}^{s1}: в {reg1} км
 quick_strings|qstr_{s10}___you_ride_in_|{s10} - вы едете в этом отряде
 quick_strings|qstr_^Nobody_else_is_in_t|^Кроме вас, в мире сейчас никого нет.
 quick_strings|qstr_CoopWorld:_writing_y|CoopWorld: через несколько секунд ваш герой будет записан у хоста.
+game_menus|mno_coop_camp|CoopWorld: кооператив...
+game_menus|menu_coop_camp|CoopWorld: кооператив.^^Эта игра - {s1}.
+game_menus|mno_coop_role_resume|CoopWorld: пустить мир дальше (перестать удерживать).
+game_menus|mno_coop_camp_back|Назад.
+game_menus|mno_coop_pl_leave|Покинуть отряд игрока {s1} и ехать самому.
+quick_strings|qstr_a_CLIENT__your_hero_|КЛИЕНТ (ваш герой в мире хоста)
+quick_strings|qstr_the_HOST__the_world_|ХОСТ (мир живёт в этой игре, вы в ней играете)
+quick_strings|qstr_the_WORLD_SERVER_onl|только СЕРВЕР МИРА
+quick_strings|qstr_the_HOST_the_world_H|ХОСТ, мир УДЕРЖИВАЕТСЯ для подключения друга
+quick_strings|qstr_the_host_s_held_save|сохранение хоста с удержанным миром: выберите КЛИЕНТ, чтобы войти в мир хоста
+quick_strings|qstr_off__an_ordinary_sin|кооператив выключен (обычная одиночная игра)

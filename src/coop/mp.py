@@ -61,6 +61,7 @@ mp_scripts = [
   # kind 2: a chunk of stacks  bid|offset|n|(team, group, troop, count)*n
   # kind 1: start              bid|stacks|n|(player, team)*n
   # kind 4: the losses arrived bid
+  # kind 3: tell one player s0 (an invitation waits in that player's campaign window)
   ("coop_mp_reply",
    [
      (assign, "$coop_mp_pending", 0),
@@ -237,6 +238,17 @@ mp_scripts = [
        (try_end),
        (call_script, "script_coop_mp_tell_all"),
      (else_try),
+       (eq, ":kind", 3),
+       (store_mul, ":player_no", ":bid", 1), #the player number comes where a battle number would
+       (player_is_active, ":player_no"),
+       (try_begin),
+         (multiplayer_get_my_player, ":me"),
+         (eq, ":player_no", ":me"), #the player of a server started from the game
+         (display_message, s0, 0xFFDD66),
+       (else_try),
+         (multiplayer_send_string_to_player, ":player_no", multiplayer_event_show_server_message, s0),
+       (try_end),
+     (else_try),
        (eq, ":kind", 4),
        (eq, "$coop_mp_phase", 4),
        (eq, ":bid", "$coop_mp_battle"),
@@ -407,6 +419,26 @@ def mp_reply_hook():
 
 
 mp_battle_triggers = [
+  # every player's game: the team window waits for the server's word on the team picked; when it
+  # never comes the window hangs (clicks on the banners do nothing). After a few seconds without an
+  # answer the pick counts as confirmed (a refusal still comes back as one). No team limit here either.
+  (1, 0, 0, [(neg | multiplayer_is_dedicated_server)],
+   [
+     (try_begin),
+       (neq, "$g_multiplayer_auto_team_balance_limit", 1000),
+       (assign, "$g_multiplayer_auto_team_balance_limit", 1000),
+     (try_end),
+     (try_begin),
+       (eq, "$g_waiting_for_confirmation_to_terminate", 1),
+       (eq, "$g_confirmation_result", 0),
+       (val_add, "$coop_mp_confirm_wait", 1),
+       (ge, "$coop_mp_confirm_wait", coop_mp_confirm_wait_s),
+       (assign, "$coop_mp_confirm_wait", 0),
+       (assign, "$g_confirmation_result", 1),
+     (else_try),
+       (assign, "$coop_mp_confirm_wait", 0),
+     (try_end),
+    ]),
   # no team limit: the players of a campaign battle often stand on one side. A window that had a
   # campaign loaded also carries that save's globals, where the limit is 0 and no team could be
   # picked at all
