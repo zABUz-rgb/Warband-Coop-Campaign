@@ -200,9 +200,11 @@ HOST_BODY = r"""  $key = $First
   $bridgeArgs = @("host")
   if ($key) {{ $bridgeArgs += @("--key", $key) }} else {{ Write-Host "{no_key}" -ForegroundColor Yellow }}"""
 
-# host: the battle server's port 7240 opened on the router (UPnP) and in the Windows firewall, so
-# friends join it at the host's internet address: through Radmin/Hamachi Warband's key check fails
-# ("incorrect authorization key"). The router mapping is removed again when the bridge stops.
+# host: the ports opened on the router (UPnP) and in the Windows firewall, so friends reach the host
+# at its internet address, with no virtual LAN: 7350 TCP the bridge (join.bat), 7240 UDP+TCP the
+# battle server (joined through Steam: View - Game Servers - Favorites). Through Radmin/Hamachi
+# Warband's key check fails ("incorrect authorization key"). The router mappings are removed again
+# when the bridge stops.
 HOST_PORTS_BODY = r"""
   $mapped = @()
   $upnpPorts = $null
@@ -212,10 +214,10 @@ HOST_PORTS_BODY = r"""
     $upnpPorts = (New-Object -ComObject HNetCfg.NATUPnP).StaticPortMappingCollection
     if (-not $localIp -or -not $upnpPorts) {{ throw "{upnp_off}" }}
     $external = $null
-    foreach ($proto in "UDP", "TCP") {{
-      try {{ $upnpPorts.Remove(7240, $proto) | Out-Null }} catch {{}}
-      $m = $upnpPorts.Add(7240, $proto, 7240, $localIp, $true, "CoopWorld battle server")
-      $mapped += $proto
+    foreach ($port in @(@(7240, "UDP"), @(7240, "TCP"), @(7350, "TCP"))) {{
+      try {{ $upnpPorts.Remove($port[0], $port[1]) | Out-Null }} catch {{}}
+      $m = $upnpPorts.Add($port[0], $port[1], $port[0], $localIp, $true, "CoopWorld")
+      $mapped += ,$port
       if ($m) {{ $external = $m.ExternalIPAddress }}
     }}
     Write-Host "{ports_open} $localIp" -ForegroundColor Green
@@ -223,6 +225,7 @@ HOST_PORTS_BODY = r"""
       if ($external -match '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.)') {{
         Write-Host "{cgnat} $external" -ForegroundColor Yellow
       }} else {{
+        Write-Host "{friends_bridge} $external" -ForegroundColor Green
         Write-Host "{friends_join} ${{external}}:7240" -ForegroundColor Green
       }}
     }} else {{
@@ -232,10 +235,11 @@ HOST_PORTS_BODY = r"""
     Write-Host "{upnp_failed} $($_.Exception.Message)" -ForegroundColor Yellow
   }}
   # the firewall: once, as administrator (Windows asks)
-  if (-not (Get-NetFirewallRule -DisplayName "CoopWorld 7240 UDP" -ErrorAction SilentlyContinue)) {{
+  if (-not (Get-NetFirewallRule -DisplayName "CoopWorld 7350 TCP" -ErrorAction SilentlyContinue)) {{
     Write-Host "{firewall_ask}"
     $rules = 'New-NetFirewallRule -DisplayName "CoopWorld 7240 UDP" -Direction Inbound -Protocol UDP -LocalPort 7240 -Action Allow | Out-Null; ' +
-             'New-NetFirewallRule -DisplayName "CoopWorld 7240 TCP" -Direction Inbound -Protocol TCP -LocalPort 7240 -Action Allow | Out-Null'
+             'New-NetFirewallRule -DisplayName "CoopWorld 7240 TCP" -Direction Inbound -Protocol TCP -LocalPort 7240 -Action Allow | Out-Null; ' +
+             'New-NetFirewallRule -DisplayName "CoopWorld 7350 TCP" -Direction Inbound -Protocol TCP -LocalPort 7350 -Action Allow | Out-Null'
     try {{
       Start-Process powershell -Verb RunAs -Wait -ArgumentList @("-NoProfile", "-Command", $rules)
     }} catch {{
@@ -244,7 +248,7 @@ HOST_PORTS_BODY = r"""
   }}"""
 
 PORTS_CLEANUP = r"""
-  foreach ($proto in $mapped) {{ try {{ $upnpPorts.Remove(7240, $proto) | Out-Null }} catch {{}} }}"""
+  foreach ($port in $mapped) {{ try {{ $upnpPorts.Remove($port[0], $port[1]) | Out-Null }} catch {{}} }}"""
 
 # both launchers: the player's name on the battle server, remembered in mp_name.txt
 MP_NAME_BODY = r"""
@@ -280,7 +284,7 @@ LAUNCHER_TEXT = {
     failed="The bridge could not start:",
     ask_key="Password for your friends (Enter = play on this PC only)",
     no_key="No password: only games on this PC can join.",
-    ask_host="Host address (for example 26.12.34.56 from Radmin VPN)",
+    ask_host="Host address (the internet address host.bat shows the host, for example 95.12.34.56)",
     no_host="No host address given.",
     ask_key_join="Password the host gave you",
     no_key_join="No password given.",
@@ -290,12 +294,13 @@ LAUNCHER_TEXT = {
     mp_name_set="Multiplayer name:",
     no_mp_name="No multiplayer name: the bridge looks for your hero's name on the battle server.",
     upnp_off="the router does not offer UPnP (turn it on in the router's settings) or there is no network",
-    upnp_failed="Port 7240 could not be opened on the router automatically:",
-    ports_open="Port 7240 (UDP and TCP) is open on the router for this PC:",
-    friends_join="Friends join the battle server at:",
+    upnp_failed="Ports 7240 and 7350 could not be opened on the router automatically (forward them by hand: 7240 UDP+TCP, 7350 TCP):",
+    ports_open="Ports 7240 (UDP, TCP) and 7350 (TCP) are open on the router for this PC:",
+    friends_bridge="Friends give join.bat this host address:",
+    friends_join="And join the battle server through Steam (View - Game Servers - Favorites - Add server) at:",
     cgnat="The router's internet address is not a public one (your provider shares it): opening ports cannot help. Router address:",
-    no_external="The router did not tell its internet address: look it up (for example 2ip.ru) and give it to friends with :7240.",
-    firewall_ask="Allowing port 7240 in the Windows firewall (once; Windows asks for permission)...",
+    no_external="The router did not tell its internet address: look it up (for example 2ip.ru) and give it to friends.",
+    firewall_ask="Allowing ports 7240 and 7350 in the Windows firewall (once; Windows asks for permission)...",
     firewall_failed="The firewall rule was not added (permission declined): Windows may ask again when the battle server starts.",
   ),
   "ru": dict(
@@ -307,7 +312,7 @@ LAUNCHER_TEXT = {
     failed="Мост не запустился:",
     ask_key="Пароль для друзей (Enter - играть только на этом компьютере)",
     no_key="Без пароля: подключиться смогут только игры на этом компьютере.",
-    ask_host="Адрес хоста (например 26.12.34.56 из Radmin VPN)",
+    ask_host="Адрес хоста (интернет-адрес, который хосту показывает host.bat, например 95.12.34.56)",
     no_host="Адрес хоста не указан.",
     ask_key_join="Пароль, который дал хост",
     no_key_join="Пароль не указан.",
@@ -317,12 +322,13 @@ LAUNCHER_TEXT = {
     mp_name_set="Имя в мультиплеере:",
     no_mp_name="Имя в мультиплеере не задано: мост будет искать на сервере боя имя вашего героя.",
     upnp_off="роутер не даёт UPnP (включите его в настройках роутера) или нет сети",
-    upnp_failed="Не удалось автоматически открыть порт 7240 на роутере:",
-    ports_open="Порт 7240 (UDP и TCP) открыт на роутере для этого компьютера:",
-    friends_join="Друзья заходят на сервер боя по адресу:",
+    upnp_failed="Не удалось автоматически открыть порты на роутере (пробросьте вручную: 7240 UDP+TCP, 7350 TCP):",
+    ports_open="Порты 7240 (UDP, TCP) и 7350 (TCP) открыты на роутере для этого компьютера:",
+    friends_bridge="Друзья вводят в join.bat адрес хоста:",
+    friends_join="А на сервер боя заходят через Steam (Вид - Игровые серверы - Избранное - Добавить сервер):",
     cgnat="Интернет-адрес роутера не публичный (провайдер делит его между абонентами): открытие портов не поможет. Адрес роутера:",
-    no_external="Роутер не сообщил свой интернет-адрес: узнайте его (например, на 2ip.ru) и дайте друзьям с :7240.",
-    firewall_ask="Разрешаю порт 7240 в брандмауэре Windows (один раз; Windows спросит разрешение)...",
+    no_external="Роутер не сообщил свой интернет-адрес: узнайте его (например, на 2ip.ru) и дайте друзьям.",
+    firewall_ask="Разрешаю порты 7240 и 7350 в брандмауэре Windows (один раз; Windows спросит разрешение)...",
     firewall_failed="Правило брандмауэра не добавлено (разрешение не дано): Windows может спросить снова при запуске сервера боя.",
   ),
 }
@@ -346,16 +352,16 @@ START_HERE_RU = '''CoopWorld - С ЧЕГО НАЧАТЬ (для друга)
 1. Нужно один раз:
    - Mount & Blade: Warband 1.174 (Steam или GOG) с серийным ключом (нужен для мультиплеера).
    - Python 3 с python.org (при установке отметьте "Add python.exe to PATH").
-   - Radmin VPN (или ZeroTier): войдите в сеть, которую создал хост.
+   - Steam-версия Warband (на сервер боя заходят через Steam). Radmin и другие VPN не нужны.
 2. Распакуйте весь архив в любую папку, закройте Warband, дважды щёлкните install.bat.
    В лаунчере Warband выберите модуль CoopWorld (Configure - Game - Language: ru).
 3. Каждый раз перед игрой:
-   - дважды щёлкните join.bat: адрес хоста (из Radmin VPN), пароль хоста, ваше имя в мультиплеере
+   - дважды щёлкните join.bat: адрес хоста (его интернет-адрес), пароль хоста, ваше имя в мультиплеере
      (то же, что в игре: Мультиплеер - Профили; запомнится). Окно моста не закрывайте.
    - Запустите Warband (CoopWorld), загрузите свежее сохранение хоста (join.bat его скачал),
      Лагерь - "CoopWorld: сделать эту игру КЛИЕНТОМ". Ваш герой вернётся сам.
-4. Для совместных боёв запустите второе окно Warband (CoopWorld): Мультиплеер - Избранное -
-   добавьте адрес хоста с портом 7240 (например 26.x.x.x:7240) и зайдите на сервер боя хоста.
+4. Для совместных боёв: второе окно Warband с модулем CoopWorld (лаунчер запоминает модуль) - через
+   Steam: Вид - Игровые серверы - Избранное - "+" - адрес_хоста:7240 - Подключиться.
 Подробности - README.txt.
 '''
 
@@ -363,13 +369,13 @@ START_HERE = '''CoopWorld - START HERE (for a friend)
 =====================================
 
 1. Once: Warband 1.174 (Steam or GOG) with its serial key (multiplayer needs it); Python 3 from
-   python.org ("Add python.exe to PATH"); Radmin VPN or ZeroTier, in the host's network.
+   python.org ("Add python.exe to PATH"). No Radmin or other VPN: the host opens its ports.
 2. Unpack the whole archive, close Warband, double-click install.bat. Pick CoopWorld in the launcher.
 3. Every time: double-click join.bat (the host's address, the host's password, your multiplayer
    name - the one of your Multiplayer profile). Keep its window open. Start Warband (CoopWorld),
    load the host's save join.bat fetched, Camp - "run this game as a CLIENT". Your hero comes back.
-4. For joint battles start a second Warband window (CoopWorld): Multiplayer - Favorites - add the
-   host's address with port 7240 (e.g. 26.x.x.x:7240) and join the host's battle server.
+4. For joint battles a second Warband window with CoopWorld (the launcher remembers the module) -
+   through Steam: View - Game Servers - Favorites - "+" - host_address:7240 - Connect.
 More in README.txt.
 '''
 
@@ -497,11 +503,13 @@ CoopWorld без Diplomacy с этой версией не работают.
 ЧТО НУЖНО
   - Warband 1.174 (Steam или GOG) и Python 3 (python.org, при установке отметьте "Add to PATH")
     на каждом компьютере.
-  - Компьютеры должны видеть друг друга: одна локальная сеть или виртуальная сеть, например
-    Radmin VPN или ZeroTier (обе бесплатные). Адрес хоста - тот, что показывает эта программа
-    (например 26.x.x.x).
-  - На компьютере хоста Windows один раз спросит, разрешить ли Python принимать подключения
-    (порт TCP 7350). Разрешите для частной сети.
+  - Связь через интернет, без Radmin и других VPN: host.bat сам открывает на роутере хоста
+    порты 7350 (TCP, мост) и 7240 (UDP и TCP, сервер боя) через UPnP и разрешает их в брандмауэре
+    Windows (один раз спросит права). Он же пишет интернет-адрес хоста - его друзья вводят в join.bat.
+    В роутере хоста должен быть включён UPnP, сеть в Windows - "Частная"; VPN-программы на время игры
+    выключите. Роутер без UPnP: пробросьте эти порты в его настройках вручную. Если host.bat пишет,
+    что адрес не публичный - нужен "белый" IP у провайдера.
+  - Пароль моста - не "123": порт открыт в интернет.
 
 УСТАНОВКА (у каждого игрока)
   1. Распакуйте весь архив в любую папку (не запускайте из самого архива).
@@ -582,19 +590,15 @@ CoopWorld без Diplomacy с этой версией не работают.
      скачайте "Mount&Blade Warband Dedicated Server" 1.174 с taleworlds.com, распакуйте куда угодно
      и дважды щёлкните battle_server.bat (первый раз он спросит папку сервера и запомнит её).
      Он сам ставит туда модуль CoopWorld и запускает Битву на порту 7240. На этот сервер заходят
-     все, хост тоже: окно Warband (CoopWorld) - Мультиплеер - Избранное - 127.0.0.1:7240 (хосту)
-     или адрес_хоста:7240 (друзьям).
+     все, хост тоже, через Steam: Вид - Игровые серверы - Избранное - "+" - 127.0.0.1:7240 (хосту)
+     или адрес_хоста:7240 (друзьям) - Подключиться. В самой игре ввода адреса нет; перед этим один
+     раз запустите Warband с модулем CoopWorld - лаунчер запомнит модуль.
      Можно и без него: хост запускает второе окно Warband (модуль CoopWorld) - Мультиплеер -
      Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0, и сражается в нём.
      Мост сам находит сервер боя; без него кнопка совместного боя скажет, что сервера нет.
-     Если друг при входе получает "неверный ключ" (так бывает через Radmin/Hamachi), а к чужим
-     серверам заходит - нужен открытый порт 7240 (UDP и TCP) на компьютер хоста, и друг
-     заходит на внешний (интернет) адрес хоста:7240. host.bat открывает его сам через UPnP роутера
-     (UPnP должен быть включён в роутере, сеть в Windows - "Частная") и пишет адрес для друзей;
-     в брандмауэре Windows порт разрешается один раз (Windows спросит). Если роутер без UPnP -
-     пробросьте порт в его настройках вручную.
+     Через Radmin/Hamachi Warband отвечает "неверный ключ" - поэтому только интернет-адрес хоста.
   2. Каждый друг заходит на этот сервер из второго окна Warband (модуль CoopWorld):
-       Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
+       через Steam: Вид - Игровые серверы - Избранное - "+" - адрес_хоста:7240 - Подключиться.
      host.bat и join.bat спрашивают ваше имя в мультиплеере (запоминают его в mp_name.txt): заходите
      на сервер боя ровно под этим именем - тогда мост сам ставит вас в нужную команду и отдаёт вам
      ваших солдат. Мост пишет в своём окне, кого он узнал на сервере боя ("recognised") и кого нет
@@ -649,7 +653,8 @@ CoopWorld без Diplomacy с этой версией не работают.
   - Мост пишет журнал в bridge.log в папке пакета и каждые 5 секунд выводит строку состояния.
   - Если окно моста пишет, что Python не найден: установите Python 3 с python.org и отметьте
     "Add python.exe to PATH".
-  - "cannot reach the host": проверьте адрес хоста, пароль и что Radmin VPN/ZeroTier включён у обоих.
+  - "cannot reach the host": проверьте адрес хоста, пароль и что у хоста открыт порт 7350 (host.bat
+    пишет об этом при запуске).
 '''
 
 README = '''CoopWorld - co-op campaign for Mount & Blade: Warband 1.174
@@ -662,9 +667,11 @@ Install: unpack the archive, close Warband, double-click install.bat. It finds t
 (GOG, Steam) or asks for the folder, and waits for Enter so you can read any error.
 Everything it did is in install.log.
 
-The PCs must reach each other: the same LAN, or a virtual LAN such as Radmin VPN or ZeroTier
-(both free). The host's address is then the one that program shows (e.g. 26.x.x.x).
-The host's PC must let Python accept connections on TCP port 7350 (Windows asks once).
+Over the internet, no Radmin or other VPN: host.bat opens ports 7350 (TCP, the bridge) and 7240
+(UDP and TCP, the battle server) on the host's router through UPnP and in the Windows firewall
+(asks once), and shows the host's internet address for join.bat. The battle server is joined
+through Steam: View - Game Servers - Favorites - "+" - host_address:7240 - Connect. Routers without
+UPnP: forward those ports by hand. Use a real password: the port is open to the internet.
 
 HOST (runs the world):
   1. Double-click host.bat: it asks for a password (any, tell it your friends; Enter without one

@@ -11,7 +11,7 @@ the URL, so each game on one PC has its own loopback address:
 Modes:
     host  the hub, on the host's PC: serves the world server game, the host's own player game and
           the other players, whose relays connect over TCP (a LAN, or a virtual LAN such as
-          Radmin VPN or ZeroTier) with a shared key.
+          the host's internet address, ports opened by host.bat) with a shared key.
     join  a relay, on a friend's PC: forwards its player game's requests to the hub, and can
           fetch the host's newest save first.
 
@@ -1671,7 +1671,7 @@ def main():
     h.add_argument("--profiles", default=None, help="where the players' heroes are kept (default: profiles.json next to the log)")
     h.add_argument("--save-dir", default=str(default_save_dir()), help="the world server's saves")
     j = sub.add_parser("join", help="a relay on a friend's PC")
-    j.add_argument("host", help="the host's address, e.g. 26.1.2.3 (Radmin VPN) or 192.168.1.5")
+    j.add_argument("host", help="the host's internet address (host.bat shows it), or 192.168.1.5 on one LAN")
     j.add_argument("--key", required=True)
     j.add_argument("--client", default="127.0.0.2:80", help="address this PC's player game calls")
     j.add_argument("--fetch-save", action="store_true", help="copy the host's newest save here first")
