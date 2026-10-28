@@ -1680,9 +1680,8 @@ quick_strings_en|CoopWorld: you ask {s1} to take you into the party...|CoopWorld
 quick_strings_en|{s1}, whose party you follow, goes into battle - you are called!^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side. Join it there; if you do not, your troops fight without you.|{s1}, за кем вы следуете, вступает в бой — вас зовут!^^Бой идёт на сервере мультиплеера: ваши войска сражаются на стороне {s1}. Зайдите туда; если не зайдёте, ваши войска будут сражаться без вас.
 quick_strings_en|CoopWorld: troops sent; waiting for the answer.|CoopWorld: войска отправлены, ждём ответа.
 game_menus|menu_coop_loot|CoopWorld: ваша доля добычи из совместного боя.
-game_menus|mno_coop_loot_take|Забрать.
 game_menus|mno_coop_loot_leave|Вернуться на карту.
-game_menus|mno_coop_mp_loot|Забрать свою долю добычи.
+game_menus|mno_coop_mp_loot|Забрать свою долю добычи (затем на карту).
 quick_strings_en|CoopWorld: {s1} fell in the joint battle and is badly wounded.|CoopWorld: {s1} пал в совместном бою и тяжело ранен.
 quick_strings_en|CoopWorld: the host answers again.|CoopWorld: хост снова отвечает.
 quick_strings_en|CoopWorld: no answer from the host. Check the join.bat window and the network (Radmin); the game goes on and catches up once the host answers. Your hero is written down at the host every minute while the link works.|CoopWorld: хост не отвечает. Проверьте окно join.bat и сеть (Radmin); игра продолжается и догонит мир, когда хост ответит. Пока связь есть, ваш герой записывается у хоста каждую минуту.
@@ -1772,8 +1771,8 @@ quick_strings_en|{s11} asked you to follow the spy that will leave {s12}. Be car
 quick_strings_en|{s9} asked you to lend your companion {s3} to {reg65?him:her} for a week.|{s9} просит одолжить {reg65?ему:ей} вашего спутника {s3} на неделю.
 quick_strings_en|{s11} gave you a fake letter to fool {s13} into banishing {reg3?her:his} vassal {s16}. You are to go near {s14}, give the letter to one of your {s15} and send {reg4?her:him} into the town as a messenger, believing {reg4?her:his} orders to be genuine.|{s11} дал вам подложное письмо, чтобы обманом заставить {s13} изгнать {reg3?своего:своего} вассала {s16}. Подойдите к {s14}, отдайте письмо одному из своих {s15} и пошлите {reg4?её:его} в город гонцом, чтобы {reg4?она:он} верил{reg4?а:}, что приказ настоящий.
 quick_strings_en|{s9} has requested you to bring {reg65?her:him} {reg1} {s3} as prisoners.|{s9} просит привести {reg65?ей:ему} пленных ({s3}): {reg1}.
-game_menus|mno_coop_take_spoils|CoopWorld: забрать свою долю добычи из совместного боя.
-quick_strings_en|CoopWorld: the spoils of the joint battle are waiting for you (Camp - CoopWorld: co-op...).|CoopWorld: ваша доля добычи из совместного боя ждёт вас (Лагерь - CoopWorld: кооператив...).
+game_menus|mno_coop_take_spoils|CoopWorld: забрать свою долю добычи из совместного боя (затем на карту).
+quick_strings_en|CoopWorld: the spoils of the joint battle are waiting for you (the joint battle menu, or Camp - CoopWorld: co-op...).|CoopWorld: ваша доля добычи из совместного боя ждёт вас (меню совместного боя или Лагерь - CoopWorld: кооператив...).
 quick_strings_en|CoopWorld: a call to a joint battle - declined: you are a prisoner.|CoopWorld: приглашение в совместный бой отклонено: вы в плену.
 game_menus|mno_coop_to_map|CoopWorld: вернуться на карту (если лагерь не отпускает).
 game_menus|mno_coop_role_client_held|CoopWorld: сделать эту игру КЛИЕНТОМ.

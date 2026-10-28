@@ -21,6 +21,9 @@ Confirmed in game at `stable-2026-10-28`:
 8. Defeat: captivity; a prisoner is not called into joint battles.
 9. Troops given to a player are no longer the giver's in battles.
 
-Open: after the spoils' loot screen, "Back to the map" in the joint battle menu did not react
-(the friend, build 802225796); the exits now use change_screen_map - not confirmed yet.
+Open (build 941871141, not confirmed yet): the spoils as Native's victory menu shows them - the loot
+screen from the coop_loot menu's own code, then back to the map by itself (an option that opened the
+loot screen left the camp's and the battle menu's options dead). The spoils (kind 21) now come before
+the result (kind 8), so the joint battle menu offers them. A client drops a mirror the host has not
+mentioned for 900 requests (about 1.5 min) instead of 1500.
 A weak PC with both Warband windows open may run out of memory.

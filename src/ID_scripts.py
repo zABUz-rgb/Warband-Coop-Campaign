@@ -841,15 +841,16 @@ script_coop_client_mp_companion_to_s20 = 839
 script_coop_client_mp_companions = 840
 script_coop_client_mp_loot_take = 841
 script_coop_client_mp_loot = 842
-script_coop_append_s18 = 843
-script_coop_client_mp_begin_defence = 844
-script_coop_client_mp_begin = 845
-script_coop_profile_build = 846
-script_coop_profile_chunk = 847
-script_coop_profile_receive = 848
-script_coop_profile_apply = 849
-script_coop_players_reply = 850
-script_coop_offer_to_s2 = 851
-script_coop_gift_back = 852
+script_coop_client_mp_leave_battle = 843
+script_coop_append_s18 = 844
+script_coop_client_mp_begin_defence = 845
+script_coop_client_mp_begin = 846
+script_coop_profile_build = 847
+script_coop_profile_chunk = 848
+script_coop_profile_receive = 849
+script_coop_profile_apply = 850
+script_coop_players_reply = 851
+script_coop_offer_to_s2 = 852
+script_coop_gift_back = 853
 
 

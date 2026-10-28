@@ -518,8 +518,21 @@ mp_campaign_scripts = [
      (try_begin),
        (gt, ":n", 0),
        (assign, "$coop_loot_ready", 1),
-       (display_message, "@CoopWorld: the spoils of the joint battle are waiting for you (Camp - CoopWorld: co-op...).", 0x66FF66),
+       (display_message, "@CoopWorld: the spoils of the joint battle are waiting for you (the joint battle menu, or Camp - CoopWorld: co-op...).", 0x66FF66),
      (try_end),
+    ]),
+
+  # script_coop_client_mp_leave_battle: the joint battle is over and the player goes back to the map
+  ("coop_client_mp_leave_battle",
+   [
+     (try_begin),
+       (gt, "$coop_mp_target_center", 0), #a siege that ended: the walls are someone else's now
+       (eq, "$coop_mp_defend", 0), #(a defence leaves the world's siege to the world)
+       (call_script, "script_lift_siege", "$coop_mp_target_center", 0),
+       (assign, "$g_player_besiege_town", -1),
+       (assign, "$coop_mp_target_center", -1),
+     (try_end),
+     (assign, "$coop_busy", 2), #back on the map: the first map frame ends the battle's hold on the world
     ]),
 
   # script_coop_append_s18: reg20 onto s18, after a comma unless arg1 = 1
@@ -688,15 +701,27 @@ coop_mp_encounter_option = (
 
 
 mp_campaign_menus = [
+  # the spoils as Native's victory menu shows them: the loot screen from the menu's own code (set
+  # $coop_loot_step 1 and jump here), and when it closes the menu's code runs again and leaves for
+  # the map. A loot screen opened from an option left that menu's options dead afterwards.
   ("coop_loot", 0,
    "CoopWorld: your share of the spoils of the joint battle.",
    "none",
-   [],
    [
-     ("coop_loot_take", [(eq, "$coop_loot_ready", 1)], "Take it.",
-      [(call_script, "script_coop_client_mp_loot_take")]),
+     (try_begin),
+       (eq, "$coop_loot_step", 1),
+       (assign, "$coop_loot_step", 2),
+       (call_script, "script_coop_client_mp_loot_take"),
+     (else_try),
+       (eq, "$coop_loot_step", 2),
+       (assign, "$coop_loot_step", 0),
+       (leave_encounter),
+       (change_screen_return),
+     (try_end),
+   ],
+   [
      ("coop_loot_leave", [], "Back to the map.",
-      [(assign, "$coop_loot_ready", 0), (leave_encounter), (change_screen_map)]),
+      [(assign, "$coop_loot_step", 0), (leave_encounter), (change_screen_map)]),
    ]),
 
   ("coop_mp_wait", 0,
@@ -717,9 +742,14 @@ mp_campaign_menus = [
       [(assign, "$coop_mp_hidden", 0), (start_presentation, "prsnt_coop_mp_wait")]),
      ("coop_mp_cancel", [(eq, "$coop_mp_state", 2), (eq, "$coop_mp_status", 0)], "Cancel the joint battle.",
       [(assign, "$coop_mp_state", 4), (leave_encounter), (change_screen_return)]),
-     ("coop_mp_loot", [(neg|is_between, "$coop_mp_state", 1, 4), (eq, "$coop_loot_ready", 1)],
-      "Take your share of the spoils.",
-      [(call_script, "script_coop_client_mp_loot_take")]),
+     ("coop_mp_loot", [(neg|is_between, "$coop_mp_state", 1, 4), (eq, "$coop_loot_ready", 1),
+                       (le, "$coop_mp_captor", 0), (le, "$coop_mp_taken_center", 0)],
+      "Take your share of the spoils (then back to the map).",
+      [
+        (call_script, "script_coop_client_mp_leave_battle"),
+        (assign, "$coop_loot_step", 1),
+        (jump_to_menu, "mnu_coop_loot"),
+      ]),
      ("coop_mp_taken", [(neg|is_between, "$coop_mp_state", 1, 4), (gt, "$coop_mp_taken_center", 0)],
       "Enter the stormed walls.",
       [
@@ -742,14 +772,7 @@ mp_campaign_menus = [
      ("coop_mp_back", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_captor", 0),
                        (le, "$coop_mp_taken_center", 0)], "Back to the map.",
       [
-        (try_begin),
-          (gt, "$coop_mp_target_center", 0), #a siege that ended: the walls are someone else's now
-          (eq, "$coop_mp_defend", 0), #(a defence leaves the world's siege to the world)
-          (call_script, "script_lift_siege", "$coop_mp_target_center", 0),
-          (assign, "$g_player_besiege_town", -1),
-          (assign, "$coop_mp_target_center", -1),
-        (try_end),
-        (assign, "$coop_busy", 2), #back on the map: the first map frame ends the battle's hold on the world
+        (call_script, "script_coop_client_mp_leave_battle"),
         (leave_encounter),
         # change_screen_map, not _return: after the spoils' loot screen this menu's return did nothing
         (change_screen_map),

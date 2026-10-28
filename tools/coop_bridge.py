@@ -882,6 +882,17 @@ class World:
         captives = [s for cid in defeated for s in left.get(cid, [])]
         world_captives = [s for cid in defeated if not getattr(self.players.get(cid), "on_server", False)
                           for s in left.get(cid, [])]  # the host's own defeat already hands them over
+        # the spoils: the losers' fallen, shared among the winning players
+        winners = [cid for cid, team in sorted(b.sides.items(), key=lambda kv: kv[0] != b.starter)
+                   if team == winner and cid in self.players]
+        shares = {}
+        if winners and winner in (0, 1):
+            spoils = fallen_of_team.get(1 - winner, [])
+            for k, cid in enumerate(winners):
+                share = [(troop, n // len(winners) + (1 if k < n % len(winners) else 0)) for troop, n in spoils]
+                share = [(troop, n) for troop, n in share if n > 0][:MAX_STACKS]
+                if share:
+                    shares[cid] = share
         for cid, lost in losses.items():
             q = self.players.get(cid)
             if q is None:
@@ -894,6 +905,8 @@ class World:
             xp = fell_by_team.get(1 - team, 0) * XP_PER_ENEMY // max(1, side_players)
             if not won:
                 xp //= 3
+            if cid in shares:  # before the result: the spoils are there while the battle menu still is
+                q.mp_out.append([21, b.bid, len(shares[cid])] + flat(shares[cid]))
             q.mp_out.append([8, b.bid, won, xp, len(lost)] + [v for entry in lost for v in entry])
             no = self._mp_player_number(cid)
             used = [(wpt, hits, damage) for player, wpt, hits, damage in weapons if player == no >= 0]
@@ -904,16 +917,6 @@ class World:
             captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1  # a failed storm: no capture
             if hp >= 0 or captor >= 0:
                 q.mp_out.append([10, b.bid, hp, captor])
-        # the spoils: the losers' fallen, shared among the winning players
-        winners = [cid for cid, team in sorted(b.sides.items(), key=lambda kv: kv[0] != b.starter)
-                   if team == winner and cid in self.players]
-        if winners and winner in (0, 1):
-            spoils = fallen_of_team.get(1 - winner, [])
-            for k, cid in enumerate(winners):
-                share = [(troop, n // len(winners) + (1 if k < n % len(winners) else 0)) for troop, n in spoils]
-                share = [(troop, n) for troop, n in share if n > 0][:MAX_STACKS]
-                if share:
-                    self.players[cid].mp_out.append([21, b.bid, len(share)] + flat(share))
         if b.defence:
             # the besiegers keep what survived (a party with nobody left is gone); the garrison too,
             # unless the walls fell: then the center goes to the besiegers' kingdom

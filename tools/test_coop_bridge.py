@@ -334,12 +334,14 @@ def test_joint_battle():
           "the outcome is acknowledged")
     check(w.battle is None, "the battle is over")
     xp = 20 * cb.XP_PER_ENEMY // 2
+    check(req(w, "a", now=9.1)[0][0] == 21, "first the spoils, while the joint battle menu is still open")
     check(req(w, "a", now=9.1)[0] == [8, bid, 1, xp, 2, 31, 2, 2, 32, 1, 1],
           "the starter gets the losses (half wounded) and half the experience (two players won)")
     check(req(w, "a", now=9.1)[0] == [9, bid, 2, 0, 7, 180, 3, 2, 60],
           "and how the hero fought, by weapon proficiency (another player's blows are not the starter's)")
     check(req(w, "a", now=9.1)[0] == [10, bid, 40, -1], "and the hero's health; the winner is not captured")
-    check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, xp, 0],
+    check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0][0] == 21
+          and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, xp, 0],
           "a player who lost nobody still hears the outcome, after the news it was fought")
     check(req(w, "b", x=300, now=9.1)[0] == [10, bid, 0, -1], "a hero who fell comes back with 0 health")
     check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
@@ -641,6 +643,8 @@ def test_companions_spoils_terrain():
     replies = [req(w, "a", now=9.1)[0] for _ in range(8)]
     check([8, bid, 1, 6 * cb.XP_PER_ENEMY, 1, 7, 0, 1] in replies, f"a fallen companion is wounded, never killed: {replies}")
     check([21, bid, 1, 40, 6] in replies, "the winner gets the fallen enemies as spoils")
+    check(replies.index([21, bid, 1, 40, 6]) < [r[0] for r in replies].index(8),
+          "the spoils come before the result, while the joint battle menu is still open")
 
 
 def test_centers_reach_players():
