@@ -178,6 +178,21 @@ try {{
   }}
   if (-not $python) {{ throw "{no_python}" }}
 {body}
+  # two Warband windows (the campaign and the battle server) in full screen hang on switching back
+  # (Direct3D 9): Warband is set to a window, once, with a copy of its settings kept
+  try {{
+    $rgl = Join-Path ([Environment]::GetFolderPath("MyDocuments")) (Join-Path "Mount&Blade Warband" "rgl_config.txt")
+    if (Test-Path $rgl) {{
+      $text = Get-Content $rgl -Raw
+      if ($text -match "start_windowed\s*=\s*0") {{
+        Copy-Item $rgl "$rgl.coopworld-backup" -Force
+        Set-Content -Path $rgl -Value ($text -replace "start_windowed\s*=\s*0", "start_windowed = 1") -Encoding ASCII -NoNewline
+        Write-Host "{windowed_set}" -ForegroundColor Yellow
+      }}
+    }}
+  }} catch {{
+    Write-Host "{windowed_failed}" -ForegroundColor Yellow
+  }}
   Write-Host ""
   Write-Host "{starting}" -ForegroundColor Green
   Write-Host "{stop_hint}"
@@ -232,6 +247,8 @@ LAUNCHER_TEXT = {
     starting="Starting the CoopWorld bridge. Keep this window open while you play.",
     stop_hint="To stop it: Ctrl+C or close the window.",
     log_where="Logs (bridge.log and trace.log at the host, join.log at a friend; a friend's log also reaches the host's):",
+    windowed_set="Warband is set to start in a window (two full-screen Warband windows hang when switching). Restart Warband if it runs. Your old settings: rgl_config.txt.coopworld-backup.",
+    windowed_failed="Could not set Warband to a window: Launcher - Configure - Start windowed, by hand.",
     stopped="The bridge has stopped. If it stopped by itself, the reason is in the lines above and in bridge.log.",
     failed="The bridge could not start:",
     ask_key="Password for your friends (Enter = play on this PC only)",
@@ -252,6 +269,8 @@ LAUNCHER_TEXT = {
     starting="Запускаю мост CoopWorld. Не закрывайте это окно, пока играете.",
     stop_hint="Остановить: Ctrl+C или закрыть окно.",
     log_where="Журналы (у хоста bridge.log и trace.log, у друга join.log; журнал друга приходит и хосту):",
+    windowed_set="Warband переключён на запуск в окне (два полноэкранных окна Warband зависают при переключении). Если игра запущена, перезапустите её. Прежние настройки: rgl_config.txt.coopworld-backup.",
+    windowed_failed="Не удалось переключить Warband в оконный режим: сделайте вручную - лаунчер, Configure, Start windowed.",
     stopped="Мост остановлен. Если он остановился сам, причина в строках выше и в bridge.log.",
     failed="Мост не запустился:",
     ask_key="Пароль для друзей (Enter - играть только на этом компьютере)",
