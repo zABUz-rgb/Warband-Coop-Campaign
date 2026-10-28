@@ -2,8 +2,9 @@
 
 The best working version is tagged (`git tag`, newest `stable-*`). Before a package goes out:
 `python build.py` (with tools/check_module.py), `python tools/test_coop_bridge.py`,
-`python tools/make_ru.py` (0 untranslated). After a session, bridge.log and trace.log in
-Documents\CoopWorld tell what happened. A fix that touches one of these is checked against all of them.
+`python tools/make_ru.py` (0 untranslated), `python tools/test_coop_logs.py`. After a session,
+`python tools/coop_logs.py` (check_logs.bat in the package) reads bridge.log and trace.log in
+Documents\CoopWorld and reports the battles, the silences and what did not arrive (`--all`: every session). A fix that touches one of these is checked against all of them.
 
 Confirmed in game at `stable-2026-10-28`:
 

@@ -316,6 +316,28 @@ def launcher_bat(kind):
     return f'@echo off\r\npowershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0{kind}.ps1" %*\r\n'
 
 
+# check_logs.bat: the report on the last session, from the host's logs (tools/coop_logs.py)
+CHECK_LOGS_TEMPLATE = r"""# CoopWorld: a report on the last session from Documents\CoopWorld\bridge.log and trace.log
+$python = $null
+foreach ($candidate in "python", "py") {{
+  $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+  if ($cmd -and $cmd.Source -notmatch "WindowsApps") {{ $python = $cmd.Source; break }}
+}}
+if ($python) {{
+  & $python -I (Join-Path $PSScriptRoot "coop_logs.py") @args
+}} else {{
+  Write-Host "{no_python}" -ForegroundColor Red
+}}
+Write-Host ""
+try {{ Read-Host "{press_enter}" | Out-Null }} catch {{}}
+"""
+
+
+def check_logs(lang):
+    text = LAUNCHER_TEXT[lang]
+    return CHECK_LOGS_TEMPLATE.format(no_python=text["no_python"], press_enter=text["press_enter"])
+
+
 README_RU = '''CoopWorld - кооперативная кампания для Mount & Blade: Warband 1.174
 ====================================================================
 Основа - мод Diplomacy 1.174 (с Freelancer). Нужна новая кампания: старые сохранения
@@ -465,6 +487,8 @@ CoopWorld без Diplomacy с этой версией не работают.
 ЕСЛИ ЧТО-ТО НЕ ТАК
   - Мост пишет журналы в Документы\\CoopWorld (у хоста bridge.log и trace.log, у друга join.log;
     строки журнала друга попадают и в bridge.log хоста) и каждые 5 секунд выводит строку состояния.
+  - После сессии хост дважды щёлкает check_logs.bat: отчёт о сессии (бои, кто и когда замолчал,
+    что не дошло) - на экране и в Документы\\CoopWorld\\report.txt. Пришлите его вместе с описанием.
   - Если окно моста пишет, что Python не найден: установите Python 3 с python.org и отметьте
     "Add python.exe to PATH".
   - "cannot reach the host": проверьте адрес хоста, пароль и что Radmin VPN/ZeroTier включён у обоих.
@@ -553,6 +577,10 @@ YOUR HERO BETWEEN SESSIONS: a friend loads the host's save every time but plays 
   not kept. Clients now get the weekly budget (wages, income) too and can read books.
 
 Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op" in your game, then close the bridge window.
+
+Something went wrong: after the session the host double-clicks check_logs.bat - a report on the
+session (battles, who went quiet when, what did not arrive), on screen and in
+Documents\\CoopWorld\\report.txt (the report is in Russian).
 '''
 
 
@@ -568,6 +596,7 @@ def build(name, files, russian=False):
         for source, rel in assets():  # Diplomacy's textures and changed scenes
             z.write(source, f"{name}/CoopWorld/{rel}")
         z.write(ROOT / "tools" / "coop_bridge.py", f"{name}/coop_bridge.py")
+        z.write(ROOT / "tools" / "coop_logs.py", f"{name}/coop_logs.py")
         for arcname, text in files.items():
             z.writestr(f"{name}/{arcname}", text.encode("utf-8"))
         if russian:
@@ -586,7 +615,9 @@ def main():
     (ROOT / "dist").mkdir(exist_ok=True)
     day = f"{datetime.date.today():%Y%m%d}"
     launchers = {lang: {"host.ps1": BOM + launcher("host", lang), "join.ps1": BOM + launcher("join", lang),
-                        "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join")} for lang in ("en", "ru")}
+                        "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join"),
+                        "check_logs.ps1": BOM + check_logs(lang), "check_logs.bat": launcher_bat("check_logs")}
+                 for lang in ("en", "ru")}
     build(f"CoopWorld-{day}", {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
                                "README.txt": README, "START HERE.txt": START_HERE, **launchers["en"]})
     if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
