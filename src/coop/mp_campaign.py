@@ -394,6 +394,7 @@ mp_campaign_scripts = [
      (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&mp={reg6}&bid={reg7}&mpe={reg8}&mpp={reg9}&mpc={reg10}&mpd={reg11}{s16}{s18}{s20}&me={s12}&name={s15}"),
      (assign, "$coop_net_pending", 1),
      (send_message_to_url, s10, 0),
+     (val_add, "$coop_mp_dbg_sent", 1),
     ]),
 
   # script_coop_client_mp_hero_to_s18: s18 = "&hero=..." the player's hero for the battle server:
@@ -553,6 +554,9 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_status", 0),
      (assign, "$coop_mp_state", 1),
      (assign, "$coop_mp_hidden", 0),
+     (assign, "$coop_mp_dbg_sent", 0),
+     (assign, "$coop_mp_dbg_answers", 0),
+     (assign, "$coop_mp_dbg_shown", -100000),
      # the start goes to the bridge right now: switching to the multiplayer window at once may stop
      # this game (a background window), and the battle must not wait for it
      (call_script, "script_coop_client_mp_send"),
@@ -588,6 +592,9 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_status", 0),
      (assign, "$coop_mp_state", 1),
      (assign, "$coop_mp_hidden", 0),
+     (assign, "$coop_mp_dbg_sent", 0),
+     (assign, "$coop_mp_dbg_answers", 0),
+     (assign, "$coop_mp_dbg_shown", -100000),
      # the start goes to the bridge right now: switching to the multiplayer window at once may stop
      # this game (a background window), and the battle must not wait for it
      (call_script, "script_coop_client_mp_send"),
@@ -809,6 +816,19 @@ mp_campaign_presentations = [
      (ti_on_presentation_run,
       [
         (store_trigger_param_1, ":now"),
+        # every few seconds: what the window does (to find where a joint battle gets stuck)
+        (try_begin),
+          (store_sub, ":since", ":now", "$coop_mp_dbg_shown"),
+          (this_or_next|lt, ":since", 0),
+          (ge, ":since", 3000),
+          (assign, "$coop_mp_dbg_shown", ":now"),
+          (assign, reg20, "$coop_mp_state"),
+          (assign, reg21, "$coop_mp_dbg_sent"),
+          (assign, reg22, "$coop_mp_dbg_answers"),
+          (assign, reg23, "$coop_net_pending"),
+          (assign, reg24, "$coop_mp_bid"),
+          (display_message, "@CoopWorld [wait]: state {reg20}, sent {reg21}, answers {reg22}, pending {reg23}, battle {reg24}", 0xFFDD66),
+        (try_end),
         (try_begin),
           (is_between, "$coop_mp_state", 1, 4),
           (store_sub, ":waited", ":now", "$coop_mp_sent"),
@@ -894,6 +914,7 @@ def reply_branches():
       (eq, ":kind", 7),
       (this_or_next|eq, "$coop_role", coop_role_client),
       (eq, "$coop_srv_player", 1), #the host's own player requests
+      (val_add, "$coop_mp_dbg_answers", 1),
       (try_begin),
         (ge, ":num_strings", 1), #the name this player is expected under on the battle server
         (party_set_name, "p_coop_buf", s0), #kept as a party name: string registers do not last

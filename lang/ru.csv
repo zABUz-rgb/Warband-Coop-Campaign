@@ -1725,3 +1725,4 @@ quick_strings|qstr_CoopWorld:_fight_now|CoopWorld: бой идёт - перек�
 quick_strings|qstr_CoopWorld:_request_f|CoopWorld: запрос на совместный бой отправлен мосту.
 quick_strings|qstr_CoopWorld:_team_take|CoopWorld: сервер не ответил на выбор команды - выбор засчитан.
 quick_strings|qstr_CoopWorld_[team_wind|CoopWorld [окно команды]: ждёт {reg20}, ответ {reg21}, моя команда {reg22}, предел {reg23}, сборка {reg24}
+quick_strings|qstr_CoopWorld_[wait]:_st|CoopWorld [ожидание боя]: состояние {reg20}, отправлено {reg21}, ответов {reg22}, ждёт ответа {reg23}, бой {reg24}
