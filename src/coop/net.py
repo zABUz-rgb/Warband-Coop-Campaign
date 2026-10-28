@@ -989,6 +989,14 @@ def net_reply_handler():
         (display_message, "@CoopWorld: hero name - {s0}.", 0x66CCFF),
         (assign, "$coop_own_troops_frames", coop_own_troops_frames), #the new name goes out with the next report
       (else_try),
+        # a friend's game that loaded the host's save, still in the host's role: its bridge is a
+        # relay, not the host's. It becomes a client at once (as Camp - CoopWorld - CLIENT does)
+        (eq, ":kind", 24),
+        (eq, "$coop_srv_player", 1),
+        (assign, "$coop_hold_alive", 0),
+        (call_script, "script_coop_become_client"),
+        (display_message, "@CoopWorld: this game is a copy of the host's save on a friend's PC - it joins the host's world as a CLIENT.", 0x66CCFF),
+      (else_try),
         (eq, ":kind", 23),
         (eq, "$coop_role", coop_role_client),
         (display_message, "@CoopWorld: the host saved the game. Your copy of the world is updated: next time load it to start from there (your hero comes back from the host).", 0x66CCFF),

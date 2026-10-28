@@ -1778,3 +1778,4 @@ quick_strings_en|CoopWorld: a call to a joint battle - declined: you are a priso
 game_menus|mno_coop_to_map|CoopWorld: вернуться на карту (если лагерь не отпускает).
 game_menus|mno_coop_role_client_held|CoopWorld: сделать эту игру КЛИЕНТОМ.
 quick_strings_en|a copy of the host's save: choose CLIENT to join the host's world|копия сохранения хоста: выберите КЛИЕНТ, чтобы войти в мир хоста
+quick_strings_en|CoopWorld: this game is a copy of the host's save on a friend's PC - it joins the host's world as a CLIENT.|CoopWorld: эта игра - копия сохранения хоста на компьютере друга. Она входит в мир хоста как КЛИЕНТ.

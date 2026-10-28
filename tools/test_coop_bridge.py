@@ -566,6 +566,15 @@ def test_logs():
     check("mp=1" in path.read_text("utf-8") and "7777|7" in path.read_text("utf-8"), "trace.log holds both")
 
 
+def test_copy_of_the_hosts_save():
+    w = cb.World()
+    nums, _ = req(w, "net-abc@1.2.3.4", now=0.0, on_server=True)
+    check(nums == [24], f"a friend's game still in the host's role is told it is a copy: {nums}")
+    check("net-abc@1.2.3.4" not in w.players, "and does not take a player's place as a host")
+    nums, _ = req(w, "local", now=0.0, on_server=True)
+    check(nums != [24], "the host's own game is the host")
+
+
 def test_blank_values():
     w = cb.World()
     cb.handle_request(w, "cli", "/cli?seq=1&x=0&y=0&busy=0&me=,49,2&name=Ivan", 0.0)
@@ -764,4 +773,5 @@ if __name__ == "__main__":
     test_notices_and_asking_again()
     test_logs()
     test_blank_values()
+    test_copy_of_the_hosts_save()
     print("ALL OK")

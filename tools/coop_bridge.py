@@ -84,6 +84,8 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|14|offset|total|n|values...    the hero kept for this player (total 0: none, a new hero)
           7777|22|name                         the hero's name: the one its player gave the launcher
           7777|23                              the host saved the game; join.bat put the file in this player's saves
+          7777|24                              to a friend's game in the host's role (it loaded the host's save):
+                                               it is a copy and becomes a client
           7777|15|id|slot|n|(troop,count)*n    the player in slot offers these troops
           7777|16|id|accepted|n|(troop,count)*n   how this player's offer went (declined: they come back)
           7777|17|slot                         the player in slot asks to join this player's party
@@ -541,6 +543,10 @@ class World:
                 self._part_company(cid)
                 self.players.pop(cid, None)
                 return [0], None
+            if on_server and cid.startswith("net"):
+                # the host's own requests come from this PC; from a relay they come from a friend's
+                # game that loaded the host's save (still in the host's role): it is a copy, a client
+                return [24], None
             p = self._player(cid)
             p.on_server = on_server
             if build is not None and build != p.build:
