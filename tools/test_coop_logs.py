@@ -161,6 +161,11 @@ def test_short_holds():
           "short holds 'in an encounter or battle' without a battle are counted")
 
 
+def test_captor_gone():
+    text = report(BRIDGE_START + "12:01:00 party 787 is gone, the captor of 0:O\n" + stats("12:01:05") + "\n", "")
+    check(any("отряд 787, взявший в плен 0:O" in line for line in marked(text, "? ")), "a captor gone from the world")
+
+
 def test_parties():
     bridge = BRIDGE_START + stats("12:00:15", parties=0) + "\n" + stats("12:00:20", parties=300) + "\n" \
         + stats("12:00:25", parties=250) + "\n"
@@ -178,4 +183,5 @@ if __name__ == "__main__":
     test_parties()
     test_party_flow()
     test_short_holds()
+    test_captor_gone()
     print("ALL OK")

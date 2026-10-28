@@ -57,6 +57,7 @@ CONNECTED = re.compile(r"^net: player (\S+) (connected again|connected), multipl
 LEFT = re.compile(r"^net: player (\S+) left")
 NET_LOST = re.compile(r"^net: lost (\S+);")
 NET_ERROR = re.compile(r"^net: (\S+) error (.*)$")
+CAPTOR_GONE = re.compile(r"^party (\d+) is gone, the captor of (.*)$")
 MP_FOUND = re.compile(r"^battle server: player (\d+) \((.*?)\) (NOT found|recognised as)")
 
 
@@ -253,6 +254,11 @@ def analyze(events, trace, silence=30):
             if "10054" in reason:
                 reason = "соединение закрыто с той стороны (игра или мост друга закрыты либо упали)"
             s.note(t, "  ", f"{s.who(m.group(1))}: {reason}")
+            continue
+        m = CAPTOR_GONE.match(text)
+        if m:
+            s.note(t, "? ", f"у мира пропал отряд {m.group(1)}, взявший в плен {m.group(2)}: "
+                            "клиент держит его копию, пока игрок в плену")
             continue
         m = REFUSED.match(text)
         if m:

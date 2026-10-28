@@ -285,6 +285,7 @@ class World:
         self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0,
                       "new": 0, "gone": 0, "back": 0}  # parties learnt, gone stale, back after going stale
         self.gone_at = {}       # sid -> when it went stale: one reported again soon after was alive all along
+        self.captors = {}       # sid of a world party -> the players it took prisoner in a joint battle
 
     # ---- players
 
@@ -482,6 +483,8 @@ class World:
 
     def _forget(self, sid, except_cid):
         """The party is gone: every player (but the one that removed it already) drops it."""
+        if sid in self.captors:
+            self.log(f"party {sid} is gone, the captor of {', '.join(sorted(self.captors.pop(sid)))}")
         self.parties.pop(sid, None)
         self.troops.pop(sid, None)
         for p in self.players.values():
@@ -924,6 +927,8 @@ class World:
             # last: the hero's wounds, and the capture (after which the player is in captivity)
             hp = (health or {}).get(no, -1) if no >= 0 else -1
             captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1  # a failed storm: no capture
+            if captor >= 0:
+                self.captors.setdefault(captor, set()).add(self._who(q))
             if hp >= 0 or captor >= 0:
                 q.mp_out.append([10, b.bid, hp, captor])
         if b.defence:

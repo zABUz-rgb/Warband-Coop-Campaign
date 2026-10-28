@@ -27,7 +27,11 @@ screen from the coop_loot menu's own code, then back to the map by itself (an op
 loot screen left the camp's and the battle menu's options dead). The spoils (kind 21) now come before
 the result (kind 8), so the joint battle menu offers them. A client drops a mirror the host has not
 mentioned for 900 requests (about 1.5 min) instead of 1500.
-Open (build 247370558, not confirmed yet): a client whose hero stands still no longer pauses the world
-"in an encounter or battle" for a second or two (its own rest was taken for a menu); the session
-report counts such short holds.
+Confirmed (build 247370558, session 19:45): a client whose hero stands still no longer pauses the world
+"in an encounter or battle" (no short holds in the report).
+Open (build 297015227, not confirmed yet): a new mirror appears where the server's party is, not on
+the client's hero (parties seemed to come out of the client); the party met (until the encounter's
+result went out) and the captor in captivity are never removed under the game, other mirrors the
+server dropped are (the sweep no longer keeps the last party met for good). The bridge logs a
+captor that is gone. Ctrl+Space on a client in captivity hung the game once (19:58) - cause unknown.
 A weak PC with both Warband windows open may run out of memory.

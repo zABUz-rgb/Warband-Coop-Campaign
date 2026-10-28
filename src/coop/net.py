@@ -250,6 +250,26 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
+  # script_cf_coop_mirror_kept: arg1 = a mirror; succeeds while this game still needs it although
+  # the server dropped it: the party it is meeting, until the encounter's result went out (gone, it
+  # would be reported destroyed), or the captor the camera follows in captivity
+  ("cf_coop_mirror_kept",
+   [
+     (store_script_param, ":party_no", 1),
+     (assign, ":kept", 0),
+     (try_begin),
+       (eq, ":party_no", "$g_encountered_party"),
+       (this_or_next|gt, "$coop_busy", 0),
+       (party_slot_ge, "p_coop_enc", 0, 1),
+       (assign, ":kept", 1),
+     (else_try),
+       (eq, ":party_no", "$capturer_party"),
+       (eq, "$g_player_is_captive", 1),
+       (assign, ":kept", 1),
+     (try_end),
+     (eq, ":kept", 1),
+    ]),
+
   # script_coop_append_entry: arg1 = party; appends "sid,tmpl,x,y,tx,ty,att;" to s11, where tx,ty is
   # where the party is heading (its own position when it stays or the target is unknown), so the
   # client can let the mirror walk on between updates instead of trailing behind.
@@ -620,7 +640,16 @@ def net_scripts(first_dynamic):
        (val_sub, ":ty", coop_net_offset),
        (party_get_slot, ":cid", "p_coop_map", ":sid"),
        (val_sub, ":cid", 1),
+       (assign, ":kept", 0),
        (try_begin),
+         (ge, ":cid", first_dynamic),
+         (call_script, "script_cf_coop_mirror_kept", ":cid"),
+         (assign, ":kept", 1),
+       (try_end),
+       (try_begin),
+         (eq, ":tmpl", coop_net_removed),
+         (eq, ":kept", 1),
+       (else_try),
          (eq, ":tmpl", coop_net_removed),
          (try_begin),
            (ge, ":cid", first_dynamic),
@@ -649,7 +678,7 @@ def net_scripts(first_dynamic):
            (ge, ":cid", first_dynamic),
            (party_is_active, ":cid"),
            (neq, ":cid", "p_main_party"),
-           (neq, ":cid", "$g_encountered_party"),
+           (eq, ":kept", 0),
            (remove_party, ":cid"),
          (try_end),
          (try_begin),
@@ -658,6 +687,12 @@ def net_scripts(first_dynamic):
            (set_spawn_radius, 0),
            (spawn_around_party, "p_main_party", ":tmpl"),
            (assign, ":cid", reg0),
+           # where the server's party is, at once: made beside the player, it seemed to come out of
+           # the player's party (walking there when close, for a frame when far)
+           (init_position, pos1),
+           (position_set_x, pos1, ":x"),
+           (position_set_y, pos1, ":y"),
+           (party_set_position, ":cid", pos1),
            (party_set_ai_behavior, ":cid", ai_bhvr_hold),
            (store_add, ":mapped", ":cid", 1),
            (party_set_slot, "p_coop_map", ":sid", ":mapped"),
