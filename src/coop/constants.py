@@ -5,12 +5,14 @@ def _build_id():
   """A number for this build of CoopWorld: the same sources give the same number. Games tell it to
   the bridge, which warns when a friend runs another build than the host (install the same package)."""
   import os, zlib
-  here = os.path.dirname(os.path.abspath(__file__))
+  src = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   crc = 0
-  for name in sorted(os.listdir(here)):
-    if name.endswith(".py"):
-      with open(os.path.join(here, name), "rb") as f:
-        crc = zlib.crc32(f.read(), crc)
+  for part in ("coop", "dplmc_fix", "freelancer"):  # CoopWorld's own layers over Diplomacy
+    folder = os.path.join(src, part)
+    for name in sorted(os.listdir(folder)):
+      if name.endswith(".py"):
+        with open(os.path.join(folder, name), "rb") as f:
+          crc = zlib.crc32(f.read(), crc)
   return crc % 1000000000
 
 
