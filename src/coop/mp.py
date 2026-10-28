@@ -407,6 +407,18 @@ def mp_reply_hook():
 
 
 mp_battle_triggers = [
+  # no team limit: the players of a campaign battle often stand on one side. A window that had a
+  # campaign loaded also carries that save's globals, where the limit is 0 and no team could be
+  # picked at all
+  (1, 0, 0, [(multiplayer_is_server), (neq, "$g_multiplayer_auto_team_balance_limit", 1000)],
+   [
+     (assign, "$g_multiplayer_auto_team_balance_limit", 1000),
+     (get_max_players, ":num_players"),
+     (try_for_range, ":player_no", 1, ":num_players"), #0 is the server itself
+       (player_is_active, ":player_no"),
+       (multiplayer_send_int_to_player, ":player_no", multiplayer_event_return_auto_team_balance_limit, 1000),
+     (try_end),
+    ]),
   # ask the bridge; while a request is out, ask again only after a while (a lost reply)
   (0.5, 0, 0, [(multiplayer_is_server)],
    [
