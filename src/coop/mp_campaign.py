@@ -23,6 +23,11 @@ from coop.constants import *
 #      the defeated player prisoner, or -1)   11 prisoners for the winner bid|n|(troop, count)*n
 
 
+def first_dynamic():
+  from coop.triggers import first_dynamic_party
+  return first_dynamic_party()
+
+
 def puppet_end():
   from coop.triggers import puppet_range
   return puppet_range()[1]
@@ -367,6 +372,25 @@ mp_campaign_scripts = [
        (call_script, "script_coop_troops_to_s12", "$coop_mp_enemy_party", 1),
        (str_store_string, s16, "@&mpt={s12}"),
      (try_end),
+     # beside the lord the player serves: his party fights on the players' side, with its troops as
+     # this game sees them (the bridge prefers the world server's view)
+     (try_begin),
+       (eq, reg6, 1),
+       (ge, "$coop_mp_ally_sid", 0),
+       (assign, reg14, "$coop_mp_ally_sid"),
+       (str_store_string, s16, "@{s16}&mpa={reg14}"),
+       (try_begin),
+         (eq, "$coop_role", coop_role_server), #the host: the world's own party
+         (assign, ":ally", "$coop_mp_ally_sid"),
+       (else_try),
+         (party_get_slot, ":ally", "p_coop_map", "$coop_mp_ally_sid"),
+         (val_sub, ":ally", 1),
+       (try_end),
+       (gt, ":ally", 0),
+       (party_is_active, ":ally"),
+       (call_script, "script_coop_troops_to_s12", ":ally", 1),
+       (str_store_string, s16, "@{s16}&mpat={s12}"),
+     (try_end),
      (str_clear, s18),
      (str_clear, s20),
      (try_begin),
@@ -556,6 +580,7 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_target_slot", -1),
      (assign, "$coop_mp_defend", 1),
      (assign, "$coop_mp_enemy_party", -1),
+     (assign, "$coop_mp_ally_sid", -1),
      (try_begin),
        (eq, "$coop_srv_player", 1),
        (party_get_slot, "$coop_mp_target_sid", ":center", slot_center_is_besieged_by),
@@ -588,6 +613,7 @@ mp_campaign_scripts = [
    [
      (store_script_param, ":party_no", 1),
      (assign, "$coop_mp_enemy_party", ":party_no"),
+     (assign, "$coop_mp_ally_sid", -1),
      (assign, "$coop_mp_target_sid", -1),
      (assign, "$coop_mp_target_slot", -1),
      (assign, "$coop_mp_target_center", -1),
@@ -619,7 +645,88 @@ mp_campaign_scripts = [
      (display_message, "@CoopWorld: request for a joint battle sent to the bridge.", 0x66CCFF),
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
+
+  # script_cf_coop_lord_enemy: the lord this player serves (Freelancer) is in a field battle.
+  # reg0 = the enemy party in this game (-1: none here), reg1 = its id on the world server,
+  # reg2 = the lord's party on the world server
+  ("cf_coop_lord_enemy",
+   [
+     (assign, reg0, -1),
+     (assign, reg1, -1),
+     (assign, reg2, -1),
+     (try_begin),
+       (eq, "$coop_role", coop_role_client), #the bridge tells (kind 25): a mirror fights nobody here
+       (ge, "$coop_lord_enemy_sid", 0),
+       (ge, "$coop_lord_sid", 0),
+       (assign, reg1, "$coop_lord_enemy_sid"),
+       (assign, reg2, "$coop_lord_sid"),
+       (party_get_slot, reg0, "p_coop_map", reg1),
+       (val_sub, reg0, 1),
+     (else_try),
+       (eq, "$coop_srv_player", 1), #the host: the world's own battle
+       (gt, "$enlisted_party", 0),
+       (party_is_active, "$enlisted_party"),
+       (party_get_battle_opponent, ":enemy", "$enlisted_party"),
+       (ge, ":enemy", first_dynamic()), #a field battle (not a siege's walls, not a player)
+       (party_is_active, ":enemy"),
+       (assign, reg0, ":enemy"),
+       (assign, reg1, ":enemy"),
+       (assign, reg2, "$enlisted_party"),
+     (try_end),
+     (ge, reg1, 0),
+    ]),
+
+  # script_coop_client_mp_begin_lord: a joint battle beside the lord this player serves, against
+  # the party he fights; his men fight on the players' side
+  ("coop_client_mp_begin_lord",
+   [
+     (try_begin),
+       (call_script, "script_cf_coop_lord_enemy"),
+       (assign, "$coop_mp_enemy_party", -1),
+       (try_begin),
+         (gt, reg0, 0),
+         (party_is_active, reg0),
+         (assign, "$coop_mp_enemy_party", reg0), #its troops as this game sees them
+       (try_end),
+       (assign, "$coop_mp_target_sid", reg1),
+       (assign, "$coop_mp_ally_sid", reg2),
+       (assign, "$coop_mp_target_slot", -1),
+       (assign, "$coop_mp_target_center", -1),
+       (assign, "$coop_mp_defend", 0),
+       (assign, "$coop_mp_bid", 0),
+       (assign, "$coop_mp_status", 0),
+       (assign, "$coop_mp_state", 1),
+       (assign, "$coop_mp_hidden", 0),
+       (assign, "$coop_mp_dbg_sent", 0),
+       (assign, "$coop_mp_dbg_answers", 0),
+       (assign, "$coop_mp_dbg_shown", -100000),
+       (call_script, "script_coop_client_mp_send"),
+       (display_message, "@CoopWorld: request for a joint battle beside your commander sent to the bridge.", 0x66CCFF),
+       (jump_to_menu, "mnu_coop_mp_wait"),
+     (else_try),
+       (display_message, "@CoopWorld: your commander is no longer in battle.", 0xFFDD66),
+     (try_end),
+    ]),
 ]
+
+
+# Freelancer's soldier menu: the lord the player serves is in a field battle - fight it together, the
+# players and the lord's men against his enemy (the host's game sees the lord's battle itself, a
+# client's hears of it from the bridge)
+coop_mp_lord_option = (
+  "coop_mp_lord_battle",
+  [
+    (this_or_next|eq, "$coop_role", coop_role_client),
+    (eq, "$coop_srv_player", 1),
+    (eq, "$coop_mp_state", 0),
+    (neg|troop_is_wounded, "trp_player"),
+    (neq, "$g_player_is_captive", 1),
+    (call_script, "script_cf_coop_lord_enemy"),
+  ],
+  "CoopWorld: fight beside your commander together with your friends (joint battle on the multiplayer server).",
+  [
+    (call_script, "script_coop_client_mp_begin_lord"),
+  ])
 
 
 # a besieged center on the player's side: defend its walls together (inside, or arriving outside)
@@ -925,7 +1032,20 @@ def client_request_suffix():
       (assign, reg7, "$coop_mp_bid"),
       (str_store_string, s17, "@&mp=4&bid={reg7}"),
     (try_end),
-  ] + players_request_suffix()
+  ] + players_request_suffix() + [
+    # a soldier in a lord's party (Freelancer): which world party that is, so the bridge can tell
+    # when he goes into battle
+    (try_begin),
+      (eq, "$coop_role", coop_role_client),
+      (eq, "$freelancer_state", 1),
+      (gt, "$enlisted_party", 0),
+      (party_is_active, "$enlisted_party"),
+      (party_get_slot, reg7, "$enlisted_party", slot_party_coop_sid),
+      (gt, reg7, 0),
+      (val_sub, reg7, 1),
+      (str_store_string, s17, "@{s17}&lord={reg7}"),
+    (try_end),
+  ]
 
 
 def reply_branches():
@@ -964,6 +1084,15 @@ def reply_branches():
       (this_or_next|eq, "$coop_role", coop_role_client),
       (eq, "$coop_srv_player", 1),
       (call_script, "script_coop_client_mp_loot"),
+    (else_try),
+      (eq, ":kind", 25), #the lord this player serves fights a world party (-1: no longer)
+      (eq, "$coop_role", coop_role_client),
+      (party_get_slot, "$coop_lord_sid", "p_coop_buf", 2),
+      (party_get_slot, "$coop_lord_enemy_sid", "p_coop_buf", 3),
+      (try_begin),
+        (lt, "$coop_lord_enemy_sid", 0),
+        (assign, "$coop_lord_asked", -1), #the next battle asks again, even against the same party
+      (try_end),
     (else_try),
       (eq, ":kind", 13),
       (eq, "$coop_srv_player", 1),

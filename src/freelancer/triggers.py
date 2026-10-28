@@ -160,7 +160,7 @@ triggers = [
     ],
     [
         (jump_to_menu, "mnu_world_map_soldier"),
-        (rest_for_hours_interactive, 9999, 4, 0),
+        (call_script, "script_coop_rest_interactive", 9999, 4, 0), #CoopWorld: the world's time speed
     ]),
 
 (24.0, 0, 0, [

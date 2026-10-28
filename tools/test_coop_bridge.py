@@ -119,17 +119,67 @@ def test_shared_pause():
     req(w, "b", now=1.0)
     check(statuses(w, "b", 1.1) == [], "nothing new: no status reply")
     req(w, "a", now=2.0, busy=True)
-    check(statuses(w, "b", 2.1) == [[5, 1, 0, 1]], "player b is told at once: the world stands, player 0 is in battle")
-    check(statuses(w, "a", 2.1, busy=True) in ([], [[5, 0, 0, 0]]),
+    check(statuses(w, "b", 2.1) == [[5, 1, 0, 1, 0]], "player b is told at once: the world stands, player 0 is in battle")
+    check(statuses(w, "a", 2.1, busy=True) in ([], [[5, 0, 0, 0, 0]]),
           "the player in battle is not paused by itself")
     req(w, "a", now=3.0)
-    check(statuses(w, "b", 3.1) == [[5, 0, 0, 0]], "the battle is over: the world runs again for b")
-    check(statuses(w, "b", 3.0 + cb.SILENT_PAUSE_S + 0.2)[:1] == [[5, 1, 0, 2]],
+    check(statuses(w, "b", 3.1) == [[5, 0, 0, 0, 0]], "the battle is over: the world runs again for b")
+    check(statuses(w, "b", 3.0 + cb.SILENT_PAUSE_S + 0.2)[:1] == [[5, 1, 0, 2, 0]],
           "player a silent in a menu: b stands still too (why 2)")
     w2 = cb.World()
     req(w2, "a", now=0.0)
     got = [r[0] for r in (req(w2, "a", now=0.0) for _ in range(cb.STATUS_EVERY + 2)) if r[0][0] == 5]
     check(len(got) == 1, "an unchanged state is repeated now and then, in case a reply was lost")
+
+
+def test_clock_sync():
+    w = cb.World()
+    w.server_report([], None, 0.0, hours=100)
+    req(w, "a", now=0.0, hours=100)
+    check(statuses(w, "a", 0.1, hours=101) == [], "an hour apart is the same time (hours tick at different moments)")
+    check(statuses(w, "a", 0.2, hours=102) == [[5, 1, -1, 3, 0]], "two hours ahead: the player waits for the world")
+    check(statuses(w, "a", 0.3, hours=101) == [], "it waits until the world has caught up")
+    w.server_report([], None, 0.4, hours=101)
+    check(statuses(w, "a", 0.5, hours=101) == [[5, 0, 0, 0, 0]], "caught up: it goes on")
+    check(statuses(w, "a", 0.6, hours=97) == [[5, 0, 0, 0, 1]], "far behind: it rests faster")
+    check(statuses(w, "a", 0.7, hours=200) == [[5, 0, 0, 0, 0]], "a day ahead and more is another save: no waiting")
+    req(w, "host", now=0.8, on_server=True, hours=50)
+    check(statuses(w, "host", 0.9, on_server=True, hours=50) in ([], [[5, 0, 0, 0, 0]]),
+          "the host's game is the world's clock")
+
+
+def test_lord_battle():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[], name="Ivan", lord=700)
+    req(w, "b", x=100, now=0.0, me=[], name="Olga", lord=700)
+    w.server_report([], (700, [(50, 1), (51, 30)]), 0.5, battles=[(700, 800)])
+    told = [r[0] for r in (req(w, "a", now=1.0, lord=700) for _ in range(3)) if r[0][0] == 25]
+    check(told == [[25, 700, 800]], "a soldier hears once that the lord it serves fights party 800")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.0) == [0], "a battle server is on")
+    start = dict(mp(1, sid=800, troops=[(60, 25)], hero=HERO), ally=700, ally_troops=[(51, 5)])
+    nums, _ = req(w, "a", now=1.1, busy=True, mp=start)
+    bid = w.battle.bid
+    check(nums == [7, bid, 0, 0] and w.battle.ally_sid == 700, "a joint battle beside the lord gathers")
+    req(w, "b", x=100, now=1.2, busy=True, mp=dict(mp(1, sid=800, hero=HERO), ally=700))
+    check(w.battle.sides == {"a": 0, "b": 0} and not w.battle.invited,
+          "the other soldier, starting against the same enemy, joins that battle")
+    check(req(w, "b", x=100, now=1.3, busy=True, mp=mp(2, bid))[0] == [7, bid, 0, 0], "and is told so")
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.4)
+    check([s[:4] for s in w.battle.stacks] == [[0, ("npc", 700), 51, 30], [0, ("npc", 700), 50, 1], [1, None, 60, 25]],
+          f"the lord's men (as the world server knows them) on the players' side: {w.battle.stacks}")
+    w.battle.state = "running"
+    w.mp_request(4, bid, 0, {0: 10, 2: 5}, {0: "ivan", 1: "olga"}, 5.0)
+    check((800, 1, [(60, 20)], []) in w.results, "won: the enemy is beaten")
+    check((700, 0, [(51, 20), (50, 1)], []) in w.results, "the lord keeps his men who survived, never destroyed")
+    w.server_report([], None, 20.0)
+    told = [r[0] for r in (req(w, "a", now=20.1, lord=700) for _ in range(12)) if r[0][0] == 25]
+    check(told == [[25, -1, -1]], "the lord's battle is over: the soldier is told")
+    w2 = cb.World()
+    req(w2, "host", now=0.0, on_server=True, lord=700)
+    w2.server_report([], None, 0.5, battles=[(700, 800)])
+    told = [r[0] for r in (req(w2, "host", now=1.0, on_server=True, lord=700) for _ in range(3)) if r[0][0] == 25]
+    check(told == [], "the host's own game sees its lord's battle itself")
+    check(cb.parse_battles("700,800;5;x,1;9,10") == [(700, 800), (9, 10)], "map battles from the world server")
 
 
 def test_pause():
@@ -217,7 +267,7 @@ def test_hub_and_relay():
     r = get("http://127.0.0.3:18090/srv?seq=1&h=50&n=1&d=700,5,123,-456,200,-456,0;&c=700,31,9")
     check(r == "7777|1|0|0|0|0", f"server reply before any player: {r}")
     r = raw_get(*cli, "/cli?seq=1&x=100&y=-400&busy=0&hello=1&me=,40,8&name=Ivan Petrov").split("|")
-    check(r == ["7777", "5", "0", "0", "0"], f"a new player first hears that the world runs: {r}")
+    check(r == ["7777", "5", "0", "0", "0", "0"], f"a new player first hears that the world runs: {r}")
     for seq in (2, 3, 4):  # the reply kinds take turns: wait for the positions
         r = raw_get(*cli, f"/cli?seq={seq}&x=100&y=-400&busy=0").split("|")
         if r[1] == "2":
@@ -776,6 +826,8 @@ if __name__ == "__main__":
     test_players_and_puppets()
     test_pause()
     test_shared_pause()
+    test_clock_sync()
+    test_lord_battle()
     test_troops_results_tombstones()
     test_clock()
     test_host_plays_on_server()

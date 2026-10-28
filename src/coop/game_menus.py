@@ -131,7 +131,8 @@ def merge(menus):
     ("coop_camp", 0, "CoopWorld: co-op.^^This game is {s1}.", "none", coop_role_text, coop_camp))
   # joint battles on the multiplayer server
   from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option, coop_mp_siege_option
-  from coop.mp_campaign import coop_mp_defend_option
+  from coop.mp_campaign import coop_mp_defend_option, coop_mp_lord_option
+  menu_options(menus, "world_map_soldier").insert(0, coop_mp_lord_option)
   menu_options(menus, "town").insert(0, coop_mp_defend_option)
   outside = menu_options(menus, "castle_outside")
   outside.insert(find_by_id(outside, "castle_leave"), coop_mp_defend_option)

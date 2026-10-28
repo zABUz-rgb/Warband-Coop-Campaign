@@ -63,6 +63,7 @@ def net_triggers(first_dynamic):
        (assign, ":still", 1),
        (eq, "$coop_srv_player", 1),
        (eq, "$coop_leader", 0), #following another player: carried along, the host still rests
+       (neq, "$freelancer_state", 1), #serving in a lord's party: the same
        (set_fixed_point_multiplier, 100),
        (party_get_position, pos2, "p_main_party"),
        (position_get_x, ":x", pos2),
@@ -82,7 +83,12 @@ def net_triggers(first_dynamic):
      (try_begin),
        (ge, "$coop_srv_idle_frames", coop_client_idle_frames),
        (assign, "$coop_srv_idle_frames", 0),
-       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, "$coop_srv_player"), #the host may be attacked
+       (assign, ":attackable", "$coop_srv_player"), #the host may be attacked
+       (try_begin),
+         (eq, "$freelancer_state", 1),
+         (assign, ":attackable", 0),
+       (try_end),
+       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, ":attackable"),
      (try_end),
      (try_begin),
        (eq, "$coop_srv_player", 1),
@@ -158,6 +164,8 @@ def net_triggers(first_dynamic):
          (assign, ":puppet", ":candidate"),
        (try_end),
        # parties close to that player first: they are the ones the player sees move
+       (assign, ":lb_party", -1), #one of them in a field battle: the bridge tells the lord's soldiers
+       (assign, ":lb_opponent", -1),
        (try_begin),
          (ge, ":puppet", 0),
          (party_get_position, pos3, ":puppet"),
@@ -180,6 +188,14 @@ def net_triggers(first_dynamic):
            (le, ":dx", coop_net_near_radius),
            (le, ":dy", coop_net_near_radius),
            (call_script, "script_coop_append_entry", ":party_no"),
+           (try_begin),
+             (lt, ":lb_party", 0),
+             (party_get_battle_opponent, ":opponent", ":party_no"),
+             (ge, ":opponent", first_dynamic), #a field battle with a world party
+             (party_is_active, ":opponent"),
+             (assign, ":lb_party", ":party_no"),
+             (assign, ":lb_opponent", ":opponent"),
+           (try_end),
            (val_add, ":near", 1),
            (val_add, ":count", 1),
            (ge, ":near", coop_net_batch_near),
@@ -257,6 +273,12 @@ def net_triggers(first_dynamic):
        (val_max, reg19, -1),
        (val_add, reg19, 1), #+ 1: 0 when nobody besieges it
        (str_store_string, s13, "@{s13}&cf={reg16},{reg17},{reg18},{reg19}"),
+       (try_begin),
+         (ge, ":lb_party", 0),
+         (assign, reg16, ":lb_party"),
+         (assign, reg17, ":lb_opponent"),
+         (str_store_string, s13, "@{s13}&lb={reg16},{reg17}"),
+       (try_end),
        (assign, reg1, "$coop_net_seq"),
        (assign, reg2, ":count"),
        (store_current_hours, reg3),
@@ -280,20 +302,42 @@ def net_triggers(first_dynamic):
        (party_get_position, pos2, "p_main_party"),
        (position_get_x, ":x", pos2),
        (position_get_y, ":y", pos2),
+       (assign, ":carried", 0), #serving in a lord's party, or a prisoner: moved along, never by the player
+       (try_begin),
+         (this_or_next|eq, "$freelancer_state", 1),
+         (eq, "$g_player_is_captive", 1),
+         (assign, ":carried", 1),
+       (try_end),
        (try_begin),
          (eq, ":x", "$coop_last_x"),
          (eq, ":y", "$coop_last_y"),
+         (val_add, "$coop_idle_frames", 1),
+       (else_try),
+         (eq, ":carried", 1),
          (val_add, "$coop_idle_frames", 1),
        (else_try),
          (assign, "$coop_idle_frames", 0),
        (try_end),
        (assign, "$coop_last_x", ":x"),
        (assign, "$coop_last_y", ":y"),
+       (eq, "$coop_world_paused", 0), #the world stands still: so does this player's clock
        (ge, "$coop_idle_frames", coop_client_idle_frames),
        (assign, "$coop_idle_frames", 0),
-       (rest_for_hours_interactive, 24 * 365, coop_world_time_speed, 1), #rest while attackable
-       (assign, "$coop_menu_hours", -2), #our own rest: time flows, it is not a menu
-       (assign, "$coop_rest_frame", 1),
+       (store_sub, ":attackable", 1, ":carried"), #rest while attackable, standing on the map
+       (call_script, "script_coop_rest_interactive", 24 * 365, coop_world_time_speed, ":attackable"),
+     (try_end),
+     (try_begin),
+       (eq, "$freelancer_state", 1),
+       (ge, "$coop_lord_enemy_sid", 0),
+       (neq, "$coop_lord_enemy_sid", "$coop_lord_asked"),
+       (eq, "$coop_mp_state", 0),
+       (eq, "$coop_busy", 0),
+       (neq, "$g_player_is_captive", 1),
+       (store_troop_health, ":health", "trp_player"),
+       (ge, ":health", 50), #as Freelancer's own call to battle
+       (assign, "$coop_lord_asked", "$coop_lord_enemy_sid"),
+       (display_message, "@CoopWorld: your commander goes into battle!", 0xFFDD66),
+       (jump_to_menu, "mnu_world_map_soldier"),
      (try_end),
      # menu: off the map while time stands still (inventory, reports, a town's menus). The world
      # pauses on the server too. A rest (time flows) is not a menu; a rest this game did not start

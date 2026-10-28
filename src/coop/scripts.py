@@ -38,6 +38,43 @@ scripts = [
      (try_end),
     ]),
 
+  # script_coop_rest_interactive: arg1 = hours, arg2 = time speed, arg3 = attackable. A rest of a
+  # co-op player (the host on the server, a client) runs at the world's time speed, faster while the
+  # player's clock is behind the world's, and not at all while the world stands still. Freelancer's
+  # own rests (speed 4 and 5) ran a soldier's clock ahead of everyone else's.
+  ("coop_rest_interactive",
+   [
+     (store_script_param, ":hours", 1),
+     (store_script_param, ":speed", 2),
+     (store_script_param, ":attackable", 3),
+     (try_begin),
+       (this_or_next|eq, "$coop_role", coop_role_client),
+       (eq, "$coop_srv_player", 1),
+       (assign, ":speed", coop_world_time_speed),
+       (try_begin),
+         (eq, "$coop_role", coop_role_client),
+         (eq, "$coop_time_behind", 1),
+         (assign, ":speed", coop_catch_up_time_speed),
+       (try_end),
+       (try_begin),
+         (eq, "$coop_role", coop_role_client),
+         (eq, "$coop_world_paused", 1),
+         (assign, ":hours", 0),
+       (else_try),
+         (eq, "$coop_role", coop_role_server),
+         (eq, "$coop_srv_paused", 1),
+         (assign, ":hours", 0),
+       (try_end),
+     (try_end),
+     (try_begin),
+       (gt, ":hours", 0),
+       (rest_for_hours_interactive, ":hours", ":speed", ":attackable"),
+       (eq, "$coop_role", coop_role_client),
+       (assign, "$coop_menu_hours", -2), #our own rest: time flows, it is not a menu
+       (assign, "$coop_rest_frame", 1),
+     (try_end),
+    ]),
+
   # script_coop_battle_ceasefire
   # Input: arg1 = 1 to make the two sides of a field battle neutral, 0 to make them enemies again.
   # Field battles use teams 0 and 1, with allies of each side on 2 and 3 (Native agent_reassign_team).

@@ -97,7 +97,7 @@ game_menus = [
                 ],"Return to duty.",
         [(change_screen_map),
                 (assign, "$g_infinite_camping", 1),
-        (rest_for_hours_interactive, 24 * 365, 5, 1),
+        (call_script, "script_coop_rest_interactive", 24 * 365, 5, 1), #CoopWorld: the world's time speed
                 ]),
     ]),
   

@@ -105,6 +105,11 @@ def net_scripts(first_dynamic):
      (assign, "$coop_role", coop_role_client),
      (assign, "$coop_hold_alive", 0), #only the host's own game (its bridge answers it) is known as the host
      (assign, "$coop_srv_player", 0),
+     (assign, "$coop_lord_sid", -1),
+     (assign, "$coop_lord_enemy_sid", -1),
+     (assign, "$coop_lord_asked", -1),
+     (assign, "$coop_mp_ally_sid", -1),
+     (assign, "$coop_time_behind", 0),
      (assign, "$coop_net_pending", 0),
      (assign, "$coop_net_misses", 0),
      (assign, "$coop_busy", 0),
@@ -513,12 +518,27 @@ def net_scripts(first_dynamic):
      (party_get_slot, ":paused", "p_coop_buf", 2),
      (party_get_slot, ":slot", "p_coop_buf", 3),
      (party_get_slot, ":why", "p_coop_buf", 4),
+     (party_get_slot, ":behind", "p_coop_buf", 5), #1: this player's clock is behind the world's
+     (try_begin),
+       (eq, "$coop_role", coop_role_client),
+       (neq, ":behind", "$coop_time_behind"),
+       (assign, "$coop_time_behind", ":behind"),
+       (eq, ":paused", 0),
+       (rest_for_hours, 0, 0, 0), #the rest starts again at the speed that fits now
+     (try_end),
      (try_begin),
        (neq, ":paused", "$coop_world_paused"),
        (assign, "$coop_world_paused", ":paused"),
        (assign, "$coop_pause_reminder", 0),
        (try_begin),
          (eq, ":paused", 1),
+         # time stands still here too: a rest (standing still, serving in a lord's party, captivity)
+         # would run this player's clock ahead of the world's while nobody moves; it starts again
+         # by itself once the world runs
+         (try_begin),
+           (eq, "$coop_role", coop_role_client),
+           (rest_for_hours, 0, 0, 0),
+         (try_end),
          (call_script, "script_coop_client_pause_message", ":slot", ":why"),
        (else_try),
          (display_message, "@CoopWorld: the world runs again.", 0x66CCFF),
@@ -542,6 +562,9 @@ def net_scripts(first_dynamic):
      (try_begin),
        (eq, ":why", 1),
        (display_message, "@CoopWorld: the world is paused: {s1} is in battle.", 0xFFDD66),
+     (else_try),
+       (eq, ":why", 3),
+       (display_message, "@CoopWorld: your time is ahead of the world's - waiting for the world to catch up.", 0xFFDD66),
      (else_try),
        (display_message, "@CoopWorld: the world is paused: {s1} is in a menu.", 0xFFDD66),
      (try_end),
@@ -715,8 +738,14 @@ def net_scripts(first_dynamic):
            (ge, ":att", first_dynamic),
            (party_get_slot, ":att", "p_coop_map", ":att"),
            (val_sub, ":att", 1),
-           (lt, ":att", first_dynamic), #that party has no mirror here (yet)
-           (assign, ":att", -1),
+           (try_begin),
+             (lt, ":att", first_dynamic), #that party has no mirror here (yet)
+             (assign, ":att", -1),
+           (else_try),
+             # its mirror was destroyed here (a battle of this game) and the map still points to it
+             (neg|party_is_active, ":att"),
+             (assign, ":att", -1),
+           (try_end),
          (else_try),
            # below the dynamic ids only a center is the same party here; the server's own hero
            # party (the host) or a puppet would be this game's hero or a player's marker
@@ -736,7 +765,10 @@ def net_scripts(first_dynamic):
                (assign, ":att", -1),
                (assign, ":up", -1),
              (else_try),
+               (party_is_active, ":up"),
                (party_get_attached_to, ":up", ":up"),
+             (else_try),
+               (assign, ":up", -1),
              (try_end),
            (try_end),
          (try_end),

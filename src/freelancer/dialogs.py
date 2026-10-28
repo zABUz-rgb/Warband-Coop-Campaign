@@ -112,7 +112,7 @@ dialogs	= [
                 (remove_member_from_party, "trp_player","p_freelancer_party_backup"),
         (call_script, "script_event_player_enlists"),
                 (assign, "$g_infinite_camping", 1),
-        (rest_for_hours_interactive, 24 * 365, 5, 1),
+        (call_script, "script_coop_rest_interactive", 24 * 365, 5, 1), #CoopWorld: the world's time speed
                 (eq,"$talk_context",tc_party_encounter),
                 (assign, "$g_leave_encounter", 1),
         ]],

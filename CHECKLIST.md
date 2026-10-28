@@ -34,9 +34,21 @@ the client's hero (parties seemed to come out of the client); the party met (unt
 result went out) and the captor in captivity are never removed under the game, other mirrors the
 server dropped are (the sweep no longer keeps the last party met for good). The bridge logs a
 captor that is gone. Ctrl+Space on a client in captivity hung the game once (19:58) - cause unknown.
-Open (build 139875334): the friend's game hung three times near midnight of its game time (hours 48,
-72, ~96), each time just after a burst of new parties from the host. A mirror is no longer attached
-in a loop of parties (an army formed from older news) or to a non-center static party (the host's
-hero, a puppet). The bridge logs a quiet player's last request (game hour) and replies; the report
-shows them, and silences at the end of the log however short.
+Confirmed (build 139875334, tag `stable-2026-10-28-b`, packages kept in dist/stable): the friend's game
+no longer hangs near midnight of its game time (a mirror is no longer attached in a loop of parties
+or to a non-center static party). The bridge logs a quiet player's last request and replies.
+Open (build 590170735, not confirmed yet):
+- serving a lord (Freelancer) on a client: no SCRIPT ERROR "Invalid Party ID" in
+  coop_client_apply_positions (a mirror destroyed here no longer stands for the army it was in);
+- the world paused (another player in battle or a menu): a client's clock stands still too, its rest
+  (standing still, serving a lord, captivity) stops and starts again once the world runs; Freelancer's
+  rests run at the world's time speed (they ran 4-5 times faster); the host and a client serving a
+  lord rest by themselves like a player standing still;
+- the clocks: a client 2 h ahead of the world waits for it ("your time is ahead"), 3 h behind rests 3x
+  faster; the bridge logs "its clock is N h ahead";
+- serving one lord: when he goes into a field battle, a client's soldier menu opens ("your commander
+  goes into battle!"), the host's as Freelancer does; "CoopWorld: fight beside your commander" starts a
+  joint battle - the players and the lord's men (bots, team of the players) against his enemy; a
+  second soldier choosing it joins the same battle; the lord keeps the men who survived, the enemy is
+  beaten as in any joint battle. Freelancer's own "Follow the commander" (single player) stays.
 A weak PC with both Warband windows open may run out of memory.

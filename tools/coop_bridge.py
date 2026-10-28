@@ -40,7 +40,8 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
                     [&pf=seq,offset,total,v1,v2,...][&pfq=1][&join=slot][&joinans=slot,yes][&leave=1][&release=1]
                     [&give=slot,t1,n1,...][&giveans=id,yes]
                     [&me=t1,n1,...][&name=player name]
-    fac: the kingdom the player serves (0: none); pf: part of the player's hero (the profile, see
+    fac: the kingdom the player serves (0: none); lord: the world party of the lord the player serves
+    as a soldier (Freelancer), -1 or absent: none; pf: part of the player's hero (the profile, see
     coop/profile.py), kept by the hub in profiles.json under the player's name and sent back
     (kind 14) when that player joins again, or asks again with pfq (the answer got lost); join: ask the player in slot to take this one into the
     party; joinans: the answer to the player in slot asking; leave: leave the leader's party;
@@ -54,9 +55,12 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...   positions of world parties (tmpl REMOVED: gone)
           7777|3|sid|n|t1|n1|...               troops of one party near the player
           7777|4|slot|x|y|troops|kingdom[|name]  another player's party, and whom it serves
-          7777|5|paused|slot|why                    the world stands still because of player <slot>
-                                                    (why: 1 in an encounter or battle, 2 in a menu);
-                                                    the player's own map then stands still too
+          7777|5|paused|slot|why|behind             the world stands still because of player <slot>
+                                                    (why: 1 in an encounter or battle, 2 in a menu;
+                                                    3 slot -1: this player's clock is ahead of the
+                                                    world's, it waits for the world); the player's own
+                                                    map then stands still too, its clock as well;
+                                                    behind 1: its clock is behind, it rests faster
 
 Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpc=center][&mpt=t1,n1,...]
 [&compn=N&ter=T with a start or an acceptance: the companions coming and the terrain][&comp=troop,hero...:
@@ -68,6 +72,9 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
     garrison team 0); with &mpd=1 defend that center against its besieger mpe (the players and the
     garrison team 0, the besieger and the army camped with it team 1);
     2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
+    With &mpa=sid[&mpat=t1,n1,...] (a start against a world party) the world party sid, the lord the
+    player serves, fights on the players' side with its troops (mpat: as the player sees them). A
+    start against the enemy of a battle still gathering joins that battle.
     reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked;
                                      sid: the world party fought (-1: a player), so the game can see
                                      whether it would fight its own allies
@@ -84,6 +91,8 @@ combat skills and weapon proficiencies, in the order of coop/constants.py):
           7777|14|offset|total|n|values...    the hero kept for this player (total 0: none, a new hero)
           7777|22|name                         the hero's name: the one its player gave the launcher
           7777|23                              the host saved the game; join.bat put the file in this player's saves
+          7777|25|lord|enemy                   the lord this player serves (Freelancer) fights the world
+                                               party enemy (-1: no longer): join him in a joint battle
           7777|24                              to a friend's game in the host's role (it loaded the host's save):
                                                it is a copy and becomes a client
           7777|15|id|slot|n|(troop,count)*n    the player in slot offers these troops
@@ -139,7 +148,11 @@ SRV_SILENT_S = 2.0      # a world server quiet this long was in a menu: its part
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
 TOMBSTONE_S = 30.0
-STATUS_EVERY = 50       # a player is reminded of the pause state this often, in case a reply was lost      # a party a player destroyed is not sent again for this long
+STATUS_EVERY = 50       # a player is reminded of the pause state this often, in case a reply was lost
+TIME_AHEAD_HOLD_H = 2   # a player's clock this many game hours ahead of the world's: it waits for the world
+TIME_HOLD_MAX_H = 24    # further ahead than this something else is wrong (another save): no waiting
+TIME_BEHIND_H = 3       # this many hours behind: the player's game rests faster to catch up
+MAP_BATTLE_S = 6.0      # a world party reported in a map battle counts as fighting this long
 NEAREST_PER_REPLY = 11
 ROTATING_PER_REPLY = 3
 REMOVALS_PER_REPLY = 3
@@ -224,6 +237,10 @@ class Player:
         self.profile_in = None  # [seq, total, {offset: values}] the hero coming in
         self.leader = None      # cid of the player whose party this one follows
         self.join_asked = None  # cid of the player this one asked to join
+        self.hours = None       # its game clock, as it last reported
+        self.time_hold = False  # its clock is ahead of the world's: it waits
+        self.lord = -1          # the world party of the lord it serves (Freelancer), -1 none
+        self.lord_told = (-1, -1)  # (lord, enemy) it was last told
 
 
 class Battle:
@@ -240,7 +257,9 @@ class Battle:
         self.enemy_stacks = []
         self.center = None        # a siege: the town or castle stormed or defended
         self.defence = False      # the players hold the walls against the world's besiegers
-        self.npc_stacks = []      # a defence: (team, world party, troop, count) of the garrison and the besiegers
+        self.npc_stacks = []      # (team, world party, troop, count): a defence's garrison and besiegers,
+                                  # or the troops of the lord the players serve
+        self.ally_sid = None      # the world party of the lord fighting on the players' side
         self.player_team = 0      # the starter's side: 0 in the field, 1 storming walls
         self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
         self.sent = 0
@@ -275,6 +294,8 @@ class World:
         self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
         self.saves = 0          # the host's saves sent to the players since the bridge started
         self.last_srv = None    # when the world server last reported
+        self.srv_hours = None   # the world's clock (game hours), as the world server last reported it
+        self.map_battles = {}   # sid -> (sid of the party it fights, real time last reported)
         self.profiles_path = Path(profiles_path) if profiles_path else None
         self.profiles = {}      # player key (multiplayer name, or hero name) -> the hero's numbers
         self.offers = {}        # id -> (giver cid, receiver cid, stacks): troops on their way
@@ -419,10 +440,18 @@ class World:
 
     # ---- server
 
-    def server_report(self, entries, troops, now, hold=False, center=None):
-        """Returns (pause, joins, [(slot, x, y)], payload numbers, name string or None)."""
+    def server_report(self, entries, troops, now, hold=False, center=None, hours=None, battles=()):
+        """Returns (pause, joins, [(slot, x, y)], payload numbers, name string or None).
+        battles: (sid, sid of the party it fights) of world parties in a map battle."""
         with self.lock:
             self.stats["srv"] += 1
+            if hours is not None:
+                self.srv_hours = hours
+            for sid, enemy in battles:
+                self.map_battles[sid] = (enemy, now)
+                self.map_battles[enemy] = (sid, now)
+            for sid in [s for s, (_, when) in self.map_battles.items() if now - when > MAP_BATTLE_S]:
+                del self.map_battles[sid]
             # the world server was silent (its game in a menu, or a joint battle on): the world stood
             # still, so its parties did not go stale meanwhile
             gap = now - self.last_srv if self.last_srv is not None else 0.0
@@ -552,7 +581,7 @@ class World:
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
                        on_server=False, faction=None, profile=None, together=None, profile_ask=False,
-                       build=None):
+                       build=None, hours=None, lord=None):
         """Returns (reply numbers after the marker, trailing string or None)."""
         with self.lock:
             self.stats["cli"] += 1
@@ -579,6 +608,10 @@ class World:
             p.pos = (x, y)
             p.busy = busy
             p.last = now
+            if hours is not None:
+                p.hours = hours
+            if lord is not None:
+                p.lord = lord
             if name and name != p.name:
                 p.name, p.name_pending = name, True
             if hello:
@@ -637,9 +670,33 @@ class World:
                 return [7, mp["bid"], 0, 0], wanted
             by_distance = sorted(self.parties.items(),
                                  key=lambda kv: (kv[1][1] - x) ** 2 + (kv[1][2] - y) ** 2)
+            # the lord this player serves goes into battle: the player may join him (the host's
+            # own game sees the lord's battle itself)
+            if not p.on_server:
+                fight = self.map_battles.get(p.lord) if p.lord >= 0 else None
+                told = (p.lord, fight[0]) if fight else (-1, -1)
+                if told != p.lord_told:
+                    p.lord_told = told
+                    if told[0] >= 0:
+                        self.log(f"player {self._who(p)}: the lord it serves (party {told[0]}) fights party {told[1]}")
+                    return [25, *told], None
             # whether another player holds the world still: at once when it changes, and now and then
             cause = self.pause_cause(now, but=p)
-            status = (1, cause[0], cause[1]) if cause else (0, 0, 0)
+            behind = 0
+            if not p.on_server and p.hours is not None and self.srv_hours is not None:
+                ahead = p.hours - self.srv_hours
+                if TIME_AHEAD_HOLD_H <= ahead <= TIME_HOLD_MAX_H and not p.time_hold:
+                    p.time_hold = True
+                    self.log(f"player {self._who(p)}: its clock is {ahead} h ahead of the world's - it waits for the world")
+                elif p.time_hold and (ahead <= 0 or ahead > TIME_HOLD_MAX_H):
+                    p.time_hold = False
+                behind = 1 if ahead <= -TIME_BEHIND_H else 0
+            if cause:
+                status = (1, cause[0], cause[1], behind)
+            elif p.time_hold:
+                status = (1, -1, 3, 0)
+            else:
+                status = (0, 0, 0, behind)
             p.status_age += 1
             if status != p.status_sent or p.status_age >= STATUS_EVERY:
                 p.status_sent, p.status_age = status, 0
@@ -704,6 +761,14 @@ class World:
             troop, numbers = mp["comp"]
             p.companions[troop] = numbers
         if op == 1:
+            if (b is not None and b.state == "gathering" and p.cid not in b.sides and mp["sid"] >= 0
+                    and b.enemy_sid == mp["sid"]):
+                # the same enemy (two soldiers of one lord): this player joins the battle gathering
+                self.log(f"joint battle {b.bid}: {self._who(p)} joins it (the same enemy)")
+                b.invited.discard(p.cid)
+                b.sides[p.cid] = b.player_team
+                p.mp_out.append([7, b.bid, 0, b.player_team])
+                return
             if b is not None:
                 if p.cid not in b.sides:
                     self.log(f"joint battle: refused - battle {b.bid} ({b.state}) is still on")
@@ -748,6 +813,13 @@ class World:
             elif mp["sid"] >= 0:
                 b.enemy_sid = mp["sid"]
                 b.enemy_stacks = mp["troops"] or (self.troops.get(mp["sid"], (0, None))[1] or [])
+                ally = mp.get("ally", -1)
+                if ally >= 0 and ally != mp["sid"]:
+                    # the lord the player serves: his men fight on the players' side (the world
+                    # server's view of them first, the player's otherwise)
+                    b.ally_sid = ally
+                    stacks = self.troops.get(ally, (0, None))[1] or mp.get("ally_troops") or []
+                    b.npc_stacks = [(b.player_team, ally, t, n) for t, n in stacks]
             else:
                 self.log("joint battle: refused - the enemy is not a party of the world (no server id)")
                 p.mp_out.append([7, 0, 2, 0])
@@ -822,7 +894,12 @@ class World:
         if b.defence:
             stacks += [[team, ("npc", sid), troop, n, 0] for team, sid, troop, n in b.npc_stacks]
         else:
-            stacks += [[1 - b.player_team, None, troop, n, 0] for troop, n in b.enemy_stacks]
+            enemy = [[1 - b.player_team, None, troop, n, 0] for troop, n in b.enemy_stacks if n > 0]
+            # the lord's men: as many stacks as leave room for the enemy, the biggest first
+            room = max(0, MP_MAX_STACKS - len([s for s in stacks if s[3] > 0]) - len(enemy))
+            allies = sorted(([team, ("npc", sid), troop, n, 0] for team, sid, troop, n in b.npc_stacks if n > 0),
+                            key=lambda s: -s[3])[:room]
+            stacks += allies + enemy
         stacks = [s for s in stacks if s[3] > 0][:MP_MAX_STACKS]
         total = sum(s[3] for s in stacks)
         scale = min(1.0, MP_MAX_BOTS / total) if total else 1.0
@@ -963,6 +1040,10 @@ class World:
         elif b.enemy_sid is not None:
             destroyed = 1 if winner == b.player_team or not enemy_left else 0
             self._record_result((b.enemy_sid, destroyed, enemy_left, [] if destroyed else world_captives), None, now)
+            if b.ally_sid is not None and b.ally_sid in npc_left:
+                # the lord's party keeps what survived; never destroyed: the server keeps the lord, and
+                # his soldiers' games must not lose the party they serve in
+                self._record_result((b.ally_sid, 0, npc_left[b.ally_sid], []), None, now)
         elif captives:
             # a battle between players: the winner's side takes the prisoners
             taker = next((cid for cid, team in sorted(b.sides.items(), key=lambda kv: kv[0] != b.starter)
@@ -1124,6 +1205,16 @@ def parse_center(text):
     if v and len(v) == 3:
         v.append(0)
     return tuple(v) if v and len(v) == 4 else None
+
+
+def parse_battles(text):
+    """'sid,enemy;...' -> [(sid, enemy)]: world parties in a map battle"""
+    out = []
+    for chunk in text.split(";") if text else []:
+        v = parse_ints(chunk)
+        if v and len(v) == 2 and v[0] >= 0 and v[1] >= 0:
+            out.append((v[0], v[1]))
+    return out
 
 
 def parse_hours(q):
@@ -1315,7 +1406,7 @@ def _handle_request(world, role, target, now, cid="local"):
         world.clock("srv", parse_hours(q), now)
         pause, joins, puppets, payload, name = world.server_report(
             parse_entries(q.get("d", "")), parse_troops(q.get("c", "")), now, hold=q.get("hold") == "1",
-            center=parse_center(q.get("cf", "")))
+            center=parse_center(q.get("cf", "")), hours=parse_hours(q), battles=parse_battles(q.get("lb", "")))
         nums = [MARKER, 1, int(pause), joins, len(puppets)]
         for slot, x, y, faction in puppets:
             nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, faction]
@@ -1344,6 +1435,8 @@ def _handle_request(world, role, target, now, cid="local"):
                   "comp": (comp[0], comp[1:]) if comp and len(comp) == HERO_NUMBERS + 1 else None,
                   "terrain": query_int(q, "ter", 0),
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
+                  "ally": query_int(q, "mpa", -1),
+                  "ally_troops": parse_stacks(parse_ints(q.get("mpat", "").lstrip(","))) or [],
                   "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
         together = parse_together(q)
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
@@ -1352,7 +1445,8 @@ def _handle_request(world, role, target, now, cid="local"):
                                             faction=query_int(q, "fac", 0) if "fac" in q else None,
                                             profile=parse_profile(q.get("pf", "")),
                                             profile_ask=q.get("pfq") == "1", together=together,
-                                            build=query_int(q, "ver", 0) if "ver" in q else None)
+                                            build=query_int(q, "ver", 0) if "ver" in q else None,
+                                            hours=parse_hours(q), lord=query_int(q, "lord", -1))
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
