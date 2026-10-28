@@ -1776,3 +1776,4 @@ quick_strings_en|{s9} has requested you to bring {reg65?her:him} {reg1} {s3} as 
 game_menus|mno_coop_take_spoils|CoopWorld: забрать свою долю добычи из совместного боя.
 quick_strings_en|CoopWorld: the spoils of the joint battle are waiting for you (Camp - CoopWorld: co-op...).|CoopWorld: ваша доля добычи из совместного боя ждёт вас (Лагерь - CoopWorld: кооператив...).
 quick_strings_en|CoopWorld: a call to a joint battle - declined: you are a prisoner.|CoopWorld: приглашение в совместный бой отклонено: вы в плену.
+game_menus|mno_coop_to_map|CoopWorld: вернуться на карту (если лагерь не отпускает).

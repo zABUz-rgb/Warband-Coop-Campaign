@@ -148,7 +148,7 @@ RECONNECT_GRACE_S = 30.0  # a relay that lost the hub keeps its player (slot, pa
 RELAY_MISSES = 2          # replies in a row the hub did not give in time: the link is dead, reconnect
 MP_MARKER = 7778
 MP_ONLINE_S = 10.0      # a battle server not heard from for this long is not running
-GATHER_S = 20.0         # invited players have this long to answer before the battle starts
+GATHER_S = 45.0         # invited players have this long to answer before the battle starts
 INVITE_DIST = 1000      # map units * 100: players this close to the starter are invited
 MP_MAX_BOTS = 150       # bots on the battle server; bigger armies are scaled down, losses scaled up
 MP_MAX_STACKS = 60
@@ -758,6 +758,7 @@ class World:
                 p.mp_out.append([7, bid, 2, 0])  # that battle is gone
         elif op == 3:
             if b.state != "gathering" and p.cid not in b.sides:
+                self.log(f"joint battle {b.bid}: {self._who(p)} accepted too late - the battle began without that player")
                 p.mp_out.append([7, bid, 2, 0])  # too late
                 return
             b.invited.discard(p.cid)
@@ -1248,7 +1249,9 @@ def handle_request(world, role, target, now, cid="local"):
 
 def _handle_request(world, role, target, now, cid="local"):
     url = urlparse(target)
-    q = {k: v[0] for k, v in parse_qs(url.query, encoding="latin-1").items()}
+    # blank values kept: "me=" is a party of heroes only, not "no report" (troops given away stayed
+    # in the giver's battles until it had a soldier again)
+    q = {k: v[0] for k, v in parse_qs(url.query, encoding="latin-1", keep_blank_values=True).items()}
     if role == "srv" and url.path == "/srv":
         world.clock("srv", parse_hours(q), now)
         pause, joins, puppets, payload, name = world.server_report(

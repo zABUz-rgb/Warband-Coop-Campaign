@@ -98,6 +98,9 @@ camp_coop_options = [
                       (call_script, "script_coop_count_news"), (gt, reg0, 0)],
    "CoopWorld: read the news held back ({reg0}). The world waits meanwhile.",
    [(assign, "$coop_read_news", 1), (store_current_hours, "$coop_news_since"), (change_screen_return)]),
+  # a way out if the camp does not let the player back to the map (a battle's state left behind)
+  ("coop_to_map", [(neq, "$coop_role", coop_role_single)], "CoopWorld: back to the map (if the camp keeps you here).",
+   [(assign, "$auto_menu", -1), (assign, "$g_camp_mode", 0), (leave_encounter), (change_screen_map)]),
   ("coop_role_stop", [(neq, "$coop_role", coop_role_single)], "CoopWorld: stop co-op.",
    [(call_script, "script_coop_stop"), (change_screen_return)]),
 ]

@@ -566,6 +566,14 @@ def test_logs():
     check("mp=1" in path.read_text("utf-8") and "7777|7" in path.read_text("utf-8"), "trace.log holds both")
 
 
+def test_blank_values():
+    w = cb.World()
+    cb.handle_request(w, "cli", "/cli?seq=1&x=0&y=0&busy=0&me=,49,2&name=Ivan", 0.0)
+    check(w.players["local"].stacks_last == [(49, 2)], "a player's troops arrive")
+    cb.handle_request(w, "cli", "/cli?seq=2&x=0&y=0&busy=0&me=&name=Ivan", 1.0)
+    check(w.players["local"].stacks_last == [], "an empty me= (heroes only, troops given away) is heard too")
+
+
 def test_joining_and_giving():
     w = cb.World()
     req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
@@ -755,4 +763,5 @@ if __name__ == "__main__":
     test_lost_answers()
     test_notices_and_asking_again()
     test_logs()
+    test_blank_values()
     print("ALL OK")
