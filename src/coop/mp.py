@@ -683,8 +683,29 @@ mp_battle_triggers = [
 
 
 def mp_network_hook():
-  """Prepended to game_receive_network_message: a hero's stats, sent by the battle server."""
+  """Prepended to game_receive_network_message: a hero's stats, sent by the battle server; and the
+  team picked by the player of a server started from the game (not a dedicated one)."""
   return [
+    # That player and the server share one player: the team window sets the new team before its
+    # request is handled, Native then sees no change and never confirms, and the window waits for
+    # good (clicks on the banners do nothing). The shared confirmation is given here.
+    (try_begin),
+      (multiplayer_is_server),
+      (store_script_param, ":coop_event", 2),
+      (eq, ":coop_event", multiplayer_event_change_team_no),
+      (store_script_param, ":coop_player", 1),
+      (multiplayer_get_my_player, ":coop_me"),
+      (eq, ":coop_player", ":coop_me"),
+      (store_script_param, ":coop_team", 3),
+      (is_between, ":coop_team", 0, multi_team_spectator),
+      (player_get_team_no, ":coop_now", ":coop_player"),
+      (eq, ":coop_now", ":coop_team"),
+      (eq, "$g_waiting_for_confirmation_to_terminate", 1),
+      (eq, "$g_confirmation_result", 0),
+      (store_mission_timer_a, ":coop_time"),
+      (player_set_slot, ":coop_player", slot_player_last_team_select_time, ":coop_time"),
+      (assign, "$g_confirmation_result", 1),
+    (try_end),
     (try_begin),
       (neg|multiplayer_is_server),
       (store_script_param, ":coop_event", 2),
