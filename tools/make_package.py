@@ -159,7 +159,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1" %*
 
 # host.bat / join.bat: ASCII only (cmd misreads Cyrillic in batch files even after chcp 65001) and
 # they only start PowerShell scripts, which ask for what is missing, check Python, keep the window
-# open when the bridge stops, and log to bridge.log next to them.
+# open when the bridge stops, and log to Documents\CoopWorld (bridge.log / join.log).
 LAUNCHER_TEMPLATE = r"""# {title}
 param([string]$First, [string]$Second)
 $ErrorActionPreference = "Stop"
@@ -181,7 +181,11 @@ try {{
   Write-Host ""
   Write-Host "{starting}" -ForegroundColor Green
   Write-Host "{stop_hint}"
-  & $python -I (Join-Path $here "coop_bridge.py") @bridgeArgs --log (Join-Path $here "bridge.log")
+  # logs (and the host's kept heroes, profiles.json) in Documents\CoopWorld: they outlive the package folder
+  $logDir = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "CoopWorld"
+  New-Item -ItemType Directory -Force $logDir | Out-Null
+  Write-Host "{log_where} $logDir"
+  & $python -I (Join-Path $here "coop_bridge.py") @bridgeArgs --log (Join-Path $logDir "{log_name}")
   Write-Host ""
   Write-Host "{stopped}" -ForegroundColor Yellow
 }} catch {{
@@ -226,7 +230,8 @@ LAUNCHER_TEXT = {
     press_enter="Press Enter to close this window",
     no_python="Python 3 is not installed (or not in PATH). Install it from python.org, tick 'Add python.exe to PATH', then try again.",
     starting="Starting the CoopWorld bridge. Keep this window open while you play.",
-    stop_hint="To stop it: Ctrl+C or close the window. Its log is bridge.log next to this file.",
+    stop_hint="To stop it: Ctrl+C or close the window.",
+    log_where="Logs (bridge.log and trace.log at the host, join.log at a friend; a friend's log also reaches the host's):",
     stopped="The bridge has stopped. If it stopped by itself, the reason is in the lines above and in bridge.log.",
     failed="The bridge could not start:",
     ask_key="Password for your friends (Enter = play on this PC only)",
@@ -245,7 +250,8 @@ LAUNCHER_TEXT = {
     press_enter="Нажмите Enter, чтобы закрыть окно",
     no_python="Python 3 не установлен (или его нет в PATH). Установите его с python.org, отметьте 'Add python.exe to PATH' и попробуйте снова.",
     starting="Запускаю мост CoopWorld. Не закрывайте это окно, пока играете.",
-    stop_hint="Остановить: Ctrl+C или закрыть окно. Журнал моста - bridge.log рядом с этим файлом.",
+    stop_hint="Остановить: Ctrl+C или закрыть окно.",
+    log_where="Журналы (у хоста bridge.log и trace.log, у друга join.log; журнал друга приходит и хосту):",
     stopped="Мост остановлен. Если он остановился сам, причина в строках выше и в bridge.log.",
     failed="Мост не запустился:",
     ask_key="Пароль для друзей (Enter - играть только на этом компьютере)",
@@ -268,7 +274,8 @@ def launcher(kind, lang):
     title = {"host": {"en": "CoopWorld: host the game (the world lives on this PC)", "ru": "CoopWorld: запуск игры у хоста"},
              "join": {"en": "CoopWorld: join a friend's game", "ru": "CoopWorld: подключение к игре друга"}}[kind][lang]
     body = (HOST_BODY if kind == "host" else JOIN_BODY).format(**m) + MP_NAME_BODY.format(**m)
-    return LAUNCHER_TEMPLATE.format(title=title, body=body, **m)
+    log_name = "bridge.log" if kind == "host" else "join.log"
+    return LAUNCHER_TEMPLATE.format(title=title, body=body, log_name=log_name, **m)
 
 
 START_HERE_RU = '''CoopWorld - С ЧЕГО НАЧАТЬ (для друга)
@@ -456,7 +463,8 @@ CoopWorld без Diplomacy с этой версией не работают.
   В своей игре: Лагерь - "CoopWorld: кооператив..." - "CoopWorld: остановить кооператив", затем закройте окно моста.
 
 ЕСЛИ ЧТО-ТО НЕ ТАК
-  - Мост пишет журнал в bridge.log в папке пакета и каждые 5 секунд выводит строку состояния.
+  - Мост пишет журналы в Документы\\CoopWorld (у хоста bridge.log и trace.log, у друга join.log;
+    строки журнала друга попадают и в bridge.log хоста) и каждые 5 секунд выводит строку состояния.
   - Если окно моста пишет, что Python не найден: установите Python 3 с python.org и отметьте
     "Add python.exe to PATH".
   - "cannot reach the host": проверьте адрес хоста, пароль и что Radmin VPN/ZeroTier включён у обоих.

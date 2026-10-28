@@ -538,6 +538,28 @@ def test_notices_and_asking_again():
     check(not any(m[0] == 17 for m in w2.players["a"].mp_out), "and the leader is not asked again")
 
 
+def test_logs():
+    lines = []
+    w = cb.World()
+    cb.serve_relays(("127.0.0.7", 18094), w, "secret", None, lines.append)
+    relay = cb.Relay(("127.0.0.7", 18094), "secret", lambda m: None)
+    relay.log("before the link")  # kept until the link is up
+    relay.connect()
+    relay.log("the host stopped answering")
+    time.sleep(0.3)
+    check(any("before the link" in s for s in lines) and any("the host stopped answering" in s for s in lines),
+          f"a friend's log lines reach the host's log: {lines[-2:]}")
+    check(cb.worth_tracing("cli", "/cli?seq=1&mp=1&bid=0", "7777|7|1|0|0"), "a battle request is traced")
+    check(not cb.worth_tracing("cli", "/cli?seq=1&x=1&y=2", "7777|2|0"), "a position update is not")
+    check(cb.worth_tracing("cli", "/cli?seq=1&x=1&y=2", "7777|18|0|1"), "news for the player is")
+    check(cb.worth_tracing("mp", "/mp?seq=1&st=0&bid=0", "8888|1|5"), "a battle start to the battle server is")
+    check(not cb.worth_tracing("mp", "/mp?seq=1&st=0&bid=0", "8888|0"), "an idle battle server poll is not")
+    path = Path(tempfile.mkdtemp()) / "trace.log"
+    tr = cb.make_trace(path)
+    tr("cli", "a", "/cli?seq=1&mp=1&name=Ivan", "7777|7|1|0|0")
+    check("mp=1" in path.read_text("utf-8") and "7777|7" in path.read_text("utf-8"), "trace.log holds both")
+
+
 def test_joining_and_giving():
     w = cb.World()
     req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
@@ -726,4 +748,5 @@ if __name__ == "__main__":
     test_names_and_saves()
     test_lost_answers()
     test_notices_and_asking_again()
+    test_logs()
     print("ALL OK")

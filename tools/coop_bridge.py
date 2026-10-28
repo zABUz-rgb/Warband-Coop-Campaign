@@ -245,6 +245,7 @@ class Battle:
 
 class World:
     log = staticmethod(lambda msg: None)  # run_host sets the bridge's log: joint battles are told there
+    trace = staticmethod(lambda role, cid, target, reply: None)  # run_host: trace.log of the requests that matter
 
     def __init__(self, profiles_path=None):
         self.lock = threading.Lock()
@@ -1174,7 +1175,58 @@ def reply_text(numbers, string=None):
     return text
 
 
+TRACE_KEYS = ("mp=", "join=", "joinans=", "leave=", "release=", "give=", "giveans=", "hello=", "bye=",
+              "res=", "pfq=")
+QUIET_KINDS = {0, 2, 3, 4, 5, 12}  # replies that come round all the time (positions, troops, pause...)
+
+
+def worth_tracing(role, target, reply):
+    """Whether a request and its reply go to trace.log: everything about battles, parties, joining,
+    results; not the endless position updates."""
+    parts = reply.split("|")
+    kind = int(parts[1]) if len(parts) > 1 and parts[1].lstrip("-").isdigit() else 0
+    if role == "mp":
+        return "st=0" not in target or kind != 0
+    if role == "srv":
+        try:
+            nums = [int(v) for v in parts[:5]]
+            payload_at = 5 + 4 * nums[4]
+            return len(parts) > payload_at and parts[payload_at] not in ("0",)
+        except (ValueError, IndexError):
+            return True
+    return any(k in target for k in TRACE_KEYS) or kind not in QUIET_KINDS
+
+
+def make_trace(path, limit=20_000_000):
+    """trace.log: a request and its reply per line, for what worth_tracing keeps; kept under limit
+    bytes (the older half goes to trace.old.log)."""
+    path = Path(path)
+    lock = threading.Lock()
+
+    def trace(role, cid, target, reply):
+        if not worth_tracing(role, target, reply):
+            return
+        line = (f"{time.strftime('%H:%M:%S')} {role} {cid} {game_text_in(target)[:500]}"
+                f"\n         -> {game_text_in(reply)[:300]}\n")
+        with lock:
+            try:
+                if path.exists() and path.stat().st_size > limit:
+                    path.replace(path.with_name(path.stem + ".old.log"))
+                with open(path, "a", encoding="utf-8") as f:
+                    f.write(line)
+            except OSError:
+                pass
+
+    return trace
+
+
 def handle_request(world, role, target, now, cid="local"):
+    reply = _handle_request(world, role, target, now, cid)
+    world.trace(role, cid, target, reply)
+    return reply
+
+
+def _handle_request(world, role, target, now, cid="local"):
     url = urlparse(target)
     q = {k: v[0] for k, v in parse_qs(url.query, encoding="latin-1").items()}
     if role == "srv" and url.path == "/srv":
@@ -1437,7 +1489,9 @@ def serve_relays(addr, world, key, save_dir, log):
             log(f"net: player {cid} {'connected again' if again else 'connected'}"
                 + (f", multiplayer name '{hello['mp_name']}'" if hello.get("mp_name") else ""))
             for msg in msgs:
-                if msg.get("t") == "req":
+                if msg.get("t") == "log":
+                    log(f"[{cid}] {str(msg.get('text', ''))[:500]}")
+                elif msg.get("t") == "req":
                     body = handle_request(world, "cli", msg.get("target", "/"), time.time(), cid=cid)
                     send_msg(conn, lock, {"t": "rep", "id": msg.get("id"), "body": body})
                 elif msg.get("t") == "save":
@@ -1470,7 +1524,9 @@ class Relay:
     """The friend's side: forwards its player game's requests to the hub, one at a time."""
 
     def __init__(self, hub, key, log, timeout=3.0, mp_name=None):
-        self.hub, self.key, self.log, self.timeout = hub, key, log, timeout
+        self.hub, self.key, self.timeout = hub, key, timeout
+        self.local_log = log
+        self.unsent_log = []    # lines for the host's log written while the link was down
         self.mp_name = mp_name
         self.sock = None
         self.lock = threading.Lock()
@@ -1478,10 +1534,27 @@ class Relay:
         self.next_id = 0
         self.connected = threading.Event()
         self.session = secrets.token_hex(6)  # the same player for the hub over reconnects
+        self.request_count = 0
         self.misses = 0
         self.save_dir = None    # where the host's saves go as the host makes them (join: --save-dir)
         self.quiet_until = 0.0  # a save on its way: replies behind it come late, the link is fine
         self.late = []          # replies with news that came after their request gave up: next ones
+
+    def log(self, msg):
+        """This relay's log, and the host's: a line goes over the link too (kept until it is up)."""
+        self.local_log(msg)
+        self.unsent_log = (self.unsent_log + [f"{time.strftime('%H:%M:%S')} {msg}"])[-100:]
+        self._flush_log()
+
+    def _flush_log(self):
+        if not self.connected.is_set() or self.sock is None:
+            return
+        try:
+            while self.unsent_log:
+                send_msg(self.sock, self.lock, {"t": "log", "text": self.unsent_log[0]})
+                self.unsent_log.pop(0)
+        except OSError:
+            pass
 
     def connect(self):
         sock = socket.create_connection(self.hub, timeout=10)
@@ -1497,6 +1570,7 @@ class Relay:
         self.sock = sock
         self.misses = 0
         self.connected.set()
+        self._flush_log()
         self.log(f"relay: connected to the host as {first.get('cid')}")
         threading.Thread(target=self._reader, args=(msgs, sock), daemon=True).start()
 
@@ -1634,6 +1708,8 @@ def make_log(path):
 def run_host(args, log):
     world = World(args.profiles or Path(args.log).with_name("profiles.json"))
     world.log = log
+    world.trace = make_trace(Path(args.log).with_name("trace.log"))
+    log(f"logs: {Path(args.log).resolve()} and trace.log next to it (requests about battles, parties, joining)")
     world.set_mp_name("local", args.mp_name)
     serve_http(parse_addr(args.server, 80), lambda t: handle_request(world, "srv", t, time.time()), log, "srv")
     serve_http(parse_addr(args.client, 80), lambda t: handle_request(world, "cli", t, time.time()), log, "cli")
