@@ -131,6 +131,7 @@ CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
 RENAME_EVERY = 40      # requests between asking a game to rename its hero
 PROFILE_PER_REPLY = 120 # 5 + 120 numbers
 STALE_S = 15.0          # a party not reported for this long is gone
+GONE_MEMORY_S = 120.0   # a party reported again this soon after it went stale was not gone (logged)
 SRV_SILENT_S = 2.0      # a world server quiet this long was in a menu: its parties do not age meanwhile
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
@@ -281,7 +282,9 @@ class World:
             except (OSError, ValueError):
                 self.profiles = {}
         self.mp_names = {}      # cid -> the name its player uses on the battle server (launcher)
-        self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0}
+        self.stats = {"srv": 0, "cli": 0, "entries_in": 0, "entries_out": 0, "results": 0,
+                      "new": 0, "gone": 0, "back": 0}  # parties learnt, gone stale, back after going stale
+        self.gone_at = {}       # sid -> when it went stale: one reported again soon after was alive all along
 
     # ---- players
 
@@ -428,6 +431,8 @@ class World:
                 tx, ty, att = (rest + [x, y, 0][len(rest):])[:3]  # no target: stays put; no att: open map
                 if sid in self.tombstones:
                     continue  # destroyed by a player; the server has not caught up yet
+                if sid not in self.parties:
+                    self.stats["back" if now - self.gone_at.pop(sid, -GONE_MEMORY_S) < GONE_MEMORY_S else "new"] += 1
                 self.parties[sid] = [tmpl, x, y, now, tx, ty, att]
                 self.stats["entries_in"] += 1
                 for p in self.players.values():
@@ -439,6 +444,10 @@ class World:
                     party[3] = now
             for sid in [s for s, party in self.parties.items() if now - party[3] > STALE_S]:
                 self._forget(sid, except_cid=None)
+                self.stats["gone"] += 1
+                self.gone_at[sid] = now
+            for sid in [s for s, when in self.gone_at.items() if now - when > GONE_MEMORY_S]:
+                del self.gone_at[sid]
             if center is not None:
                 self.centers[center[0]] = tuple(center[1:])
             if troops is not None:
@@ -1795,7 +1804,8 @@ def run_host(args, log):
         clock_text = ", ".join(f"{r} {'?' if v is None else f'{v:.1f}'} h/min" for r, v in clocks.items())
         rate = {k: (s[k] - last[k]) / 5 for k in s}
         log(f"parties {n}, server {rate['srv']:.1f}/s, players {rate['cli']:.1f}/s [{players or 'none'}], "
-            f"{'PAUSED' if paused else 'running'}, results {s['results']}, {clock_text}, {mp_text}")
+            f"{'PAUSED' if paused else 'running'}, results {s['results']}, {clock_text}, {mp_text}, "
+            f"parties: {s['new'] - last['new']} new, {s['gone'] - last['gone']} gone, {s['back'] - last['back']} back")
         last = s
 
 

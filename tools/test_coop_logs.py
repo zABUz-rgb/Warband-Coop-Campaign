@@ -92,7 +92,8 @@ def test_good_battle():
     lines = [stats(f"12:0{m}:{s:02d}") for m in range(1, 5) for s in range(0, 60, 5)]
     text = report(BRIDGE_START + BATTLE + "\n".join(lines) + "\n", trace_battle(in_window))
     check("Бой 1:" in text and "итог: победила команда 0" in text, "the battle and its outcome are in the report")
-    check("O: добыча 12:03:01 (в окне совместного боя); результат боя 12:03:02" in text,
+    check("O: добыча (видов войск: 1) 12:03:01 (в окне совместного боя); "
+          "результат боя (победа, опыт 120, потерь стеков 0) 12:03:02" in text,
           "each player's spoils and result, and where they were then")
     check(not marked(text, "!!") and not marked(text, "? "), "a battle that went well has no problems")
 
@@ -143,6 +144,15 @@ def test_builds_reconnect_sessions():
     check(report(bridge, "", "--all").count("Сессия ") == 2, "--all: every session")
 
 
+def test_party_flow():
+    flow = ", parties: 3 new, 2 gone, 0 back"
+    bridge = BRIDGE_START + stats("12:00:15") + flow + "\n" + stats("12:00:20") + ", parties: 0 new, 0 gone, 4 back\n"
+    text = report(bridge, "")
+    check("Отряды у моста: новых 3, пропало 2, из пропавших вернулось 4" in text, "the bridge's party counters")
+    check(any("4 раз забыл живой отряд" in line for line in marked(text, "? ")),
+          "parties the bridge forgot while they were alive")
+
+
 def test_parties():
     bridge = BRIDGE_START + stats("12:00:15", parties=0) + "\n" + stats("12:00:20", parties=300) + "\n" \
         + stats("12:00:25", parties=250) + "\n"
@@ -158,4 +168,5 @@ if __name__ == "__main__":
     test_invitation_unanswered()
     test_builds_reconnect_sessions()
     test_parties()
+    test_party_flow()
     print("ALL OK")

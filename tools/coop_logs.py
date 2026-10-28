@@ -39,6 +39,7 @@ KINDS = {1: "итог для мира", 2: "позиции", 3: "войска", 
 LINE = re.compile(r"^(\d\d):(\d\d):(\d\d) (.*)$")
 TRACE = re.compile(r"^(\d\d):(\d\d):(\d\d) (\S+) (\S+) (.*)$")
 STATS = re.compile(r"^parties (\d+), server [\d.]+/s, players [\d.]+/s \[(.*?)\], (running|PAUSED)")
+FLOW = re.compile(r"parties: (\d+) new, (\d+) gone, (\d+) back$")  # the stats lines of newer bridges
 SLOT = re.compile(r"(\d+):(.*?)( busy)?(?: silent (\d+)s)?(?: mp:[^,]*)?(?:, (?=\d+:)|$)")
 START = re.compile(r"^joint battle: (\d+):(.*?) starts a joint battle \(battle -?\d+, enemy party (-?\d+), "
                    r"player slot (-?\d+), center (-?\d+)")
@@ -183,6 +184,21 @@ class Session:
         return [e for e in self.trace if e[1] == "cli" and e[2] == cid and after <= e[0] <= before]
 
 
+def detail(parts):
+    """What a battle reply says, in a few words."""
+    kind = kind_of(parts)
+    if kind == 8:
+        won, xp, n = number(parts, 3), number(parts, 4), number(parts, 5)
+        return f" ({'победа' if won else 'поражение'}, опыт {xp}, потерь стеков {n})"
+    if kind == 10:
+        health, captor = number(parts, 3, -1), number(parts, 4, -1)
+        words = ([f"здоровье {health}%"] if health >= 0 else []) + ([f"плен у отряда {captor}"] if captor >= 0 else [])
+        return f" ({', '.join(words)})" if words else ""
+    if kind in (11, 21):
+        return f" (видов войск: {number(parts, 3, 0)})"
+    return ""
+
+
 def kind_of(parts):
     return number(parts, 1) if parts and parts[0] == "7777" else None
 
@@ -252,7 +268,7 @@ def analyze(events, trace, silence=30):
             out.append(f"  {s.who(cid)}" + (f", сборка {builds[cid]}" if cid in builds else ""))
 
     # ---- the stats lines: parties, pauses, silences
-    stats = []
+    stats, flow = [], []
     for t, text in events:
         m = STATS.match(text)
         if m:
@@ -262,6 +278,9 @@ def analyze(events, trace, silence=30):
                     slots[int(sm.group(1))] = (sm.group(2), bool(sm.group(3)),
                                                int(sm.group(4)) if sm.group(4) else 0)
             stats.append((t, int(m.group(1)), m.group(3) == "PAUSED", slots))
+            f = FLOW.search(text)
+            if f:
+                flow.append((t, *map(int, f.groups())))
     if stats:
         counts = [n for _, n, _, _ in stats if n] or [0]  # 0 until the world server reports
         out.append(f"Отряды мира: {counts[0]} -> {counts[-1]} (от {min(counts)} до {max(counts)})")
@@ -270,6 +289,13 @@ def analyze(events, trace, silence=30):
         for (t0, n0, _, _), (t1, n1, _, _) in zip(stats, stats[1:]):
             if n0 - n1 >= max(15, n0 * PARTY_DROP):
                 s.note(t1, "? ", f"отрядов в мире разом стало меньше: {n0} -> {n1}")
+    if flow:
+        new, gone, back = (sum(f[i] for f in flow) for i in (1, 2, 3))
+        out.append(f"Отряды у моста: новых {new}, пропало {gone}, из пропавших вернулось {back}")
+        if back:
+            worst = max(flow, key=lambda f: f[3])
+            s.note(worst[0], "? ", f"мост {back} раз забыл живой отряд и узнал его снова (больше всего - "
+                                   f"{worst[3]} за 5 с): у игроков такой отряд пропадает с карты и появляется вновь")
 
     results = {}  # cid -> [t of kind 8 replies]
     for t, role, cid, q, parts in s.trace:
@@ -287,7 +313,7 @@ def analyze(events, trace, silence=30):
                 else:
                     if ep is not None:
                         ep[5] = "back"
-                    open_[slot] = ep = [slot, name, t - quiet, t, quiet, None]
+                    open_[slot] = ep = [slot, name, t - quiet, t, quiet, None, slots[slot][1]]
                     episodes.append(ep)
             elif ep is not None:
                 ep[5] = "back"
@@ -297,12 +323,15 @@ def analyze(events, trace, silence=30):
     for ep in open_.values():
         ep[5] = "end"
 
-    for slot, name, begin, last, longest, ended in episodes:
+    for slot, name, begin, last, longest, ended, busy in episodes:
         if longest < silence:
             continue
         cid = s.cid_of(slot, name, begin)
         req = s.last_request(cid, begin + 2) if cid else None
-        seen = f"; перед этим ({stamp(req[0])}): {state(req[3])}" if req else ""
+        if req and begin - req[0] <= 30:
+            seen = f"; перед этим ({stamp(req[0])}): {state(req[3])}"
+        else:  # trace.log keeps only some requests: the state line knows whether it was in an encounter
+            seen = "; по строке состояния: " + ("во встрече или бою" if busy else "не во встрече (меню, экран, карта)")
         got = s.replies(cid, begin - 30, begin + 2) if cid else []
         kinds = [kind_of(e[4]) for e in got if kind_of(e[4]) not in (None, 0, 7)]
         if kinds:
@@ -422,7 +451,7 @@ def analyze(events, trace, silence=30):
                    and kind_of(e[4]) in (8, 9, 10, 11, 13, 21) and number(e[4], 2) == bid]
             line = []
             for e in got:
-                line.append(f"{KINDS[kind_of(e[4])]} {stamp(e[0])} ({state(e[3])})")
+                line.append(f"{KINDS[kind_of(e[4])]}{detail(e[4])} {stamp(e[0])} ({state(e[3])})")
             out.append(f"    {name}: " + ("; ".join(line) if line else "ничего не получил"))
             result = next((e for e in got if kind_of(e[4]) == 8), None)
             if result is None:

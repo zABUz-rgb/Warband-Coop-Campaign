@@ -56,6 +56,14 @@ def test_positions():
     for second in range(1, 21):  # the server reports on and on; 500 is not in it for > STALE_S
         w.server_report([(501, 4, 9000, 9000)], None, float(second))
     check(positions(w, now=20.0)[0] == (500, cb.REMOVED, 0, 0, 0, 0, 0), "a stale party is sent as removed, first")
+    check((w.stats["new"], w.stats["gone"], w.stats["back"]) == (2, 1, 0), "the log counts parties learnt and gone")
+    w3 = cb.World()
+    w3.server_report([(500, 3, 100, -200)], None, 0.0)
+    for second in range(1, 17):  # 500 goes stale
+        w3.server_report([(501, 3, 100, -200)], None, float(second))
+    w3.server_report([(500, 3, 100, -200)], None, 17.0)
+    check((w3.stats["new"], w3.stats["gone"], w3.stats["back"]) == (2, 1, 1),
+          "a party reported again soon after going stale is counted back, not new")
     w2 = cb.World()
     w2.server_report([(600, 3, 100, -200)], None, 0.0)
     w2.server_report([(601, 3, 100, -200)], None, 150.0)  # silent for minutes: a joint battle, a menu
