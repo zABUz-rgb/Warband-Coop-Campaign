@@ -10,7 +10,7 @@ the URL, so each game on one PC has its own loopback address:
 
 Modes:
     host  the hub, on the host's PC: serves the world server game, the host's own player game and
-          the other players, whose relays connect over TCP (a LAN, or a virtual LAN such as
+          the other players, whose relays connect over TCP (a LAN, or the internet:
           the host's internet address, ports opened by host.bat) with a shared key.
     join  a relay, on a friend's PC: forwards its player game's requests to the hub, and can
           fetch the host's newest save first.
