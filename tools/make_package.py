@@ -7,6 +7,8 @@ They hold only what the mod adds: the compiled module files (*.txt), Diplomacy's
 changed scenes (tools/dplmc_assets.py), the bridge and an installer, and in Programs the installers
 of the programs the mod needs (vendor/prereqs: Python, Radmin VPN), which install.bat
 offers to run for what is missing. The scripts run in Windows PowerShell 5.1, part of Windows 10/11.
+dist/nexus gets the same two packages for Nexus Mods without Programs: install.bat and the texts send
+the player to the programs' own sites instead.
 No game files: the installer copies each player's own Modules/Native to Modules/Warband Coop Campaign and puts
 the compiled files over it. The Russian one also adds the mod's Russian texts
 (tools/make_ru.py) to the copy of Native's languages/ru.
@@ -29,6 +31,8 @@ PREREQS = ROOT / "vendor" / "prereqs"  # installers of the programs the mod need
 VERSION = "1.0"
 DISCORD = "https://discord.gg/nfmWC5SWfp"
 BOOSTY = "https://boosty.to/zabuz_0"
+PYTHON_URL = "https://www.python.org/downloads/windows/"
+RADMIN_URL = "https://www.radmin-vpn.com/"
 
 # One installer, two languages: install.ps1 (and install.bat, which starts it and keeps the window
 # open) for a double click. It finds Warband by itself (GOG and Steam registry, the folder the package
@@ -87,13 +91,13 @@ function Has-Radmin {{
 }}
 
 # The programs the mod needs, from the Programs folder: what is there already, and, if the player
-# agrees, the installers of what is missing (Python by itself, with PATH; the others show their own window)
+# agrees, the installers of what is missing (Python by itself, with PATH; the others show their own window).
+# A package without the Programs folder (Nexus Mods) says where to get them.
 function Install-Programs {{
   $programs = Join-Path $here "Programs"
-  if (-not (Test-Path $programs)) {{ return }}
   $list = @(
-    @{{ Name = "{py_name}"; Have = ((Has-Command "python") -or (Has-Command "py")); File = "python-*.exe"; Arguments = "/passive PrependPath=1 Include_launcher=1" }},
-    @{{ Name = "{radmin_name}"; Have = (Has-Radmin); File = "Radmin_VPN*.exe"; Arguments = "" }}
+    @{{ Name = "{py_name}"; Have = ((Has-Command "python") -or (Has-Command "py")); File = "python-*.exe"; Arguments = "/passive PrependPath=1 Include_launcher=1"; Url = "{python_url}" }},
+    @{{ Name = "{radmin_name}"; Have = (Has-Radmin); File = "Radmin_VPN*.exe"; Arguments = ""; Url = "{radmin_url}" }}
   )
   Write-Host "{programs_title}"
   $missing = @()
@@ -102,11 +106,17 @@ function Install-Programs {{
     else {{ Write-Host ("  " + $p.Name + ": {not_installed}") -ForegroundColor Yellow; $missing += $p }}
   }}
   if ($missing.Count -eq 0) {{ Write-Host ""; return }}
+  if (-not (Test-Path $programs)) {{
+    Write-Host "{programs_download}" -ForegroundColor Yellow
+    foreach ($p in $missing) {{ Write-Host ("  " + $p.Name + ": " + $p.Url) -ForegroundColor Cyan }}
+    Write-Host ""
+    return
+  }}
   $answer = Read-Host "{programs_ask}"
   if (-not ($answer -eq "" -or $answer -match '^[yYдД]')) {{ Write-Host "{programs_skipped}"; Write-Host ""; return }}
   foreach ($p in $missing) {{
     $file = Get-ChildItem $programs -Filter $p.File | Select-Object -First 1
-    if (-not $file) {{ Write-Host ("  " + $p.Name + ": {program_no_file}") -ForegroundColor Yellow; continue }}
+    if (-not $file) {{ Write-Host ("  " + $p.Name + ": {program_no_file} - " + $p.Url) -ForegroundColor Yellow; continue }}
     Write-Host ("{program_installing} " + $p.Name + " ...")
     try {{
       if ($p.Arguments) {{ $proc = Start-Process $file.FullName -ArgumentList $p.Arguments -Wait -PassThru }}
@@ -195,15 +205,19 @@ PROGRAM_TEXT = {
     programs_ask="Install the missing ones from the Programs folder? [Y/n]",
     programs_skipped="Skipped: install them later from the Programs folder.",
     program_no_file="no installer in the Programs folder", program_installing="Installing",
-    program_done="done", program_code="the installer ended with code", program_failed="did not install:"),
+    program_done="done", program_code="the installer ended with code", program_failed="did not install:",
+    programs_download="Install them from their sites before running host.bat / join.bat (Python: tick 'Add python.exe to PATH'):"),
   "ru": dict(
     py_name="Python 3 (нужен для моста)", radmin_name="Radmin VPN (сеть игроков)",
     programs_title="Программы, нужные моду:", installed="установлен", not_installed="не найден",
     programs_ask="Установить недостающие из папки Programs? [Д/н]",
     programs_skipped="Пропущено: их можно установить позже из папки Programs.",
     program_no_file="нет установщика в папке Programs", program_installing="Устанавливаю",
-    program_done="готово", program_code="установщик завершился с кодом", program_failed="не установлен:"),
+    program_done="готово", program_code="установщик завершился с кодом", program_failed="не установлен:",
+    programs_download="Установите их с официальных сайтов до запуска host.bat / join.bat (Python: отметьте 'Add python.exe to PATH'):"),
 }
+for _text in PROGRAM_TEXT.values():
+  _text.update(python_url=PYTHON_URL, radmin_url=RADMIN_URL)
 
 MESSAGES = {
   "en": dict(
@@ -794,8 +808,72 @@ the Warband folder (copied before the game restarts) and what happened, and to w
 BOM = "\ufeff"
 
 
-def build(name, files, russian=False):
-    out = ROOT / "dist" / f"{name}.zip"
+# Nexus Mods (dist/nexus): the same packages without the other programs' installers (Programs): Nexus
+# takes only what the mod needs, and an installer that downloads things is not welcome there. The player
+# gets Python and Radmin VPN from their sites; these passages of the texts say so instead. Nexus has
+# its own donations, and its rules frown on asking for others: no Boosty link there.
+UNBUNDLED = [
+  (f"""  Поддержать разработку (по желанию, ничего не даёт сверх бесплатной версии): {BOOSTY}
+""", ""),
+  (f"""  Support the development (optional, gives nothing beyond the free mod): {BOOSTY}
+""", ""),
+  ("""   - Закройте Warband и дважды щёлкните install.bat. Он предложит установить недостающие
+     программы (Python 3, Radmin VPN) из папки Programs и сам поставит мод.
+""", f"""   - Установите Python 3 ({PYTHON_URL}, отметьте "Add python.exe to PATH")
+     и Radmin VPN ({RADMIN_URL}), если их ещё нет. Закройте Warband и дважды щёлкните
+     install.bat: он проверит программы и сам поставит мод.
+"""),
+  ("""   install.bat: it offers to install the missing programs (Python 3, Radmin VPN) from
+   the Programs folder and installs the mod.""", f"""   install.bat: it checks for Python 3 and Radmin VPN (if missing, install them from
+   {PYTHON_URL} - tick "Add python.exe to PATH" - and {RADMIN_URL})
+   and installs the mod."""),
+  ("""  - Python 3 и Radmin VPN. Их установщики лежат в папке Programs, install.bat предложит
+    поставить недостающие. Больше ничего ставить не нужно: PowerShell уже есть в Windows 10/11.
+""", f"""  - Python 3 ({PYTHON_URL}; при установке отметьте "Add python.exe to PATH")
+    и Radmin VPN ({RADMIN_URL}); install.bat проверит, есть ли они. Больше ничего
+    ставить не нужно: PowerShell уже есть в Windows 10/11.
+"""),
+  ("""     - Сначала он покажет, какие программы уже есть (Python 3, Radmin VPN), и спросит,
+       установить ли недостающие. Python ставится сам (и сразу попадает в PATH), у Radmin VPN
+       откроется его обычный установщик.
+""", """     - Сначала он покажет, какие программы уже есть (Python 3, Radmin VPN), а для
+       недостающих - откуда их скачать.
+"""),
+  ("""  - Окно моста пишет, что Python не найден: запустите install.bat ещё раз и согласитесь
+    установить программы (или Programs\\python-...exe, отметив "Add python.exe to PATH");
+    если не помогло - перезагрузите компьютер.
+""", f"""  - Окно моста пишет, что Python не найден: установите Python 3 ({PYTHON_URL}),
+    отметив "Add python.exe to PATH"; если не помогло - перезагрузите компьютер.
+"""),
+  ("""Python 3 and Radmin VPN - their installers are in the
+  Programs folder and install.bat offers the missing ones (PowerShell is part of Windows 10/11, nothing
+  to install).""", f"""Python 3 ({PYTHON_URL} -
+  tick "Add python.exe to PATH") and Radmin VPN ({RADMIN_URL}); install.bat checks for them
+  (PowerShell is part of Windows 10/11, nothing to install)."""),
+  ("""It shows which programs are there (Python 3,
+     Radmin VPN) and offers to install the missing ones (Python by itself, with PATH; Radmin VPN in
+     its own installer), then finds the game""", """It shows which programs are there (Python 3,
+     Radmin VPN) and where to get the missing ones, then finds the game"""),
+]
+
+
+def unbundled(text, used):
+  """A README or START HERE for the Nexus packages: the UNBUNDLED passages replaced (their numbers go
+  to `used`); none may still send the player to the Programs folder or to Boosty."""
+  for k, (old, new) in enumerate(UNBUNDLED):
+    if old in text:
+      text = text.replace(old, new)
+      used.add(k)
+  if "Programs" in text:
+    raise SystemExit("a text of the Nexus packages still sends players to the Programs folder: see UNBUNDLED")
+  if BOOSTY in text:
+    raise SystemExit("a text of the Nexus packages still has the Boosty link: see UNBUNDLED")
+  return text
+
+
+def build(name, files, russian=False, programs=True, out=None):
+    """dist/<name>.zip (or `out`), everything in the folder <name>; programs: with the Programs folder."""
+    out = out or ROOT / "dist" / f"{name}.zip"
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(MODULE.glob("*.txt")):
             if f.name not in BUILD_ONLY:
@@ -813,7 +891,7 @@ def build(name, files, russian=False):
                 z.write(f, f"{name}/Warband Coop Campaign/languages/ru/{f.name}")
             for f in sorted(RUSSIFIER_UI.glob("*.csv")):
                 z.write(f, f"{name}/languages/ru/{f.name}")
-        for f in prereqs():  # installers are compressed already
+        for f in prereqs() if programs else ():  # installers are compressed already
             z.write(f, f"{name}/Programs/{f.name}", compress_type=zipfile.ZIP_STORED)
     print(f"{out} ({out.stat().st_size // 1024} KB)")
 
@@ -839,14 +917,23 @@ def main():
                         "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join"),
                         "check_logs.ps1": BOM + check_logs(lang), "check_logs.bat": launcher_bat("check_logs")}
                  for lang in ("en", "ru")}
-    build(base, {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
-                               "README.txt": README, "START HERE.txt": START_HERE, **launchers["en"]})
     if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
         raise SystemExit("no Russian: put the russifier in vendor/l10n_ru and run python tools/make_ru.py")
-    # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
-    build(f"{base}-ru", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
-                                  "README.txt": BOM + README_RU, "НАЧНИТЕ ЗДЕСЬ.txt": BOM + START_HERE_RU,
-                                  **launchers["ru"]}, russian=True)
+    nexus = ROOT / "dist" / "nexus"
+    nexus.mkdir(exist_ok=True)
+    used = set()
+    for programs in (True, False):  # the packages, then the same for Nexus Mods without Programs
+        texts = (lambda text: text) if programs else (lambda text: unbundled(text, used))
+        build(base, {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
+                     "README.txt": texts(README), "START HERE.txt": texts(START_HERE), **launchers["en"]},
+              programs=programs, out=None if programs else nexus / f"{base}-nexus.zip")
+        # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
+        build(f"{base}-ru", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
+                             "README.txt": BOM + texts(README_RU), "НАЧНИТЕ ЗДЕСЬ.txt": BOM + texts(START_HERE_RU),
+                             **launchers["ru"]}, russian=True,
+              programs=programs, out=None if programs else nexus / f"{base}-nexus-ru.zip")
+    if len(used) != len(UNBUNDLED):
+        raise SystemExit(f"UNBUNDLED passages no longer in the texts: {sorted(set(range(len(UNBUNDLED))) - used)}")
 
 
 if __name__ == "__main__":
