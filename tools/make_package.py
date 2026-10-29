@@ -308,6 +308,23 @@ JOIN_BODY = r"""  $hostAddress = $First
   if (-not $key) {{ throw "{no_key_join}" }}
   $bridgeArgs = @("join", $hostAddress, "--key", $key, "--fetch-save")
   Write-Host "{save_hint}"
+  # the battle server shows up in the second window's server list only with this option on
+  $rgl = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "Mount&Blade Warband\rgl_config.txt"
+  if ((Test-Path $rgl) -and ((Get-Content $rgl -Raw) -match "look_for_server_on_this_machine\s*=\s*0")) {{
+    Write-Host ""
+    Write-Host "{lan_hint}" -ForegroundColor Cyan
+    $answer = Read-Host "{lan_ask}"
+    if ($answer -eq "" -or $answer -match '^[yYдД]') {{
+      if (Get-Process mb_warband -ErrorAction SilentlyContinue) {{
+        Write-Host "{lan_close}" -ForegroundColor Yellow
+      }} else {{
+        Copy-Item $rgl "$rgl.bak" -Force
+        $text = (Get-Content $rgl -Raw) -replace "look_for_server_on_this_machine\s*=\s*0", "look_for_server_on_this_machine = 1"
+        [IO.File]::WriteAllText($rgl, $text)
+        Write-Host "{lan_done}" -ForegroundColor Green
+      }}
+    }}
+  }}
   Write-Host "{battle_hint}" -ForegroundColor Cyan """
 
 LAUNCHER_TEXT = {
@@ -326,7 +343,11 @@ LAUNCHER_TEXT = {
     ask_key_join="Password the host gave you",
     no_key_join="No password given.",
     save_hint="The host's newest save goes into your Warband Coop Campaign saves (the window shows which slot): load it in the game.",
-    battle_hint="Joint battles: in the second Warband window join the battle server through the bridge - Multiplayer - Favorites - 127.0.0.1:7260 (not the host's Radmin address). Keep this window open.",
+    lan_hint="Joint battles go through the bridge: for the battle server to show up in your server list (Local Area Network), Warband's option look_for_server_on_this_machine must be on (Documents\\Mount&Blade Warband\\rgl_config.txt; a copy is kept as rgl_config.txt.bak).",
+    lan_ask="Turn it on? (Enter or Y - yes, N - no)",
+    lan_close="Warband is open and would undo this on exit: close every Warband window and run join.bat again.",
+    lan_done="Turned on.",
+    battle_hint="Joint battles: in the second Warband window - Multiplayer - Join a Game - Local Area Network - Refresh. If two identical servers show up, one goes straight over Radmin and says 'invalid authorization number': join the other one and Add to Favorites. Keep this window open.",
     mp_name_hint="Joint battles: the name you use on the battle server (Multiplayer - Profiles). Your soldiers obey you only under this name.",
     ask_mp_name="Your multiplayer name (Enter = keep the one in brackets)",
     mp_name_set="Multiplayer name:",
@@ -347,7 +368,11 @@ LAUNCHER_TEXT = {
     ask_key_join="Пароль, который дал хост",
     no_key_join="Пароль не указан.",
     save_hint="Свежее сохранение хоста попадёт в ваши сохранения Warband Coop Campaign (в окне будет видно, в какой слот) - загрузите его в игре.",
-    battle_hint="Совместные бои: во втором окне Warband заходите на сервер боя через мост - Мультиплеер - Избранное - 127.0.0.1:7260 (а не адрес хоста из Radmin). Это окно не закрывайте.",
+    lan_hint="Совместные бои идут через мост: чтобы сервер боя появился у вас в списке серверов (Локальная сеть), в настройках Warband нужно включить look_for_server_on_this_machine (Документы\\Mount&Blade Warband\\rgl_config.txt; копия останется как rgl_config.txt.bak).",
+    lan_ask="Включить? (Enter или Y - да, N - нет)",
+    lan_close="Warband сейчас открыт и при выходе отменит эту настройку: закройте все окна Warband и запустите join.bat снова.",
+    lan_done="Включено.",
+    battle_hint="Совместные бои: во втором окне Warband - Сетевая игра - Присоединиться к игре - Локальная сеть - Обновить. Если там два одинаковых сервера, один ведёт напрямую через Radmin и пишет 'неправильный номер авторизации': заходите в другой и нажмите 'Добавить в избранное'. Это окно не закрывайте.",
     mp_name_hint="Совместные бои: имя, под которым вы заходите на сервер боя (Мультиплеер - Профили). Только под этим именем ваши солдаты будут вас слушаться.",
     ask_mp_name="Ваше имя в мультиплеере (Enter - оставить то, что в скобках)",
     mp_name_set="Имя в мультиплеере:",
@@ -384,7 +409,7 @@ START_HERE_RU = f'''{PROJECT} {VERSION} - С ЧЕГО НАЧАТЬ
      скачал join.bat. Подождите около 5 секунд - игра сама станет КЛИЕНТОМ. Если нет:
      Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)".
 3. Совместные бои: второе окно Warband (Warband Coop Campaign). Хост: Мультиплеер - Создать игру, "Битва".
-   Друг: Мультиплеер - Избранное - 127.0.0.1:7260 (через мост, окно join.bat открыто).
+   Друг: Сетевая игра - Присоединиться к игре - Локальная сеть (через мост, окно join.bat открыто).
 Подробности - README.txt. Вопросы и ошибки: {DISCORD}
 '''
 
@@ -402,7 +427,7 @@ START_HERE = f'''{PROJECT} {VERSION} - START HERE
    window open. Start Warband (Warband Coop Campaign), load the save join.bat fetched and wait about 5 seconds:
    the game becomes a CLIENT by itself. If not: Camp - "CoopWorld: co-op..." - "let the world run again".
 3. Joint battles: a second Warband window (Warband Coop Campaign). Host: Multiplayer - Host a game, Battle.
-   Friends: Multiplayer - Favorites - 127.0.0.1:7260 (through the bridge, join.bat's window open).
+   Friends: Multiplayer - Join a Game - Local Area Network (through the bridge, join.bat's window open).
 More in README.txt. Questions and bugs: {DISCORD}
 '''
 
@@ -551,10 +576,13 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
        окне до сражения.
      Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
   2. Каждый друг заходит на этот сервер из второго окна Warband (модуль Warband Coop Campaign)
-     через мост: Мультиплеер - Избранное - адрес 127.0.0.1:7260 (окно join.bat открыто). Мост
-     передаёт бой хосту, и сервер пускает друга как игрока своей локальной сети: напрямую по адресу
-     из Radmin (26.x.x.x:7240) Warband отказывает с ошибкой "неправильный номер авторизации".
-     В одной локальной сети (один Wi-Fi) можно и напрямую: список серверов (локальная сеть).
+     через мост (окно join.bat открыто): Сетевая игра - Присоединиться к игре - Локальная сеть -
+     Обновить. Мост передаёт бой хосту, и сервер пускает друга как игрока своей локальной сети.
+     Чтобы сервер через мост был в списке, join.bat один раз предложит включить в настройках
+     Warband look_for_server_on_this_machine - соглашайтесь (Warband при этом закрыт).
+     Если в списке два одинаковых сервера: один из них - напрямую через Radmin, туда Warband
+     не пускает ("неправильный номер авторизации"). Заходите в другой и нажмите "Добавить в
+     избранное" - дальше он будет во вкладке Избранное.
      Заходите ровно под тем именем, которое ввели в host.bat / join.bat (оно запоминается в
      mp_name.txt): тогда мост сам ставит вас в нужную команду и отдаёт вам ваших солдат. Мост пишет
      в своём окне, кого он узнал на сервере ("recognised") и кого нет ("NOT found"). Имена у всех
@@ -690,11 +718,13 @@ JOINT BATTLES (multiplayer server):
   1. The host starts a second Warband window (Warband Coop Campaign) and fights in it: Multiplayer -
      Host a game, game type Battle, any field map, 0 bots. Then pick any side and any equipment
      and forget about that window until the battle. The bridge finds it by itself.
-  2. Every friend joins it from a second Warband window through the bridge: Multiplayer -
-     Favorites - 127.0.0.1:7260 (join.bat's window open). Straight to the host's Radmin address
-     (26.x.x.x:7240) Warband refuses with "invalid authorization number"; on one LAN (the same
-     Wi-Fi) the LAN list works too. Join under exactly the multiplayer name given to
-     host.bat / join.bat. Every player needs a different name.
+  2. Every friend joins it from a second Warband window through the bridge (join.bat's window
+     open): Multiplayer - Join a Game - Local Area Network - Refresh. For the bridge's server to
+     show up there, join.bat offers once to turn on Warband's look_for_server_on_this_machine:
+     agree (with Warband closed). If two identical servers show up, one goes straight over Radmin,
+     where Warband refuses with "invalid authorization number": join the other and Add to
+     Favorites. Join under exactly the multiplayer name given to host.bat / join.bat. Every
+     player needs a different name.
   3. In an encounter: "CoopWorld: fight together with your friends". Players nearby are invited;
      the battle server restarts its round with the campaign's armies. Sides and heroes are given
      by the server (if a team window opens all the same, close it with Esc).

@@ -15,8 +15,9 @@ Modes:
     join  a relay, on a friend's PC: forwards its player game's requests to the hub, and can
           fetch the host's newest save first.
 
-The battle relay: a friend's second Warband window joins the battle server at 127.0.0.1:7260 on
-its own PC (Multiplayer - Favorites); the friend's bridge sends its datagrams to the host's bridge
+The battle relay: a friend's second Warband window finds the battle server on its own PC, at
+127.0.0.1:7240, in its server list (Local area network, with look_for_server_on_this_machine = 1 in
+Warband's rgl_config.txt; the list cannot take an address typed in); the friend's bridge sends its datagrams to the host's bridge
 (UDP, the relays' port), which hands them to the battle server from the host's own local address.
 Warband lets players from a local network (192.168.x, 10.x) in at once but checks the others
 against the internet address its authorization server saw, so a friend coming straight over a
@@ -173,7 +174,8 @@ MAX_STACKS = 30         # troop stacks per party in one message
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350           # the relays' TCP link, and (UDP) the battle relay
 BATTLE_PORT = 7240        # the battle server's own port (Multiplayer - Host a game)
-BATTLE_LOCAL = "127.0.0.1:7260"  # on a friend's PC the second window joins the battle server here
+BATTLE_LOCAL = "127.0.0.1:7240"  # on a friend's PC the second window finds the battle server here
+BATTLE_PEEK = 3           # the first datagrams of a friend's game each way go to the log (their size and start)
 BATTLE_IDLE_S = 120.0     # a battle relay link silent this long is closed
 BATTLE_TAG = 8            # bytes in front of each relayed datagram that prove the key
 FETCHED_MARK = "coop_campaign_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
@@ -1991,9 +1993,14 @@ def serve_battle_hub(addr, key, port, source, log):
     return hub
 
 
+def peek(data):
+    return f"{len(data)} bytes {data[:48].hex()}"
+
+
 def serve_battle_join(local, hub_addr, key, log):
-    """The friend's side: the second Warband window joins the battle server at `local`; its
-    datagrams go to the host's bridge with the key's tag, the answers come back."""
+    """The friend's side: the second Warband window finds and joins the battle server at `local`;
+    its datagrams go to the host's bridge with the key's tag, the answers come back. The first ones
+    each way go to the log: what the game's server list sends is not documented anywhere."""
     tag = battle_tag(key)
     try:
         game = udp_socket(local)
@@ -2016,10 +2023,15 @@ def serve_battle_join(local, hub_addr, key, log):
                 if link is None:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     sock.connect(hub_addr)
-                    link = links[src] = [sock, 0.0]
+                    link = links[src] = [sock, 0.0, 0]
+                    log(f"battle relay: the second window (port {src[1]}) asks the battle server through the bridge")
+                    answers = [0]
 
-                    def forward(back, src=src):
+                    def forward(back, src=src, answers=answers):
                         if len(back) > BATTLE_TAG and hmac.compare_digest(back[:BATTLE_TAG], tag):
+                            if answers[0] < BATTLE_PEEK:
+                                answers[0] += 1
+                                log(f"battle relay: <- the battle server {peek(back[BATTLE_TAG:])}")
                             try:
                                 game.sendto(back[BATTLE_TAG:], src)
                             except OSError:
@@ -2027,14 +2039,18 @@ def serve_battle_join(local, hub_addr, key, log):
                     threading.Thread(target=_relay_back, args=(sock, links, src, lock, forward, lambda: None),
                                      daemon=True).start()
                 link[1] = time.time()
+                if link[2] < BATTLE_PEEK:
+                    link[2] += 1
+                    log(f"battle relay: -> the battle server {peek(data)}")
             try:
                 link[0].send(tag + data)
             except OSError:
                 pass
 
     threading.Thread(target=loop, daemon=True).start()
-    log(f"battle relay: in the second Warband window join the battle server at {local[0]}:{local[1]} "
-        "(Multiplayer - Favorites): the bridge takes you to the host's server")
+    log(f"battle relay: the battle server waits for the second Warband window at {local[0]}:{local[1]}: "
+        "Multiplayer - Join a game - Local area network (needs look_for_server_on_this_machine = 1 "
+        "in Documents\\Mount&Blade Warband\\rgl_config.txt)")
     return game
 
 
@@ -2173,7 +2189,7 @@ def run_join(args, log):
         log(f"relay: cannot reach the host: {e}")
     relay.save_dir = args.save_dir if args.fetch_save else None  # each new save of the host lands here too
     threading.Thread(target=relay.keep_connected, daemon=True).start()  # retries until the host answers
-    serve_battle_join(parse_addr(args.battle_listen, 7260), parse_addr(args.host, NET_PORT), args.key, relay.log)
+    serve_battle_join(parse_addr(args.battle_listen, BATTLE_PORT), parse_addr(args.host, NET_PORT), args.key, relay.log)
     if args.fetch_save:
         if not relay.connected.is_set():
             log("relay: waiting for the host (check its address, the key, and that both PCs are on the same network)")
