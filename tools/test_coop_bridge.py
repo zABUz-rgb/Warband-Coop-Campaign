@@ -854,6 +854,60 @@ def test_host_plays_on_server():
     check(w.server_report([], None, 2.0)[0] is False, "but never the server itself: it is the host's own game")
 
 
+def test_battle_relay():
+    """A friend's second window joins the battle server through both bridges; the server sees it
+    come from the host's own address, each game from its own port; datagrams without the key go nowhere."""
+    server = cb.udp_socket(("127.0.0.10", 18096))  # the battle server: answers who it sees
+
+    def battle_server():
+        while True:
+            data, addr = server.recvfrom(65535)
+            server.sendto(data + f" from {addr[0]}:{addr[1]}".encode(), addr)
+    threading.Thread(target=battle_server, daemon=True).start()
+    lines = []
+    cb.serve_battle_hub(("127.0.0.9", 18097), "secret", 18096, "127.0.0.10", lines.append)
+    cb.serve_battle_join(("127.0.0.8", 18098), ("127.0.0.9", 18097), "secret", lines.append)
+
+    def ask(sock, text):
+        sock.sendto(text, ("127.0.0.8", 18098))
+        return sock.recvfrom(65535)[0].decode()
+
+    game1, game2 = (socket.socket(socket.AF_INET, socket.SOCK_DGRAM) for _ in range(2))
+    for g in (game1, game2):
+        g.settimeout(2)
+    r1, r2 = ask(game1, b"hello"), ask(game2, b"hi")
+    check(r1.startswith("hello from 127.0.0.10:") and r2.startswith("hi from 127.0.0.10:"),
+          f"the battle server answers the friend's game, which it sees at the host's address: {r1}, {r2}")
+    check(r1.split(":")[-1] != r2.split(":")[-1], "each game comes from its own port: the server tells them apart")
+    check(ask(game1, b"again") == "again" + r1[len("hello"):], "a game keeps its port on the server")
+    check(any("joins the battle server through the bridge" in s for s in lines), f"the host's log says so: {lines}")
+    stranger = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    stranger.settimeout(0.5)
+    stranger.sendto(b"\0" * 8 + b"let me in", ("127.0.0.9", 18097))
+    try:
+        stranger.recvfrom(65535)
+        got = True
+    except socket.timeout:
+        got = False
+    check(not got, "a datagram without the key's tag does not reach the battle server")
+    wrong = []
+    cb.serve_battle_join(("127.0.0.8", 18099), ("127.0.0.9", 18097), "wrong", wrong.append)
+    game3 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    game3.settimeout(0.5)
+    game3.sendto(b"hello", ("127.0.0.8", 18099))
+    try:
+        game3.recvfrom(65535)
+        got = True
+    except socket.timeout:
+        got = False
+    check(not got, "a friend with the wrong password gets no answer")
+    check(cb.lan_rank("26.1.2.3") is None and cb.lan_rank("100.64.0.1") is None,
+          "Radmin's and Tailscale's addresses are not a local network's")
+    check(cb.lan_rank("192.168.1.5") < cb.lan_rank("10.8.1.4") and cb.lan_rank("172.20.0.1") is not None,
+          "a home network's 192.168.x comes before a VPN client's 10.x")
+    check(cb.lan_rank(cb.lan_address()) is not None or cb.lan_address() == "127.0.0.1", f"this PC's local address: {cb.lan_address()}")
+
+
 if __name__ == "__main__":
     test_positions()
     test_players_and_puppets()
@@ -883,4 +937,5 @@ if __name__ == "__main__":
     test_blank_values()
     test_quiet_note()
     test_copy_of_the_hosts_save()
+    test_battle_relay()
     print("ALL OK")

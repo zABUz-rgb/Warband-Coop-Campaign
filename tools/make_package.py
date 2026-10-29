@@ -265,7 +265,7 @@ try {{
   Write-Host ""
   Write-Host "{starting}" -ForegroundColor Green
   Write-Host "{stop_hint}"
-  # logs (and the host's kept heroes, profiles.json) in Documents\CoopWorld: they outlive the package folder
+  # logs (and the host's kept heroes, profiles.json) in Documents\Warband Coop Campaign: they outlive the package folder
   $logDir = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "Warband Coop Campaign"
   New-Item -ItemType Directory -Force $logDir | Out-Null
   Write-Host "{log_where} $logDir"
@@ -307,7 +307,8 @@ JOIN_BODY = r"""  $hostAddress = $First
   if (-not $key) {{ $key = Read-Host "{ask_key_join}" }}
   if (-not $key) {{ throw "{no_key_join}" }}
   $bridgeArgs = @("join", $hostAddress, "--key", $key, "--fetch-save")
-  Write-Host "{save_hint}" """
+  Write-Host "{save_hint}"
+  Write-Host "{battle_hint}" -ForegroundColor Cyan """
 
 LAUNCHER_TEXT = {
   "en": dict(
@@ -325,6 +326,7 @@ LAUNCHER_TEXT = {
     ask_key_join="Password the host gave you",
     no_key_join="No password given.",
     save_hint="The host's newest save goes into your Warband Coop Campaign saves (the window shows which slot): load it in the game.",
+    battle_hint="Joint battles: in the second Warband window join the battle server through the bridge - Multiplayer - Favorites - 127.0.0.1:7260 (not the host's Radmin address). Keep this window open.",
     mp_name_hint="Joint battles: the name you use on the battle server (Multiplayer - Profiles). Your soldiers obey you only under this name.",
     ask_mp_name="Your multiplayer name (Enter = keep the one in brackets)",
     mp_name_set="Multiplayer name:",
@@ -345,6 +347,7 @@ LAUNCHER_TEXT = {
     ask_key_join="Пароль, который дал хост",
     no_key_join="Пароль не указан.",
     save_hint="Свежее сохранение хоста попадёт в ваши сохранения Warband Coop Campaign (в окне будет видно, в какой слот) - загрузите его в игре.",
+    battle_hint="Совместные бои: во втором окне Warband заходите на сервер боя через мост - Мультиплеер - Избранное - 127.0.0.1:7260 (а не адрес хоста из Radmin). Это окно не закрывайте.",
     mp_name_hint="Совместные бои: имя, под которым вы заходите на сервер боя (Мультиплеер - Профили). Только под этим именем ваши солдаты будут вас слушаться.",
     ask_mp_name="Ваше имя в мультиплеере (Enter - оставить то, что в скобках)",
     mp_name_set="Имя в мультиплеере:",
@@ -381,7 +384,7 @@ START_HERE_RU = f'''{PROJECT} {VERSION} - С ЧЕГО НАЧАТЬ
      скачал join.bat. Подождите около 5 секунд - игра сама станет КЛИЕНТОМ. Если нет:
      Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)".
 3. Совместные бои: второе окно Warband (Warband Coop Campaign). Хост: Мультиплеер - Создать игру, "Битва".
-   Друг: Мультиплеер - Избранное - адрес хоста с портом 7240 (например 26.x.x.x:7240).
+   Друг: Мультиплеер - Избранное - 127.0.0.1:7260 (через мост, окно join.bat открыто).
 Подробности - README.txt. Вопросы и ошибки: {DISCORD}
 '''
 
@@ -399,7 +402,7 @@ START_HERE = f'''{PROJECT} {VERSION} - START HERE
    window open. Start Warband (Warband Coop Campaign), load the save join.bat fetched and wait about 5 seconds:
    the game becomes a CLIENT by itself. If not: Camp - "CoopWorld: co-op..." - "let the world run again".
 3. Joint battles: a second Warband window (Warband Coop Campaign). Host: Multiplayer - Host a game, Battle.
-   Friends: Multiplayer - Favorites - the host's address with port 7240 (e.g. 26.x.x.x:7240).
+   Friends: Multiplayer - Favorites - 127.0.0.1:7260 (through the bridge, join.bat's window open).
 More in README.txt. Questions and bugs: {DISCORD}
 '''
 
@@ -446,8 +449,9 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   - PowerShell, Python 3 и Radmin VPN. Их установщики лежат в папке Programs, install.bat
     предложит поставить недостающие.
   - Компьютеры должны видеть друг друга: одна сеть Radmin VPN (или ZeroTier, или локальная сеть).
-  - У хоста Windows один раз спросит, разрешить ли Python принимать подключения (порт TCP 7350):
-    разрешите для частной сети.
+  - У хоста Windows один раз спросит, разрешить ли Python принимать подключения (порт 7350, TCP и
+    UDP): разрешите и для частных, и для общественных сетей - сеть Radmin Windows часто считает
+    общественной.
 
 УСТАНОВКА (у каждого игрока)
   1. Распакуйте весь архив в любую папку, лучше всего - в папку с игрой, чтобы установщик быстрее
@@ -546,8 +550,11 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
        выбираете сторону и снаряжение (без разницы какое и какую сторону) и забываете об этом
        окне до сражения.
      Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
-  2. Каждый друг заходит на этот сервер из второго окна Warband (модуль Warband Coop Campaign):
-       Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
+  2. Каждый друг заходит на этот сервер из второго окна Warband (модуль Warband Coop Campaign)
+     через мост: Мультиплеер - Избранное - адрес 127.0.0.1:7260 (окно join.bat открыто). Мост
+     передаёт бой хосту, и сервер пускает друга как игрока своей локальной сети: напрямую по адресу
+     из Radmin (26.x.x.x:7240) Warband отказывает с ошибкой "неправильный номер авторизации".
+     В одной локальной сети (один Wi-Fi) можно и напрямую: список серверов (локальная сеть).
      Заходите ровно под тем именем, которое ввели в host.bat / join.bat (оно запоминается в
      mp_name.txt): тогда мост сам ставит вас в нужную команду и отдаёт вам ваших солдат. Мост пишет
      в своём окне, кого он узнал на сервере ("recognised") и кого нет ("NOT found"). Имена у всех
@@ -634,7 +641,8 @@ It needs a new campaign.
 NEEDS: every player's own Warband 1.174 (Steam or GOG) with its serial key (multiplayer needs it,
   and two players cannot join with one key); PowerShell, Python 3 and Radmin VPN - their
   installers are in the Programs folder and install.bat offers the missing ones. The host's PC must
-  let Python accept connections on TCP port 7350 (Windows asks once: allow on private networks).
+  let Python accept connections on port 7350, TCP and UDP (Windows asks once: allow on private and
+  public networks - Windows often counts Radmin's network as public).
 
 INSTALL (every player):
   1. Unpack the whole archive, best into the game's folder (the installer finds the game faster);
@@ -682,8 +690,10 @@ JOINT BATTLES (multiplayer server):
   1. The host starts a second Warband window (Warband Coop Campaign) and fights in it: Multiplayer -
      Host a game, game type Battle, any field map, 0 bots. Then pick any side and any equipment
      and forget about that window until the battle. The bridge finds it by itself.
-  2. Every friend joins it from a second Warband window: the LAN list, or Favorites with the
-     host's address, e.g. 26.x.x.x:7240 - under exactly the multiplayer name given to
+  2. Every friend joins it from a second Warband window through the bridge: Multiplayer -
+     Favorites - 127.0.0.1:7260 (join.bat's window open). Straight to the host's Radmin address
+     (26.x.x.x:7240) Warband refuses with "invalid authorization number"; on one LAN (the same
+     Wi-Fi) the LAN list works too. Join under exactly the multiplayer name given to
      host.bat / join.bat. Every player needs a different name.
   3. In an encounter: "CoopWorld: fight together with your friends". Players nearby are invited;
      the battle server restarts its round with the campaign's armies. Sides and heroes are given

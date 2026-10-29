@@ -85,4 +85,9 @@ Open (Warband Coop Campaign 1.0, packages Warband-Coop-Campaign-1.0[-ru].zip, bu
 - the project is named Warband Coop Campaign, and so are the module folder (Modules\Warband Coop Campaign),
   its saves and Documents\Warband Coop Campaign; the mod's menu entries keep the prefix "CoopWorld:". Saves and
   kept heroes of the CoopWorld test builds are not carried over: a new campaign.
+Open (the bridge only, after 1.0): over Radmin the friend's second window was refused by the battle
+server ("invalid authorization number"), on the same Wi-Fi it got in. Now it joins 127.0.0.1:7260 on
+its own PC; the bridges carry the datagrams (UDP 7350) and the host's bridge hands them to the battle
+server from the host's local address (192.168.x first), one port per friend's game. The host's log
+says "battle relay: a game from ... joins the battle server through the bridge".
 A weak PC with both Warband windows open may run out of memory.

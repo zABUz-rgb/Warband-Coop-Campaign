@@ -15,6 +15,13 @@ Modes:
     join  a relay, on a friend's PC: forwards its player game's requests to the hub, and can
           fetch the host's newest save first.
 
+The battle relay: a friend's second Warband window joins the battle server at 127.0.0.1:7260 on
+its own PC (Multiplayer - Favorites); the friend's bridge sends its datagrams to the host's bridge
+(UDP, the relays' port), which hands them to the battle server from the host's own local address.
+Warband lets players from a local network (192.168.x, 10.x) in at once but checks the others
+against the internet address its authorization server saw, so a friend coming straight over a
+virtual network (Radmin's 26.x) was turned away: "invalid authorization number".
+
     python tools/coop_bridge.py host --key SECRET [--listen 0.0.0.0:7350] [--mp-name NAME]
     python tools/coop_bridge.py join HOST_IP --key SECRET [--fetch-save] [--mp-name NAME]
 
@@ -127,6 +134,7 @@ non-negative numbers. A reply holds at most 128 numbers (the engine's registers)
 import argparse
 import base64
 import hmac
+import ipaddress
 import json
 import secrets
 import socket
@@ -163,7 +171,11 @@ REMOVALS_PER_REPLY = 3
 RESULT_PAIRS = 53       # troop and prisoner pairs of one battle result: 5 + 3 * 4 + 4 + 1 + 2 * 53 <= 128  # 3 header numbers + 7 per entry must stay within 128 registers
 MAX_STACKS = 30         # troop stacks per party in one message
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
-NET_PORT = 7350
+NET_PORT = 7350           # the relays' TCP link, and (UDP) the battle relay
+BATTLE_PORT = 7240        # the battle server's own port (Multiplayer - Host a game)
+BATTLE_LOCAL = "127.0.0.1:7260"  # on a friend's PC the second window joins the battle server here
+BATTLE_IDLE_S = 120.0     # a battle relay link silent this long is closed
+BATTLE_TAG = 8            # bytes in front of each relayed datagram that prove the key
 FETCHED_MARK = "coop_campaign_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
 PROTOCOL = 1
 SAVE_POLL_S = 2.0         # how often the hub looks for a new save of the host
@@ -1856,6 +1868,176 @@ class Relay:
             time.sleep(3)
 
 
+# ---- the battle relay (see the top of this file)
+
+def battle_tag(key):
+    return hmac.new(key.encode(), b"battle relay", "sha256").digest()[:BATTLE_TAG]
+
+
+LAN_NETWORKS = [ipaddress.ip_network(n) for n in ("192.168.0.0/16", "172.16.0.0/12", "10.0.0.0/8")]
+
+
+def lan_rank(addr):
+    """The place of addr's network in LAN_NETWORKS; None if it is not a local network address."""
+    a = ipaddress.ip_address(addr)
+    return next((i for i, n in enumerate(LAN_NETWORKS) if a.version == 4 and a in n), None)
+
+
+def lan_address():
+    """This PC's address in its local network: the one the battle server sees the relayed friends
+    come from. A home network's 192.168.x first (a VPN client such as AmneziaVPN holds a 10.x one
+    that is gone once it disconnects), the default route's first among equals; 127.0.0.1 if none."""
+    found = []
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.connect(("8.8.8.8", 53))  # no datagram is sent: only picks the route
+        found.append(probe.getsockname()[0])
+        probe.close()
+    except OSError:
+        pass
+    try:
+        found += [i[4][0] for i in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)]
+    except OSError:
+        pass
+    local = sorted((lan_rank(a), i, a) for i, a in enumerate(found) if lan_rank(a) is not None)
+    return local[0][2] if local else "127.0.0.1"
+
+
+def udp_socket(addr):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(addr)
+    return sock
+
+
+def _relay_back(sock, links, key_of, lock, forward, closed):
+    """Datagrams coming back on one link's socket go out with forward(data) until the link has been
+    silent for BATTLE_IDLE_S."""
+    sock.settimeout(5)
+    while True:
+        try:
+            data = sock.recv(65535)
+        except socket.timeout:
+            with lock:
+                link = links.get(key_of)
+                if link is None or link[0] is not sock:
+                    break
+                if time.time() - link[1] < BATTLE_IDLE_S:
+                    continue
+                links.pop(key_of, None)
+            closed()
+            break
+        except ConnectionResetError:  # Windows: the other end's port was not open for a moment
+            continue
+        except OSError:
+            break
+        forward(data)
+    sock.close()
+
+
+def serve_battle_hub(addr, key, port, source, log):
+    """The host's side: each friend's game gets its own socket from `source` (default: this PC's
+    local address, looked up for each new game) to the battle server on `port` at that address, so
+    the server tells the friends apart and lets them in."""
+    tag = battle_tag(key)
+    try:
+        hub = udp_socket(addr)
+    except OSError as e:
+        log(f"battle relay: cannot listen on UDP {addr[0]}:{addr[1]} ({e}); friends join the battle server directly")
+        return None
+    links = {}  # the friend's bridge address -> [socket to the battle server, time of its last datagram]
+    lock = threading.Lock()
+
+    def loop():
+        while True:
+            try:
+                data, peer = hub.recvfrom(65535)
+            except ConnectionResetError:
+                continue
+            except OSError:
+                return
+            if len(data) <= BATTLE_TAG or not hmac.compare_digest(data[:BATTLE_TAG], tag):
+                continue
+            with lock:
+                link = links.get(peer)
+                if link is None:
+                    here = source or lan_address()
+                    try:
+                        sock = udp_socket((here, 0))
+                        sock.connect((here, port))
+                    except OSError as e:
+                        log(f"battle relay: cannot reach the battle server {here}:{port}: {e}")
+                        continue
+                    link = links[peer] = [sock, 0.0]
+                    log(f"battle relay: a game from {peer[0]} joins the battle server through the bridge "
+                        f"(the server sees it as {here}:{sock.getsockname()[1]})")
+
+                    def forward(back, peer=peer):
+                        try:
+                            hub.sendto(tag + back, peer)
+                        except OSError:
+                            pass
+                    threading.Thread(target=_relay_back, args=(sock, links, peer, lock, forward,
+                                     lambda peer=peer: log(f"battle relay: the game from {peer[0]} left")),
+                                     daemon=True).start()
+                link[1] = time.time()
+            try:
+                link[0].send(data[BATTLE_TAG:])
+            except OSError:
+                pass
+
+    threading.Thread(target=loop, daemon=True).start()
+    log(f"battle relay: friends' second windows join the battle server (port {port}) through the bridge; "
+        f"it sees them come from {source or lan_address()}, a local address")
+    return hub
+
+
+def serve_battle_join(local, hub_addr, key, log):
+    """The friend's side: the second Warband window joins the battle server at `local`; its
+    datagrams go to the host's bridge with the key's tag, the answers come back."""
+    tag = battle_tag(key)
+    try:
+        game = udp_socket(local)
+    except OSError as e:
+        log(f"battle relay: cannot listen on UDP {local[0]}:{local[1]} ({e}); join the battle server directly")
+        return None
+    links = {}  # the game's address -> [socket to the host's bridge, time of its last datagram]
+    lock = threading.Lock()
+
+    def loop():
+        while True:
+            try:
+                data, src = game.recvfrom(65535)
+            except ConnectionResetError:
+                continue
+            except OSError:
+                return
+            with lock:
+                link = links.get(src)
+                if link is None:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    sock.connect(hub_addr)
+                    link = links[src] = [sock, 0.0]
+
+                    def forward(back, src=src):
+                        if len(back) > BATTLE_TAG and hmac.compare_digest(back[:BATTLE_TAG], tag):
+                            try:
+                                game.sendto(back[BATTLE_TAG:], src)
+                            except OSError:
+                                pass
+                    threading.Thread(target=_relay_back, args=(sock, links, src, lock, forward, lambda: None),
+                                     daemon=True).start()
+                link[1] = time.time()
+            try:
+                link[0].send(tag + data)
+            except OSError:
+                pass
+
+    threading.Thread(target=loop, daemon=True).start()
+    log(f"battle relay: in the second Warband window join the battle server at {local[0]}:{local[1]} "
+        "(Multiplayer - Favorites): the bridge takes you to the host's server")
+    return game
+
+
 # ---- main
 
 def parse_addr(text, default_port):
@@ -1911,6 +2093,7 @@ def run_host(args, log):
     serve_http(parse_addr(args.mp, 80), lambda t: handle_request(world, "mp", t, time.time()), log, "mp")
     if args.key:
         serve_relays(parse_addr(args.listen, NET_PORT), world, args.key, args.save_dir, log)
+        serve_battle_hub(parse_addr(args.listen, NET_PORT), args.key, args.battle_port, args.battle_from, log)
     else:
         log("net: no --key given, other players cannot join (this PC only)")
     last = dict(world.stats)
@@ -1990,6 +2173,7 @@ def run_join(args, log):
         log(f"relay: cannot reach the host: {e}")
     relay.save_dir = args.save_dir if args.fetch_save else None  # each new save of the host lands here too
     threading.Thread(target=relay.keep_connected, daemon=True).start()  # retries until the host answers
+    serve_battle_join(parse_addr(args.battle_listen, 7260), parse_addr(args.host, NET_PORT), args.key, relay.log)
     if args.fetch_save:
         if not relay.connected.is_set():
             log("relay: waiting for the host (check its address, the key, and that both PCs are on the same network)")
@@ -2012,6 +2196,9 @@ def main():
     h.add_argument("--mp-name", default=None, help="the host's name on the battle server (multiplayer profile)")
     h.add_argument("--profiles", default=None, help="where the players' heroes are kept (default: profiles.json next to the log)")
     h.add_argument("--save-dir", default=str(default_save_dir()), help="the world server's saves")
+    h.add_argument("--battle-port", type=int, default=BATTLE_PORT, help="the battle server's port")
+    h.add_argument("--battle-from", default=None,
+                   help="the address the battle server sees relayed friends come from (default: this PC's local address)")
     j = sub.add_parser("join", help="a relay on a friend's PC")
     j.add_argument("host", help="the host's address, e.g. 26.1.2.3 (Radmin VPN) or 192.168.1.5")
     j.add_argument("--key", required=True)
@@ -2019,6 +2206,8 @@ def main():
     j.add_argument("--fetch-save", action="store_true", help="copy the host's newest save here first")
     j.add_argument("--mp-name", default=None, help="this player's name on the battle server (multiplayer profile)")
     j.add_argument("--save-dir", default=str(default_save_dir()))
+    j.add_argument("--battle-listen", default=BATTLE_LOCAL,
+                   help="where the second Warband window joins the battle server through the bridge")
     j.add_argument("--save-slot", default=None,
                    help="file name for the fetched save (default: the one fetched last time, else a free low slot)")
     for p in (h, j):
