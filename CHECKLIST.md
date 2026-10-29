@@ -58,4 +58,16 @@ Open (build 590170735, not confirmed yet):
   joint battle - the players and the lord's men (bots, team of the players) against his enemy; a
   second soldier choosing it joins the same battle; the lord keeps the men who survived, the enemy is
   beaten as in any joint battle. Freelancer's own "Follow the commander" (single player) stays.
+Open (build 157847662, not confirmed yet) - the joint siege on the battle server:
+- maps: only Siege maps whose AI mesh climbs the walls (3, 10, 13, 16); 8 and 15 have no AI mesh
+  at all (read from their .sco), their bots could only walk at the walls and stand;
+- the ladders lie on the ground when a round starts and the AI mesh goes up the wall where they stand
+  raised: the battle server raises them once all troops are on the field (in every player's game
+  too), and again every 30 s if one was pushed off; a storming bot (team 1) that stands 8 s with no
+  enemy within 4 m (archers excepted) is sent to a raised ladder, let go at its foot, and tries the
+  next ladder after 20 s;
+- the bots spawn without horses in a siege (spawn point override, given back when the battle ends);
+  if some came on horses all the same the server says "N bots came on horses all the same";
+- a hero (and a companion) spawns with its campaign hit points, now and at most (the campaign sends
+  them after the proficiencies: 31 hero numbers instead of 29), so Ironflesh and Strength count.
 A weak PC with both Warband windows open may run out of memory.

@@ -17,7 +17,10 @@ from coop.constants import *
 #   5 the server changes its game type (Battle for the field, Siege for a castle or town)
 # A siege ($coop_mp_mode 1) is fought in the Siege game type on one of its maps: team 0 holds the
 # walls (the garrison), team 1 storms them. The attackers win by the flag or when no defender
-# stands; the defenders when no attacker bot stands.
+# stands; the defenders when no attacker bot stands. The bots fight on foot; the ladders go up the
+# walls once the troops are on the field (the AI mesh climbs the wall there), and a storming bot that
+# stands under a wall is sent to a ladder (script_coop_mp_storm).
+# A hero or companion spawns with its campaign hit points (slot_troop_coop_mp_hp, _max).
 # Stacks are kept on trp_temp_array_a, COOP_MP_STRIDE slots each (troop, team, group = the MP
 # player who commands them or -1, count, fallen, spawned); trp_temp_array_b holds the last reply.
 #
@@ -28,8 +31,13 @@ from coop.constants import *
 
 MP_ARR = "trp_temp_array_a"
 HERO_TROOPS = "trp_tutorial_student_1"  # .. _4
-SIEGE_SCENES = ["scn_multi_scene_3", "scn_multi_scene_8", "scn_multi_scene_10", "scn_multi_scene_13",
-                "scn_multi_scene_15", "scn_multi_scene_16"]  # Native's Siege maps
+# Native's Siege maps whose AI mesh takes bots up the walls (by a ladder's place or a standing ladder).
+# Maps 8 and 15 have no AI mesh at all: bots there only walk straight at the walls and stand.
+SIEGE_SCENES = ["scn_multi_scene_3", "scn_multi_scene_10", "scn_multi_scene_13", "scn_multi_scene_16"]
+# The ladders the attackers raise in Siege (they lie on the ground when a round starts); the AI mesh
+# goes up the wall where they stand raised, so a bot walking there needs the ladder up
+LADDERS = ["spr_siege_ladder_move_6m", "spr_siege_ladder_move_8m", "spr_siege_ladder_move_10m",
+           "spr_siege_ladder_move_12m", "spr_siege_ladder_move_14m"]
 FIELD_SCENE = "scn_random_multi_plain_medium"
 # Battle maps for the terrain the battle was met on (party_get_current_terrain, header_terrain_types)
 TERRAIN_SCENES = [
@@ -75,6 +83,10 @@ mp_scripts = [
        (try_begin),
          (eq, ":offset", 0), #a new battle: no heroes yet
          (assign, "$coop_mp_heroes", 0),
+         (try_for_range, ":k", 0, 4),
+           (store_add, ":troop", HERO_TROOPS, ":k"),
+           (troop_set_slot, ":troop", slot_troop_coop_mp_hp_max, 0),
+         (try_end),
          (get_max_players, ":num_players"),
          (try_for_range, ":player_no", 0, ":num_players"),
            (player_set_slot, ":player_no", slot_player_coop_hero, 0),
@@ -146,6 +158,12 @@ mp_scripts = [
          (call_script, "script_coop_mp_hero_stat_to_all", ":troop", ":code", ":value"),
          (val_add, ":at", 1),
        (try_end),
+       # its hit points in the campaign, given to it when it spawns
+       (troop_get_slot, ":value", MP_BUF, ":at"),
+       (troop_set_slot, ":troop", slot_troop_coop_mp_hp, ":value"),
+       (val_add, ":at", 1),
+       (troop_get_slot, ":value", MP_BUF, ":at"),
+       (troop_set_slot, ":troop", slot_troop_coop_mp_hp_max, ":value"),
      (else_try),
        (eq, ":kind", 6), #a companion: troop, then coop_hero_numbers values (spawned as a bot of its stack)
        (eq, "$coop_mp_phase", 0),
@@ -173,6 +191,12 @@ mp_scripts = [
          (call_script, "script_coop_mp_hero_stat_to_all", ":troop", ":code", ":value"),
          (val_add, ":at", 1),
        (try_end),
+       # its hit points in the campaign, given to it when it spawns
+       (troop_get_slot, ":value", MP_BUF, ":at"),
+       (troop_set_slot, ":troop", slot_troop_coop_mp_hp, ":value"),
+       (val_add, ":at", 1),
+       (troop_get_slot, ":value", MP_BUF, ":at"),
+       (troop_set_slot, ":troop", slot_troop_coop_mp_hp_max, ":value"),
      (else_try),
        # start: bid|stacks|mode|scene hint|n|(player, team)*n
        (eq, ":kind", 1),
@@ -197,6 +221,7 @@ mp_scripts = [
          (troop_set_slot, MP_ARR, ":dst", ":v"),
        (try_end),
        (assign, "$coop_mp_old_round_seconds", "$g_multiplayer_round_max_seconds"),
+       (call_script, "script_coop_mp_horses_back"), #a siege takes them again, bot by bot
        (assign, ":game_type", multiplayer_game_type_battle),
        (try_begin),
          (eq, "$coop_mp_mode", 1),
@@ -343,6 +368,166 @@ mp_scripts = [
      (try_for_range, ":player_no", 1, ":num_players"), #0 is the server itself
        (player_is_active, ":player_no"),
        (multiplayer_send_string_to_player, ":player_no", multiplayer_event_show_server_message, s0),
+     (try_end),
+    ]),
+
+  # script_coop_mp_raise_ladders: every ladder lying on the ground goes up the wall, here and in every
+  # player's game (as when a player raises it)
+  ("coop_mp_raise_ladders",
+   [
+     (get_max_players, ":num_players"),
+     ] + [op for kind in LADDERS for op in [
+     (scene_prop_get_num_instances, ":num", kind),
+     (try_for_range, ":k", 0, ":num"),
+       (scene_prop_get_instance, ":instance", kind, ":k"),
+       (scene_prop_slot_eq, ":instance", scene_prop_open_or_close_slot, 0),
+       (call_script, "script_use_item", ":instance", -1),
+       (try_for_range, ":player_no", 1, ":num_players"), #0 is the server itself
+         (player_is_active, ":player_no"),
+         (multiplayer_send_2_int_to_player, ":player_no", multiplayer_event_use_item, ":instance", -1),
+       (try_end),
+     (try_end),
+     ]] + [
+    ]),
+
+  # script_coop_mp_pick_ladder: arg1 = a storming bot; reg0 = the raised ladder it goes to (the nearest
+  # the first time, then the others in turn), -1 if none stands
+  ("coop_mp_pick_ladder",
+   [
+     (store_script_param, ":agent_no", 1),
+     (assign, reg0, -1),
+     (set_fixed_point_multiplier, 100),
+     (agent_get_position, pos1, ":agent_no"),
+     (assign, ":n", 0),
+     (assign, ":nearest", 0),
+     (assign, ":best", -1),
+     ] + [op for kind in LADDERS for op in [
+     (scene_prop_get_num_instances, ":num", kind),
+     (try_for_range, ":k", 0, ":num"),
+       (scene_prop_get_instance, ":instance", kind, ":k"),
+       (scene_prop_slot_eq, ":instance", scene_prop_open_or_close_slot, 1),
+       (prop_instance_get_starting_position, pos2, ":instance"),
+       (get_distance_between_positions, ":dist", pos1, pos2),
+       (try_begin),
+         (this_or_next|eq, ":best", -1),
+         (lt, ":dist", ":best"),
+         (assign, ":best", ":dist"),
+         (assign, ":nearest", ":n"),
+       (try_end),
+       (val_add, ":n", 1),
+     (try_end),
+     ]] + [
+     (try_begin),
+       (gt, ":n", 0),
+       (agent_get_slot, ":tries", ":agent_no", slot_agent_coop_tries),
+       (store_add, ":pick", ":nearest", ":tries"),
+       (val_mod, ":pick", ":n"),
+       (val_add, ":tries", 1),
+       (agent_set_slot, ":agent_no", slot_agent_coop_tries, ":tries"),
+       (assign, ":n", 0),
+       ] + [op for kind in LADDERS for op in [
+       (scene_prop_get_num_instances, ":num", kind),
+       (try_for_range, ":k", 0, ":num"),
+         (scene_prop_get_instance, ":instance", kind, ":k"),
+         (scene_prop_slot_eq, ":instance", scene_prop_open_or_close_slot, 1),
+         (try_begin),
+           (eq, ":n", ":pick"),
+           (assign, reg0, ":instance"),
+         (try_end),
+         (val_add, ":n", 1),
+       (try_end),
+       ]] + [
+     (try_end),
+    ]),
+
+  # script_coop_mp_storm: the storming bots of a siege (team 1), every 2 s. Bots walk the AI mesh to
+  # the defenders; where it leads to a closed gate or a ladder that is down they stand under the wall.
+  # A bot that stood coop_mp_storm_still_s with no enemy near (archers shooting excepted) is sent to a
+  # raised ladder; at its foot (or in a fight, or after coop_mp_storm_walk_s) it is let go, and the AI
+  # mesh takes it up the wall.
+  ("coop_mp_storm",
+   [
+     (set_fixed_point_multiplier, 100),
+     (try_for_agents, ":agent_no"),
+       (agent_is_alive, ":agent_no"),
+       (agent_is_human, ":agent_no"),
+       (agent_is_non_player, ":agent_no"),
+       (agent_slot_ge, ":agent_no", slot_agent_coop_stack, 1),
+       (agent_get_team, ":team", ":agent_no"),
+       (eq, ":team", 1),
+       (agent_get_position, pos1, ":agent_no"),
+       (position_get_x, ":x", pos1),
+       (position_get_y, ":y", pos1),
+       (agent_get_slot, ":old_x", ":agent_no", slot_agent_coop_x),
+       (agent_get_slot, ":old_y", ":agent_no", slot_agent_coop_y),
+       (agent_set_slot, ":agent_no", slot_agent_coop_x, ":x"),
+       (agent_set_slot, ":agent_no", slot_agent_coop_y, ":y"),
+       (store_sub, ":dx", ":x", ":old_x"),
+       (val_abs, ":dx"),
+       (store_sub, ":dy", ":y", ":old_y"),
+       (val_abs, ":dy"),
+       (store_add, ":moved", ":dx", ":dy"),
+       (assign, ":busy", 0), #an enemy near, or a ranged weapon in hand
+       (try_for_agents, ":other", pos1, 400),
+         (eq, ":busy", 0),
+         (agent_is_alive, ":other"),
+         (agent_is_human, ":other"),
+         (agent_get_team, ":other_team", ":other"),
+         (neq, ":other_team", ":team"),
+         (assign, ":busy", 1),
+       (try_end),
+       (try_begin),
+         (agent_get_wielded_item, ":item", ":agent_no", 0),
+         (ge, ":item", 0),
+         (item_get_type, ":type", ":item"),
+         (this_or_next|eq, ":type", itp_type_bow),
+         (this_or_next|eq, ":type", itp_type_crossbow),
+         (eq, ":type", itp_type_thrown),
+         (assign, ":busy", 1),
+       (try_end),
+       (agent_get_slot, ":ladder", ":agent_no", slot_agent_coop_ladder),
+       (agent_get_slot, ":still", ":agent_no", slot_agent_coop_still),
+       (try_begin),
+         (gt, ":ladder", 0), #on its way to a ladder: ":still" counts the walk
+         (val_add, ":still", 2),
+         (store_sub, ":instance", ":ladder", 1),
+         (prop_instance_get_starting_position, pos2, ":instance"),
+         (get_distance_between_positions, ":dist", pos1, pos2),
+         (try_begin),
+           (this_or_next|lt, ":dist", 250),
+           (this_or_next|eq, ":busy", 1),
+           (ge, ":still", coop_mp_storm_walk_s),
+           (agent_clear_scripted_mode, ":agent_no"),
+           (agent_set_slot, ":agent_no", slot_agent_coop_ladder, 0),
+           (assign, ":still", 0),
+         (try_end),
+       (else_try),
+         (try_begin),
+           (eq, ":busy", 0),
+           (lt, ":moved", 100), #under a metre in 2 s
+           (val_add, ":still", 2),
+         (else_try),
+           (assign, ":still", 0),
+         (try_end),
+         (ge, ":still", coop_mp_storm_still_s),
+         (assign, ":still", 0),
+         (call_script, "script_coop_mp_pick_ladder", ":agent_no"),
+         (ge, reg0, 0),
+         (prop_instance_get_starting_position, pos2, reg0),
+         (agent_set_scripted_destination, ":agent_no", pos2, 1),
+         (store_add, ":ladder", reg0, 1),
+         (agent_set_slot, ":agent_no", slot_agent_coop_ladder, ":ladder"),
+       (try_end),
+       (agent_set_slot, ":agent_no", slot_agent_coop_still, ":still"),
+     (try_end),
+    ]),
+
+  # script_coop_mp_horses_back: the Siege map's spawn points give horses again (a campaign siege
+  # takes them from the bots)
+  ("coop_mp_horses_back",
+   [
+     (try_for_range, ":entry", 0, 64),
+       (mission_tpl_entry_set_override_flags, "mt_multiplayer_sg", ":entry", 0),
      (try_end),
     ]),
 
@@ -619,6 +804,24 @@ mp_battle_triggers = [
        (assign, "$coop_mp_phase", 3),
        (str_store_string, s0, "@CoopWorld: all troops are on the field. To battle!"),
        (call_script, "script_coop_mp_tell_all"),
+       (try_begin),
+         (eq, "$g_multiplayer_game_type", multiplayer_game_type_siege),
+         (call_script, "script_coop_mp_raise_ladders"),
+         (assign, "$coop_mp_ladders_s", 0),
+         # the bots storm and hold the walls on foot: a horse that came all the same is told
+         (assign, ":mounted", 0),
+         (try_for_agents, ":agent_no"),
+           (agent_is_human, ":agent_no"),
+           (agent_slot_ge, ":agent_no", slot_agent_coop_stack, 1),
+           (agent_get_horse, ":horse", ":agent_no"),
+           (ge, ":horse", 0),
+           (val_add, ":mounted", 1),
+         (try_end),
+         (gt, ":mounted", 0),
+         (assign, reg20, ":mounted"),
+         (str_store_string, s0, "@CoopWorld: {reg20} bots came on horses all the same."),
+         (call_script, "script_coop_mp_tell_all"),
+       (try_end),
      (else_try),
        (assign, ":i", ":found"),
        (assign, "$coop_mp_spawn_i", ":i"),
@@ -646,6 +849,10 @@ mp_battle_triggers = [
          (assign, ":entry", multi_initial_spawn_point_team_1),
        (else_try),
          (assign, ":entry", multi_initial_spawn_point_team_2),
+       (try_end),
+       (try_begin),
+         (eq, "$g_multiplayer_game_type", multiplayer_game_type_siege),
+         (mission_tpl_entry_set_override_flags, "mt_multiplayer_sg", ":entry", af_override_horse), #on foot
        (try_end),
        (assign, "$coop_mp_spawning_stack", ":i"),
        (store_current_scene, ":cur_scene"),
@@ -719,6 +926,52 @@ mp_battle_triggers = [
      (agent_is_non_player, ":agent_no"),
      (store_add, ":tag", "$coop_mp_spawning_stack", 1),
      (agent_set_slot, ":agent_no", slot_agent_coop_stack, ":tag"),
+     ] + [(agent_set_slot, ":agent_no", slot, 0) for slot in
+          (slot_agent_coop_x, slot_agent_coop_y, slot_agent_coop_still, slot_agent_coop_ladder,
+           slot_agent_coop_tries)] + [
+    ]),
+
+  # a hero or companion from the campaign comes with its hit points there (the most, and now)
+  (ti_on_agent_spawn, 0, 0, [(multiplayer_is_server), (is_between, "$coop_mp_phase", 2, 4)],
+   [
+     (store_trigger_param_1, ":agent_no"),
+     (agent_is_human, ":agent_no"),
+     (agent_get_troop_id, ":troop", ":agent_no"),
+     (ge, ":troop", 0),
+     (troop_get_slot, ":max", ":troop", slot_troop_coop_mp_hp_max),
+     (gt, ":max", 0),
+     (troop_get_slot, ":hp", ":troop", slot_troop_coop_mp_hp),
+     (val_max, ":hp", 1),
+     (val_min, ":hp", ":max"),
+     (agent_set_max_hit_points, ":agent_no", ":max", 1),
+     (agent_set_hit_points, ":agent_no", ":hp", 1),
+    ]),
+
+  # a siege: a ladder pushed off the wall goes up again after a while
+  (1, 0, 0,
+   [
+     (multiplayer_is_server),
+     (eq, "$coop_mp_phase", 3),
+     (eq, "$g_multiplayer_game_type", multiplayer_game_type_siege),
+     (eq, "$g_round_ended", 0),
+   ],
+   [
+     (val_add, "$coop_mp_ladders_s", 1),
+     (ge, "$coop_mp_ladders_s", coop_mp_ladders_s),
+     (assign, "$coop_mp_ladders_s", 0),
+     (call_script, "script_coop_mp_raise_ladders"),
+    ]),
+
+  # a siege: storming bots that stand under the walls go to the ladders
+  (2, 0, 0,
+   [
+     (multiplayer_is_server),
+     (eq, "$coop_mp_phase", 3),
+     (eq, "$g_multiplayer_game_type", multiplayer_game_type_siege),
+     (eq, "$g_round_ended", 0),
+   ],
+   [
+     (call_script, "script_coop_mp_storm"),
     ]),
 
   (ti_on_agent_killed_or_wounded, 0, 0,
@@ -760,6 +1013,7 @@ mp_battle_triggers = [
        (multiplayer_send_message_to_player, ":player_no", multiplayer_event_force_start_team_selection),
      (try_end),
      (assign, "$coop_mp_phase", 4),
+     (call_script, "script_coop_mp_horses_back"),
      (assign, "$coop_mp_pending", 0), #report at once
      (str_store_string, s0, "@CoopWorld: the battle is over. The outcome goes back to the campaign."),
      (call_script, "script_coop_mp_tell_all"),

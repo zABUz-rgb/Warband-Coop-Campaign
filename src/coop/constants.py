@@ -55,6 +55,16 @@ coop_mp_max_stacks = 60          # troop stacks of one battle, both sides
 coop_mp_stride = 8               # slots per stack on the multiplayer server
 coop_mp_round_seconds = 3600     # a campaign battle's round has no practical time limit
 slot_agent_coop_stack = 40       # on a bot of the multiplayer server: its stack + 1 (Native agent slots end at 28)
+slot_agent_coop_x = 41           # a storming bot: where it stood at the last look (cm)
+slot_agent_coop_y = 42
+slot_agent_coop_still = 43       # seconds it has stood there without an enemy near
+slot_agent_coop_ladder = 44      # the ladder it is sent to + 1, 0 none
+slot_agent_coop_tries = 45       # ladders it was sent to so far
+coop_mp_storm_still_s = 8        # a storming bot standing this long without a fight is sent to a ladder
+coop_mp_storm_walk_s = 20        # one that has not reached its ladder in this time tries the next
+coop_mp_ladders_s = 30           # a ladder found down (pushed off the wall) is raised again this often
+slot_troop_coop_mp_hp = 300      # on the battle server: a hero's or companion's hit points from the campaign
+slot_troop_coop_mp_hp_max = 301  # and its most hit points (0: not from the campaign)
 coop_mp_heroes_slot = 950        # on the battle server: the player number of each borrowed hero troop
 coop_mp_pairs_slot = 900         # on the battle server: the players' sides of the coming battle (player, team)*n
 coop_mp_switch_wait = 3          # seconds after a new battle mission starts before the sides are set
@@ -106,12 +116,12 @@ coop_catch_up_time_speed = 3     # rest time speed of a player whose clock is be
 coop_pause_reminder_frames = 600 # trigger runs between "the world is paused" reminders
 
 # A player's hero in a joint battle: equipment, attributes, combat skills, proficiencies
-# (campaign -> bridge -> battle server, in this order; 29 numbers)
+# (campaign -> bridge -> battle server, in this order, then hit points and most hit points; 31 numbers)
 coop_hero_skills = [36, 35, 34, 33, 27, 26, 25, 24, 23] # ironflesh, power strike/throw/draw, weapon master,
                                                         # shield, athletics, riding, horse archery
 coop_hero_profs = 7              # wpt_one_handed_weapon .. wpt_firearm
 coop_hero_items = 9              # ek_item_0 .. ek_horse
-coop_hero_numbers = 9 + 4 + 9 + 7
+coop_hero_numbers = 9 + 4 + 9 + 7 + 2
 slot_player_coop_hero = 100      # on the battle server: which borrowed troop is this player's hero, + 1
 coop_mp_event_hero_stat = 140    # network event: (troop, stat code, value) so every game knows the hero's stats
 slot_player_coop_hits = 110      # on the battle server: a hero's hits on enemies by weapon proficiency (+ wpt)

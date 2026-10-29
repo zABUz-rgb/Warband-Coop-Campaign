@@ -434,7 +434,7 @@ mp_campaign_scripts = [
     ]),
 
   # script_coop_troop_numbers_to_s18: arg1 = a hero (the player or a companion): its equipment,
-  # attributes, combat skills and proficiencies appended to s18, comma separated
+  # attributes, combat skills, proficiencies and hit points (now, at most) appended to s18, comma separated
   ("coop_troop_numbers_to_s18",
    [
      (store_script_param, ":troop", 1),
@@ -456,6 +456,15 @@ mp_campaign_scripts = [
        (store_proficiency_level, reg20, ":troop", ":wpt"),
        (call_script, "script_coop_append_s18", 0),
      (try_end),
+     # hit points now and at most (full health for a moment, then the same hit points again)
+     (store_troop_health, ":hp", ":troop", 1),
+     (troop_set_health, ":troop", 100),
+     (store_troop_health, ":max", ":troop", 1),
+     (troop_set_health, ":troop", ":hp", 1),
+     (assign, reg20, ":hp"),
+     (call_script, "script_coop_append_s18", 0),
+     (assign, reg20, ":max"),
+     (call_script, "script_coop_append_s18", 0),
     ]),
 
   # script_coop_client_mp_companion_to_s20: s20 = "&comp=troop,numbers" of the next companion fit

@@ -69,7 +69,7 @@ Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp
 [&compn=N&ter=T with a start or an acceptance: the companions coming and the terrain][&comp=troop,hero...:
 one companion per request after that]
 [&hero=...]; hero, with a start or an acceptance: HERO_NUMBERS numbers, the hero's equipment, attributes,
-combat skills and weapon proficiencies, in the order of coop/constants.py):
+combat skills, weapon proficiencies and hit points (now, at most), in the order of coop/constants.py):
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them), the
     player in puppet slot, or storm the town or castle mpc (a siege: the players are team 1, the
     garrison team 0); with &mpd=1 defend that center against its besieger mpe (the players and the
@@ -180,7 +180,7 @@ MP_LOST_S = 30.0        # a battle server back in an ordinary round this long af
 WOUNDED_PCT = 50        # of a player's fallen soldiers, this share is wounded rather than killed
 XP_PER_ENEMY = 30       # battle experience for each fallen enemy, shared by the winning side's players;
                         # the losing side gets a third of it
-HERO_NUMBERS = 29       # 9 equipment slots, 4 attributes, 9 combat skills, 7 proficiencies
+HERO_NUMBERS = 31       # 9 equipment slots, 4 attributes, 9 combat skills, 7 proficiencies, hit points now and at most
 COMPANIONS_WAIT_S = 5.0 # a battle waits this long for the starter's companions to arrive
 
 
