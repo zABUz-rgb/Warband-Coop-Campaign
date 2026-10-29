@@ -35,10 +35,17 @@ Mount & Blade и Mount & Blade: Warband — товарные знаки TaleWorl
    [Releases на GitHub](https://github.com/zABUz-rgb/Warband-Coop-Campaign/releases/tag/v1.0) или Яндекс Диск — [русская](https://disk.yandex.ru/d/EY9Jj7cvV33sGg), [английская](https://disk.yandex.ru/d/H7cLrsjGl4z6CQ).
    Всем игрокам нужен один и тот же пакет.
 2. Распакуйте весь архив, лучше всего — в папку с игрой, и запустите `install.bat`. Он предложит
-   установить недостающие программы из папки `Programs` (PowerShell 7, Python 3, Radmin VPN), найдёт
+   установить недостающие программы из папки `Programs` (Python 3, Radmin VPN), найдёт
    игру и поставит модуль `Warband Coop Campaign` (копия вашего Native с файлами мода; Native не меняется).
 3. Дальше — `README.txt` и `НАЧНИТЕ ЗДЕСЬ.txt` внутри пакета: хост запускает `host.bat`,
    друзья — `join.bat`.
+
+**Сохранения.** Мост отдаёт друзьям самое свежее по времени сохранение хоста из
+`Документы\Mount&Blade Warband Savegames\Warband Coop Campaign`. Если там лежат сохранения другой
+кампании или старых проб, другу может уйти не то сохранение. Поэтому **и у хоста, и у друзей в этой
+папке должны быть только сохранения текущей совместной кампании** — остальные перенесите в другую
+папку. Каждое сохранение хоста сразу уходит всем подключённым друзьям (пропущенное во время обрыва
+связи приходит после переподключения); друг загружает тот слот, который назвал `join.bat`.
 
 Нужна **своя лицензионная копия Warband 1.174 у каждого игрока** (Steam или GOG, с серийным ключом
 для мультиплеера). Мод не содержит файлов игры и не обходит проверку ключа.
@@ -59,8 +66,9 @@ Mount & Blade и Mount & Blade: Warband — товарные знаки TaleWorl
 - `tools/` — мост `coop_bridge.py`, отчёт по журналам `coop_logs.py`, сборка русского `make_ru.py`,
   пакеты `make_package.py`, тесты.
 - `lang/ru.csv` — русские тексты Freelancer, кооператива и всего, чего нет в русификаторах.
-- `vendor/` — сторонние загрузки (не в git), в том числе `vendor/prereqs` — установщики PowerShell,
-  Python и Radmin VPN для папки `Programs` пакетов.
+- `vendor/` — сторонние загрузки (не в git), в том числе `vendor/prereqs` — установщики Python и
+  Radmin VPN для папки `Programs` пакетов. PowerShell ставить не нужно: скрипты пакета работают в
+  Windows PowerShell 5.1, который есть в Windows 10/11.
 - `game/` — тестовая копия игры, модуль `Modules/Warband Coop Campaign` (не в git); `local/` — личные заметки (не в git).
 - `CHECKLIST.md` — что должно работать и что ждёт проверки в игре.
 
@@ -100,7 +108,7 @@ python tools/make_package.py
 | Методика coop-anything | cranebeaker | https://github.com/cranebeaker/coop-anything |
 
 В пакет входят установщики сторонних программ (без изменений, с цифровыми подписями авторов):
-PowerShell (Microsoft), Python (Python Software Foundation), Radmin VPN (Famatech).
+Python (Python Software Foundation), Radmin VPN (Famatech).
 
 ## Лицензия
 - Код, написанный для этого проекта (`src/coop`, код слияния, `tools/`, `build.py`, `lang/ru.csv`), — MIT,

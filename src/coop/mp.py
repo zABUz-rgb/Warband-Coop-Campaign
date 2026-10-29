@@ -70,6 +70,10 @@ mp_scripts = [
   # kind 1: start              bid|stacks|n|(player, team)*n
   # kind 4: the losses arrived bid
   # kind 3: tell one player s0 (an invitation waits in that player's campaign window)
+  # kind 5: a player's hero    bid|player|coop_hero_numbers values (before the start, or while the
+  #                            battle runs: a player who got to the battle server or accepted late)
+  # kind 6: a companion        bid|troop|coop_hero_numbers values
+  # kind 9: a late hero's side bid|player|team (after its kind 5, while the battle runs)
   ("coop_mp_reply",
    [
      (assign, "$coop_mp_pending", 0),
@@ -128,9 +132,10 @@ mp_scripts = [
        (try_end),
      (else_try),
        (eq, ":kind", 5), #a player's hero: player, then coop_hero_numbers values
-       (eq, "$coop_mp_phase", 0),
+       (is_between, "$coop_mp_phase", 0, 4),
        (troop_get_slot, ":player_no", MP_BUF, 3),
        (player_is_active, ":player_no"),
+       (player_slot_eq, ":player_no", slot_player_coop_hero, 0),
        (lt, "$coop_mp_heroes", 4),
        (store_add, ":troop", HERO_TROOPS, "$coop_mp_heroes"),
        (store_add, ":kept_at", coop_mp_heroes_slot, "$coop_mp_heroes"),
@@ -266,6 +271,26 @@ mp_scripts = [
        (try_end),
        (call_script, "script_coop_mp_tell_all"),
      (else_try),
+       # a late hero's side: kept with the others, the player is put there before it spawns
+       (eq, ":kind", 9),
+       (is_between, "$coop_mp_phase", 1, 4),
+       (eq, ":bid", "$coop_mp_battle"),
+       (lt, "$coop_mp_pairs", 25), #coop_mp_pairs_slot .. coop_mp_heroes_slot
+       (troop_get_slot, ":player_no", MP_BUF, 3),
+       (troop_get_slot, ":team", MP_BUF, 4),
+       (player_slot_ge, ":player_no", slot_player_coop_hero, 1), #its kind 5 came through
+       (store_mul, ":dst", "$coop_mp_pairs", 2),
+       (val_add, ":dst", coop_mp_pairs_slot),
+       (troop_set_slot, MP_ARR, ":dst", ":player_no"),
+       (val_add, ":dst", 1),
+       (troop_set_slot, MP_ARR, ":dst", ":team"),
+       (val_add, "$coop_mp_pairs", 1),
+       (player_is_active, ":player_no"),
+       (player_get_agent_id, ":agent_no", ":player_no"),
+       (this_or_next|lt, ":agent_no", 0),
+       (neg|agent_is_alive, ":agent_no"),
+       (call_script, "script_coop_mp_put_on_side", ":player_no", ":team"),
+     (else_try),
        (eq, ":kind", 3),
        (store_mul, ":player_no", ":bid", 1), #the player number comes where a battle number would
        (player_is_active, ":player_no"),
@@ -323,6 +348,33 @@ mp_scripts = [
        (player_is_active, ":player_no"),
        (multiplayer_send_3_int_to_player, ":player_no", coop_mp_event_hero_stat, ":troop", ":code", ":value"),
      (try_end),
+    ]),
+
+  # script_cf_coop_mp_may_spawn: arg1 = player. While a campaign battle is on only the players who
+  # fight as their hero spawn: a fallen hero stays out, and a player without a hero in this battle
+  # (one who came late, before the bridge sent its hero) watches instead of fighting with the gear
+  # picked in the multiplayer window.
+  ("cf_coop_mp_may_spawn",
+   [
+     (store_script_param, ":player_no", 1),
+     (player_slot_eq, ":player_no", slot_player_coop_fallen, 0),
+     (assign, ":may", 1),
+     (try_begin),
+       (is_between, "$coop_mp_phase", 1, 4),
+       (neg|player_slot_ge, ":player_no", slot_player_coop_hero, 1),
+       (assign, ":may", 0),
+     (try_end),
+     (eq, ":may", 1),
+    ]),
+
+  # script_cf_coop_mp_late_hero: arg1 = player. Succeeds for a campaign hero while its battle is on:
+  # it spawns even after Battle's first seconds (a hero that got there late).
+  ("cf_coop_mp_late_hero",
+   [
+     (store_script_param, ":player_no", 1),
+     (is_between, "$coop_mp_phase", 1, 4),
+     (player_slot_ge, ":player_no", slot_player_coop_hero, 1),
+     (player_slot_eq, ":player_no", slot_player_coop_fallen, 0),
     ]),
 
   # script_cf_coop_mp_hero_spawn: arg1 = player about to spawn. Fails unless the player fights as a
@@ -1119,19 +1171,32 @@ def merge_battle_template(mission_templates):
   from coop_merge import get_by_id, MergeError
   buy = (call_script, "script_multiplayer_buy_agent_equipment", ":player_no")
   may_spawn = (player_slot_eq, ":player_no", slot_player_spawned_this_round, 0)
+  spawn_new = (eq, ":spawn_new", 1)
   for template_id in ("multiplayer_bt", "multiplayer_sg"):
     template_triggers = get_by_id(mission_templates, template_id)[5]
     found = 0
     gates = 0
+    late = 0
     for trigger in template_triggers:
       block = trigger[4]
       i = 0
       while i < len(block):
         op = block[i]
-        if op == may_spawn:  # a hero who fell in a campaign battle does not spawn again
-          block.insert(i + 1, (player_slot_eq, ":player_no", slot_player_coop_fallen, 0))
+        if op == may_spawn:  # in a campaign battle only a hero spawns, and a fallen one does not again
+          block.insert(i + 1, (call_script, "script_cf_coop_mp_may_spawn", ":player_no"))
           gates += 1
           i += 1
+        elif op == spawn_new and template_id == "multiplayer_bt":  # Battle lets players spawn only in a round's first seconds: a hero later too
+          block[i:i] = [
+            (try_begin),
+              (eq, ":spawn_new", 0),
+              (eq, "$g_round_ended", 0),
+              (call_script, "script_cf_coop_mp_late_hero", ":player_no"),
+              (assign, ":spawn_new", 1),
+            (try_end),
+          ]
+          late += 1
+          i += 6
         elif op == buy:  # the player is about to spawn (Siege picks the spawn point in between)
           block[i:i + 1] = [
             (try_begin),
@@ -1147,4 +1212,6 @@ def merge_battle_template(mission_templates):
       raise MergeError(f"{template_id}: expected a player spawn buying equipment, found none")
     if gates != 1:
       raise MergeError(f"{template_id}: expected one player spawn check, found {gates}")
+    if template_id == "multiplayer_bt" and late != 1:
+      raise MergeError(f"{template_id}: expected one 'may a new agent spawn' check, found {late}")
     template_triggers.extend(mp_battle_triggers)

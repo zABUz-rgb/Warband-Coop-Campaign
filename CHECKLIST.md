@@ -80,7 +80,8 @@ Open (build 912679594, not confirmed yet) - after the first joint siege test (15
   and Battle alike (Native's spawn checks slot_player_coop_fallen); it comes back to the campaign
   wounded.
 Open (Warband Coop Campaign 1.0, packages Warband-Coop-Campaign-1.0[-ru].zip, build 912679594):
-- install.bat first lists PowerShell 7, Python 3 and Radmin VPN (found or not) and, with one answer,
+- install.bat first lists Python 3 and Radmin VPN (found or not; PowerShell 7 is no longer offered,
+  the scripts run in Windows PowerShell 5.1 of Windows 10/11) and, with one answer,
   runs the missing installers from the package's Programs folder (Python passive, with PATH);
 - the project is named Warband Coop Campaign, and so are the module folder (Modules\Warband Coop Campaign),
   its saves and Documents\Warband Coop Campaign; the mod's menu entries keep the prefix "CoopWorld:". Saves and
@@ -95,3 +96,18 @@ Open: a joint battle from the campaign through the relay (lag, a whole battle). 
 "battle relay: ... is on the battle server through the bridge" and, 2 min after it leaves, how long
 and how many datagrams; the host's log lists who is on the battle server whenever it changes.
 A weak PC with both Warband windows open may run out of memory.
+Open (build 693039160, not confirmed yet) - after the first campaign battle through the relay
+(session 16:27, 29.10: the host accepted 22 s after the start, was refused "too late" and fought
+on the battle server as a plain multiplayer player, with the gear picked there):
+- while a campaign battle is on, only a player with a hero spawns (script_cf_coop_mp_may_spawn):
+  one without a hero watches, never fights with multiplayer gear;
+- a late acceptance (the invited player, after the armies left) joins as the hero on the
+  starter's side, its troops and companions stay out ("accepted late - joins the battle as its hero");
+- a hero the battle server did not get at the start (the player came to the server late, or
+  accepted late) goes there while the battle runs: kind 5, then kind 9 (its side), and spawns
+  even after Battle's first seconds ("is on the battle server now - its hero joins the battle");
+- item modifiers (tempered, heavy...) are still not carried to the battle server;
+- a save of the host made while a friend's link was down goes to that friend when it connects
+  again ("a save the player did not have");
+- the packages offer only Python 3 and Radmin VPN (PowerShell 7 dropped); README: keep only the
+  current campaign's saves on every PC (the newest save by time is the one sent).

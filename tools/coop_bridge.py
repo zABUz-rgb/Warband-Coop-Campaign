@@ -190,6 +190,7 @@ INVITE_DIST = 1000      # map units * 100: players this close to the starter are
 MP_MAX_BOTS = 150       # bots on the battle server; bigger armies are scaled down, losses scaled up
 MP_MAX_STACKS = 60
 MP_CHUNK = 30           # stacks per reply: 5 + 4 * 30 numbers
+MP_MAX_HEROES = 4        # the battle server's hero troops
 MP_LOST_S = 30.0        # a battle server back in an ordinary round this long after a start lost it
 WOUNDED_PCT = 50        # of a player's fallen soldiers, this share is wounded rather than killed
 XP_PER_ENEMY = 30       # battle experience for each fallen enemy, shared by the winning side's players;
@@ -284,6 +285,8 @@ class Battle:
         self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
         self.sent = 0
         self.heroes = None        # [(player number, hero numbers)] still to send, after the stacks
+        self.heroes_given = set() # cids whose hero went to the battle server (at most MP_MAX_HEROES)
+        self.late = []            # replies for a hero that comes while the battle runs (kinds 5 and 9)
         self.companion_data = None  # [(troop, numbers)] still to send, after the heroes
         self.hero_troops = set()  # companions in the stacks: fallen means wounded, never killed
         self.terrain = 0
@@ -882,8 +885,17 @@ class World:
                 p.mp_out.append([7, bid, 2, 0])  # that battle is gone
         elif op == 3:
             if b.state != "gathering" and p.cid not in b.sides:
-                self.log(f"joint battle {b.bid}: {self._who(p)} accepted too late - the battle began without that player")
-                p.mp_out.append([7, bid, 2, 0])  # too late
+                if p.cid not in b.invited:
+                    self.log(f"joint battle {b.bid}: {self._who(p)} accepted too late - the battle began without that player")
+                    p.mp_out.append([7, bid, 2, 0])  # too late
+                    return
+                # the armies are on their way: the player still fights, as its hero, on the
+                # starter's side; its troops and companions stay out of this battle
+                b.invited.discard(p.cid)
+                b.sides[p.cid] = b.player_team
+                self.log(f"joint battle {b.bid}: {self._who(p)} accepted late - joins the battle as its hero; "
+                         "its troops stay out of it")
+                p.mp_out.append([7, b.bid, 1 if b.state == "running" else 0, b.player_team])
                 return
             b.invited.discard(p.cid)
             b.sides.setdefault(p.cid, b.player_team)  # an invited player fights on the starter's side
@@ -1109,8 +1121,9 @@ class World:
                     b.heroes = []
                     for cid in b.sides:
                         q, no = self.players.get(cid), self._mp_player_number(cid)
-                        if q is not None and q.hero and no >= 0:
+                        if q is not None and q.hero and no >= 0 and len(b.heroes_given) < MP_MAX_HEROES:
                             b.heroes.append((no, q.hero))
+                            b.heroes_given.add(cid)
                 if b.heroes:
                     no, hero = b.heroes.pop(0)
                     return [5, b.bid, no] + hero
@@ -1131,6 +1144,11 @@ class World:
                 mode = 1 if b.center is not None else 0
                 hint = b.center if b.center is not None else b.terrain
                 return [1, b.bid, len(b.stacks), mode, hint, len(pairs) // 2] + pairs
+            if b.state == "running" and phase in (1, 2, 3):
+                if not b.late:
+                    self._late_heroes(b)
+                if b.late:
+                    return b.late.pop(0)
             if b.state == "running" and phase == 0 and now - b.started > MP_LOST_S:
                 # the battle server restarted or changed its game: the battle is lost to it
                 self.log(f"joint battle {b.bid}: lost - the battle server went back to an ordinary round")
@@ -1140,6 +1158,20 @@ class World:
                         q.mp_out.append([7, b.bid, 2, 0])
                 self.battle = None
             return [0]
+
+    def _late_heroes(self, b):
+        """A player of the battle whose hero the battle server has not got (it came to the server
+        after the start, or accepted late): the hero, then its side (kinds 5 and 9)."""
+        for cid, team in sorted(b.sides.items()):
+            if cid in b.heroes_given or len(b.heroes_given) >= MP_MAX_HEROES:
+                continue
+            q, no = self.players.get(cid), self._mp_player_number(cid)
+            if q is None or not q.hero or no < 0:
+                continue
+            b.heroes_given.add(cid)
+            b.late += [[5, b.bid, no] + q.hero, [9, b.bid, no, team]]
+            self.log(f"joint battle {b.bid}: {self._who(q)} is on the battle server now - its hero joins the battle (team {team})")
+            return
 
     def mp_notice(self):
         """(battle server player number, text) for an invited player who stands on the battle server
@@ -1620,6 +1652,12 @@ def newest_save(save_dir):
     return saves[-1] if saves else None
 
 
+def save_stamp(path):
+    """Which save of the host this is: a player that has it needs it no more."""
+    st = path.stat()
+    return f"{path.name}:{st.st_size}:{int(st.st_mtime)}"
+
+
 def serve_relays(addr, world, key, save_dir, log):
     """The hub side of the network: each relay connection is one player."""
     host, port = addr
@@ -1634,7 +1672,16 @@ def serve_relays(addr, world, key, save_dir, log):
     links = {}   # cid -> (connection, its send lock): where a new save of the host goes
 
     def save_message(path):
-        return {"t": "save", "name": path.name, "data": base64.b64encode(path.read_bytes()).decode()}
+        return {"t": "save", "name": path.name, "stamp": save_stamp(path),
+                "data": base64.b64encode(path.read_bytes()).decode()}
+
+    def push_save(cid, conn, lock, msg, why):
+        try:
+            send_msg(conn, lock, {"t": "save_coming", "size": len(msg["data"])})
+            send_msg(conn, lock, dict(msg, push=True))
+            log(f"net: {why}: {msg['name']} sent to {cid}")
+        except OSError as e:
+            log(f"net: could not send the save to {cid}: {e}")
 
     def push_saves():
         """Every save the host makes goes to all players at once: the next session starts from it."""
@@ -1657,12 +1704,7 @@ def serve_relays(addr, world, key, save_dir, log):
                 continue
             world.host_saved()
             for cid, (conn, lock) in list(links.items()):
-                try:
-                    send_msg(conn, lock, {"t": "save_coming", "size": len(msg["data"])})
-                    send_msg(conn, lock, dict(msg, push=True))
-                    log(f"net: the host saved: {msg['name']} sent to {cid}")
-                except OSError as e:
-                    log(f"net: could not send the save to {cid}: {e}")
+                push_save(cid, conn, lock, msg, "the host saved")
 
     if save_dir:
         threading.Thread(target=push_saves, daemon=True).start()
@@ -1697,6 +1739,14 @@ def serve_relays(addr, world, key, save_dir, log):
             world.set_mp_name(cid, hello.get("mp_name"))
             log(f"net: player {cid} {'connected again' if again else 'connected'}"
                 + (f", multiplayer name '{hello['mp_name']}'" if hello.get("mp_name") else ""))
+            if hello.get("saves") and save_dir:
+                # a player that keeps the host's saves: one it missed while away comes now
+                try:
+                    path = newest_save(save_dir)
+                    if path is not None and save_stamp(path) != hello.get("save_stamp"):
+                        push_save(cid, conn, lock, save_message(path), "a save the player did not have")
+                except OSError:
+                    pass
             for msg in msgs:
                 if msg.get("t") == "log":
                     log(f"[{cid}] {str(msg.get('text', ''))[:500]}")
@@ -1746,6 +1796,8 @@ class Relay:
         self.request_count = 0
         self.misses = 0
         self.save_dir = None    # where the host's saves go as the host makes them (join: --save-dir)
+        self.saves = False      # the first save fetched (or tried): the hub then sends any one missed
+        self.save_stamp = None  # the host's save this player has (see save_stamp)
         self.quiet_until = 0.0  # a save on its way: replies behind it come late, the link is fine
         self.late = []          # replies with news that came after their request gave up: next ones
 
@@ -1770,7 +1822,8 @@ class Relay:
         sock.settimeout(None)
         keep_alive(sock)
         send_msg(sock, self.lock, {"t": "hello", "key": self.key, "protocol": PROTOCOL, "mp_name": self.mp_name,
-                                   "session": self.session})
+                                   "session": self.session, "saves": bool(self.saves and self.save_dir),
+                                   "save_stamp": self.save_stamp})
         msgs = read_msgs(sock)
         first = next(msgs, None)
         if not first or first.get("t") != "welcome":
@@ -1849,6 +1902,7 @@ class Relay:
             return
         try:
             path = store_save(self.save_dir, msg)
+            self.save_stamp = msg.get("stamp")
             self.log(f"relay: the host saved the game - {path} now holds it (load it to start from there)")
         except (OSError, ValueError) as e:
             self.log(f"relay: could not keep the host's new save: {e}")
@@ -1858,7 +1912,9 @@ class Relay:
         rep = self.call({"t": "save"}, "save")
         if not rep or rep.get("error"):
             raise RuntimeError((rep or {}).get("error", "no answer"))
-        return store_save(save_dir, rep, slot_name), rep["name"]
+        path = store_save(save_dir, rep, slot_name)
+        self.save_stamp = rep.get("stamp")
+        return path, rep["name"]
 
     def keep_connected(self):
         while True:
@@ -2215,6 +2271,7 @@ def run_join(args, log):
             log("relay: waiting for the host (check its address, the key, and that both PCs are on the same network)")
         relay.connected.wait()
         fetch_first_save(relay, args.save_dir, args.save_slot, log)
+        relay.saves = True  # from now on a reconnect brings any save of the host missed meanwhile
     serve_http(parse_addr(args.client, 80), relay.forward, log, "cli")
     while True:
         time.sleep(5)

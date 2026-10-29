@@ -50,6 +50,8 @@ SIDE = re.compile(r"(\d+):(.*?)=team (\d)")
 STARTED = re.compile(r"^joint battle (\d+): started on the battle server")
 BATTLE_LOST = re.compile(r"^joint battle (\d+): lost")
 TOO_LATE = re.compile(r"^joint battle (\d+): (\d+):(.*?) accepted too late")
+JOINED_LATE = re.compile(r"^joint battle (\d+): (\d+):(.*?) accepted late - ")
+HERO_LATE = re.compile(r"^joint battle (\d+): (\d+):(.*?) is on the battle server now - ")
 REFUSED = re.compile(r"^joint battle: refused - (.*)$")
 LOG_FOLDER = "Warband Coop Campaign"  # in Documents: the bridge's logs and the players' heroes
 RUNS = re.compile(r"^player (\d+):(\S+) runs CoopWorld build (\d+)(.*)$")
@@ -435,7 +437,7 @@ def analyze(events, trace, silence=30):
             bid = int(m.group(1))
             battles[bid] = dict(pending or dict(t=t, slot=None, name="?", enemy=None, center=-1),
                                 bid=bid, invited=m.group(2), answers=[], sides=None, started=None,
-                                lost=None, late=[], missing=[])
+                                lost=None, late=[], missing=[], joined_late=[], heroes_late=[])
             pending = None
             continue
         m = ANSWER.match(text)
@@ -459,6 +461,14 @@ def analyze(events, trace, silence=30):
         m = TOO_LATE.match(text)
         if m and int(m.group(1)) in battles:
             battles[int(m.group(1))]["late"].append((t, m.group(3)))
+            continue
+        m = JOINED_LATE.match(text)
+        if m and int(m.group(1)) in battles:
+            battles[int(m.group(1))]["joined_late"].append((t, m.group(3)))
+            continue
+        m = HERO_LATE.match(text)
+        if m and int(m.group(1)) in battles:
+            battles[int(m.group(1))]["heroes_late"].append((t, m.group(3)))
 
     outcomes = {}
     for t, role, cid, q, parts in s.trace:
@@ -492,6 +502,10 @@ def analyze(events, trace, silence=30):
             s.note(b["t"], "!!", f"бой {bid}: стороны собраны, но бой не начался на сервере боя")
             continue
         out.append(f"    {stamp(b['started'])} начался на сервере боя")
+        for t, name in b["joined_late"]:
+            out.append(f"    {stamp(t)} {name}: согласие после сбора - в бою героем, без своих отрядов")
+        for t, name in b["heroes_late"]:
+            out.append(f"    {stamp(t)} {name}: герой отправлен на сервер боя уже во время боя (игрок зашёл на сервер позже)")
         if b["lost"] is not None:
             s.note(b["lost"], "!!", f"бой {bid} потерян: сервер боя вернулся к обычному раунду")
             continue

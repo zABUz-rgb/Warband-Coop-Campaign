@@ -116,6 +116,23 @@ def test_hang_after_battle():
           "spoils that came when the player was back on the map are noted")
 
 
+def test_late_heroes():
+    bridge = BRIDGE_START + """\
+12:01:00 joint battle: 1:D starts a joint battle (battle 0, enemy party 473, player slot -1, center -1)
+12:01:00 joint battle 1: gathering; invited: 0:O
+12:01:45 joint battle 1: going to the battle server (1 stacks, sides 1:D=team 0)
+12:01:47 joint battle 1: started on the battle server
+12:02:10 joint battle: 0:O accepts the invitation (battle 1, enemy party 0, player slot 0, center 0)
+12:02:10 joint battle 1: 0:O accepted late - joins the battle as its hero; its troops stay out of it
+12:02:30 joint battle 1: 0:O is on the battle server now - its hero joins the battle (team 0)
+""" + stats("12:02:50")
+    text = report(bridge, "")
+    check("O: согласие после сбора - в бою героем, без своих отрядов" in text, "a late acceptance is in the report")
+    check("O: герой отправлен на сервер боя уже во время боя" in text, "and the hero sent while the battle ran")
+    check(not any("не ответил на приглашение" in line for line in marked(text, "!!")),
+          "a player who accepted late answered")
+
+
 def test_invitation_unanswered():
     bridge = BRIDGE_START + """\
 12:01:00 joint battle: 1:D starts a joint battle (battle 0, enemy party 473, player slot -1, center -1)
@@ -202,6 +219,7 @@ if __name__ == "__main__":
     test_good_battle()
     test_hang_after_battle()
     test_invitation_unanswered()
+    test_late_heroes()
     test_builds_reconnect_sessions()
     test_parties()
     test_party_flow()

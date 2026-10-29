@@ -5,8 +5,8 @@ project; only the mod's entries in the game's menus keep the prefix "CoopWorld:"
 
 They hold only what the mod adds: the compiled module files (*.txt), Diplomacy's textures and
 changed scenes (tools/dplmc_assets.py), the bridge and an installer, and in Programs the installers
-of the programs the mod needs (vendor/prereqs: PowerShell, Python, Radmin VPN), which install.bat
-offers to run for what is missing.
+of the programs the mod needs (vendor/prereqs: Python, Radmin VPN), which install.bat
+offers to run for what is missing. The scripts run in Windows PowerShell 5.1, part of Windows 10/11.
 No game files: the installer copies each player's own Modules/Native to Modules/Warband Coop Campaign and puts
 the compiled files over it. The Russian one also adds the mod's Russian texts
 (tools/make_ru.py) to the copy of Native's languages/ru.
@@ -92,7 +92,6 @@ function Install-Programs {{
   $programs = Join-Path $here "Programs"
   if (-not (Test-Path $programs)) {{ return }}
   $list = @(
-    @{{ Name = "{ps_name}"; Have = (Has-Command "pwsh"); File = "PowerShell*.exe"; Arguments = "" }},
     @{{ Name = "{py_name}"; Have = ((Has-Command "python") -or (Has-Command "py")); File = "python-*.exe"; Arguments = "/passive PrependPath=1 Include_launcher=1" }},
     @{{ Name = "{radmin_name}"; Have = (Has-Radmin); File = "Radmin_VPN*.exe"; Arguments = "" }}
   )
@@ -191,14 +190,14 @@ RU_PART = r"""  # the Russian engine interface (the russifier): some editions (G
 
 PROGRAM_TEXT = {
   "en": dict(
-    ps_name="PowerShell 7", py_name="Python 3 (runs the bridge)", radmin_name="Radmin VPN (the players' network)",
+    py_name="Python 3 (runs the bridge)", radmin_name="Radmin VPN (the players' network)",
     programs_title="Programs the mod needs:", installed="installed", not_installed="not found",
     programs_ask="Install the missing ones from the Programs folder? [Y/n]",
     programs_skipped="Skipped: install them later from the Programs folder.",
     program_no_file="no installer in the Programs folder", program_installing="Installing",
     program_done="done", program_code="the installer ended with code", program_failed="did not install:"),
   "ru": dict(
-    ps_name="PowerShell 7", py_name="Python 3 (нужен для моста)", radmin_name="Radmin VPN (сеть игроков)",
+    py_name="Python 3 (нужен для моста)", radmin_name="Radmin VPN (сеть игроков)",
     programs_title="Программы, нужные моду:", installed="установлен", not_installed="не найден",
     programs_ask="Установить недостающие из папки Programs? [Д/н]",
     programs_skipped="Пропущено: их можно установить позже из папки Programs.",
@@ -396,7 +395,7 @@ START_HERE_RU = f'''{PROJECT} {VERSION} - С ЧЕГО НАЧАТЬ
 1. Один раз:
    - Распакуйте весь архив в любую папку, лучше всего - в папку с игрой (не запускайте из архива).
    - Закройте Warband и дважды щёлкните install.bat. Он предложит установить недостающие
-     программы (PowerShell 7, Python 3, Radmin VPN) из папки Programs и сам поставит мод.
+     программы (Python 3, Radmin VPN) из папки Programs и сам поставит мод.
    - В лаунчере Warband выберите модуль Warband Coop Campaign, Configure - Game - Language: ru,
      и включите оконный режим (Start windowed).
    - Radmin VPN: войдите в сеть, которую создал хост.
@@ -410,6 +409,8 @@ START_HERE_RU = f'''{PROJECT} {VERSION} - С ЧЕГО НАЧАТЬ
      Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)".
 3. Совместные бои: второе окно Warband (Warband Coop Campaign). Хост: Мультиплеер - Создать игру, "Битва".
    Друг: Сетевая игра - Присоединиться к игре - Локальная сеть (через мост, окно join.bat открыто).
+Сохранения: и у хоста, и у друга в папке сохранений Warband Coop Campaign держите только сохранения
+этой совместной кампании - мост отдаёт другу самое свежее из них (подробно - README.txt, "СОХРАНЕНИЯ").
 Подробности - README.txt. Вопросы и ошибки: {DISCORD}
 '''
 
@@ -417,7 +418,7 @@ START_HERE = f'''{PROJECT} {VERSION} - START HERE
 ===========================================
 
 1. Once: unpack the whole archive (best into the game's folder), close Warband, double-click
-   install.bat: it offers to install the missing programs (PowerShell 7, Python 3, Radmin VPN) from
+   install.bat: it offers to install the missing programs (Python 3, Radmin VPN) from
    the Programs folder and installs the mod. In the launcher pick the Warband Coop Campaign module and Start
    windowed. In Radmin VPN join the host's network.
 2. Every time: open Radmin VPN and check the network is up.
@@ -428,6 +429,8 @@ START_HERE = f'''{PROJECT} {VERSION} - START HERE
    the game becomes a CLIENT by itself. If not: Camp - "CoopWorld: co-op..." - "let the world run again".
 3. Joint battles: a second Warband window (Warband Coop Campaign). Host: Multiplayer - Host a game, Battle.
    Friends: Multiplayer - Join a Game - Local Area Network (through the bridge, join.bat's window open).
+Saves: host and friends keep only this co-op campaign's saves in the Warband Coop Campaign saves
+folder - the bridge sends the friends the newest one (README.txt, SAVES).
 More in README.txt. Questions and bugs: {DISCORD}
 '''
 
@@ -471,8 +474,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   - У каждого игрока своя лицензионная Warband 1.174 (Steam или GOG) с серийным ключом: без ключа
     мультиплеер не пускает, а с одним ключом вдвоём на сервер боя не зайти. Ключ Steam-версии:
     Steam - Библиотека - правый клик по Warband - Управление - Ключи продукта.
-  - PowerShell, Python 3 и Radmin VPN. Их установщики лежат в папке Programs, install.bat
-    предложит поставить недостающие.
+  - Python 3 и Radmin VPN. Их установщики лежат в папке Programs, install.bat предложит
+    поставить недостающие. Больше ничего ставить не нужно: PowerShell уже есть в Windows 10/11.
   - Компьютеры должны видеть друг друга: одна сеть Radmin VPN (или ZeroTier, или локальная сеть).
   - У хоста Windows один раз спросит, разрешить ли Python принимать подключения (порт 7350, TCP и
     UDP): разрешите и для частных, и для общественных сетей - сеть Radmin Windows часто считает
@@ -482,9 +485,9 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   1. Распакуйте весь архив в любую папку, лучше всего - в папку с игрой, чтобы установщик быстрее
      определил нужную папку (не запускайте из самого архива).
   2. Закройте Warband и дважды щёлкните install.bat.
-     - Сначала он покажет, какие программы уже есть (PowerShell 7, Python 3, Radmin VPN), и
-       спросит, установить ли недостающие. Python ставится сам (и сразу попадает в PATH),
-       у PowerShell и Radmin VPN откроются их обычные установщики.
+     - Сначала он покажет, какие программы уже есть (Python 3, Radmin VPN), и спросит,
+       установить ли недостающие. Python ставится сам (и сразу попадает в PATH), у Radmin VPN
+       откроется его обычный установщик.
      - Затем он найдёт игру (папка с архивом, GOG, Steam) и спросит, туда ли ставить; если не
        найдёт - откроет окно выбора папки.
      - Он ставит модуль Warband Coop Campaign (копия вашего Native с файлами мода; сам Native не меняется)
@@ -494,8 +497,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   3. В лаунчере Warband: модуль Warband Coop Campaign, Configure - Game - Language: ru, и включите
      Start windowed (оконный режим): для совместных боёв нужны два окна игры, а полноэкранная
      игра при переключении сворачивается и замирает.
-  Если install.bat не открывается или окно сразу закрывается: установите PowerShell
-  (Programs\\PowerShell Installer.exe) и запустите install.bat снова. Или вручную, в PowerShell:
+  Если install.bat не открывается или окно сразу закрывается, запустите установщик вручную:
+  Пуск - Windows PowerShell, и в нём:
     powershell -ExecutionPolicy Bypass -File "<папка пакета>\\install.ps1" "<папка с Warband>"
 
 ПЕРЕД ИГРОЙ (для всех игроков)
@@ -531,6 +534,18 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   Каждое новое сохранение хоста join.bat сам кладёт в тот же слот ваших сохранений (старое - .bak),
   а игра пишет "хост сохранил игру". В следующий раз загружайте этот слот - мир будет самым свежим.
   Герой получает имя, которое вы ввели в join.bat (у хоста - в host.bat).
+
+СОХРАНЕНИЯ (важно для хоста и друзей)
+  Мост отдаёт друзьям самое свежее по времени сохранение из папки хоста
+    Документы\\Mount&Blade Warband Savegames\\Warband Coop Campaign
+  Если там лежат сохранения другой кампании или старых проб, друг может получить не то сохранение
+  (так и было в одной из проверок). Поэтому и у хоста, и у каждого друга в этой папке должны быть
+  только сохранения текущей совместной кампании: остальные перенесите в другую папку (или
+  удалите), прежде чем запускать host.bat / join.bat.
+  - Хост: перед подключением друга сохранитесь (Esc - Сохранить) - уйдёт именно это сохранение.
+  - Каждое сохранение хоста сразу уходит всем подключённым друзьям. Сохранение, сделанное, пока
+    связь с другом прерывалась, приходит, как только мост друга подключится снова.
+  - Друг загружает тот слот, который назвал join.bat ("... now holds it"), а не другой.
 
 КАК ЭТО РАБОТАЕТ
   - Мир (лорды, бандиты, торговля, войны, время) живёт у хоста. Игры игроков показывают этот мир;
@@ -591,6 +606,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
      поблизости получают приглашение ("В бой!" или "Отказаться"); через несколько секунд раунд на
      сервере боя начинается заново с армиями из кампании. Переключитесь в окно мультиплеера.
      Сторона и герой выдаются сами; если всё же открылось окно выбора команды - закройте его (Esc).
+     На приглашение есть 45 секунд. Кто ответил позже, всё равно попадает в бой своим героем, но
+     его отряды в этом бою не участвуют. Игрок, для которого у сервера боя ещё нет героя (зашёл на
+     сервер позже или под другим именем), в бой кампании не выходит со снаряжением мультиплеера:
+     он ждёт, пока мост его узнает и пришлёт героя, и тогда появляется на своей стороне.
   4. Бой идёт, пока у одной из сторон не останется никого: ни ботов, ни героев. Павший герой в
      этот бой не возвращается (как в одиночной игре) и смотрит бой со стороны.
   5. Потери возвращаются в кампанию: из павших бойцов игрока половина ранена, половина убита;
@@ -605,6 +624,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   Победители делят добычу с павших врагов (окно добычи, как после обычного боя). Карта полевого
   боя подбирается по местности: степь, лес, горы, снег, пустыня, река. Большие армии уменьшаются
   до 150 ботов на поле, потери пересчитываются обратно.
+  Пока не переносится: качество предметов ("закалённый", "тяжёлый", "ржавый" и т.п.) - на сервере
+  боя у героя те же предметы, но обычного качества.
   Проигравший отряду мира попадает в плен, как в обычной игре: его войска и компаньоны уходят к
   победителю пленными, часть вещей забирают. Проигравший другому игроку в плен не попадает, но
   его уцелевшие войска становятся пленными победителя.
@@ -667,21 +688,23 @@ It needs a new campaign.
   Support the development (optional, gives nothing beyond the free mod): {BOOSTY}
 
 NEEDS: every player's own Warband 1.174 (Steam or GOG) with its serial key (multiplayer needs it,
-  and two players cannot join with one key); PowerShell, Python 3 and Radmin VPN - their
-  installers are in the Programs folder and install.bat offers the missing ones. The host's PC must
+  and two players cannot join with one key); Python 3 and Radmin VPN - their installers are in the
+  Programs folder and install.bat offers the missing ones (PowerShell is part of Windows 10/11, nothing
+  to install). The host's PC must
   let Python accept connections on port 7350, TCP and UDP (Windows asks once: allow on private and
   public networks - Windows often counts Radmin's network as public).
 
 INSTALL (every player):
   1. Unpack the whole archive, best into the game's folder (the installer finds the game faster);
      do not run it from inside the archive.
-  2. Close Warband and double-click install.bat. It shows which programs are there (PowerShell 7,
-     Python 3, Radmin VPN) and offers to install the missing ones (Python by itself, with PATH; the
-     others in their own installers), then finds the game (the package's folder, GOG, Steam) or asks
+  2. Close Warband and double-click install.bat. It shows which programs are there (Python 3,
+     Radmin VPN) and offers to install the missing ones (Python by itself, with PATH; Radmin VPN in
+     its own installer), then finds the game (the package's folder, GOG, Steam) or asks
      for the folder, and installs the Warband Coop Campaign module (a copy of your Native with the mod's files).
      It waits for Enter so you can read any error; everything it did is in install.log.
   3. In the launcher pick the Warband Coop Campaign module and Start windowed (joint battles need two windows).
-  If install.bat does not open: install PowerShell (Programs\\PowerShell Installer.exe) and try again.
+  If install.bat does not open, run the installer by hand: Start - Windows PowerShell, then
+    powershell -ExecutionPolicy Bypass -File "<package folder>\\install.ps1" "<Warband folder>"
 
 BEFORE PLAYING (everybody): open Radmin VPN and check that the network is up and stable.
 
@@ -702,6 +725,16 @@ FRIEND:
      CLIENT of the host's world by itself. If it does not: Camp - "CoopWorld: co-op..." -
      "let the world run again (stop holding it)", and you are synchronised.
   Every later save of the host lands in the same slot (the old one becomes .bak).
+
+SAVES (host and friends): the bridge sends the friends the host's newest save (by time) from
+    Documents\\Mount&Blade Warband Savegames\\Warband Coop Campaign
+  Saves of another campaign or old tests in that folder may make it send the wrong one, so on the
+  host's PC and on every friend's PC keep only the current co-op campaign's saves there: move the
+  others elsewhere (or delete them) before starting host.bat / join.bat.
+  - Host: save (Esc - Save) before a friend joins - that save is the one sent.
+  - Every save of the host goes to all friends connected; one made while a friend's link was down
+    comes as soon as that friend's bridge is back.
+  - A friend loads the slot join.bat names ("... now holds it"), no other.
 
 HOW IT WORKS: the world lives at the host; every player has a party on the same map (up to 4).
   While anybody is in a battle, an encounter or a menu, the world stands still for all. A player
@@ -728,11 +761,17 @@ JOINT BATTLES (multiplayer server):
   3. In an encounter: "CoopWorld: fight together with your friends". Players nearby are invited;
      the battle server restarts its round with the campaign's armies. Sides and heroes are given
      by the server (if a team window opens all the same, close it with Esc).
+     The invitation waits 45 s. A player who answers later still fights as the hero, but without
+     the troops. A player the battle server has no hero for yet (came to the server late, or under
+     another name) does not spawn with multiplayer gear: the bridge sends the hero once it finds
+     the player, who then spawns on the right side.
   4. The battle lasts until one side has nobody left, bots and heroes. A fallen hero does not come
      back into that battle. The losses go back to the campaign.
   You fight as your hero: equipment, attributes, combat skills, proficiencies and health (now and
   at most) go to the battle server; health, experience and proficiency gains come back.
   Companions fight as bots under your command. Big armies are scaled down to 150 bots.
+  Not carried yet: item quality (tempered, heavy, rusty...) - the hero has the same items on the
+  battle server, of plain quality.
   JOINT SIEGES: in the siege menu - "CoopWorld: storm the walls together". The battle server
   switches to Siege on a castle map: the garrison (team 1) holds the walls, the players (team 2)
   storm them. Bots fight on foot; the server raises the ladders and sends storming bots stuck
@@ -780,9 +819,9 @@ def build(name, files, russian=False):
 
 
 def prereqs():
-    """The installers for the Programs folder: PowerShell, Python, Radmin VPN (vendor/prereqs)."""
+    """The installers for the Programs folder: Python, Radmin VPN (vendor/prereqs)."""
     found = []
-    for pattern in ("PowerShell*.exe", "python-*.exe", "Radmin_VPN*.exe"):
+    for pattern in ("python-*.exe", "Radmin_VPN*.exe"):
         files = sorted(PREREQS.glob(pattern))
         if files:
             found.append(files[-1])

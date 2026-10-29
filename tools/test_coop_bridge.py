@@ -417,6 +417,77 @@ def test_joint_battle():
     check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
 
 
+def test_late_heroes():
+    # session 16:27, 29.10: the host accepted 22 s after the battle began and was refused ("too
+    # late"); on the battle server he fought as a plain multiplayer player, with the gear picked there
+    w = cb.World()
+    lines = []
+    w.log = lines.append
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    req(w, "c", x=600, now=0.0, me=[(35, 3)], name="Petr")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.0)
+    hero_b = list(range(300, 300 + cb.HERO_NUMBERS))
+    hero_c = list(range(500, 500 + cb.HERO_NUMBERS))
+    req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)], hero=HERO))
+    bid = w.battle.bid
+    check(w.battle.invited == {"b", "c"}, "two players nearby are invited")
+    # nobody answers in time: the battle goes to the server with the starter alone; Olga is not
+    # on the battle server yet
+    t = 2.0 + cb.GATHER_S + 1
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, t)
+    check(nums[0] == 2 and nums[3] == 2, f"the starter's troops and the enemy go to the server: {nums}")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, t)[:3] == [5, bid, 0], "the starter's hero")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, t)[:2] == [1, bid], "the start")
+    # Olga accepts late: she fights as her hero, her troops stay out of the battle
+    for cid in ("b", "c"):
+        w.players[cid].mp_out.clear()  # the invitations
+    nums, _ = req(w, "b", x=300, now=t + 1, busy=True, mp=mp(3, bid, hero=hero_b))
+    check(nums == [7, bid, 1, 0], f"a late acceptance joins the running battle on the starter's side: {nums}")
+    check(w.battle.sides == {"a": 0, "b": 0} and len(w.battle.stacks) == 2,
+          f"her troops stay out of it: {w.battle.stacks}")
+    check(any("Olga accepted late" in s for s in lines), f"the log says so: {lines[-2:]}")
+    check(w.mp_request(1, bid, -1, {}, {0: "ivan"}, t + 2) == [0],
+          "her hero waits until she is on the battle server")
+    nums = w.mp_request(2, bid, -1, {}, {0: "ivan", 2: "Olga"}, t + 3)
+    check(nums == [5, bid, 2] + hero_b, f"then her hero goes there, with her gear and stats: {nums[:4]}")
+    check(w.mp_request(3, bid, -1, {}, {0: "ivan", 2: "Olga"}, t + 3) == [9, bid, 2, 0],
+          "then her side, for her hero to spawn on")
+    check(w.mp_request(3, bid, -1, {}, {0: "ivan", 2: "Olga"}, t + 4) == [0], "once")
+    check(any("Olga is on the battle server now" in s for s in lines), f"the log says so: {lines[-1:]}")
+    # Petr declines; a player who was never invited is refused as before
+    req(w, "c", x=600, now=t + 5, busy=True, mp=mp(4, bid))
+    nums, _ = req(w, "c", x=600, now=t + 6, busy=True, mp=mp(3, bid, hero=hero_c))
+    check(nums == [7, bid, 2, 0] and "c" not in w.battle.sides, "a player who declined cannot accept later")
+    # the outcome: the late hero's player loses nobody, hears how the battle went
+    w.mp_request(4, bid, 0, {1: 20}, {0: "ivan", 2: "Olga"}, t + 60, (), {0: 30, 2: 25})
+    replies = [req(w, "b", x=300, now=t + 61)[0] for _ in range(4)]
+    check([8, bid, 1, 20 * cb.XP_PER_ENEMY // 2, 0] in replies and [10, bid, 25, -1] in replies,
+          f"the late hero shares the experience and comes back with its wounds: {replies}")
+
+
+def test_late_heroes_while_loading():
+    # accepted while the stacks are still going to the server: the hero goes with the others
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.0)
+    req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)], hero=HERO))
+    bid = w.battle.bid
+    t = 2.0 + cb.GATHER_S + 1
+    w._battle_tick(t)
+    check(w.battle.state == "loading", "the battle loads without her")
+    w.players["b"].mp_out.clear()  # the invitation
+    nums, _ = req(w, "b", x=300, now=t, busy=True, mp=mp(3, bid, hero=list(range(300, 300 + cb.HERO_NUMBERS))))
+    check(nums == [7, bid, 0, 0], f"she waits for the start with the others: {nums}")
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, t)
+    heroes = [w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, t)[:3] for _ in range(2)]
+    check(heroes == [[5, bid, 0], [5, bid, 1]], f"both heroes before the start: {heroes}")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, t)
+    check(nums[:2] == [1, bid] and nums[5:] == [2, 0, 0, 1, 0], f"both sides at the start: {nums}")
+    check(w.mp_request(1, bid, -1, {}, {0: "ivan", 1: "olga"}, t + 1) == [0], "no hero twice")
+
+
 def test_factions():
     w = cb.World()
     req(w, "a", now=0.0, name="Ivan", faction=5)
@@ -591,6 +662,39 @@ def test_names_and_saves():
             break
     check((friend / "sg00.sav").exists() and (friend / "sg00.sav").read_bytes() == b"the first save",
           "the host's first save reaches the friend who waited")
+
+    # a save the host made while the friend's link was down comes as soon as the link is back
+    host_saves = Path(tempfile.mkdtemp())
+    (host_saves / "sg00.sav").write_bytes(b"day 3")
+    hub_lines = []
+    cb.serve_relays(("127.0.0.7", 18099), w, "secret", str(host_saves), hub_lines.append)
+    friend = Path(tempfile.mkdtemp())
+    relay = cb.Relay(("127.0.0.7", 18099), "secret", log)
+    relay.connect()
+    relay.save_dir = str(friend)
+    path = cb.fetch_first_save(relay, str(friend), None, log)
+    relay.saves = True
+
+    def away_and_back():
+        relay.connected.clear()
+        relay.sock.close()
+        time.sleep(0.5)
+
+    away_and_back()
+    (host_saves / "sg00.sav").write_bytes(b"day 4, saved while the friend was away")
+    time.sleep(0.6)
+    relay.connect()
+    for _ in range(40):
+        time.sleep(0.1)
+        if path.read_bytes() == b"day 4, saved while the friend was away":
+            break
+    check(path.read_bytes() == b"day 4, saved while the friend was away",
+          f"a save made while the friend was away reaches it once it is back: {hub_lines[-2:]}")
+    away_and_back()
+    relay.connect()
+    time.sleep(0.5)
+    missed = [s for s in hub_lines if "a save the player did not have" in s]
+    check(len(missed) == 1, f"a friend that has the newest save gets it no second time: {missed}")
 
 
 def test_lost_answers():
@@ -931,6 +1035,8 @@ if __name__ == "__main__":
     test_clock()
     test_host_plays_on_server()
     test_joint_battle()
+    test_late_heroes()
+    test_late_heroes_while_loading()
     test_multiplayer_names()
     test_factions()
     test_joint_siege()
