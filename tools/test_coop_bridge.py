@@ -134,17 +134,29 @@ def test_shared_pause():
 
 def test_clock_sync():
     w = cb.World()
+    logged = []
+    w.log = logged.append
     w.server_report([], None, 0.0, hours=100)
     req(w, "a", now=0.0, hours=100)
-    check(statuses(w, "a", 0.1, hours=101) == [], "an hour apart is the same time (hours tick at different moments)")
-    check(statuses(w, "a", 0.2, hours=102) == [[5, 1, -1, 3, 0]], "two hours ahead: the player waits for the world")
-    check(statuses(w, "a", 0.3, hours=101) == [], "it waits until the world has caught up")
+    check(statuses(w, "a", 0.1, hours=102) == [], "two hours apart is the same time (hours tick at different moments)")
+    check(statuses(w, "a", 0.2, hours=103) == [[5, 0, 0, 0, -1]],
+          "three hours ahead: the player stops resting - never a pause, moving stays free")
+    check(statuses(w, "a", 0.3, hours=102) == [], "it stays so until the world has caught up")
     w.server_report([], None, 0.4, hours=101)
-    check(statuses(w, "a", 0.5, hours=101) == [[5, 0, 0, 0, 0]], "caught up: it goes on")
-    check(statuses(w, "a", 0.6, hours=97) == [[5, 0, 0, 0, 1]], "far behind: it rests faster")
-    check(statuses(w, "a", 0.7, hours=200) == [[5, 0, 0, 0, 0]], "a day ahead and more is another save: no waiting")
-    req(w, "host", now=0.8, on_server=True, hours=50)
-    check(statuses(w, "host", 0.9, on_server=True, hours=50) in ([], [[5, 0, 0, 0, 0]]),
+    check(statuses(w, "a", 0.5, hours=102) == [[5, 0, 0, 0, 0]], "within an hour: the same time again")
+    check(any("the world's again (+1 h) after" in line for line in logged), "the bridge logs how long it took")
+    w.server_report([], None, 0.6, hours=103)
+    check(statuses(w, "a", 0.7, hours=102) == [], "an hour behind is the same time")
+    w.server_report([], None, 0.8, hours=106)
+    check(statuses(w, "a", 0.9, hours=102) == [[5, 0, 0, 0, 1]], "four hours behind: it rests faster")
+    check(statuses(w, "a", 1.0, hours=104) == [], "until it is within an hour")
+    check(statuses(w, "a", 1.1, hours=105) == [[5, 0, 0, 0, 0]], "caught up")
+    req(w, "b", now=1.2)
+    req(w, "b", now=1.2, busy=True)
+    check(statuses(w, "a", 1.3, hours=110) == [[5, 1, 1, 1, -1]], "a pause of the world says the clock too")
+    check(statuses(w, "a", 1.4, hours=200) == [[5, 1, 1, 1, 0]], "a day apart and more is another save: left alone")
+    req(w, "host", now=1.5, on_server=True, hours=50)
+    check(statuses(w, "host", 1.6, on_server=True, hours=50) in ([], [[5, 1, 1, 1, 0]]),
           "the host's game is the world's clock")
 
 

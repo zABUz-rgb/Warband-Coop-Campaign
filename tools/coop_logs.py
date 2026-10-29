@@ -59,6 +59,9 @@ NET_LOST = re.compile(r"^net: lost (\S+);")
 NET_ERROR = re.compile(r"^net: (\S+) error (.*)$")
 QUIET = re.compile(r"^player (\d+):(.*?) quiet since (\d\d:\d\d:\d\d): last request (.*?); last replies (.*)$")
 CAPTOR_GONE = re.compile(r"^party (\d+) is gone, the captor of (.*)$")
+CLOCK_OFF = re.compile(r"^player (\d+):(.*?): its clock is (\d+) h (ahead of|behind) the world's")
+CLOCK_EVEN = re.compile(r"^player (\d+):(.*?): its clock is the world's again \(([+-]?\d+) h\)(?: after (\d+) s)?")
+LORD_FIGHTS = re.compile(r"^player (\d+):(.*?): the lord it serves \(party (\d+)\) fights party (\d+)")
 MP_FOUND = re.compile(r"^battle server: player (\d+) \((.*?)\) (NOT found|recognised as)")
 
 
@@ -264,6 +267,24 @@ def analyze(events, trace, silence=30):
         m = REFUSED.match(text)
         if m:
             s.note(t, "? ", f"совместный бой не начат: {m.group(1)}")
+            continue
+        m = CLOCK_OFF.match(text)
+        if m:
+            where = "впереди мира: стоя на месте, ждёт его" if m.group(4) == "ahead of" else                 "позади мира: стоя на месте, догоняет быстрее"
+            s.note(t, "  ", f"игрок {m.group(2)}: время на {m.group(3)} ч {where}")
+            continue
+        m = CLOCK_EVEN.match(text)
+        if m:
+            took = int(m.group(4)) if m.group(4) else 0
+            s.note(t, "? " if took > 120 else "  ",
+                   f"игрок {m.group(2)}: время снова как у мира ({m.group(3)} ч)"
+                   + (f" через {span(took)}" if m.group(4) else "")
+                   + (" - долго: игрок, видимо, всё время шёл или мир стоял" if took > 120 else ""))
+            continue
+        m = LORD_FIGHTS.match(text)
+        if m:
+            s.note(t, "  ", f"игрок {m.group(2)}: лорд, которому он служит (отряд {m.group(3)}), "
+                            f"бьётся с отрядом {m.group(4)}")
             continue
         if "Traceback" in text or "Exception" in text:
             s.note(t, "!!", "ошибка в мосте: " + text.splitlines()[-1][:200])

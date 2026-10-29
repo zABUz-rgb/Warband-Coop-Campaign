@@ -40,8 +40,9 @@ scripts = [
 
   # script_coop_rest_interactive: arg1 = hours, arg2 = time speed, arg3 = attackable. A rest of a
   # co-op player (the host on the server, a client) runs at the world's time speed, faster while the
-  # player's clock is behind the world's, and not at all while the world stands still. Freelancer's
-  # own rests (speed 4 and 5) ran a soldier's clock ahead of everyone else's.
+  # player's clock is behind the world's, and not at all while the world stands still or a client's
+  # clock is ahead of the world's. Freelancer's own rests (speed 4 and 5) ran a soldier's clock ahead
+  # of everyone else's.
   ("coop_rest_interactive",
    [
      (store_script_param, ":hours", 1),
@@ -53,12 +54,13 @@ scripts = [
        (assign, ":speed", coop_world_time_speed),
        (try_begin),
          (eq, "$coop_role", coop_role_client),
-         (eq, "$coop_time_behind", 1),
+         (eq, "$coop_clock_sync", 1),
          (assign, ":speed", coop_catch_up_time_speed),
        (try_end),
        (try_begin),
          (eq, "$coop_role", coop_role_client),
-         (eq, "$coop_world_paused", 1),
+         (this_or_next|eq, "$coop_world_paused", 1),
+         (eq, "$coop_clock_sync", -1),
          (assign, ":hours", 0),
        (else_try),
          (eq, "$coop_role", coop_role_server),

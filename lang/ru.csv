@@ -1779,7 +1779,8 @@ game_menus|mno_coop_role_client_held|CoopWorld: сделать эту игру �
 quick_strings_en|a copy of the host's save: choose CLIENT to join the host's world|копия сохранения хоста: выберите КЛИЕНТ, чтобы войти в мир хоста
 quick_strings_en|CoopWorld: this game is a copy of the host's save on a friend's PC - it joins the host's world as a CLIENT.|CoopWorld: эта игра - копия сохранения хоста на компьютере друга. Она входит в мир хоста как КЛИЕНТ.
 game_menus|mno_coop_mp_lord_battle|CoopWorld: сражаться рядом с командиром вместе с друзьями (совместный бой на сервере мультиплеера).
-quick_strings|qstr_CoopWorld:_your_time|CoopWorld: ваше время опережает время мира - ждём, пока мир догонит.
+quick_strings|qstr_CoopWorld:_your_time|CoopWorld: ваше время на несколько часов впереди мира - стоя на месте, вы ждёте его (ходить можно).
+quick_strings|qstr_CoopWorld:_your_time_|CoopWorld: ваше время отстаёт от мира - стоя на месте, вы догоняете его быстрее.
 quick_strings|qstr_CoopWorld:_request_fo|CoopWorld: запрос на совместный бой рядом с командиром отправлен мосту.
 quick_strings|qstr_CoopWorld:_your_comm|CoopWorld: ваш командир уже не в бою.
 quick_strings|qstr_CoopWorld:_your_comma|CoopWorld: ваш командир вступает в бой!

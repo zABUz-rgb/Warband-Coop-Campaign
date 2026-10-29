@@ -176,6 +176,19 @@ def test_quiet_at_the_end():
           "a short silence at the end of the log, with the game hour and the last replies")
 
 
+def test_clocks_and_lords():
+    text = report(BRIDGE_START + """12:01:00 player 1:O: its clock is 3 h ahead of the world's - it does not rest until the world catches up (moving stays free)
+12:01:08 player 1:O: its clock is the world's again (+1 h) after 8 s
+12:02:00 player 1:O: its clock is 4 h behind the world's - it rests faster
+12:06:00 player 1:O: its clock is the world's again (-1 h) after 240 s
+12:07:00 player 1:O: the lord it serves (party 700) fights party 800
+""" + stats("12:07:05") + "\n", "")
+    check(any("время на 3 ч впереди мира" in line for line in marked(text, "  ")), "a clock ahead of the world's")
+    check(any("через 8 с" in line for line in marked(text, "  ")), "caught up soon: just noted")
+    check(any("через 4 мин 0 с" in line for line in marked(text, "? ")), "a long way to catch up: worth a look")
+    check(any("отряд 700), бьётся с отрядом 800" in line for line in marked(text, "  ")), "the lord's battle")
+
+
 def test_parties():
     bridge = BRIDGE_START + stats("12:00:15", parties=0) + "\n" + stats("12:00:20", parties=300) + "\n" \
         + stats("12:00:25", parties=250) + "\n"
@@ -195,4 +208,5 @@ if __name__ == "__main__":
     test_short_holds()
     test_captor_gone()
     test_quiet_at_the_end()
+    test_clocks_and_lords()
     print("ALL OK")

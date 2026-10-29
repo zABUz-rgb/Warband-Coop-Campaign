@@ -55,12 +55,13 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...   positions of world parties (tmpl REMOVED: gone)
           7777|3|sid|n|t1|n1|...               troops of one party near the player
           7777|4|slot|x|y|troops|kingdom[|name]  another player's party, and whom it serves
-          7777|5|paused|slot|why|behind             the world stands still because of player <slot>
-                                                    (why: 1 in an encounter or battle, 2 in a menu;
-                                                    3 slot -1: this player's clock is ahead of the
-                                                    world's, it waits for the world); the player's own
-                                                    map then stands still too, its clock as well;
-                                                    behind 1: its clock is behind, it rests faster
+          7777|5|paused|slot|why|clock              the world stands still because of player <slot>
+                                                    (why: 1 in an encounter or battle, 2 in a menu);
+                                                    the player's own map then stands still too, its
+                                                    clock as well; clock: -1 the player's clock is
+                                                    ahead of the world's (it does not rest: standing
+                                                    still, it waits; moving stays free), 1 behind (it
+                                                    rests faster), 0 the same time
 
 Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp=slot][&mpc=center][&mpt=t1,n1,...]
 [&compn=N&ter=T with a start or an acceptance: the companions coming and the terrain][&comp=troop,hero...:
@@ -149,9 +150,10 @@ BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without by
 SILENT_PAUSE_S = 1.0    # a player sends many requests a second on the map; this much silence = a menu
 TOMBSTONE_S = 30.0
 STATUS_EVERY = 50       # a player is reminded of the pause state this often, in case a reply was lost
-TIME_AHEAD_HOLD_H = 2   # a player's clock this many game hours ahead of the world's: it waits for the world
-TIME_HOLD_MAX_H = 24    # further ahead than this something else is wrong (another save): no waiting
+TIME_AHEAD_H = 3        # a player's clock this many game hours ahead of the world's: it stops resting
 TIME_BEHIND_H = 3       # this many hours behind: the player's game rests faster to catch up
+TIME_EVEN_H = 1         # within this many hours either way the clocks count as caught up again
+TIME_SYNC_MAX_H = 24    # further apart than this something else is wrong (another save): left alone
 MAP_BATTLE_S = 6.0      # a world party reported in a map battle counts as fighting this long
 NEAREST_PER_REPLY = 11
 ROTATING_PER_REPLY = 3
@@ -238,7 +240,8 @@ class Player:
         self.leader = None      # cid of the player whose party this one follows
         self.join_asked = None  # cid of the player this one asked to join
         self.hours = None       # its game clock, as it last reported
-        self.time_hold = False  # its clock is ahead of the world's: it waits
+        self.clock = 0          # -1 its clock is ahead of the world's, 1 behind, 0 the same time
+        self.clock_since = None # when it last stopped being the same time
         self.lord = -1          # the world party of the lord it serves (Freelancer), -1 none
         self.lord_told = (-1, -1)  # (lord, enemy) it was last told
 
@@ -682,21 +685,11 @@ class World:
                     return [25, *told], None
             # whether another player holds the world still: at once when it changes, and now and then
             cause = self.pause_cause(now, but=p)
-            behind = 0
+            # the clocks: never a pause (a player held still kept its clock running whenever it tried
+            # to move, and waited minutes); a player ahead only stops resting, one behind rests faster
             if not p.on_server and p.hours is not None and self.srv_hours is not None:
-                ahead = p.hours - self.srv_hours
-                if TIME_AHEAD_HOLD_H <= ahead <= TIME_HOLD_MAX_H and not p.time_hold:
-                    p.time_hold = True
-                    self.log(f"player {self._who(p)}: its clock is {ahead} h ahead of the world's - it waits for the world")
-                elif p.time_hold and (ahead <= 0 or ahead > TIME_HOLD_MAX_H):
-                    p.time_hold = False
-                behind = 1 if ahead <= -TIME_BEHIND_H else 0
-            if cause:
-                status = (1, cause[0], cause[1], behind)
-            elif p.time_hold:
-                status = (1, -1, 3, 0)
-            else:
-                status = (0, 0, 0, behind)
+                self._clock_sync(p, p.hours - self.srv_hours, now)
+            status = (1, cause[0], cause[1], p.clock) if cause else (0, 0, 0, p.clock)
             p.status_age += 1
             if status != p.status_sent or p.status_age >= STATUS_EVERY:
                 p.status_sent, p.status_age = status, 0
@@ -738,6 +731,25 @@ class World:
                     nums += [sid, tmpl, ex + COORD_OFFSET, ey + COORD_OFFSET, tx + COORD_OFFSET, ty + COORD_OFFSET,
                              max(att, 0)]
             return nums, None
+
+    def _clock_sync(self, p, ahead, now):
+        if abs(ahead) > TIME_SYNC_MAX_H:
+            clock = 0
+        elif p.clock == 0:
+            clock = -1 if ahead >= TIME_AHEAD_H else 1 if ahead <= -TIME_BEHIND_H else 0
+        else:
+            clock = 0 if abs(ahead) <= TIME_EVEN_H else p.clock
+        if clock == p.clock:
+            return
+        if clock == -1:
+            self.log(f"player {self._who(p)}: its clock is {ahead} h ahead of the world's - it does not rest "
+                     "until the world catches up (moving stays free)")
+        elif clock == 1:
+            self.log(f"player {self._who(p)}: its clock is {-ahead} h behind the world's - it rests faster")
+        else:
+            waited = f" after {now - p.clock_since:.0f} s" if p.clock_since is not None else ""
+            self.log(f"player {self._who(p)}: its clock is the world's again ({ahead:+d} h){waited}")
+        p.clock, p.clock_since = clock, now
 
     # ---- joint battles
 

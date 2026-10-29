@@ -44,8 +44,13 @@ Open (build 590170735, not confirmed yet):
   (standing still, serving a lord, captivity) stops and starts again once the world runs; Freelancer's
   rests run at the world's time speed (they ran 4-5 times faster); the host and a client serving a
   lord rest by themselves like a player standing still;
-- the clocks: a client 2 h ahead of the world waits for it ("your time is ahead"), 3 h behind rests 3x
-  faster; the bridge logs "its clock is N h ahead";
+- the clocks (build 999149789): never a pause any more - build 590170735 held a client 2 h ahead at
+  1% speed, and its clock ran on whenever it tried to move: it waited minutes (session 21:46, 28.10).
+  Now a client 3 h ahead only stops resting (standing still it waits, moving is free), 3 h behind
+  rests 3x faster, both until within 1 h; the bridge logs start and end ("after N s"), the report
+  marks a catch-up over 2 min. The host's Native waits (captivity, towns) run the world faster
+  (30 h/min seen): clients fall behind and catch up standing still. A client crashed at 22:03 that
+  session, cause unknown (its rgl_log.txt needed);
 - serving one lord: when he goes into a field battle, a client's soldier menu opens ("your commander
   goes into battle!"), the host's as Freelancer does; "CoopWorld: fight beside your commander" starts a
   joint battle - the players and the lord's men (bots, team of the players) against his enemy; a
