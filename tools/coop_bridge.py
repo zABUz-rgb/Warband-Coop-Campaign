@@ -2094,7 +2094,15 @@ def serve_battle_join(local, hub_addr, key, log):
                 link = links.get(src)
                 if link is None:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    sock.connect(hub_addr)
+                    try:
+                        sock.connect(hub_addr)
+                    except (OSError, UnicodeError) as e:
+                        sock.close()
+                        if not unreachable[0]:
+                            unreachable[0] = True
+                            log(f"battle relay: cannot reach the host's bridge at {hub_addr[0]}:{hub_addr[1]} ({e})")
+                        continue
+                    unreachable[0] = False
                     link = links[src] = BattleLink(sock)
                     if not looked[0]:
                         looked[0] = True
@@ -2122,6 +2130,7 @@ def serve_battle_join(local, hub_addr, key, log):
                 pass
 
     looked = [False]
+    unreachable = [False]  # told once until a link opens again
     threading.Thread(target=loop, daemon=True).start()
     log(f"battle relay: the battle server waits for the second Warband window at {local[0]}:{local[1]}: "
         "Multiplayer - Join a game - Local area network (needs look_for_server_on_this_machine = 1 "
@@ -2134,6 +2143,42 @@ def serve_battle_join(local, hub_addr, key, log):
 def parse_addr(text, default_port):
     host, _, port = text.partition(":")
     return host, int(port or default_port)
+
+
+# a dot typed with the Russian keyboard layout ('ю', 'б'), or the number pad's comma; ':' is 'Ж' there
+LAYOUT_SLIPS = str.maketrans({"ю": ".", "Ю": ".", "б": ".", "Б": ".", ",": ".", "ж": ":", "Ж": ":"})
+
+
+def tidy_host_address(text):
+    """The host's address as a friend typed it: spaces dropped, and the keyboard slips of LAYOUT_SLIPS
+    mended when that makes it an IPv4 address (with a port or not)."""
+    plain = "".join(text.split())
+    mended = plain.translate(LAYOUT_SLIPS)
+    host, _, port = mended.partition(":")
+    try:
+        ipaddress.IPv4Address(host)
+    except ValueError:
+        return plain
+    if port and not (port.isdigit() and 0 < int(port) < 65536):
+        return plain
+    return mended
+
+
+def check_host_address(text, default_port):
+    """(host, port) of the host's bridge from what the friend typed; ValueError saying what to fix
+    when it is no address (join.bat asks again on the next start)."""
+    addr = tidy_host_address(text)
+    try:
+        host, port = parse_addr(addr, default_port)
+        socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+    except (OSError, ValueError, UnicodeError):
+        raise ValueError(
+            f"'{text}' is not the host's address. Start join.bat again and type the address Radmin VPN "
+            "shows for the host: four numbers with dots, e.g. 26.12.34.56 (no spaces; with the Russian "
+            f"keyboard layout the dot key types 'ю'). / '{text}' - не адрес хоста. Запустите join.bat снова "
+            "и введите адрес хоста из Radmin VPN: четыре числа через точку, например 26.12.34.56 (без "
+            "пробелов; в русской раскладке клавиша точки печатает 'ю')") from None
+    return host, port
 
 
 def documents_dir():
@@ -2258,14 +2303,21 @@ def fetch_first_save(relay, save_dir, slot_name, log):
 
 
 def run_join(args, log):
-    relay = Relay(parse_addr(args.host, NET_PORT), args.key, log, mp_name=args.mp_name)
+    try:
+        hub = check_host_address(args.host, NET_PORT)
+    except ValueError as e:
+        log(f"relay: {e}")
+        return
+    if f"{hub[0]}:{hub[1]}" not in (args.host.strip(), f"{args.host.strip()}:{NET_PORT}"):
+        log(f"relay: the host's address read as {hub[0]}:{hub[1]} (typed '{args.host}')")
+    relay = Relay(hub, args.key, log, mp_name=args.mp_name)
     try:
         relay.connect()
     except (OSError, ConnectionError) as e:
         log(f"relay: cannot reach the host: {e}")
     relay.save_dir = args.save_dir if args.fetch_save else None  # each new save of the host lands here too
     threading.Thread(target=relay.keep_connected, daemon=True).start()  # retries until the host answers
-    serve_battle_join(parse_addr(args.battle_listen, BATTLE_PORT), parse_addr(args.host, NET_PORT), args.key, relay.log)
+    serve_battle_join(parse_addr(args.battle_listen, BATTLE_PORT), hub, args.key, relay.log)
     if args.fetch_save:
         if not relay.connected.is_set():
             log("relay: waiting for the host (check its address, the key, and that both PCs are on the same network)")

@@ -958,6 +958,38 @@ def test_host_plays_on_server():
     check(w.server_report([], None, 2.0)[0] is False, "but never the server itself: it is the host's own game")
 
 
+def test_host_address():
+    # session 19:17, 29.10: join.bat with a mistyped address - "getaddrinfo failed" over and over,
+    # and the battle relay's thread died with a traceback
+    for typed, meant in (("26.18.209.158", "26.18.209.158"), (" 26.18.209.158 ", "26.18.209.158"),
+                         ("26,18,209,158", "26.18.209.158"), ("26\u044e18\u044e209\u044e158", "26.18.209.158"),
+                         ("26\u043118\u0431209\u0431158\u04167350", "26.18.209.158:7350"),
+                         ("26.18.209.158:7351", "26.18.209.158:7351"), ("localhost", "localhost")):
+        check(cb.tidy_host_address(typed) == meant, f"{typed!r} is read as {meant!r}")
+    check(cb.check_host_address("26\u044e18\u044e209\u044e158", cb.NET_PORT) == ("26.18.209.158", cb.NET_PORT),
+          "an address typed with the Russian layout works")
+    for wrong in ("26.18.209.300", "a..b", "26.18.209.158:port"):
+        try:
+            cb.check_host_address(wrong, cb.NET_PORT)
+            check(False, f"{wrong!r} is refused")
+        except ValueError as e:
+            check("26.12.34.56" in str(e) and "join.bat" in str(e), f"{wrong!r} is refused, saying what to type")
+    # the battle relay keeps going when it cannot reach the host's bridge
+    lines = []
+    before = set(threading.enumerate())
+    game = cb.serve_battle_join(("127.0.0.8", 18100), ("a..b", 18101), "secret", lines.append)
+    relay_threads = [t for t in threading.enumerate() if t not in before]
+    window = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    for i in range(3):
+        window.sendto(b"look %d" % i, ("127.0.0.8", 18100))
+    time.sleep(0.5)
+    check(len(relay_threads) == 1 and relay_threads[0].is_alive(), "the relay goes on after the failed links")
+    window.close()
+    game.close()
+    unreachable = [s for s in lines if "cannot reach the host's bridge" in s]
+    check(len(unreachable) == 1, f"no host's bridge: said once, no traceback: {unreachable}")
+
+
 def test_battle_relay():
     """A friend's second window joins the battle server through both bridges; the server sees it
     come from the host's own address, each game from its own port; datagrams without the key go nowhere."""
@@ -1056,4 +1088,5 @@ if __name__ == "__main__":
     test_quiet_note()
     test_copy_of_the_hosts_save()
     test_battle_relay()
+    test_host_address()
     print("ALL OK")

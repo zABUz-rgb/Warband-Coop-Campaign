@@ -111,3 +111,8 @@ on the battle server as a plain multiplayer player, with the gear picked there):
   again ("a save the player did not have");
 - the packages offer only Python 3 and Radmin VPN (PowerShell 7 dropped); README: keep only the
   current campaign's saves on every PC (the newest save by time is the one sent).
+Confirmed (session 19:xx, 29.10): the joint battle fixes of build 693039160 work. That session the
+friend's first join.bat ended in "getaddrinfo failed" and a traceback of the battle relay (a
+mistyped host address). Now join reads a dot typed as 'ю'/'б' or ',' and spaces as slips, stops
+at once with what to type when the address is no address, and the battle relay goes on (says
+once) when it cannot reach the host's bridge.
