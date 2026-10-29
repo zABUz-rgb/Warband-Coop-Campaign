@@ -50,7 +50,9 @@ Open (build 590170735, not confirmed yet):
   rests 3x faster, both until within 1 h; the bridge logs start and end ("after N s"), the report
   marks a catch-up over 2 min. The host's Native waits (captivity, towns) run the world faster
   (30 h/min seen): clients fall behind and catch up standing still. A client crashed at 22:03 that
-  session, cause unknown (its rgl_log.txt needed);
+  session: a hang, not a crash (picture frozen, process alive, no Windows error), at 20:00 of its
+  clock, no new parties before it - not the midnight pattern. Build 931815951 sends the client's state
+  (dbg=parties,spawned,swept,Freelancer,clock,attached-to) with every request: the quiet note shows it;
 - serving one lord: when he goes into a field battle, a client's soldier menu opens ("your commander
   goes into battle!"), the host's as Freelancer does; "CoopWorld: fight beside your commander" starts a
   joint battle - the players and the lord's men (bots, team of the players) against his enemy; a

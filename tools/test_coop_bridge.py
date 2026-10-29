@@ -651,10 +651,10 @@ def test_quiet_note():
     w = cb.World()
     reply = cb.handle_request(w, "cli", "/cli?seq=1&h=47&free=1&x=10&y=20&busy=0&fac=0&hello=1&me=&name=Olga", 100.0, "net-a")
     p = w.players["net-a"]
-    p.recent.append((101.0, "/cli?seq=2&h=48&free=1&x=10&y=20&busy=0&fac=0",
+    p.recent.append((101.0, "/cli?seq=2&h=48&free=1&x=10&y=20&busy=0&fac=0&dbg=812,40,12,1,0,673",
                      f"7777|2|2|500|3|1|1|1|1|0|501|{cb.REMOVED}|0|0|0|0|0"))
     note = cb.quiet_note(p, 110.0)
-    check(note is not None and "h=48 free=1 busy=0" in note and "2:500/3,501/gone" in note and reply,
+    check(note is not None and "h=48 free=1 busy=0" in note and "dbg=812,40,12,1,0,673" in note and "2:500/3,501/gone" in note and reply,
           f"a quiet player's last request and replies go to the log: {note}")
 
 

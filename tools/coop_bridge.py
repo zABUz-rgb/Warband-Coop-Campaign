@@ -49,6 +49,8 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     to offer id (see coop/players.py);
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
+    dbg: a client's state for the log when it goes quiet: parties, mirrors spawned, swept, Freelancer's
+    state, clock (-1 ahead, 1 behind), the party its own is attached to;
     srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
     A player game's triggers do not run in menus, screens and battles: it goes silent, and a player
     silent for SILENT_PAUSE_S pauses the world just like a busy one.
@@ -1390,7 +1392,7 @@ def quiet_note(p, now):
         return None
     when, target, _ = p.recent[-1]
     query = {k: v[0] for k, v in parse_qs(urlparse(target).query, keep_blank_values=True).items()}
-    state = " ".join(f"{k}={query[k]}" for k in ("h", "free", "busy", "mp", "x", "y") if k in query)
+    state = " ".join(f"{k}={query[k]}" for k in ("h", "free", "busy", "mp", "x", "y", "dbg") if k in query)
     replies = []
     for _, _, reply in p.recent[-RECENT_SHOWN:]:
         parts = reply.split("|")

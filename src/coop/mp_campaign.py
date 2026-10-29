@@ -1045,6 +1045,29 @@ def client_request_suffix():
       (val_sub, reg7, 1),
       (str_store_string, s17, "@{s17}&lord={reg7}"),
     (try_end),
+    # what this game is doing, for the bridge's log when it goes quiet (a hung game sends nothing
+    # more): parties here (counted now and then), mirrors spawned and swept, Freelancer's state,
+    # the clock against the world's, the party the player's is attached to
+    (try_begin),
+      (eq, "$coop_role", coop_role_client),
+      (try_begin),
+        (store_mod, ":turn", "$coop_net_seq", 50),
+        (eq, ":turn", 0),
+        (assign, "$coop_dbg_parties", 0),
+        (try_for_parties, ":unused"),
+          (val_add, "$coop_dbg_parties", 1),
+        (try_end),
+      (try_end),
+      (assign, reg7, "$coop_dbg_parties"),
+      (assign, reg8, "$coop_net_spawned"),
+      (str_store_string, s17, "@{s17}&dbg={reg7},{reg8}"),
+      (assign, reg7, "$coop_net_swept"),
+      (assign, reg8, "$freelancer_state"),
+      (str_store_string, s17, "@{s17},{reg7},{reg8}"),
+      (assign, reg7, "$coop_clock_sync"),
+      (party_get_attached_to, reg8, "p_main_party"),
+      (str_store_string, s17, "@{s17},{reg7},{reg8}"),
+    (try_end),
   ]
 
 
