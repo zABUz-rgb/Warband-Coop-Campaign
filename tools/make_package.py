@@ -1,14 +1,14 @@
 """Build the Warband Coop Campaign packages for players: dist/Warband-Coop-Campaign-<version>.zip
 (English) and dist/Warband-Coop-Campaign-<version>-ru.zip (Russian: game texts, installer and
-instructions). The module itself keeps its technical name CoopWorld (its folder, menus, saves and
-Documents\\CoopWorld), so saves and kept heroes of earlier builds stay usable.
+instructions). The module folder, its saves and the logs folder in Documents are named like the
+project; only the mod's entries in the game's menus keep the prefix "CoopWorld:".
 
-They hold only what CoopWorld adds: the compiled module files (*.txt), Diplomacy's textures and
+They hold only what the mod adds: the compiled module files (*.txt), Diplomacy's textures and
 changed scenes (tools/dplmc_assets.py), the bridge and an installer, and in Programs the installers
 of the programs the mod needs (vendor/prereqs: PowerShell, Python, Radmin VPN), which install.bat
 offers to run for what is missing.
-No game files: the installer copies each player's own Modules/Native to Modules/CoopWorld and puts
-the compiled files over it. The Russian one also adds CoopWorld's Russian texts
+No game files: the installer copies each player's own Modules/Native to Modules/Warband Coop Campaign and puts
+the compiled files over it. The Russian one also adds the mod's Russian texts
 (tools/make_ru.py) to the copy of Native's languages/ru.
 
     python tools/make_ru.py && python tools/make_package.py
@@ -21,11 +21,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tools/dplmc_assets.p
 from dplmc_assets import assets  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE = ROOT / "game" / "Modules" / "CoopWorld"
+PROJECT = "Warband Coop Campaign"  # also the module folder in Modules and the logs folder in Documents
+MODULE = ROOT / "game" / "Modules" / PROJECT
 RUSSIFIER_UI = ROOT / "vendor" / "l10n_ru" / "languages" / "ru"  # the russifier's engine interface
 BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler state; quick_strings.txt is read by the game
 PREREQS = ROOT / "vendor" / "prereqs"  # installers of the programs the mod needs (not in git)
-PROJECT = "Warband Coop Campaign"
 VERSION = "1.0"
 DISCORD = "https://discord.gg/nfmWC5SWfp"
 BOOSTY = "https://boosty.to/zabuz_0"
@@ -122,7 +122,7 @@ function Install-Programs {{
 }}
 
 try {{
-  if (-not (Test-Path (Join-Path $here "CoopWorld\scripts.txt"))) {{
+  if (-not (Test-Path (Join-Path $here "Warband Coop Campaign\scripts.txt"))) {{
     throw "{not_unpacked}"
   }}
   Write-Host "{title}" -ForegroundColor Cyan
@@ -144,7 +144,7 @@ try {{
   $Warband = $Warband.Trim('"')
   if (-not (Test-Path (Join-Path $Warband "mb_warband.exe"))) {{ throw "{no_exe}" }}
   $native = Join-Path $Warband "Modules\Native"
-  $target = Join-Path $Warband "Modules\CoopWorld"
+  $target = Join-Path $Warband "Modules\Warband Coop Campaign"
   if (-not (Test-Path $native)) {{ throw "{no_native}" }}
   if (Get-Process mb_warband -ErrorAction SilentlyContinue) {{ throw "{game_running}" }}
   Write-Host "{installing}"
@@ -155,7 +155,7 @@ try {{
   }}
   Copy-Item $native $target -Recurse
   # file by file: Copy-Item of a folder onto an existing one (languages) would nest it instead
-  $source = Join-Path $here "CoopWorld"
+  $source = Join-Path $here "Warband Coop Campaign"
   foreach ($file in Get-ChildItem $source -Recurse -File) {{
     $dest = Join-Path $target $file.FullName.Substring($source.Length + 1)
     New-Item -ItemType Directory -Force (Split-Path $dest -Parent) | Out-Null
@@ -205,24 +205,24 @@ PROGRAM_TEXT = {
 MESSAGES = {
   "en": dict(
     title=f"{PROJECT} {VERSION} - installer", press_enter="Press Enter to close this window",
-    not_unpacked="Unpack the whole archive into a folder first and run install.bat from there (the CoopWorld folder must be next to it).",
+    not_unpacked="Unpack the whole archive into a folder first and run install.bat from there (the Warband Coop Campaign folder must be next to it).",
     found_ask="Install into $candidate ? [Y/n]", pick_folder="Choose the Mount & Blade Warband folder (the one with mb_warband.exe)",
     no_folder="No Warband folder chosen.", no_exe="There is no mb_warband.exe in $Warband",
     no_native=r"There is no Modules\Native in $Warband",game_running="Close Mount & Blade Warband first, then run the installer again.",
-    installing="Installing CoopWorld into $Warband ...", kept_old="The old CoopWorld is kept as $backup",
-    done1="Warband Coop Campaign (module CoopWorld) is installed in $target",
-    done2="Start Warband and choose the CoopWorld module in the launcher. Before playing, open Radmin VPN and check that the network is up.",
+    installing="Installing Warband Coop Campaign into $Warband ...", kept_old="The old Warband Coop Campaign is kept as $backup",
+    done1="Warband Coop Campaign is installed in $target",
+    done2="Start Warband and choose the Warband Coop Campaign module in the launcher. Before playing, open Radmin VPN and check that the network is up.",
     failed="Installation failed:", log_hint="Everything the installer did is in install.log next to it.",
     ru_part=""),
   "ru": dict(
     title=f"{PROJECT} {VERSION} - установщик (русская версия)", press_enter="Нажмите Enter, чтобы закрыть окно",
-    not_unpacked="Сначала распакуйте весь архив в папку и запускайте install.bat оттуда (рядом должна быть папка CoopWorld).",
+    not_unpacked="Сначала распакуйте весь архив в папку и запускайте install.bat оттуда (рядом должна быть папка Warband Coop Campaign).",
     found_ask="Установить в $candidate ? [Д/н]", pick_folder="Выберите папку Mount & Blade Warband (ту, где лежит mb_warband.exe)",
     no_folder="Папка Warband не выбрана.", no_exe="В папке $Warband нет mb_warband.exe",
     no_native=r"В папке $Warband нет Modules\Native",game_running="Сначала закройте Mount & Blade Warband, затем запустите установщик снова.",
-    installing="Устанавливаю CoopWorld в $Warband ...", kept_old="Прежний CoopWorld сохранён как $backup",
-    done1="Warband Coop Campaign (модуль CoopWorld) установлен в $target",
-    done2="Запустите Warband, в лаунчере выберите модуль CoopWorld, а в Configure - Game - Language выберите ru. Перед игрой откройте Radmin VPN и убедитесь, что сеть работает.",
+    installing="Устанавливаю Warband Coop Campaign в $Warband ...", kept_old="Прежний Warband Coop Campaign сохранён как $backup",
+    done1="Warband Coop Campaign установлен в $target",
+    done2="Запустите Warband, в лаунчере выберите модуль Warband Coop Campaign, а в Configure - Game - Language выберите ru. Перед игрой откройте Radmin VPN и убедитесь, что сеть работает.",
     failed="Установка не удалась:", log_hint="Всё, что делал установщик, записано в install.log рядом с ним.",
     ru_part=RU_PART),
 }
@@ -237,7 +237,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1" %*
 
 # host.bat / join.bat: ASCII only (cmd misreads Cyrillic in batch files even after chcp 65001) and
 # they only start PowerShell scripts, which ask for what is missing, check Python, keep the window
-# open when the bridge stops, and log to Documents\CoopWorld (bridge.log / join.log).
+# open when the bridge stops, and log to Documents\Warband Coop Campaign (bridge.log / join.log).
 LAUNCHER_TEMPLATE = r"""# {title}
 param([string]$First, [string]$Second)
 $ErrorActionPreference = "Stop"
@@ -260,7 +260,7 @@ try {{
   Write-Host "{starting}" -ForegroundColor Green
   Write-Host "{stop_hint}"
   # logs (and the host's kept heroes, profiles.json) in Documents\CoopWorld: they outlive the package folder
-  $logDir = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "CoopWorld"
+  $logDir = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "Warband Coop Campaign"
   New-Item -ItemType Directory -Force $logDir | Out-Null
   Write-Host "{log_where} $logDir"
   & $python -I (Join-Path $here "coop_bridge.py") @bridgeArgs --log (Join-Path $logDir "{log_name}")
@@ -307,7 +307,7 @@ LAUNCHER_TEXT = {
   "en": dict(
     press_enter="Press Enter to close this window",
     no_python="Python 3 is not installed (or not in PATH). Install it from python.org, tick 'Add python.exe to PATH', then try again.",
-    starting="Starting the CoopWorld bridge. Keep this window open while you play.",
+    starting="Starting the Warband Coop Campaign bridge. Keep this window open while you play.",
     stop_hint="To stop it: Ctrl+C or close the window.",
     log_where="Logs (bridge.log and trace.log at the host, join.log at a friend; a friend's log also reaches the host's):",
     stopped="The bridge has stopped. If it stopped by itself, the reason is in the lines above and in bridge.log.",
@@ -318,7 +318,7 @@ LAUNCHER_TEXT = {
     no_host="No host address given.",
     ask_key_join="Password the host gave you",
     no_key_join="No password given.",
-    save_hint="The host's newest save goes into your CoopWorld saves (the window shows which slot): load it in the game.",
+    save_hint="The host's newest save goes into your Warband Coop Campaign saves (the window shows which slot): load it in the game.",
     mp_name_hint="Joint battles: the name you use on the battle server (Multiplayer - Profiles). Your soldiers obey you only under this name.",
     ask_mp_name="Your multiplayer name (Enter = keep the one in brackets)",
     mp_name_set="Multiplayer name:",
@@ -327,7 +327,7 @@ LAUNCHER_TEXT = {
   "ru": dict(
     press_enter="Нажмите Enter, чтобы закрыть окно",
     no_python="Python 3 не установлен (или его нет в PATH). Установите его с python.org, отметьте 'Add python.exe to PATH' и попробуйте снова.",
-    starting="Запускаю мост CoopWorld. Не закрывайте это окно, пока играете.",
+    starting="Запускаю мост Warband Coop Campaign. Не закрывайте это окно, пока играете.",
     stop_hint="Остановить: Ctrl+C или закрыть окно.",
     log_where="Журналы (у хоста bridge.log и trace.log, у друга join.log; журнал друга приходит и хосту):",
     stopped="Мост остановлен. Если он остановился сам, причина в строках выше и в bridge.log.",
@@ -338,7 +338,7 @@ LAUNCHER_TEXT = {
     no_host="Адрес хоста не указан.",
     ask_key_join="Пароль, который дал хост",
     no_key_join="Пароль не указан.",
-    save_hint="Свежее сохранение хоста попадёт в ваши сохранения CoopWorld (в окне будет видно, в какой слот) - загрузите его в игре.",
+    save_hint="Свежее сохранение хоста попадёт в ваши сохранения Warband Coop Campaign (в окне будет видно, в какой слот) - загрузите его в игре.",
     mp_name_hint="Совместные бои: имя, под которым вы заходите на сервер боя (Мультиплеер - Профили). Только под этим именем ваши солдаты будут вас слушаться.",
     ask_mp_name="Ваше имя в мультиплеере (Enter - оставить то, что в скобках)",
     mp_name_set="Имя в мультиплеере:",
@@ -349,8 +349,8 @@ LAUNCHER_TEXT = {
 
 def launcher(kind, lang):
     m = LAUNCHER_TEXT[lang]
-    title = {"host": {"en": "CoopWorld: host the game (the world lives on this PC)", "ru": "CoopWorld: запуск игры у хоста"},
-             "join": {"en": "CoopWorld: join a friend's game", "ru": "CoopWorld: подключение к игре друга"}}[kind][lang]
+    title = {"host": {"en": f"{PROJECT}: host the game (the world lives on this PC)", "ru": f"{PROJECT}: запуск игры у хоста"},
+             "join": {"en": f"{PROJECT}: join a friend's game", "ru": f"{PROJECT}: подключение к игре друга"}}[kind][lang]
     body = (HOST_BODY if kind == "host" else JOIN_BODY).format(**m) + MP_NAME_BODY.format(**m)
     log_name = "bridge.log" if kind == "host" else "join.log"
     return LAUNCHER_TEMPLATE.format(title=title, body=body, log_name=log_name, **m)
@@ -363,7 +363,7 @@ START_HERE_RU = f'''{PROJECT} {VERSION} - С ЧЕГО НАЧАТЬ
    - Распакуйте весь архив в любую папку, лучше всего - в папку с игрой (не запускайте из архива).
    - Закройте Warband и дважды щёлкните install.bat. Он предложит установить недостающие
      программы (PowerShell 7, Python 3, Radmin VPN) из папки Programs и сам поставит мод.
-   - В лаунчере Warband выберите модуль CoopWorld, Configure - Game - Language: ru,
+   - В лаунчере Warband выберите модуль Warband Coop Campaign, Configure - Game - Language: ru,
      и включите оконный режим (Start windowed).
    - Radmin VPN: войдите в сеть, которую создал хост.
 2. Каждый раз перед игрой:
@@ -371,10 +371,10 @@ START_HERE_RU = f'''{PROJECT} {VERSION} - С ЧЕГО НАЧАТЬ
    - Хост: host.bat, затем Warband - своя кампания - Лагерь - "CoopWorld: кооператив..." -
      "...СЕРВЕРОМ МИРА и играть в ней (хост)".
    - Друг: join.bat (адрес хоста из Radmin VPN, пароль хоста, ваше имя в мультиплеере).
-     Окно моста не закрывайте. Запустите Warband (CoopWorld) и загрузите сохранение, которое
+     Окно моста не закрывайте. Запустите Warband (Warband Coop Campaign) и загрузите сохранение, которое
      скачал join.bat. Подождите около 5 секунд - игра сама станет КЛИЕНТОМ. Если нет:
      Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)".
-3. Совместные бои: второе окно Warband (CoopWorld). Хост: Мультиплеер - Создать игру, "Битва".
+3. Совместные бои: второе окно Warband (Warband Coop Campaign). Хост: Мультиплеер - Создать игру, "Битва".
    Друг: Мультиплеер - Избранное - адрес хоста с портом 7240 (например 26.x.x.x:7240).
 Подробности - README.txt. Вопросы и ошибки: {DISCORD}
 '''
@@ -384,15 +384,15 @@ START_HERE = f'''{PROJECT} {VERSION} - START HERE
 
 1. Once: unpack the whole archive (best into the game's folder), close Warband, double-click
    install.bat: it offers to install the missing programs (PowerShell 7, Python 3, Radmin VPN) from
-   the Programs folder and installs the mod. In the launcher pick the CoopWorld module and Start
+   the Programs folder and installs the mod. In the launcher pick the Warband Coop Campaign module and Start
    windowed. In Radmin VPN join the host's network.
 2. Every time: open Radmin VPN and check the network is up.
    Host: host.bat, then Warband - your campaign - Camp - "CoopWorld: co-op..." - "...WORLD SERVER and
    play in it (host)".
    Friend: join.bat (the host's address, the host's password, your multiplayer name); keep its
-   window open. Start Warband (CoopWorld), load the save join.bat fetched and wait about 5 seconds:
+   window open. Start Warband (Warband Coop Campaign), load the save join.bat fetched and wait about 5 seconds:
    the game becomes a CLIENT by itself. If not: Camp - "CoopWorld: co-op..." - "let the world run again".
-3. Joint battles: a second Warband window (CoopWorld). Host: Multiplayer - Host a game, Battle.
+3. Joint battles: a second Warband window (Warband Coop Campaign). Host: Multiplayer - Host a game, Battle.
    Friends: Multiplayer - Favorites - the host's address with port 7240 (e.g. 26.x.x.x:7240).
 More in README.txt. Questions and bugs: {DISCORD}
 '''
@@ -403,7 +403,7 @@ def launcher_bat(kind):
 
 
 # check_logs.bat: the report on the last session, from the host's logs (tools/coop_logs.py)
-CHECK_LOGS_TEMPLATE = r"""# CoopWorld: a report on the last session from Documents\CoopWorld\bridge.log and trace.log
+CHECK_LOGS_TEMPLATE = r"""# Warband Coop Campaign: a report on the last session from Documents\Warband Coop Campaign\bridge.log and trace.log
 $python = $null
 foreach ($candidate in "python", "py") {{
   $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
@@ -427,8 +427,8 @@ def check_logs(lang):
 README_RU = f'''{PROJECT} {VERSION} - кооперативная кампания для Mount & Blade: Warband 1.174
 =====================================================================================
 Неофициальный фанатский мод, не связан с TaleWorlds Entertainment. Бесплатный.
-Основа - Diplomacy 1.174 с Freelancer. В лаунчере Warband модуль называется CoopWorld, так же
-подписаны его пункты в меню игры. Нужна новая кампания.
+Основа - Diplomacy 1.174 с Freelancer. Пункты мода в меню игры подписаны "CoopWorld:" (рабочее
+название мода). Нужна новая кампания.
 
   Discord (вопросы, ошибки, поиск напарников): {DISCORD}
   Поддержать разработку (по желанию, ничего не даёт сверх бесплатной версии): {BOOSTY}
@@ -452,11 +452,11 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
        у PowerShell и Radmin VPN откроются их обычные установщики.
      - Затем он найдёт игру (папка с архивом, GOG, Steam) и спросит, туда ли ставить; если не
        найдёт - откроет окно выбора папки.
-     - Он ставит модуль CoopWorld (копия вашего Native с файлами мода; сам Native не меняется)
+     - Он ставит модуль Warband Coop Campaign (копия вашего Native с файлами мода; сам Native не меняется)
        и русский интерфейс игры (прежняя папка languages\\ru сохраняется как резервная копия).
      Окно не закроется, пока вы не нажмёте Enter, так что ошибку можно прочитать. Всё, что
      делал установщик, записано в install.log.
-  3. В лаунчере Warband: модуль CoopWorld, Configure - Game - Language: ru, и включите
+  3. В лаунчере Warband: модуль Warband Coop Campaign, Configure - Game - Language: ru, и включите
      Start windowed (оконный режим): для совместных боёв нужны два окна игры, а полноэкранная
      игра при переключении сворачивается и замирает.
   Если install.bat не открывается или окно сразу закрывается: установите PowerShell
@@ -471,7 +471,7 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   1. Дважды щёлкните host.bat - запустится мост. Он спросит пароль: придумайте любой и сообщите
      друзьям (Enter без пароля - играть только на этом компьютере), и ваше имя в мультиплеере.
      Окно моста не закрывайте.
-  2. Запустите Warband с модулем CoopWorld, загрузите свою кампанию,
+  2. Запустите Warband с модулем Warband Coop Campaign, загрузите свою кампанию,
        Лагерь - "CoopWorld: кооператив..." - "CoopWorld: сделать эту игру СЕРВЕРОМ МИРА и играть в ней (хост)".
      Вы играете прямо в этом окне: мир живёт в нём, друзья видят ваш отряд на карте.
      Окна, которые мир открывает сам, у хоста мир не останавливают: сообщения и недельный бюджет
@@ -486,9 +486,9 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 
 ДРУГ
   1. Дважды щёлкните join.bat. Он спросит адрес хоста (из Radmin VPN), пароль и ваше имя в
-     мультиплеере, скачает свежее сохранение хоста в ваши сохранения CoopWorld и будет держать
+     мультиплеере, скачает свежее сохранение хоста в ваши сохранения Warband Coop Campaign и будет держать
      связь. Окно моста не закрывайте, пока играете.
-  2. Запустите Warband с модулем CoopWorld и загрузите это сохранение. Подождите около 5 секунд:
+  2. Запустите Warband с модулем Warband Coop Campaign и загрузите это сохранение. Подождите около 5 секунд:
      игра сама станет КЛИЕНТОМ мира хоста. Если этого не произошло, нажмите
        Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)",
      и вас синхронизирует.
@@ -532,10 +532,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   - У каждого игрока своя лицензия Warband (см. "Что нужно").
   - Оба окна Warband - в оконном режиме (Start windowed).
   - Сервер боя создавайте в только что запущенном окне Warband, где не загружалась кампания.
-  1. Хост запускает второе окно Warband (модуль CoopWorld) - сервер боя, и сам в нём сражается:
+  1. Хост запускает второе окно Warband (модуль Warband Coop Campaign) - сервер боя, и сам в нём сражается:
        Мультиплеер - Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0.
      Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
-  2. Каждый друг заходит на этот сервер из второго окна Warband (модуль CoopWorld):
+  2. Каждый друг заходит на этот сервер из второго окна Warband (модуль Warband Coop Campaign):
        Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
      Заходите ровно под тем именем, которое ввели в host.bat / join.bat (оно запоминается в
      mp_name.txt): тогда мост сам ставит вас в нужную команду и отдаёт вам ваших солдат. Мост пишет
@@ -598,10 +598,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   В своей игре: Лагерь - "CoopWorld: кооператив..." - "CoopWorld: остановить кооператив", затем закройте окно моста.
 
 ЕСЛИ ЧТО-ТО НЕ ТАК
-  - Мост пишет журналы в Документы\\CoopWorld (у хоста bridge.log и trace.log, у друга join.log;
+  - Мост пишет журналы в Документы\\Warband Coop Campaign (у хоста bridge.log и trace.log, у друга join.log;
     строки журнала друга попадают и в bridge.log хоста) и каждые 5 секунд выводит строку состояния.
   - После сессии хост дважды щёлкает check_logs.bat: отчёт о сессии (бои, кто и когда замолчал,
-    что не дошло) - на экране и в Документы\\CoopWorld\\report.txt.
+    что не дошло) - на экране и в Документы\\Warband Coop Campaign\\report.txt.
   - Сообщая об ошибке в Discord ({DISCORD}), приложите report.txt, rgl_log.txt из папки Warband
     (скопируйте его до перезапуска игры) и опишите, что делали и у кого (хост или друг) случилось.
     При зависании напишите, нагружает ли игра процессор (Диспетчер задач).
@@ -614,7 +614,7 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 README = f'''{PROJECT} {VERSION} - co-op campaign for Mount & Blade: Warband 1.174
 =========================================================================
 Unofficial free fan mod, not affiliated with TaleWorlds Entertainment. Built on Diplomacy 1.174
-with Freelancer. In the Warband launcher the module is called CoopWorld, as are its menu entries.
+with Freelancer. The mod's entries in the game's menus start with "CoopWorld:" (its working name).
 It needs a new campaign.
 
   Discord (questions, bugs, finding players): {DISCORD}
@@ -631,9 +631,9 @@ INSTALL (every player):
   2. Close Warband and double-click install.bat. It shows which programs are there (PowerShell 7,
      Python 3, Radmin VPN) and offers to install the missing ones (Python by itself, with PATH; the
      others in their own installers), then finds the game (the package's folder, GOG, Steam) or asks
-     for the folder, and installs the CoopWorld module (a copy of your Native with the mod's files).
+     for the folder, and installs the Warband Coop Campaign module (a copy of your Native with the mod's files).
      It waits for Enter so you can read any error; everything it did is in install.log.
-  3. In the launcher pick the CoopWorld module and Start windowed (joint battles need two windows).
+  3. In the launcher pick the Warband Coop Campaign module and Start windowed (joint battles need two windows).
   If install.bat does not open: install PowerShell (Programs\\PowerShell Installer.exe) and try again.
 
 BEFORE PLAYING (everybody): open Radmin VPN and check that the network is up and stable.
@@ -641,7 +641,7 @@ BEFORE PLAYING (everybody): open Radmin VPN and check that the network is up and
 HOST (runs the world):
   1. Double-click host.bat: it asks for a password (any, tell it your friends; Enter without one
      = this PC only) and your multiplayer name, and starts the bridge. Keep its window open.
-  2. Start Warband with CoopWorld, load your campaign,
+  2. Start Warband with Warband Coop Campaign, load your campaign,
      Camp - "CoopWorld: co-op..." - "run this game as the WORLD SERVER and play in it (host)".
   3. For each joining player: Camp - "CoopWorld: co-op..." - "hold the world for a joining client",
      then save the game (Esc - Save). The friend's join.bat fetches it; the world runs on as soon
@@ -649,8 +649,8 @@ HOST (runs the world):
 
 FRIEND:
   1. Double-click join.bat: the host's address (from Radmin VPN), password and your multiplayer
-     name. It fetches the host's newest save into your CoopWorld saves and keeps the link.
-  2. Start Warband with CoopWorld and load that save. Wait about 5 seconds: the game becomes a
+     name. It fetches the host's newest save into your Warband Coop Campaign saves and keeps the link.
+  2. Start Warband with Warband Coop Campaign and load that save. Wait about 5 seconds: the game becomes a
      CLIENT of the host's world by itself. If it does not: Camp - "CoopWorld: co-op..." -
      "let the world run again (stop holding it)", and you are synchronised.
   Every later save of the host lands in the same slot (the old one becomes .bak).
@@ -664,7 +664,7 @@ SERVING A LORD (Freelancer): two players serving the same lord fight beside him 
   goes into a field battle the soldier menu opens - "CoopWorld: fight beside your commander".
 
 JOINT BATTLES (multiplayer server):
-  1. The host starts a second Warband window (CoopWorld) and fights in it: Multiplayer -
+  1. The host starts a second Warband window (Warband Coop Campaign) and fights in it: Multiplayer -
      Host a game, game type Battle, any field map, 0 bots. The bridge finds it by itself.
   2. Every friend joins it from a second Warband window: the LAN list, or Favorites with the
      host's address, e.g. 26.x.x.x:7240 - under exactly the multiplayer name given to
@@ -692,7 +692,7 @@ YOUR HERO BETWEEN SESSIONS: the host's bridge keeps each player's hero (profiles
 Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op", then close the bridge window.
 
 Something went wrong: after the session the host double-clicks check_logs.bat - a report in
-Documents\\CoopWorld\\report.txt (in Russian). Post it on Discord ({DISCORD}) with rgl_log.txt from
+Documents\\Warband Coop Campaign\\report.txt (in Russian). Post it on Discord ({DISCORD}) with rgl_log.txt from
 the Warband folder (copied before the game restarts) and what happened, and to whom.
 '''
 
@@ -704,18 +704,18 @@ def build(name, files, russian=False):
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(MODULE.glob("*.txt")):
             if f.name not in BUILD_ONLY:
-                z.write(f, f"{name}/CoopWorld/{f.name}")
+                z.write(f, f"{name}/Warband Coop Campaign/{f.name}")
         for source, rel in assets():  # Diplomacy's textures and changed scenes
-            z.write(source, f"{name}/CoopWorld/{rel}")
+            z.write(source, f"{name}/Warband Coop Campaign/{rel}")
         z.write(ROOT / "tools" / "coop_bridge.py", f"{name}/coop_bridge.py")
         z.write(ROOT / "tools" / "coop_logs.py", f"{name}/coop_logs.py")
         for arcname, text in files.items():
             z.writestr(f"{name}/{arcname}", text.encode("utf-8"))
         if russian:
-            # the module's Russian texts, complete (the russifier's Native plus CoopWorld's), and the
+            # the module's Russian texts, complete (the russifier's Native plus Warband Coop Campaign's), and the
             # russifier's engine interface for the game's own languages folder
             for f in sorted((MODULE / "languages" / "ru").glob("*.csv")):
-                z.write(f, f"{name}/CoopWorld/languages/ru/{f.name}")
+                z.write(f, f"{name}/Warband Coop Campaign/languages/ru/{f.name}")
             for f in sorted(RUSSIFIER_UI.glob("*.csv")):
                 z.write(f, f"{name}/languages/ru/{f.name}")
         for f in prereqs():  # installers are compressed already

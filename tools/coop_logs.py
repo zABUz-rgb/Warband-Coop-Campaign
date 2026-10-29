@@ -1,6 +1,6 @@
-"""CoopWorld session report: what happened in a session, read from the bridge's logs.
+"""Warband Coop Campaign session report: what happened in a session, read from the bridge's logs.
 
-After playing, on the host's PC (the logs are in Documents\\CoopWorld):
+After playing, on the host's PC (the logs are in Documents\\Warband Coop Campaign):
 
     python tools/coop_logs.py [FOLDER] [--all] [--silence 30] [--out FILE]
 
@@ -16,7 +16,7 @@ results. The report goes through the last session (--all: every session in bridg
   - the world's parties (sudden drops), how long the world stood still, the bridge's own errors.
 
 Lines marked !! are problems, ?  worth a look, the rest is what happened. The report is printed
-and written to report.txt next to the logs (FOLDER defaults to Documents\\CoopWorld).
+and written to report.txt next to the logs (FOLDER defaults to Documents\\Warband Coop Campaign).
 """
 import argparse
 import re
@@ -51,6 +51,7 @@ STARTED = re.compile(r"^joint battle (\d+): started on the battle server")
 BATTLE_LOST = re.compile(r"^joint battle (\d+): lost")
 TOO_LATE = re.compile(r"^joint battle (\d+): (\d+):(.*?) accepted too late")
 REFUSED = re.compile(r"^joint battle: refused - (.*)$")
+LOG_FOLDER = "Warband Coop Campaign"  # in Documents: the bridge's logs and the players' heroes
 RUNS = re.compile(r"^player (\d+):(\S+) runs CoopWorld build (\d+)(.*)$")
 HELD = re.compile(r"^world held by player (\d+) \(([^)]+)\): (.*)$")
 CONNECTED = re.compile(r"^net: player (\S+) (connected again|connected), multiplayer name '(.*)'")
@@ -546,14 +547,14 @@ def default_folder():
         import ctypes.wintypes
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
         ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)  # CSIDL_PERSONAL: Documents
-        return Path(buf.value) / "CoopWorld"
+        return Path(buf.value) / LOG_FOLDER
     except (AttributeError, OSError):
-        return Path.home() / "Documents" / "CoopWorld"
+        return Path.home() / "Documents" / LOG_FOLDER
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="CoopWorld: a session's report from bridge.log and trace.log")
-    ap.add_argument("folder", nargs="?", help="where the logs are (default: Documents\\CoopWorld)")
+    ap = argparse.ArgumentParser(description="Warband Coop Campaign: a session's report from bridge.log and trace.log")
+    ap.add_argument("folder", nargs="?", help="where the logs are (default: Documents\\Warband Coop Campaign)")
     ap.add_argument("--all", action="store_true", help="every session in bridge.log, not only the last")
     ap.add_argument("--silence", type=int, default=30, help="report silences this long and longer (s)")
     ap.add_argument("--out", help="the report file (default: report.txt next to the logs)")

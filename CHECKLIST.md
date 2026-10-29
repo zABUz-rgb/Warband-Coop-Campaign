@@ -4,7 +4,7 @@ The best working version is tagged (`git tag`, newest `stable-*`). Before a pack
 `python build.py` (with tools/check_module.py), `python tools/test_coop_bridge.py`,
 `python tools/make_ru.py` (0 untranslated), `python tools/test_coop_logs.py`. After a session,
 `python tools/coop_logs.py` (check_logs.bat in the package) reads bridge.log and trace.log in
-Documents\CoopWorld and reports the battles, the silences and what did not arrive (`--all`: every session). A fix that touches one of these is checked against all of them.
+Documents\Warband Coop Campaign and reports the battles, the silences and what did not arrive (`--all`: every session). A fix that touches one of these is checked against all of them.
 
 Confirmed in game at `stable-2026-10-28`:
 
@@ -82,6 +82,7 @@ Open (build 912679594, not confirmed yet) - after the first joint siege test (15
 Open (Warband Coop Campaign 1.0, packages Warband-Coop-Campaign-1.0[-ru].zip, build 912679594):
 - install.bat first lists PowerShell 7, Python 3 and Radmin VPN (found or not) and, with one answer,
   runs the missing installers from the package's Programs folder (Python passive, with PATH);
-- the project is named Warband Coop Campaign; the module, its menus and Documents\CoopWorld keep the
-  name CoopWorld (saves and kept heroes of earlier builds stay usable).
+- the project is named Warband Coop Campaign, and so are the module folder (Modules\Warband Coop Campaign),
+  its saves and Documents\Warband Coop Campaign; the mod's menu entries keep the prefix "CoopWorld:". Saves and
+  kept heroes of the CoopWorld test builds are not carried over: a new campaign.
 A weak PC with both Warband windows open may run out of memory.

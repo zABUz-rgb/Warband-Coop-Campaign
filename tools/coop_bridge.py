@@ -1,4 +1,4 @@
-"""CoopWorld bridge: links the world server game and up to MAX_PLAYERS player games.
+"""Warband Coop Campaign bridge: links the world server game and up to MAX_PLAYERS player games.
 
 Warband talks to it with send_message_to_url, which always uses port 80 and ignores any port in
 the URL, so each game on one PC has its own loopback address:
@@ -6,7 +6,7 @@ the URL, so each game on one PC has its own loopback address:
     world server game   -> http://127.0.0.1/srv...   (on the host's PC)
     a player's game     -> http://127.0.0.2/cli...   (on every player's PC, the host's too)
     battle server game  -> http://127.0.0.3/mp...    (on the host's PC: a multiplayer server of the
-                           CoopWorld module, game type Battle, where joint battles are fought)
+                           Warband Coop Campaign module, game type Battle, where joint battles are fought)
 
 Modes:
     host  the hub, on the host's PC: serves the world server game, the host's own player game and
@@ -164,7 +164,7 @@ RESULT_PAIRS = 53       # troop and prisoner pairs of one battle result: 5 + 3 *
 MAX_STACKS = 30         # troop stacks per party in one message
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350
-FETCHED_MARK = "coopworld_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
+FETCHED_MARK = "coop_campaign_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
 PROTOCOL = 1
 SAVE_POLL_S = 2.0         # how often the hub looks for a new save of the host
 RECONNECT_GRACE_S = 30.0  # a relay that lost the hub keeps its player (slot, party, battle) this long
@@ -180,6 +180,7 @@ MP_LOST_S = 30.0        # a battle server back in an ordinary round this long af
 WOUNDED_PCT = 50        # of a player's fallen soldiers, this share is wounded rather than killed
 XP_PER_ENEMY = 30       # battle experience for each fallen enemy, shared by the winning side's players;
                         # the losing side gets a third of it
+MODULE_NAME = "Warband Coop Campaign"  # the module folder in Modules, and its save folder
 HERO_NUMBERS = 31       # 9 equipment slots, 4 attributes, 9 combat skills, 7 proficiencies, hit points now and at most
 COMPANIONS_WAIT_S = 5.0 # a battle waits this long for the starter's companions to arrive
 
@@ -1585,7 +1586,7 @@ def store_save(save_dir, rep, slot_name=None):
     the game lists only the low slots, a high one such as sg90 never showed up. A file it replaces
     is kept as .bak."""
     folder = Path(save_dir)
-    folder.mkdir(parents=True, exist_ok=True)  # a player who never saved in CoopWorld has no folder
+    folder.mkdir(parents=True, exist_ok=True)  # a player who never saved in this module has no folder
     mark = folder / FETCHED_MARK
     if slot_name is None and mark.exists() and (folder / mark.read_text().strip()).exists():
         slot_name = mark.read_text().strip()
@@ -1879,7 +1880,7 @@ def documents_dir():
 
 
 def default_save_dir():
-    return documents_dir() / "Mount&Blade Warband Savegames" / "CoopWorld"
+    return documents_dir() / "Mount&Blade Warband Savegames" / MODULE_NAME
 
 
 def make_log(path):
@@ -1985,7 +1986,7 @@ def run_join(args, log):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="CoopWorld bridge")
+    ap = argparse.ArgumentParser(description="Warband Coop Campaign bridge")
     sub = ap.add_subparsers(dest="mode")
     h = sub.add_parser("host", help="the hub on the host's PC (runs the world server game)")
     h.add_argument("--key", help="shared secret for other players; without it only this PC can play")

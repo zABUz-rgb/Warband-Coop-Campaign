@@ -17,7 +17,7 @@ base translation was made for comes from the game's own Native (game/Modules/Nat
 module system 1.171 (Native's dialogs) and the compiled Diplomacy 1.174.
 
     python tools/make_ru.py --missing   list ids that still need a translation (with the English)
-    python tools/make_ru.py             write game/Modules/CoopWorld/languages/ru
+    python tools/make_ru.py             write game/Modules/Warband Coop Campaign/languages/ru
                                         and dist/ru_additions/*.csv for the player package
 """
 import os
@@ -28,7 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
-MODULE = ROOT / "game" / "Modules" / "CoopWorld"
+MODULE = ROOT / "game" / "Modules" / "Warband Coop Campaign"
 # The base Russian for Native: the russifier (vendor/l10n_ru, plain text) when it is there. The game's
 # own Native ru is marked up for declension (@Pd[...], @L[...]) that this edition shows as raw codes.
 RUSSIFIER = ROOT / "vendor" / "l10n_ru"
