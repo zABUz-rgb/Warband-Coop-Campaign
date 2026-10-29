@@ -127,6 +127,7 @@ coop_mp_event_hero_stat = 140    # network event: (troop, stat code, value) so e
 slot_player_coop_hits = 110      # on the battle server: a hero's hits on enemies by weapon proficiency (+ wpt)
 slot_player_coop_damage = 120    # and the damage they did (+ wpt)
 slot_player_coop_health = 130    # a hero's health at the end of the battle in percent + 1 (0: not a hero)
+slot_player_coop_fallen = 131    # 1: the player's hero fell in this battle and does not come back (as in the campaign)
 coop_hero_knocked_out_health = 5 # a hero who fell in a joint battle comes back to the map wounded, as in Native
 # Weapon proficiency from a joint battle, as Native raises it in battle: for each kind of weapon used,
 # (damage + coop_wpt_hit_bonus * hits) * coop_wpt_gain / (proficiency + coop_wpt_softness) points, so

@@ -70,4 +70,13 @@ Open (build 157847662, not confirmed yet) - the joint siege on the battle server
   if some came on horses all the same the server says "N bots came on horses all the same";
 - a hero (and a companion) spawns with its campaign hit points, now and at most (the campaign sends
   them after the proficiencies: 31 hero numbers instead of 29), so Ironflesh and Strength count.
+Open (build 912679594, not confirmed yet) - after the first joint siege test (157847662):
+- the team window no longer comes up again and again on a client: a hero gets its side and the
+  hero's troop from the server without a window (the server opened one every time the side was off);
+  only a player without a hero picks in the window;
+- a siege ends when one side has nobody standing, the heroes counted (it ended with the friend's hero
+  still alive when the bots were gone);
+- a hero who falls stays out of the battle ("... hero has fallen and does not come back"), Siege
+  and Battle alike (Native's spawn checks slot_player_coop_fallen); it comes back to the campaign
+  wounded.
 A weak PC with both Warband windows open may run out of memory.

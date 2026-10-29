@@ -1785,3 +1785,4 @@ quick_strings|qstr_CoopWorld:_request_fo|CoopWorld: запрос на совме
 quick_strings|qstr_CoopWorld:_your_comm|CoopWorld: ваш командир уже не в бою.
 quick_strings|qstr_CoopWorld:_your_comma|CoopWorld: ваш командир вступает в бой!
 quick_strings|qstr_CoopWorld:_{reg20}_b|CoopWorld: {reg20} ботов всё же пришли на конях.
+quick_strings|qstr_CoopWorld:_{s1}_s_he|CoopWorld: герой игрока {s1} пал и в этот бой не вернётся.

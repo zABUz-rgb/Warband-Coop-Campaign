@@ -91,6 +91,7 @@ mp_scripts = [
          (try_for_range, ":player_no", 0, ":num_players"),
            (player_set_slot, ":player_no", slot_player_coop_hero, 0),
            (player_set_slot, ":player_no", slot_player_coop_health, 0),
+           (player_set_slot, ":player_no", slot_player_coop_fallen, 0),
            (try_for_range, ":wpt", 0, coop_hero_profs),
              (store_add, ":slot", slot_player_coop_hits, ":wpt"),
              (player_set_slot, ":player_no", ":slot", 0),
@@ -352,7 +353,30 @@ mp_scripts = [
        (val_add, ":src", 1),
        (troop_get_slot, ":team", MP_ARR, ":src"),
        (player_is_active, ":player_no"),
-       (player_get_team_no, ":old_team", ":player_no"),
+       (call_script, "script_coop_mp_put_on_side", ":player_no", ":team"),
+     (try_end),
+    ]),
+
+  # script_coop_mp_put_on_side: arg1 = player (no agent alive), arg2 = its side. A hero gets the side
+  # and the hero's troop at once, without the team window (a window per change, opened again every
+  # time the side was off, came up over and over); a player without a hero picks its troop there.
+  ("coop_mp_put_on_side",
+   [
+     (store_script_param, ":player_no", 1),
+     (store_script_param, ":team", 2),
+     (player_get_team_no, ":old_team", ":player_no"),
+     (player_get_troop_id, ":old_troop", ":player_no"),
+     (player_get_slot, ":hero", ":player_no", slot_player_coop_hero),
+     (try_begin),
+       (gt, ":hero", 0),
+       (store_add, ":troop", HERO_TROOPS, ":hero"),
+       (val_sub, ":troop", 1),
+       (this_or_next|neq, ":old_team", ":team"),
+       (neq, ":old_troop", ":troop"),
+       (player_set_team_no, ":player_no", ":team"),
+       (player_set_troop_id, ":player_no", ":troop"),
+     (else_try),
+       (le, ":hero", 0),
        (neq, ":old_team", ":team"),
        (player_set_troop_id, ":player_no", -1),
        (player_set_team_no, ":player_no", ":team"),
@@ -690,7 +714,8 @@ mp_battle_triggers = [
      (assign, "$coop_mp_phase", 2),
     ]),
 
-  # a siege ends when one side has no bot standing (players come back in Siege, bots do not)
+  # a siege ends when one side has nobody standing, bots and heroes (Siege brings players back, but a
+  # fallen hero stays out)
   (1, 0, 0,
    [
      (multiplayer_is_server),
@@ -711,12 +736,29 @@ mp_battle_triggers = [
          (assign, ":had_1", 1),
        (try_end),
      (try_end),
+     (try_for_range, ":k", 0, "$coop_mp_pairs"), #the players' heroes are there too
+       (store_mul, ":src", ":k", 2),
+       (val_add, ":src", coop_mp_pairs_slot + 1),
+       (troop_slot_eq, MP_ARR, ":src", 1),
+       (assign, ":had_1", 1),
+     (try_end),
      (assign, ":alive_0", 0),
      (assign, ":alive_1", 0),
      (try_for_agents, ":agent_no"),
        (agent_is_alive, ":agent_no"),
        (agent_is_human, ":agent_no"),
-       (agent_slot_ge, ":agent_no", slot_agent_coop_stack, 1),
+       (assign, ":counts", 0),
+       (try_begin),
+         (agent_slot_ge, ":agent_no", slot_agent_coop_stack, 1), #a bot of the campaign's armies
+         (assign, ":counts", 1),
+       (else_try),
+         (neg|agent_is_non_player, ":agent_no"), #a player's hero
+         (agent_get_player_id, ":player_no", ":agent_no"),
+         (ge, ":player_no", 0),
+         (player_slot_ge, ":player_no", slot_player_coop_hero, 1),
+         (assign, ":counts", 1),
+       (try_end),
+       (eq, ":counts", 1),
        (agent_get_team, ":team", ":agent_no"),
        (try_begin),
          (eq, ":team", 0),
@@ -769,15 +811,28 @@ mp_battle_triggers = [
        (val_add, ":src", 1),
        (troop_get_slot, ":team", MP_ARR, ":src"),
        (player_is_active, ":player_no"),
-       (player_get_team_no, ":now", ":player_no"),
-       (neq, ":now", ":team"),
+       (player_slot_eq, ":player_no", slot_player_coop_fallen, 0),
        (player_get_agent_id, ":agent_no", ":player_no"),
        (this_or_next|lt, ":agent_no", 0),
        (neg|agent_is_alive, ":agent_no"),
-       (player_set_troop_id, ":player_no", -1),
-       (player_set_team_no, ":player_no", ":team"),
-       (multiplayer_send_message_to_player, ":player_no", multiplayer_event_force_start_team_selection),
+       (call_script, "script_coop_mp_put_on_side", ":player_no", ":team"),
      (try_end),
+    ]),
+
+  # a hero who falls stays out of the battle (Native's spawn checks slot_player_coop_fallen)
+  (ti_on_agent_killed_or_wounded, 0, 0,
+   [(multiplayer_is_server), (is_between, "$coop_mp_phase", 2, 4)],
+   [
+     (store_trigger_param_1, ":agent_no"),
+     (agent_is_human, ":agent_no"),
+     (neg|agent_is_non_player, ":agent_no"),
+     (agent_get_player_id, ":player_no", ":agent_no"),
+     (ge, ":player_no", 0),
+     (player_slot_ge, ":player_no", slot_player_coop_hero, 1),
+     (player_set_slot, ":player_no", slot_player_coop_fallen, 1),
+     (str_store_player_username, s1, ":player_no"),
+     (str_store_string, s0, "@CoopWorld: {s1}'s hero has fallen and does not come back to this battle."),
+     (call_script, "script_coop_mp_tell_all"),
     ]),
 
   # phase 2: one bot a frame, as Native spawns bots
@@ -1009,6 +1064,7 @@ mp_battle_triggers = [
        (val_add, ":health", 1),
        (player_set_slot, ":player_no", slot_player_coop_health, ":health"),
        (player_set_slot, ":player_no", slot_player_coop_hero, 0),
+       (player_set_slot, ":player_no", slot_player_coop_fallen, 0),
        (player_set_troop_id, ":player_no", -1), #picks a class of the ordinary game again
        (multiplayer_send_message_to_player, ":player_no", multiplayer_event_force_start_team_selection),
      (try_end),
@@ -1062,15 +1118,21 @@ def merge_battle_template(mission_templates):
   as the hero."""
   from coop_merge import get_by_id, MergeError
   buy = (call_script, "script_multiplayer_buy_agent_equipment", ":player_no")
+  may_spawn = (player_slot_eq, ":player_no", slot_player_spawned_this_round, 0)
   for template_id in ("multiplayer_bt", "multiplayer_sg"):
     template_triggers = get_by_id(mission_templates, template_id)[5]
     found = 0
+    gates = 0
     for trigger in template_triggers:
       block = trigger[4]
       i = 0
       while i < len(block):
         op = block[i]
-        if op == buy:  # the player is about to spawn (Siege picks the spawn point in between)
+        if op == may_spawn:  # a hero who fell in a campaign battle does not spawn again
+          block.insert(i + 1, (player_slot_eq, ":player_no", slot_player_coop_fallen, 0))
+          gates += 1
+          i += 1
+        elif op == buy:  # the player is about to spawn (Siege picks the spawn point in between)
           block[i:i + 1] = [
             (try_begin),
               (call_script, "script_cf_coop_mp_hero_spawn", ":player_no"),
@@ -1083,4 +1145,6 @@ def merge_battle_template(mission_templates):
         i += 1
     if found < 1:
       raise MergeError(f"{template_id}: expected a player spawn buying equipment, found none")
+    if gates != 1:
+      raise MergeError(f"{template_id}: expected one player spawn check, found {gates}")
     template_triggers.extend(mp_battle_triggers)
