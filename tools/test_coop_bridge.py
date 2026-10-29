@@ -880,7 +880,12 @@ def test_battle_relay():
           f"the battle server answers the friend's game, which it sees at the host's address: {r1}, {r2}")
     check(r1.split(":")[-1] != r2.split(":")[-1], "each game comes from its own port: the server tells them apart")
     check(ask(game1, b"again") == "again" + r1[len("hello"):], "a game keeps its port on the server")
-    check(any("joins the battle server through the bridge" in s for s in lines), f"the host's log says so: {lines}")
+    check(not any("is on the battle server" in s for s in lines), f"the server list looking is not logged: {lines}")
+    for i in range(cb.BATTLE_PLAYING):
+        ask(game1, b"move %d" % i)
+    playing = [s for s in lines if "is on the battle server through the bridge" in s]
+    check(len(playing) == 2 and any("the server sees it as 127.0.0.10:" in s for s in playing),
+          f"a game that keeps playing is logged once on each side: {playing}")
     stranger = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     stranger.settimeout(0.5)
     stranger.sendto(b"\0" * 8 + b"let me in", ("127.0.0.9", 18097))
@@ -906,6 +911,13 @@ def test_battle_relay():
     check(cb.lan_rank("192.168.1.5") < cb.lan_rank("10.8.1.4") and cb.lan_rank("172.20.0.1") is not None,
           "a home network's 192.168.x comes before a VPN client's 10.x")
     check(cb.lan_rank(cb.lan_address()) is not None or cb.lan_address() == "127.0.0.1", f"this PC's local address: {cb.lan_address()}")
+    idle = cb.BATTLE_IDLE_S
+    cb.BATTLE_IDLE_S = 0.5
+    time.sleep(6)  # the links' sockets wait up to 5 s before looking at the idle time
+    cb.BATTLE_IDLE_S = idle
+    left = [s for s in lines if "left the battle server after" in s]
+    check(len(left) == 2 and all(f"{cb.BATTLE_PLAYING + 2} datagrams there" in s for s in left),
+          f"a game gone quiet: its links close, with a summary on each side: {left}")
 
 
 if __name__ == "__main__":

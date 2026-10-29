@@ -175,7 +175,7 @@ CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350           # the relays' TCP link, and (UDP) the battle relay
 BATTLE_PORT = 7240        # the battle server's own port (Multiplayer - Host a game)
 BATTLE_LOCAL = "127.0.0.1:7240"  # on a friend's PC the second window finds the battle server here
-BATTLE_PEEK = 3           # the first datagrams of a friend's game each way go to the log (their size and start)
+BATTLE_PLAYING = 50       # datagrams of one game's link: a game on the server, not the server list looking
 BATTLE_IDLE_S = 120.0     # a battle relay link silent this long is closed
 BATTLE_TAG = 8            # bytes in front of each relayed datagram that prove the key
 FETCHED_MARK = "coop_campaign_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
@@ -1911,19 +1911,34 @@ def udp_socket(addr):
     return sock
 
 
-def _relay_back(sock, links, key_of, lock, forward, closed):
+class BattleLink:
+    """One game's datagrams through the battle relay: the socket on the far side, and how many went
+    each way. The server list opens a link for every look, a game on the server keeps one."""
+
+    def __init__(self, sock):
+        self.sock = sock
+        self.start = self.last = time.time()
+        self.out = self.back = 0
+
+    def playing(self):
+        return self.out >= BATTLE_PLAYING
+
+    def summary(self):
+        return f"after {int(self.last - self.start)} s, {self.out} datagrams there and {self.back} back"
+
+
+def _relay_back(link, links, key_of, lock, forward, closed):
     """Datagrams coming back on one link's socket go out with forward(data) until the link has been
-    silent for BATTLE_IDLE_S."""
-    sock.settimeout(5)
+    silent for BATTLE_IDLE_S; then closed() is called."""
     while True:
+        link.sock.settimeout(min(5.0, BATTLE_IDLE_S))
         try:
-            data = sock.recv(65535)
+            data = link.sock.recv(65535)
         except socket.timeout:
             with lock:
-                link = links.get(key_of)
-                if link is None or link[0] is not sock:
+                if links.get(key_of) is not link:
                     break
-                if time.time() - link[1] < BATTLE_IDLE_S:
+                if time.time() - link.last < BATTLE_IDLE_S:
                     continue
                 links.pop(key_of, None)
             closed()
@@ -1932,8 +1947,9 @@ def _relay_back(sock, links, key_of, lock, forward, closed):
             continue
         except OSError:
             break
+        link.back += 1
         forward(data)
-    sock.close()
+    link.sock.close()
 
 
 def serve_battle_hub(addr, key, port, source, log):
@@ -1946,7 +1962,7 @@ def serve_battle_hub(addr, key, port, source, log):
     except OSError as e:
         log(f"battle relay: cannot listen on UDP {addr[0]}:{addr[1]} ({e}); friends join the battle server directly")
         return None
-    links = {}  # the friend's bridge address -> [socket to the battle server, time of its last datagram]
+    links = {}  # the friend's bridge address -> BattleLink to the battle server
     lock = threading.Lock()
 
     def loop():
@@ -1969,21 +1985,26 @@ def serve_battle_hub(addr, key, port, source, log):
                     except OSError as e:
                         log(f"battle relay: cannot reach the battle server {here}:{port}: {e}")
                         continue
-                    link = links[peer] = [sock, 0.0]
-                    log(f"battle relay: a game from {peer[0]} joins the battle server through the bridge "
-                        f"(the server sees it as {here}:{sock.getsockname()[1]})")
+                    link = links[peer] = BattleLink(sock)
 
                     def forward(back, peer=peer):
                         try:
                             hub.sendto(tag + back, peer)
                         except OSError:
                             pass
-                    threading.Thread(target=_relay_back, args=(sock, links, peer, lock, forward,
-                                     lambda peer=peer: log(f"battle relay: the game from {peer[0]} left")),
+
+                    def closed(link=link, peer=peer):
+                        if link.playing():
+                            log(f"battle relay: the game from {peer[0]} left the battle server {link.summary()}")
+                    threading.Thread(target=_relay_back, args=(link, links, peer, lock, forward, closed),
                                      daemon=True).start()
-                link[1] = time.time()
+                link.last = time.time()
+                link.out += 1
+                if link.out == BATTLE_PLAYING:
+                    log(f"battle relay: a game from {peer[0]} is on the battle server through the bridge "
+                        f"(the server sees it as {link.sock.getsockname()[0]}:{link.sock.getsockname()[1]})")
             try:
-                link[0].send(data[BATTLE_TAG:])
+                link.sock.send(data[BATTLE_TAG:])
             except OSError:
                 pass
 
@@ -1993,21 +2014,16 @@ def serve_battle_hub(addr, key, port, source, log):
     return hub
 
 
-def peek(data):
-    return f"{len(data)} bytes {data[:48].hex()}"
-
-
 def serve_battle_join(local, hub_addr, key, log):
     """The friend's side: the second Warband window finds and joins the battle server at `local`;
-    its datagrams go to the host's bridge with the key's tag, the answers come back. The first ones
-    each way go to the log: what the game's server list sends is not documented anywhere."""
+    its datagrams go to the host's bridge with the key's tag, the answers come back."""
     tag = battle_tag(key)
     try:
         game = udp_socket(local)
     except OSError as e:
         log(f"battle relay: cannot listen on UDP {local[0]}:{local[1]} ({e}); join the battle server directly")
         return None
-    links = {}  # the game's address -> [socket to the host's bridge, time of its last datagram]
+    links = {}  # the game's address -> BattleLink to the host's bridge
     lock = threading.Lock()
 
     def loop():
@@ -2023,30 +2039,33 @@ def serve_battle_join(local, hub_addr, key, log):
                 if link is None:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     sock.connect(hub_addr)
-                    link = links[src] = [sock, 0.0, 0]
-                    log(f"battle relay: the second window (port {src[1]}) asks the battle server through the bridge")
-                    answers = [0]
+                    link = links[src] = BattleLink(sock)
+                    if not looked[0]:
+                        looked[0] = True
+                        log("battle relay: the second window found the battle server through the bridge")
 
-                    def forward(back, src=src, answers=answers):
+                    def forward(back, src=src):
                         if len(back) > BATTLE_TAG and hmac.compare_digest(back[:BATTLE_TAG], tag):
-                            if answers[0] < BATTLE_PEEK:
-                                answers[0] += 1
-                                log(f"battle relay: <- the battle server {peek(back[BATTLE_TAG:])}")
                             try:
                                 game.sendto(back[BATTLE_TAG:], src)
                             except OSError:
                                 pass
-                    threading.Thread(target=_relay_back, args=(sock, links, src, lock, forward, lambda: None),
+
+                    def closed(link=link):
+                        if link.playing():
+                            log(f"battle relay: the second window left the battle server {link.summary()}")
+                    threading.Thread(target=_relay_back, args=(link, links, src, lock, forward, closed),
                                      daemon=True).start()
-                link[1] = time.time()
-                if link[2] < BATTLE_PEEK:
-                    link[2] += 1
-                    log(f"battle relay: -> the battle server {peek(data)}")
+                link.last = time.time()
+                link.out += 1
+                if link.out == BATTLE_PLAYING:
+                    log("battle relay: the second window is on the battle server through the bridge")
             try:
-                link[0].send(tag + data)
+                link.sock.send(tag + data)
             except OSError:
                 pass
 
+    looked = [False]
     threading.Thread(target=loop, daemon=True).start()
     log(f"battle relay: the battle server waits for the second Warband window at {local[0]}:{local[1]}: "
         "Multiplayer - Join a game - Local area network (needs look_for_server_on_this_machine = 1 "
@@ -2119,7 +2138,8 @@ def run_host(args, log):
         time.sleep(5)
         # who the battle server recognises: told whenever it changes
         seen = world.mp_recognition(time.time())
-        if world._mp_online(time.time()) and seen != known:
+        on_server = sorted(world.mp_players.values())
+        if world._mp_online(time.time()) and (seen, on_server) != known:
             for slot, hero, wanted, no in seen:
                 if no is None:
                     log(f"battle server: player {slot} ({hero}) NOT found - nobody there is named '{wanted}'. "
@@ -2130,7 +2150,7 @@ def run_host(args, log):
                 log("battle server: no campaign players yet")
             names = ", ".join(f"'{n}'" for n in world.mp_players.values()) or "nobody"
             log(f"battle server: on it now: {names}")
-        known = seen if world._mp_online(time.time()) else None
+        known = (seen, on_server) if world._mp_online(time.time()) else None
         with world.lock:
             s, n = dict(world.stats), len(world.parties)
             now = time.time()

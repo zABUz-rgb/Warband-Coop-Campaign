@@ -85,12 +85,13 @@ Open (Warband Coop Campaign 1.0, packages Warband-Coop-Campaign-1.0[-ru].zip, bu
 - the project is named Warband Coop Campaign, and so are the module folder (Modules\Warband Coop Campaign),
   its saves and Documents\Warband Coop Campaign; the mod's menu entries keep the prefix "CoopWorld:". Saves and
   kept heroes of the CoopWorld test builds are not carried over: a new campaign.
-Open (the bridge only, after 1.0): over Radmin the friend's second window was refused by the battle
-server ("invalid authorization number"), on the same Wi-Fi it got in. Now it finds the battle server
-on its own PC, 127.0.0.1:7240, in the Local Area Network list (Warband's list takes no typed address;
-join.bat offers look_for_server_on_this_machine = 1 in rgl_config.txt); the bridges carry the
-datagrams (UDP 7350) and the host's bridge hands them to the battle server from the host's local
-address (192.168.x first), one port per friend's game. The host's log says "battle relay: a game from
-... joins the battle server through the bridge"; the friend's first datagrams each way are logged
-(size and start) - not confirmed yet that the option makes the list ask 127.0.0.1:7240.
+Confirmed (session 16:11, 29.10, battle server only): over Radmin the friend's second window was
+refused by the battle server ("invalid authorization number"), on the same Wi-Fi it got in. Now it
+finds the battle server on its own PC, 127.0.0.1:7240, in the Local Area Network list (Warband's
+list takes no typed address; join.bat offers look_for_server_on_this_machine = 1 in rgl_config.txt)
+and gets in: the bridges carry the datagrams (UDP 7350) and the host's bridge hands them to the
+battle server from the host's local address (192.168.x first), one port per friend's game.
+Open: a joint battle from the campaign through the relay (lag, a whole battle). The logs say
+"battle relay: ... is on the battle server through the bridge" and, 2 min after it leaves, how long
+and how many datagrams; the host's log lists who is on the battle server whenever it changes.
 A weak PC with both Warband windows open may run out of memory.
