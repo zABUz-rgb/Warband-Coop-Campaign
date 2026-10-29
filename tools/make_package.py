@@ -127,6 +127,10 @@ try {{
   }}
   Write-Host "{title}" -ForegroundColor Cyan
   Write-Host ""
+  if ((Split-Path -Leaf (Split-Path -Parent $here)) -eq "Modules") {{
+    Write-Host "{in_modules}" -ForegroundColor Yellow
+    Write-Host ""
+  }}
   Install-Programs
   if (-not $Warband) {{
     foreach ($candidate in @(Find-Warband)) {{
@@ -205,6 +209,7 @@ PROGRAM_TEXT = {
 MESSAGES = {
   "en": dict(
     title=f"{PROJECT} {VERSION} - installer", press_enter="Press Enter to close this window",
+    in_modules="The package lies in the game's Modules folder, where the launcher looks for modules. It works, but better move this folder into the game's folder (next to mb_warband.exe).",
     not_unpacked="Unpack the whole archive into a folder first and run install.bat from there (the Warband Coop Campaign folder must be next to it).",
     found_ask="Install into $candidate ? [Y/n]", pick_folder="Choose the Mount & Blade Warband folder (the one with mb_warband.exe)",
     no_folder="No Warband folder chosen.", no_exe="There is no mb_warband.exe in $Warband",
@@ -216,6 +221,7 @@ MESSAGES = {
     ru_part=""),
   "ru": dict(
     title=f"{PROJECT} {VERSION} - установщик (русская версия)", press_enter="Нажмите Enter, чтобы закрыть окно",
+    in_modules="Пакет лежит в папке Modules игры, где лаунчер ищет модули. Работать будет, но лучше перенесите эту папку в папку с игрой (рядом с mb_warband.exe).",
     not_unpacked="Сначала распакуйте весь архив в папку и запускайте install.bat оттуда (рядом должна быть папка Warband Coop Campaign).",
     found_ask="Установить в $candidate ? [Д/н]", pick_folder="Выберите папку Mount & Blade Warband (ту, где лежит mb_warband.exe)",
     no_folder="Папка Warband не выбрана.", no_exe="В папке $Warband нет mb_warband.exe",
@@ -487,7 +493,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 ДРУГ
   1. Дважды щёлкните join.bat. Он спросит адрес хоста (из Radmin VPN), пароль и ваше имя в
      мультиплеере, скачает свежее сохранение хоста в ваши сохранения Warband Coop Campaign и будет держать
-     связь. Окно моста не закрывайте, пока играете.
+     связь. Окно моста не закрывайте, пока играете. Если хост ещё не сохранял игру (новая кампания),
+     окно подождёт: сохранение придёт само, как только хост сохранится.
   2. Запустите Warband с модулем Warband Coop Campaign и загрузите это сохранение. Подождите около 5 секунд:
      игра сама станет КЛИЕНТОМ мира хоста. Если этого не произошло, нажмите
        Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)",
@@ -650,6 +657,7 @@ HOST (runs the world):
 FRIEND:
   1. Double-click join.bat: the host's address (from Radmin VPN), password and your multiplayer
      name. It fetches the host's newest save into your Warband Coop Campaign saves and keeps the link.
+     If the host has not saved yet (a new campaign), it waits: the save comes once the host saves.
   2. Start Warband with Warband Coop Campaign and load that save. Wait about 5 seconds: the game becomes a
      CLIENT of the host's world by itself. If it does not: Camp - "CoopWorld: co-op..." -
      "let the world run again (stop holding it)", and you are synchronised.

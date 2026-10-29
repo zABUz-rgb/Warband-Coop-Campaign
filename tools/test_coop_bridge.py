@@ -571,6 +571,27 @@ def test_names_and_saves():
             break
     check(path.read_bytes() == b"day 2, saved again", "a new save of the host replaces the friend's copy")
 
+    # a new campaign: the host has not saved yet - the friend's bridge waits for the first save
+    empty_host = Path(tempfile.mkdtemp())
+    hub_lines = []
+    cb.serve_relays(("127.0.0.7", 18095), w, "secret", str(empty_host), hub_lines.append)
+    check(any("no save yet" in s for s in hub_lines), f"the host is told to save the campaign: {hub_lines}")
+    friend = Path(tempfile.mkdtemp())
+    relay = cb.Relay(("127.0.0.7", 18095), "secret", log)
+    relay.connect()
+    relay.save_dir = str(friend)
+    lines = []
+    check(cb.fetch_first_save(relay, str(friend), None, lines.append) is None and any("no save from the host yet" in s for s in lines),
+          f"no save at the host: the friend's bridge goes on and says why: {lines}")
+    time.sleep(0.3)
+    (empty_host / "sg00.sav").write_bytes(b"the first save")
+    for _ in range(40):
+        time.sleep(0.1)
+        if (friend / "sg00.sav").exists():
+            break
+    check((friend / "sg00.sav").exists() and (friend / "sg00.sav").read_bytes() == b"the first save",
+          "the host's first save reaches the friend who waited")
+
 
 def test_lost_answers():
     w = cb.World()

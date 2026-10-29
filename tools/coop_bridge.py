@@ -1612,6 +1612,9 @@ def serve_relays(addr, world, key, save_dir, log):
     srv = listen_socket(host, port)
     srv.listen(8)
     log(f"net: listening for players on {host}:{port}")
+    if save_dir and newest_save(save_dir) is None:
+        log(f"net: no save yet in {save_dir}: start or load the campaign and save it - "
+            "every save of the host goes to the players who joined")
     counter = [0]
     owners = {}  # cid -> the connection serving it now (a reconnect takes the player over)
     links = {}   # cid -> (connection, its send lock): where a new save of the host goes
@@ -1689,7 +1692,7 @@ def serve_relays(addr, world, key, save_dir, log):
                 elif msg.get("t") == "save":
                     path = newest_save(save_dir)
                     if path is None:
-                        send_msg(conn, lock, {"t": "save", "error": f"no save in {save_dir}"})
+                        send_msg(conn, lock, {"t": "save", "error": f"the host has no save yet in {save_dir}"})
                     else:
                         send_msg(conn, lock, save_message(path))
                         log(f"net: sent save {path.name} to {cid}")
@@ -1966,6 +1969,19 @@ def run_host(args, log):
         last = s
 
 
+def fetch_first_save(relay, save_dir, slot_name, log):
+    """join --fetch-save: the host's newest save into save_dir. A host with no save yet (a new
+    campaign) or no answer does not stop the bridge: the host's next save comes here by itself."""
+    try:
+        path, name = relay.fetch_save(save_dir, slot_name)
+    except RuntimeError as e:
+        log(f"relay: no save from the host yet ({e}). Keep this window open: once the host saves the "
+            f"game, the save comes into {save_dir} by itself - then load it in the game")
+        return None
+    log(f"relay: the host's save {name} is now {path} - load it in the game")
+    return path
+
+
 def run_join(args, log):
     relay = Relay(parse_addr(args.host, NET_PORT), args.key, log, mp_name=args.mp_name)
     try:
@@ -1978,8 +1994,7 @@ def run_join(args, log):
         if not relay.connected.is_set():
             log("relay: waiting for the host (check its address, the key, and that both PCs are on the same network)")
         relay.connected.wait()
-        path, name = relay.fetch_save(args.save_dir, args.save_slot)
-        log(f"relay: the host's save {name} is now {path} - load it in the game")
+        fetch_first_save(relay, args.save_dir, args.save_slot, log)
     serve_http(parse_addr(args.client, 80), relay.forward, log, "cli")
     while True:
         time.sleep(5)
