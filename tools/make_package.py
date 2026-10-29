@@ -1,15 +1,18 @@
-"""Build the CoopWorld packages for players: dist/CoopWorld-<date>.zip (English) and
-dist/CoopWorld-ru-<date>.zip (Russian: game texts, installer and instructions).
+"""Build the Warband Coop Campaign packages for players: dist/Warband-Coop-Campaign-<version>.zip
+(English) and dist/Warband-Coop-Campaign-<version>-ru.zip (Russian: game texts, installer and
+instructions). The module itself keeps its technical name CoopWorld (its folder, menus, saves and
+Documents\\CoopWorld), so saves and kept heroes of earlier builds stay usable.
 
 They hold only what CoopWorld adds: the compiled module files (*.txt), Diplomacy's textures and
-changed scenes (tools/dplmc_assets.py), the bridge and an installer.
+changed scenes (tools/dplmc_assets.py), the bridge and an installer, and in Programs the installers
+of the programs the mod needs (vendor/prereqs: PowerShell, Python, Radmin VPN), which install.bat
+offers to run for what is missing.
 No game files: the installer copies each player's own Modules/Native to Modules/CoopWorld and puts
 the compiled files over it. The Russian one also adds CoopWorld's Russian texts
 (tools/make_ru.py) to the copy of Native's languages/ru.
 
     python tools/make_ru.py && python tools/make_package.py
 """
-import datetime
 import sys
 import zipfile
 from pathlib import Path
@@ -21,6 +24,11 @@ ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "game" / "Modules" / "CoopWorld"
 RUSSIFIER_UI = ROOT / "vendor" / "l10n_ru" / "languages" / "ru"  # the russifier's engine interface
 BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler state; quick_strings.txt is read by the game
+PREREQS = ROOT / "vendor" / "prereqs"  # installers of the programs the mod needs (not in git)
+PROJECT = "Warband Coop Campaign"
+VERSION = "1.0"
+DISCORD = "https://discord.gg/nfmWC5SWfp"
+BOOSTY = "https://boosty.to/zabuz_0"
 
 # One installer, two languages: install.ps1 (and install.bat, which starts it and keeps the window
 # open) for a double click. It finds Warband by itself (GOG and Steam registry, the folder the package
@@ -63,10 +71,63 @@ function Find-Warband {{
   return $found | Where-Object {{ Is-Warband $_ }} | Select-Object -Unique
 }}
 
+function Has-Command($name) {{
+  $cmd = Get-Command $name -ErrorAction SilentlyContinue
+  return $cmd -and $cmd.Source -notmatch "WindowsApps"  # the Store's python.exe stub is no Python
+}}
+
+function Has-Radmin {{
+  foreach ($dir in "${{env:ProgramFiles(x86)}}\Radmin VPN", "$env:ProgramFiles\Radmin VPN") {{
+    if ($dir -and (Test-Path $dir)) {{ return $true }}
+  }}
+  foreach ($key in "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*") {{
+    if (Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object {{ $_.DisplayName -like "Radmin VPN*" }}) {{ return $true }}
+  }}
+  return $false
+}}
+
+# The programs the mod needs, from the Programs folder: what is there already, and, if the player
+# agrees, the installers of what is missing (Python by itself, with PATH; the others show their own window)
+function Install-Programs {{
+  $programs = Join-Path $here "Programs"
+  if (-not (Test-Path $programs)) {{ return }}
+  $list = @(
+    @{{ Name = "{ps_name}"; Have = (Has-Command "pwsh"); File = "PowerShell*.exe"; Arguments = "" }},
+    @{{ Name = "{py_name}"; Have = ((Has-Command "python") -or (Has-Command "py")); File = "python-*.exe"; Arguments = "/passive PrependPath=1 Include_launcher=1" }},
+    @{{ Name = "{radmin_name}"; Have = (Has-Radmin); File = "Radmin_VPN*.exe"; Arguments = "" }}
+  )
+  Write-Host "{programs_title}"
+  $missing = @()
+  foreach ($p in $list) {{
+    if ($p.Have) {{ Write-Host ("  " + $p.Name + ": {installed}") -ForegroundColor Green }}
+    else {{ Write-Host ("  " + $p.Name + ": {not_installed}") -ForegroundColor Yellow; $missing += $p }}
+  }}
+  if ($missing.Count -eq 0) {{ Write-Host ""; return }}
+  $answer = Read-Host "{programs_ask}"
+  if (-not ($answer -eq "" -or $answer -match '^[yYдД]')) {{ Write-Host "{programs_skipped}"; Write-Host ""; return }}
+  foreach ($p in $missing) {{
+    $file = Get-ChildItem $programs -Filter $p.File | Select-Object -First 1
+    if (-not $file) {{ Write-Host ("  " + $p.Name + ": {program_no_file}") -ForegroundColor Yellow; continue }}
+    Write-Host ("{program_installing} " + $p.Name + " ...")
+    try {{
+      if ($p.Arguments) {{ $proc = Start-Process $file.FullName -ArgumentList $p.Arguments -Wait -PassThru }}
+      else {{ $proc = Start-Process $file.FullName -Wait -PassThru }}
+      if ($proc.ExitCode) {{ Write-Host ("  " + $p.Name + ": {program_code} " + $proc.ExitCode) -ForegroundColor Yellow }}
+      else {{ Write-Host ("  " + $p.Name + ": {program_done}") -ForegroundColor Green }}
+    }} catch {{
+      Write-Host ("  " + $p.Name + ": {program_failed} " + $_.Exception.Message) -ForegroundColor Yellow
+    }}
+  }}
+  Write-Host ""
+}}
+
 try {{
   if (-not (Test-Path (Join-Path $here "CoopWorld\scripts.txt"))) {{
     throw "{not_unpacked}"
   }}
+  Write-Host "{title}" -ForegroundColor Cyan
+  Write-Host ""
+  Install-Programs
   if (-not $Warband) {{
     foreach ($candidate in @(Find-Warband)) {{
       $answer = Read-Host "{found_ask}"
@@ -124,33 +185,50 @@ RU_PART = r"""  # the Russian engine interface (the russifier): some editions (G
   Write-Host "Установлен русский интерфейс игры (languages\ru)."
 """
 
+PROGRAM_TEXT = {
+  "en": dict(
+    ps_name="PowerShell 7", py_name="Python 3 (runs the bridge)", radmin_name="Radmin VPN (the players' network)",
+    programs_title="Programs the mod needs:", installed="installed", not_installed="not found",
+    programs_ask="Install the missing ones from the Programs folder? [Y/n]",
+    programs_skipped="Skipped: install them later from the Programs folder.",
+    program_no_file="no installer in the Programs folder", program_installing="Installing",
+    program_done="done", program_code="the installer ended with code", program_failed="did not install:"),
+  "ru": dict(
+    ps_name="PowerShell 7", py_name="Python 3 (нужен для моста)", radmin_name="Radmin VPN (сеть игроков)",
+    programs_title="Программы, нужные моду:", installed="установлен", not_installed="не найден",
+    programs_ask="Установить недостающие из папки Programs? [Д/н]",
+    programs_skipped="Пропущено: их можно установить позже из папки Programs.",
+    program_no_file="нет установщика в папке Programs", program_installing="Устанавливаю",
+    program_done="готово", program_code="установщик завершился с кодом", program_failed="не установлен:"),
+}
+
 MESSAGES = {
   "en": dict(
-    title="CoopWorld installer", press_enter="Press Enter to close this window",
+    title=f"{PROJECT} {VERSION} - installer", press_enter="Press Enter to close this window",
     not_unpacked="Unpack the whole archive into a folder first and run install.bat from there (the CoopWorld folder must be next to it).",
     found_ask="Install into $candidate ? [Y/n]", pick_folder="Choose the Mount & Blade Warband folder (the one with mb_warband.exe)",
     no_folder="No Warband folder chosen.", no_exe="There is no mb_warband.exe in $Warband",
     no_native=r"There is no Modules\Native in $Warband",game_running="Close Mount & Blade Warband first, then run the installer again.",
     installing="Installing CoopWorld into $Warband ...", kept_old="The old CoopWorld is kept as $backup",
-    done1="CoopWorld is installed in $target",
-    done2="Start Warband and choose the CoopWorld module in the launcher.",
+    done1="Warband Coop Campaign (module CoopWorld) is installed in $target",
+    done2="Start Warband and choose the CoopWorld module in the launcher. Before playing, open Radmin VPN and check that the network is up.",
     failed="Installation failed:", log_hint="Everything the installer did is in install.log next to it.",
     ru_part=""),
   "ru": dict(
-    title="Установщик CoopWorld (русская версия)", press_enter="Нажмите Enter, чтобы закрыть окно",
+    title=f"{PROJECT} {VERSION} - установщик (русская версия)", press_enter="Нажмите Enter, чтобы закрыть окно",
     not_unpacked="Сначала распакуйте весь архив в папку и запускайте install.bat оттуда (рядом должна быть папка CoopWorld).",
     found_ask="Установить в $candidate ? [Д/н]", pick_folder="Выберите папку Mount & Blade Warband (ту, где лежит mb_warband.exe)",
     no_folder="Папка Warband не выбрана.", no_exe="В папке $Warband нет mb_warband.exe",
     no_native=r"В папке $Warband нет Modules\Native",game_running="Сначала закройте Mount & Blade Warband, затем запустите установщик снова.",
     installing="Устанавливаю CoopWorld в $Warband ...", kept_old="Прежний CoopWorld сохранён как $backup",
-    done1="CoopWorld установлен в $target",
-    done2="Запустите Warband, в лаунчере выберите модуль CoopWorld, а в Configure - Game - Language выберите ru.",
+    done1="Warband Coop Campaign (модуль CoopWorld) установлен в $target",
+    done2="Запустите Warband, в лаунчере выберите модуль CoopWorld, а в Configure - Game - Language выберите ru. Перед игрой откройте Radmin VPN и убедитесь, что сеть работает.",
     failed="Установка не удалась:", log_hint="Всё, что делал установщик, записано в install.log рядом с ним.",
     ru_part=RU_PART),
 }
 
-INSTALL_PS1 = INSTALL_TEMPLATE.format(**MESSAGES["en"])
-INSTALL_RU_PS1 = INSTALL_TEMPLATE.format(**MESSAGES["ru"])
+INSTALL_PS1 = INSTALL_TEMPLATE.format(**MESSAGES["en"], **PROGRAM_TEXT["en"])
+INSTALL_RU_PS1 = INSTALL_TEMPLATE.format(**MESSAGES["ru"], **PROGRAM_TEXT["ru"])
 
 # a double click on a .ps1 opens Notepad or is blocked by the execution policy; this one works
 INSTALL_BAT = r"""@echo off
@@ -278,37 +356,45 @@ def launcher(kind, lang):
     return LAUNCHER_TEMPLATE.format(title=title, body=body, log_name=log_name, **m)
 
 
-START_HERE_RU = '''CoopWorld - С ЧЕГО НАЧАТЬ (для друга)
-====================================
+START_HERE_RU = f'''{PROJECT} {VERSION} - С ЧЕГО НАЧАТЬ
+==========================================
 
-1. Нужно один раз:
-   - Mount & Blade: Warband 1.174 (Steam или GOG) с серийным ключом (нужен для мультиплеера).
-   - Python 3 с python.org (при установке отметьте "Add python.exe to PATH").
-   - Radmin VPN (или ZeroTier): войдите в сеть, которую создал хост.
-2. Распакуйте весь архив в любую папку, закройте Warband, дважды щёлкните install.bat.
-   В лаунчере Warband выберите модуль CoopWorld (Configure - Game - Language: ru).
-3. Каждый раз перед игрой:
-   - дважды щёлкните join.bat: адрес хоста (из Radmin VPN), пароль хоста, ваше имя в мультиплеере
-     (то же, что в игре: Мультиплеер - Профили; запомнится). Окно моста не закрывайте.
-   - Запустите Warband (CoopWorld), загрузите свежее сохранение хоста (join.bat его скачал),
-     Лагерь - "CoopWorld: кооператив..." - "CoopWorld: сделать эту игру КЛИЕНТОМ". Ваш герой вернётся сам.
-4. Для совместных боёв запустите второе окно Warband (CoopWorld): Мультиплеер - Избранное -
-   добавьте адрес хоста с портом 7240 (например 26.x.x.x:7240) и зайдите на сервер боя хоста.
-Подробности - README.txt.
+1. Один раз:
+   - Распакуйте весь архив в любую папку, лучше всего - в папку с игрой (не запускайте из архива).
+   - Закройте Warband и дважды щёлкните install.bat. Он предложит установить недостающие
+     программы (PowerShell 7, Python 3, Radmin VPN) из папки Programs и сам поставит мод.
+   - В лаунчере Warband выберите модуль CoopWorld, Configure - Game - Language: ru,
+     и включите оконный режим (Start windowed).
+   - Radmin VPN: войдите в сеть, которую создал хост.
+2. Каждый раз перед игрой:
+   - Откройте Radmin VPN и убедитесь, что сеть работает стабильно.
+   - Хост: host.bat, затем Warband - своя кампания - Лагерь - "CoopWorld: кооператив..." -
+     "...СЕРВЕРОМ МИРА и играть в ней (хост)".
+   - Друг: join.bat (адрес хоста из Radmin VPN, пароль хоста, ваше имя в мультиплеере).
+     Окно моста не закрывайте. Запустите Warband (CoopWorld) и загрузите сохранение, которое
+     скачал join.bat. Подождите около 5 секунд - игра сама станет КЛИЕНТОМ. Если нет:
+     Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)".
+3. Совместные бои: второе окно Warband (CoopWorld). Хост: Мультиплеер - Создать игру, "Битва".
+   Друг: Мультиплеер - Избранное - адрес хоста с портом 7240 (например 26.x.x.x:7240).
+Подробности - README.txt. Вопросы и ошибки: {DISCORD}
 '''
 
-START_HERE = '''CoopWorld - START HERE (for a friend)
-=====================================
+START_HERE = f'''{PROJECT} {VERSION} - START HERE
+===========================================
 
-1. Once: Warband 1.174 (Steam or GOG) with its serial key (multiplayer needs it); Python 3 from
-   python.org ("Add python.exe to PATH"); Radmin VPN or ZeroTier, in the host's network.
-2. Unpack the whole archive, close Warband, double-click install.bat. Pick CoopWorld in the launcher.
-3. Every time: double-click join.bat (the host's address, the host's password, your multiplayer
-   name - the one of your Multiplayer profile). Keep its window open. Start Warband (CoopWorld),
-   load the host's save join.bat fetched, Camp - "CoopWorld: co-op..." - "run this game as a CLIENT". Your hero comes back.
-4. For joint battles start a second Warband window (CoopWorld): Multiplayer - Favorites - add the
-   host's address with port 7240 (e.g. 26.x.x.x:7240) and join the host's battle server.
-More in README.txt.
+1. Once: unpack the whole archive (best into the game's folder), close Warband, double-click
+   install.bat: it offers to install the missing programs (PowerShell 7, Python 3, Radmin VPN) from
+   the Programs folder and installs the mod. In the launcher pick the CoopWorld module and Start
+   windowed. In Radmin VPN join the host's network.
+2. Every time: open Radmin VPN and check the network is up.
+   Host: host.bat, then Warband - your campaign - Camp - "CoopWorld: co-op..." - "...WORLD SERVER and
+   play in it (host)".
+   Friend: join.bat (the host's address, the host's password, your multiplayer name); keep its
+   window open. Start Warband (CoopWorld), load the save join.bat fetched and wait about 5 seconds:
+   the game becomes a CLIENT by itself. If not: Camp - "CoopWorld: co-op..." - "let the world run again".
+3. Joint battles: a second Warband window (CoopWorld). Host: Multiplayer - Host a game, Battle.
+   Friends: Multiplayer - Favorites - the host's address with port 7240 (e.g. 26.x.x.x:7240).
+More in README.txt. Questions and bugs: {DISCORD}
 '''
 
 
@@ -338,35 +424,53 @@ def check_logs(lang):
     return CHECK_LOGS_TEMPLATE.format(no_python=text["no_python"], press_enter=text["press_enter"])
 
 
-README_RU = '''CoopWorld - кооперативная кампания для Mount & Blade: Warband 1.174
-====================================================================
-Основа - мод Diplomacy 1.174 (с Freelancer). Нужна новая кампания: старые сохранения
-CoopWorld без Diplomacy с этой версией не работают.
+README_RU = f'''{PROJECT} {VERSION} - кооперативная кампания для Mount & Blade: Warband 1.174
+=====================================================================================
+Неофициальный фанатский мод, не связан с TaleWorlds Entertainment. Бесплатный.
+Основа - Diplomacy 1.174 с Freelancer. В лаунчере Warband модуль называется CoopWorld, так же
+подписаны его пункты в меню игры. Нужна новая кампания.
+
+  Discord (вопросы, ошибки, поиск напарников): {DISCORD}
+  Поддержать разработку (по желанию, ничего не даёт сверх бесплатной версии): {BOOSTY}
 
 ЧТО НУЖНО
-  - Warband 1.174 (Steam или GOG) и Python 3 (python.org, при установке отметьте "Add to PATH")
-    на каждом компьютере.
-  - Компьютеры должны видеть друг друга: одна локальная сеть или виртуальная сеть, например
-    Radmin VPN или ZeroTier (обе бесплатные). Адрес хоста - тот, что показывает эта программа
-    (например 26.x.x.x).
-  - На компьютере хоста Windows один раз спросит, разрешить ли Python принимать подключения
-    (порт TCP 7350). Разрешите для частной сети.
+  - У каждого игрока своя лицензионная Warband 1.174 (Steam или GOG) с серийным ключом: без ключа
+    мультиплеер не пускает, а с одним ключом вдвоём на сервер боя не зайти. Ключ Steam-версии:
+    Steam - Библиотека - правый клик по Warband - Управление - Ключи продукта.
+  - PowerShell, Python 3 и Radmin VPN. Их установщики лежат в папке Programs, install.bat
+    предложит поставить недостающие.
+  - Компьютеры должны видеть друг друга: одна сеть Radmin VPN (или ZeroTier, или локальная сеть).
+  - У хоста Windows один раз спросит, разрешить ли Python принимать подключения (порт TCP 7350):
+    разрешите для частной сети.
 
 УСТАНОВКА (у каждого игрока)
-  1. Распакуйте весь архив в любую папку (не запускайте из самого архива).
+  1. Распакуйте весь архив в любую папку, лучше всего - в папку с игрой, чтобы установщик быстрее
+     определил нужную папку (не запускайте из самого архива).
   2. Закройте Warband и дважды щёлкните install.bat.
-     Он сам найдёт игру (GOG, Steam) и спросит, туда ли ставить; если не найдёт - откроет окно
-     выбора папки. Окно установщика не закроется, пока вы не нажмёте Enter, так что ошибку
-     можно прочитать. Всё, что он делал, записано в install.log.
-  Если install.bat не запускается: откройте PowerShell и выполните
+     - Сначала он покажет, какие программы уже есть (PowerShell 7, Python 3, Radmin VPN), и
+       спросит, установить ли недостающие. Python ставится сам (и сразу попадает в PATH),
+       у PowerShell и Radmin VPN откроются их обычные установщики.
+     - Затем он найдёт игру (папка с архивом, GOG, Steam) и спросит, туда ли ставить; если не
+       найдёт - откроет окно выбора папки.
+     - Он ставит модуль CoopWorld (копия вашего Native с файлами мода; сам Native не меняется)
+       и русский интерфейс игры (прежняя папка languages\\ru сохраняется как резервная копия).
+     Окно не закроется, пока вы не нажмёте Enter, так что ошибку можно прочитать. Всё, что
+     делал установщик, записано в install.log.
+  3. В лаунчере Warband: модуль CoopWorld, Configure - Game - Language: ru, и включите
+     Start windowed (оконный режим): для совместных боёв нужны два окна игры, а полноэкранная
+     игра при переключении сворачивается и замирает.
+  Если install.bat не открывается или окно сразу закрывается: установите PowerShell
+  (Programs\\PowerShell Installer.exe) и запустите install.bat снова. Или вручную, в PowerShell:
     powershell -ExecutionPolicy Bypass -File "<папка пакета>\\install.ps1" "<папка с Warband>"
-  Установщик ставит полный русификатор: интерфейс игры (папка languages\ru, прежняя
-  сохраняется как резервная копия) и русские тексты модуля CoopWorld. Ваш Native не меняется.
-  В лаунчере Warband: модуль CoopWorld, Configure - Game - Language: ru.
+
+ПЕРЕД ИГРОЙ (для всех игроков)
+  Откройте Radmin VPN и убедитесь, что сеть работает стабильно: все в сети хоста, хост в сети
+  (зелёный значок), его адрес виден (например 26.x.x.x).
 
 ХОСТ (на его компьютере живёт мир)
   1. Дважды щёлкните host.bat - запустится мост. Он спросит пароль: придумайте любой и сообщите
-     друзьям (Enter без пароля - играть только на этом компьютере). Окно не закрывайте.
+     друзьям (Enter без пароля - играть только на этом компьютере), и ваше имя в мультиплеере.
+     Окно моста не закрывайте.
   2. Запустите Warband с модулем CoopWorld, загрузите свою кампанию,
        Лагерь - "CoopWorld: кооператив..." - "CoopWorld: сделать эту игру СЕРВЕРОМ МИРА и играть в ней (хост)".
      Вы играете прямо в этом окне: мир живёт в нём, друзья видят ваш отряд на карте.
@@ -374,112 +478,121 @@ CoopWorld без Diplomacy с этой версией не работают.
      приходят строкой в журнал, а известия с выбором (война, приглашения, спутники, гонцы маршала)
      копятся - откройте их, когда удобно: Лагерь - "CoopWorld: кооператив..." - "прочитать отложенные известия".
   3. Для каждого подключающегося игрока:
-       Лагерь - "CoopWorld: кооператив..." - "CoopWorld: удержать мир для подключения игрока", затем сохраните игру (Esc - Сохранить).
-     Сохранение отдайте другу (join.bat скачает его сам). Как только друг подключится, мир пойдёт дальше;
-     можно и самому: там же "пустить мир дальше (перестать удерживать)".
+       Лагерь - "CoopWorld: кооператив..." - "CoopWorld: удержать мир для подключения игрока", затем
+       сохраните игру (Esc - Сохранить). join.bat друга скачает это сохранение сам.
+     Как только друг подключится, мир пойдёт дальше; можно и самому: там же "пустить мир дальше".
   Можно и по-старому: отдельное окно - только сервер мира ("...только СЕРВЕРОМ МИРА (без игры в ней)"),
   а играть во втором окне клиентом. Это тяжелее для компьютера, зато мир не зависит от ваших меню.
 
 ДРУГ
-  1. Дважды щёлкните join.bat. Он спросит адрес хоста и пароль, скачает свежее сохранение хоста
-     в ваши сохранения CoopWorld и будет держать связь. Окно моста не закрывайте, пока играете.
-  2. Запустите Warband с модулем CoopWorld, загрузите это сохранение,
-     Лагерь - "CoopWorld: кооператив..." - "CoopWorld: сделать эту игру КЛИЕНТОМ". Мир хоста пойдёт дальше, как только вы подключитесь.
-  Каждое сохранение хоста join.bat сам кладёт в тот же слот ваших сохранений (старое - .bak), а игра
-  пишет "хост сохранил игру". В следующий раз загружайте этот слот - мир будет самым свежим.
+  1. Дважды щёлкните join.bat. Он спросит адрес хоста (из Radmin VPN), пароль и ваше имя в
+     мультиплеере, скачает свежее сохранение хоста в ваши сохранения CoopWorld и будет держать
+     связь. Окно моста не закрывайте, пока играете.
+  2. Запустите Warband с модулем CoopWorld и загрузите это сохранение. Подождите около 5 секунд:
+     игра сама станет КЛИЕНТОМ мира хоста. Если этого не произошло, нажмите
+       Лагерь - "CoopWorld: кооператив..." - "CoopWorld: пустить мир дальше (перестать удерживать)",
+     и вас синхронизирует.
+  Каждое новое сохранение хоста join.bat сам кладёт в тот же слот ваших сохранений (старое - .bak),
+  а игра пишет "хост сохранил игру". В следующий раз загружайте этот слот - мир будет самым свежим.
   Герой получает имя, которое вы ввели в join.bat (у хоста - в host.bat).
 
+КАК ЭТО РАБОТАЕТ
+  - Мир (лорды, бандиты, торговля, войны, время) живёт у хоста. Игры игроков показывают этот мир;
+    у каждого свой отряд, остальные игроки видны на карте. До 4 игроков.
+  - Пока кто-то в бою, во встрече или в меню (город, инвентарь), мир стоит у всех: отряды на
+    карте замирают, часы останавливаются. Сообщение подскажет, из-за кого пауза.
+  - Время у всех общее. Если ваши часы ушли вперёд мира на 3 часа и больше, отдых стоя не идёт,
+    пока мир не догонит (двигаться можно); отстали на 3 часа и больше - отдых идёт втрое быстрее.
+  - Итоги ваших боёв уходят хосту: разбитые отряды исчезают у всех.
+
 ИГРОКИ ВМЕСТЕ
-  Всё это работает одинаково у друга и у хоста, который играет в окне сервера мира.
-  Лагерь - "CoopWorld: кооператив..." - "CoopWorld: другие игроки": кто в мире и как далеко; попроситься в отряд (откуда угодно),
-  передать войска (если игрок рядом, до 3 км), записать своего героя у хоста прямо сейчас.
+  Лагерь - "CoopWorld: кооператив..." - "CoopWorld: другие игроки": кто в мире и как далеко;
+  попроситься в отряд (откуда угодно), передать войска (если игрок рядом, до 3 км), записать
+  своего героя у хоста прямо сейчас.
   Встретив на карте отряд другого игрока, сразу открывается меню (без разговора), где можно:
-  - "сразиться с этим игроком" (совместный бой);
+  - "сразиться с этим игроком" (совместный бой; второй игрок отказаться не может);
   - "попроситься в отряд этого игрока": он примет или откажет. Принятый следует за лидером по карте
-    и вызывается во все его совместные бои (отказаться нельзя). Покинуть отряд - Лагерь - "CoopWorld:
-    кооператив..." (или "другие игроки"); лидер может отпустить всех последователей там же.
+    и вызывается во все его совместные бои. Покинуть отряд - Лагерь - "CoopWorld: кооператив..."
+    (или "другие игроки"); лидер может отпустить всех последователей там же.
   - "передать войска этому игроку": выберите бойцов в окне обмена и отправьте; получатель примет
     или откажется, отвергнутые бойцы вернутся (даже если вы успели выйти - при следующем входе).
 
-ВАШ ГЕРОЙ МЕЖДУ СЕССИЯМИ
-  Каждый раз друг загружает свежее сохранение хоста, но играет своим героем: мост хоста хранит героя
-  каждого игрока (profiles.json рядом с host.bat) под его именем в мультиплеере из join.bat - деньги,
-  опыт, известность, честь, присягу, атрибуты, навыки, владение оружием, весь инвентарь, войска
-  (и раненых), пленных, место на карте. При подключении герой возвращается сам. Имя в join.bat
-  должно оставаться тем же. Опыт можно только добавить: уровень не станет ниже, чем у героя хоста.
-  Нераспределённые очки навыков и атрибутов не сохраняются - распределите их до выхода.
-  Клиенты теперь тоже получают недельный бюджет (жалованье войскам, доходы), читают книги.
-
-КАК ЭТО РАБОТАЕТ
-  - Мир (лорды, бандиты, торговля, время) живёт в отдельной игре-сервере у хоста.
-    Игры игроков показывают этот мир; у каждого свой отряд, остальные игроки видны на карте.
-  - Пока кто-то в бою, во встрече или в меню (город, инвентарь), мир стоит у всех.
-  - Бои можно вести вместе на сервере мультиплеера (см. "Совместные бои").
-  - Итоги ваших боёв уходят на сервер: разбитые отряды исчезают у всех.
-  - До 4 игроков.
+СЛУЖБА ЛОРДУ (Freelancer)
+  Поступить на службу к лорду можно обычным разговором с ним. Пока вы служите, ваш отряд идёт
+  за лордом, отдых идёт со скоростью мира, а общая пауза останавливает и вас.
+  Если вы служите тому же лорду, что и другой игрок, и лорд вступает в полевой бой, у вас
+  откроется меню солдата ("ваш командир вступает в бой!"). Пункт "CoopWorld: сражаться рядом с
+  командиром вместе с друзьями" начнёт совместный бой: игроки и люди лорда против его врага;
+  второй солдат, выбравший этот пункт, попадает в тот же бой. Лорд сохраняет уцелевших.
 
 СОВМЕСТНЫЕ БОИ (сервер мультиплеера)
-  Бой из кампании можно провести на сервере мультиплеера Warband: каждый игрок сражается сам,
-  его отряды - боты под его командованием.
+  Бой из кампании можно провести на сервере мультиплеера Warband: каждый игрок сражается сам
+  своим героем, его отряды - боты под его командованием.
   Важно:
-  - У каждого игрока своя лицензия Warband (свой ключ / свой аккаунт Steam). С одним ключом на один
-    сервер вдвоём не зайти - игра скажет, что ключ неверный. Ключ Steam-версии: Steam - Библиотека -
-    правый клик по Warband - Управление - Ключи продукта; ключ GOG к Steam-версии не подходит.
-  - Оба окна Warband запускайте в оконном режиме (лаунчер - Configure - Start windowed): полноэкранная
-    игра при переключении сворачивается и замирает, мир встаёт у всех, а запросы не уходят.
+  - У каждого игрока своя лицензия Warband (см. "Что нужно").
+  - Оба окна Warband - в оконном режиме (Start windowed).
   - Сервер боя создавайте в только что запущенном окне Warband, где не загружалась кампания.
   1. Хост запускает второе окно Warband (модуль CoopWorld) - сервер боя, и сам в нём сражается:
        Мультиплеер - Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0.
      Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
   2. Каждый друг заходит на этот сервер из второго окна Warband (модуль CoopWorld):
        Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
-     host.bat и join.bat спрашивают ваше имя в мультиплеере (запоминают его в mp_name.txt): заходите
-     на сервер боя ровно под этим именем - тогда мост сам ставит вас в нужную команду и отдаёт вам
-     ваших солдат. Мост пишет в своём окне, кого он узнал на сервере боя ("recognised") и кого нет
-     ("NOT found"). Имена у всех разные! Это же имя получает и ваш герой в кампании.
-     Окно игры остаётся на сервере между боями.
-  3. Во встрече с отрядом на карте выберите "CoopWorld: сразиться вместе с друзьями". Запрос уходит
-     сразу; приглашённым, кто стоит на сервере боя, сервер пишет, что ответить нужно в окне кампании.
-     Игроки поблизости получают приглашение ("В бой!" или "Отказаться"); через несколько секунд
-     раунд на сервере боя начинается заново с армиями из кампании. Переключитесь в окно мультиплеера.
-  4. Встреча с отрядом другого игрока: "CoopWorld: сразиться с этим игроком". Его вызывают в бой,
-     отказаться нельзя; если он не зайдёт на сервер, его отряды сражаются без него.
-  5. Когда одна из сторон перебита, потери возвращаются в кампанию: из павших бойцов игрока половина
-     ранена, половина убита; разбитый отряд мира исчезает у всех. Пока идёт бой, мир стоит.
-  Вы сражаетесь своим героем: его снаряжение (оружие, броня, конь), атрибуты, боевые навыки и
-  владение оружием переносятся на сервер боя (до 4 героев в бою). После боя герой и отряд получают
-  опыт за павших врагов (проигравшие - треть). Компаньоны выходят в бой ботами со своим снаряжением
-  и навыками и подчиняются вам; павший компаньон возвращается тяжело раненым, но живым. Победители
-  делят добычу с павших врагов (окно добычи, как после обычного боя). Карта полевого боя подбирается
-  по местности: степь, лес, горы, снег, пустыня, река. Владение оружием растёт, как в обычном бою: за
-  попадания по врагам и нанесённый урон тем видом оружия, которым вы сражались; чем выше владение,
-  тем медленнее рост, предел задаёт навык "Владение оружием".
-  Здоровье героя после боя сохраняется (павший в бою герой возвращается тяжело раненым).
-  Проигравший отряду мира попадает в плен, как в обычной игре: его войска и компаньоны уходят
-  к победителю пленными, часть вещей забирают. Проигравший другому игроку в плен не попадает,
-  но его уцелевшие войска становятся пленными победителя.
-  Большие армии уменьшаются до 150 ботов на поле, потери пересчитываются обратно.
+     Заходите ровно под тем именем, которое ввели в host.bat / join.bat (оно запоминается в
+     mp_name.txt): тогда мост сам ставит вас в нужную команду и отдаёт вам ваших солдат. Мост пишет
+     в своём окне, кого он узнал на сервере ("recognised") и кого нет ("NOT found"). Имена у всех
+     разные! Окно игры остаётся на сервере между боями.
+  3. Во встрече с отрядом на карте выберите "CoopWorld: сразиться вместе с друзьями". Игроки
+     поблизости получают приглашение ("В бой!" или "Отказаться"); через несколько секунд раунд на
+     сервере боя начинается заново с армиями из кампании. Переключитесь в окно мультиплеера.
+     Сторона и герой выдаются сами; если всё же открылось окно выбора команды - закройте его (Esc).
+  4. Бой идёт, пока у одной из сторон не останется никого: ни ботов, ни героев. Павший герой в
+     этот бой не возвращается (как в одиночной игре) и смотрит бой со стороны.
+  5. Потери возвращаются в кампанию: из павших бойцов игрока половина ранена, половина убита;
+     разбитый отряд мира исчезает у всех. Пока идёт бой, мир стоит.
+  Ваш герой: снаряжение (оружие, броня, конь), атрибуты, боевые навыки, владение оружием и
+  здоровье (текущее и наибольшее - Сила и Железная кожа учитываются) переносятся на сервер боя,
+  до 4 героев в бою. Раненый в кампании герой выходит в бой раненым. После боя здоровье
+  сохраняется (павший герой возвращается тяжело раненым), владение оружием растёт за попадания и
+  урон тем видом оружия, которым вы сражались, герой и отряд получают опыт за павших врагов
+  (проигравшие - треть). Компаньоны выходят в бой ботами со своим снаряжением, навыками и
+  здоровьем и подчиняются вам; павший компаньон возвращается тяжело раненым, но живым.
+  Победители делят добычу с павших врагов (окно добычи, как после обычного боя). Карта полевого
+  боя подбирается по местности: степь, лес, горы, снег, пустыня, река. Большие армии уменьшаются
+  до 150 ботов на поле, потери пересчитываются обратно.
+  Проигравший отряду мира попадает в плен, как в обычной игре: его войска и компаньоны уходят к
+  победителю пленными, часть вещей забирают. Проигравший другому игроку в плен не попадает, но
+  его уцелевшие войска становятся пленными победителя.
   СОВМЕСТНАЯ ОСАДА: в меню осады (когда лестницы или башня готовы) - "CoopWorld: штурмовать стены
   вместе". Сервер боя сам переходит в режим "Осада" на одной из карт с замком: гарнизон (команда 1)
-  держит стены, игроки (команда 2) штурмуют; игроки рядом получают приглашение. Штурм удался, если
-  взят флаг или пал весь гарнизон: хост берёт замок как в обычной игре, а замок, взятый клиентом,
-  переходит его королевству (клиенту без присяги штурм недоступен). Не удался - гарнизон теряет
-  павших, осаду можно продолжить. Кому принадлежат замки и города, видно у всех игроков.
+  держит стены, игроки (команда 2) штурмуют. Боты в осаде сражаются пешими; лестницы сервер
+  поднимает сам, когда все войска на поле (сброшенную лестницу - снова через 30 секунд), а
+  штурмующие, застрявшие под стеной, идут к лестницам. Штурм удался, если взят флаг или пал весь
+  гарнизон: хост берёт замок как в обычной игре, а замок, взятый клиентом, переходит его
+  королевству (клиенту без присяги штурм недоступен). Не удался - гарнизон теряет павших, осаду
+  можно продолжить. Кому принадлежат замки и города, видно у всех игроков.
   СОВМЕСТНАЯ ОБОРОНА: когда армия мира осаждает замок или город вашей стороны, все игроки получают
   сообщение. Въехав в него или подъехав к воротам, выберите "CoopWorld: защищать стены вместе":
   игроки и гарнизон (команда 1) на стенах, осаждающий лорд и его армия (команда 2) штурмуют.
   Отбились - осаждающие теряют павших; не удержали стены - центр переходит их королевству,
   а защитники попадают в плен, как в обычной игре.
-  Для мультиплеера Warband нужен серийный ключ игры (GOG: в библиотеке у игры, Steam: выдаётся сам).
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
-  Мир сервера знает, кому служит каждый игрок: лорды его королевства его не трогают, враги
-  королевства на него охотятся, другие игроки видят на карте цвет его фракции.
-  Игроки враждующих королевств сражаются друг с другом в совместных боях; приглашение в бой
-  против ваших союзников отклоняется само. Владения (замки, города, деревни) пока получает только
-  хост: клиенту король их не выдаёт - игра сообщит об этом, присяга и звание при этом остаются.
-  Дипломатия (договоры между королевствами, послы, дары, патрули, вербовщики) - тоже только у хоста.
+  Мир знает, кому служит каждый игрок: лорды его королевства его не трогают, враги королевства на
+  него охотятся, другие игроки видят на карте цвет его фракции. Игроки враждующих королевств
+  сражаются друг с другом в совместных боях; приглашение в бой против ваших союзников отклоняется
+  само. Владения (замки, города, деревни) пока получает только хост: клиенту король их не выдаёт -
+  игра сообщит об этом, присяга и звание при этом остаются. Дипломатия (договоры между
+  королевствами, послы, дары, патрули, вербовщики) - тоже только у хоста.
+
+ВАШ ГЕРОЙ МЕЖДУ СЕССИЯМИ
+  Друг каждый раз загружает свежее сохранение хоста, но играет своим героем: мост хоста хранит
+  героя каждого игрока (profiles.json рядом с host.bat) под его именем в мультиплеере из join.bat -
+  деньги, опыт, известность, честь, присягу, атрибуты, навыки, владение оружием, весь инвентарь,
+  войска (и раненых), пленных, место на карте. При подключении герой возвращается сам. Имя в
+  join.bat должно оставаться тем же. Опыт можно только добавить: уровень не станет ниже, чем у
+  героя хоста. Нераспределённые очки навыков и атрибутов не сохраняются - распределите их до
+  выхода. Клиенты тоже получают недельный бюджет (жалованье войскам, доходы) и читают книги.
 
 ОСТАНОВКА
   В своей игре: Лагерь - "CoopWorld: кооператив..." - "CoopWorld: остановить кооператив", затем закройте окно моста.
@@ -488,101 +601,100 @@ CoopWorld без Diplomacy с этой версией не работают.
   - Мост пишет журналы в Документы\\CoopWorld (у хоста bridge.log и trace.log, у друга join.log;
     строки журнала друга попадают и в bridge.log хоста) и каждые 5 секунд выводит строку состояния.
   - После сессии хост дважды щёлкает check_logs.bat: отчёт о сессии (бои, кто и когда замолчал,
-    что не дошло) - на экране и в Документы\\CoopWorld\\report.txt. Пришлите его вместе с описанием.
-  - Если окно моста пишет, что Python не найден: установите Python 3 с python.org и отметьте
-    "Add python.exe to PATH".
-  - "cannot reach the host": проверьте адрес хоста, пароль и что Radmin VPN/ZeroTier включён у обоих.
+    что не дошло) - на экране и в Документы\\CoopWorld\\report.txt.
+  - Сообщая об ошибке в Discord ({DISCORD}), приложите report.txt, rgl_log.txt из папки Warband
+    (скопируйте его до перезапуска игры) и опишите, что делали и у кого (хост или друг) случилось.
+    При зависании напишите, нагружает ли игра процессор (Диспетчер задач).
+  - Окно моста пишет, что Python не найден: запустите install.bat ещё раз и согласитесь
+    установить программы (или Programs\\python-...exe, отметив "Add python.exe to PATH");
+    если не помогло - перезагрузите компьютер.
+  - "cannot reach the host": проверьте адрес хоста, пароль и что Radmin VPN включён у обоих.
 '''
 
-README = '''CoopWorld - co-op campaign for Mount & Blade: Warband 1.174
-=============================================================
-Built on the Diplomacy 1.174 mod (with Freelancer). It needs a new campaign: saves of CoopWorld
-without Diplomacy do not work with this version.
+README = f'''{PROJECT} {VERSION} - co-op campaign for Mount & Blade: Warband 1.174
+=========================================================================
+Unofficial free fan mod, not affiliated with TaleWorlds Entertainment. Built on Diplomacy 1.174
+with Freelancer. In the Warband launcher the module is called CoopWorld, as are its menu entries.
+It needs a new campaign.
 
-Needs: Warband 1.174 (Steam or GOG) and Python 3 (python.org) on every PC.
-Install: unpack the archive, close Warband, double-click install.bat. It finds the game
-(GOG, Steam) or asks for the folder, and waits for Enter so you can read any error.
-Everything it did is in install.log.
+  Discord (questions, bugs, finding players): {DISCORD}
+  Support the development (optional, gives nothing beyond the free mod): {BOOSTY}
 
-The PCs must reach each other: the same LAN, or a virtual LAN such as Radmin VPN or ZeroTier
-(both free). The host's address is then the one that program shows (e.g. 26.x.x.x).
-The host's PC must let Python accept connections on TCP port 7350 (Windows asks once).
+NEEDS: every player's own Warband 1.174 (Steam or GOG) with its serial key (multiplayer needs it,
+  and two players cannot join with one key); PowerShell, Python 3 and Radmin VPN - their
+  installers are in the Programs folder and install.bat offers the missing ones. The host's PC must
+  let Python accept connections on TCP port 7350 (Windows asks once: allow on private networks).
+
+INSTALL (every player):
+  1. Unpack the whole archive, best into the game's folder (the installer finds the game faster);
+     do not run it from inside the archive.
+  2. Close Warband and double-click install.bat. It shows which programs are there (PowerShell 7,
+     Python 3, Radmin VPN) and offers to install the missing ones (Python by itself, with PATH; the
+     others in their own installers), then finds the game (the package's folder, GOG, Steam) or asks
+     for the folder, and installs the CoopWorld module (a copy of your Native with the mod's files).
+     It waits for Enter so you can read any error; everything it did is in install.log.
+  3. In the launcher pick the CoopWorld module and Start windowed (joint battles need two windows).
+  If install.bat does not open: install PowerShell (Programs\\PowerShell Installer.exe) and try again.
+
+BEFORE PLAYING (everybody): open Radmin VPN and check that the network is up and stable.
 
 HOST (runs the world):
   1. Double-click host.bat: it asks for a password (any, tell it your friends; Enter without one
-     = this PC only) and starts the bridge. Keep its window open.
+     = this PC only) and your multiplayer name, and starts the bridge. Keep its window open.
   2. Start Warband with CoopWorld, load your campaign,
-     Camp - "CoopWorld: co-op..." - "run this game as the WORLD SERVER and play in it (host)". You play in this window.
-  3. For each joining player: Camp - "CoopWorld: co-op..." - "hold the world for a joining client", then save the game
-     (Esc - Save). The world runs on as soon as that player joined.
-  (Or the old way: one window only the world server ("...WORLD SERVER only (unattended)"),
-  and you play in a second window as a CLIENT. Heavier, but the world does not wait for your menus.)
+     Camp - "CoopWorld: co-op..." - "run this game as the WORLD SERVER and play in it (host)".
+  3. For each joining player: Camp - "CoopWorld: co-op..." - "hold the world for a joining client",
+     then save the game (Esc - Save). The friend's join.bat fetches it; the world runs on as soon
+     as that player joined.
 
 FRIEND:
-  1. Double-click join.bat: it asks for the host's address and password, fetches the host's
-     newest save into your CoopWorld saves and keeps the link. Keep its window open.
-  2. Start Warband with CoopWorld, load that save, Camp - "CoopWorld: co-op..." - "run this game as a CLIENT".
-     The host's world runs on as soon as you joined.
+  1. Double-click join.bat: the host's address (from Radmin VPN), password and your multiplayer
+     name. It fetches the host's newest save into your CoopWorld saves and keeps the link.
+  2. Start Warband with CoopWorld and load that save. Wait about 5 seconds: the game becomes a
+     CLIENT of the host's world by itself. If it does not: Camp - "CoopWorld: co-op..." -
+     "let the world run again (stop holding it)", and you are synchronised.
+  Every later save of the host lands in the same slot (the old one becomes .bak).
+
+HOW IT WORKS: the world lives at the host; every player has a party on the same map (up to 4).
+  While anybody is in a battle, an encounter or a menu, the world stands still for all. A player
+  whose clock ran 3 hours ahead of the world does not rest until the world catches up (moving is
+  free); one 3 hours behind rests three times faster.
+
+SERVING A LORD (Freelancer): two players serving the same lord fight beside him together: when he
+  goes into a field battle the soldier menu opens - "CoopWorld: fight beside your commander".
 
 JOINT BATTLES (multiplayer server):
   1. The host starts a second Warband window (CoopWorld) and fights in it: Multiplayer -
      Host a game, game type Battle, any field map, 0 bots. The bridge finds it by itself.
-  2. Every friend joins that server from a second Warband window (CoopWorld):
-     the LAN server list, or Favorites with the host's address, e.g. 26.x.x.x:7240.
-     host.bat and join.bat ask for your multiplayer name (kept in mp_name.txt): join the battle
-     server under exactly that name, and the bridge puts you on your side and gives you command of
-     your soldiers. The bridge window tells who it recognised there and who it did not.
-     Every player needs a different name (friends' heroes come from the host's save, same name).
+  2. Every friend joins it from a second Warband window: the LAN list, or Favorites with the
+     host's address, e.g. 26.x.x.x:7240 - under exactly the multiplayer name given to
+     host.bat / join.bat. Every player needs a different name.
   3. In an encounter: "CoopWorld: fight together with your friends". Players nearby are invited;
-     the battle server restarts its round with the campaign's armies. Switch to that window.
-  4. Meeting another player's party: "CoopWorld: fight this player" (that player cannot decline).
-  5. When one side is wiped out, the losses go back to the campaign (half of a player's fallen
-     are wounded); a defeated world party is gone for everybody. The world stands still meanwhile.
-  JOINT SIEGES: in the siege menu (ladders or a tower ready) - "CoopWorld: storm the walls together".
-  The battle server switches to Siege on a castle map: the garrison (team 1) holds the walls, the
-  players (team 2) storm them. Taken by the flag or when the garrison falls: the host takes the
-  center as in Native; a client's kingdom gets it (a client without a kingdom cannot storm).
-  JOINT DEFENCE: when a world army besieges a center of your side, everybody is told. In it or at
-  its gates: "CoopWorld: defend the walls together" - the players and the garrison (team 1) hold
-  the walls, the besieging lord and his army (team 2) storm them. Held: the besiegers lose their
-  fallen. Lost: the center goes to their kingdom and the defenders are captured, as in Native.
-  You fight as your hero: equipment (weapons, armour, horse), attributes, combat skills and
-  weapon proficiencies go to the battle server (up to 4 heroes a battle). Afterwards the hero and
-  the troops gain experience for the fallen enemies (the losers a third). Weapon proficiencies grow
-  as in a Native battle: by the hits and damage you did with each kind of weapon, slower the better
-  you are, within the weapon master limit. Companions fight as bots with their own gear and skills,
-  under your command; a fallen companion comes back badly wounded. The winners share the fallen
-  enemies' spoils (the loot screen). The field map fits the terrain the battle was met on.
-  The hero keeps the health the battle left (a fallen hero comes back badly wounded). A player
-  defeated by a party of the world is taken prisoner as in Native: troops and companions become
-  its prisoners. A player defeated by another player is not captured, but the surviving troops
-  become the winner's prisoners.
+     the battle server restarts its round with the campaign's armies. Sides and heroes are given
+     by the server (if a team window opens all the same, close it with Esc).
+  4. The battle lasts until one side has nobody left, bots and heroes. A fallen hero does not come
+     back into that battle. The losses go back to the campaign.
+  You fight as your hero: equipment, attributes, combat skills, proficiencies and health (now and
+  at most) go to the battle server; health, experience and proficiency gains come back.
+  Companions fight as bots under your command. Big armies are scaled down to 150 bots.
+  JOINT SIEGES: in the siege menu - "CoopWorld: storm the walls together". The battle server
+  switches to Siege on a castle map: the garrison (team 1) holds the walls, the players (team 2)
+  storm them. Bots fight on foot; the server raises the ladders and sends storming bots stuck
+  under a wall to them. JOINT DEFENCE: "CoopWorld: defend the walls together" when a world army
+  besieges a center of your side.
 
-FACTIONS: each player may swear fealty to a kingdom by the usual talk with its king or a lord.
-  The world server knows whom each player serves: that kingdom's lords leave the player alone,
-  its enemies hunt the player, the others see the player's faction colour on the map. Players of
-  kingdoms at war fight each other in joint battles; a call to arms against your allies is declined
-  by itself. Fiefs go only to the host for now: a client is told so, and keeps oath and rank.
+FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its
+  enemies hunt the player. Fiefs and Diplomacy's diplomacy go only to the host for now.
 
-PLAYERS TOGETHER: meeting another player's party on the map you may ask to join it (that player
-  accepts or declines; a follower follows the leader on the map and is called into all the leader's
-  joint battles; leave in the camp menu, where the leader may release followers too), or give that
-  player troops (chosen on the exchange screen; declined troops come back).
+YOUR HERO BETWEEN SESSIONS: the host's bridge keeps each player's hero (profiles.json next to
+  host.bat) under the multiplayer name given to join.bat and puts it back on joining. Keep the name.
 
-YOUR HERO BETWEEN SESSIONS: a friend loads the host's save every time but plays their own hero: the
-  host's bridge keeps each player's hero (profiles.json next to host.bat) under the multiplayer name
-  given to join.bat - gold, experience, renown, honor, allegiance, attributes, skills, proficiencies,
-  inventory, troops (wounded too), prisoners, map position - and puts it back on joining. Keep the
-  same name. Experience only grows (the level stays at least the host's hero's); unspent points are
-  not kept. Clients now get the weekly budget (wages, income) too and can read books.
+Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op", then close the bridge window.
 
-Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op" in your game, then close the bridge window.
-
-Something went wrong: after the session the host double-clicks check_logs.bat - a report on the
-session (battles, who went quiet when, what did not arrive), on screen and in
-Documents\\CoopWorld\\report.txt (the report is in Russian).
+Something went wrong: after the session the host double-clicks check_logs.bat - a report in
+Documents\\CoopWorld\\report.txt (in Russian). Post it on Discord ({DISCORD}) with rgl_log.txt from
+the Warband folder (copied before the game restarts) and what happened, and to whom.
 '''
-
 
 BOM = "\ufeff"
 
@@ -606,24 +718,38 @@ def build(name, files, russian=False):
                 z.write(f, f"{name}/CoopWorld/languages/ru/{f.name}")
             for f in sorted(RUSSIFIER_UI.glob("*.csv")):
                 z.write(f, f"{name}/languages/ru/{f.name}")
+        for f in prereqs():  # installers are compressed already
+            z.write(f, f"{name}/Programs/{f.name}", compress_type=zipfile.ZIP_STORED)
     print(f"{out} ({out.stat().st_size // 1024} KB)")
+
+
+def prereqs():
+    """The installers for the Programs folder: PowerShell, Python, Radmin VPN (vendor/prereqs)."""
+    found = []
+    for pattern in ("PowerShell*.exe", "python-*.exe", "Radmin_VPN*.exe"):
+        files = sorted(PREREQS.glob(pattern))
+        if files:
+            found.append(files[-1])
+        else:
+            print(f"warning: no {pattern} in {PREREQS}: the package has no installer for it")
+    return found
 
 
 def main():
     if not (MODULE / "scripts.txt").exists():
         raise SystemExit("build the module first: python build.py")
     (ROOT / "dist").mkdir(exist_ok=True)
-    day = f"{datetime.date.today():%Y%m%d}"
+    base = f"{PROJECT.replace(' ', '-')}-{VERSION}"
     launchers = {lang: {"host.ps1": BOM + launcher("host", lang), "join.ps1": BOM + launcher("join", lang),
                         "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join"),
                         "check_logs.ps1": BOM + check_logs(lang), "check_logs.bat": launcher_bat("check_logs")}
                  for lang in ("en", "ru")}
-    build(f"CoopWorld-{day}", {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
+    build(base, {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
                                "README.txt": README, "START HERE.txt": START_HERE, **launchers["en"]})
     if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
         raise SystemExit("no Russian: put the russifier in vendor/l10n_ru and run python tools/make_ru.py")
     # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
-    build(f"CoopWorld-ru-{day}", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
+    build(f"{base}-ru", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
                                   "README.txt": BOM + README_RU, "НАЧНИТЕ ЗДЕСЬ.txt": BOM + START_HERE_RU,
                                   **launchers["ru"]}, russian=True)
 

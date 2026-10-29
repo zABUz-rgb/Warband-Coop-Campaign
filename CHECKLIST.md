@@ -79,4 +79,9 @@ Open (build 912679594, not confirmed yet) - after the first joint siege test (15
 - a hero who falls stays out of the battle ("... hero has fallen and does not come back"), Siege
   and Battle alike (Native's spawn checks slot_player_coop_fallen); it comes back to the campaign
   wounded.
+Open (Warband Coop Campaign 1.0, packages Warband-Coop-Campaign-1.0[-ru].zip, build 912679594):
+- install.bat first lists PowerShell 7, Python 3 and Radmin VPN (found or not) and, with one answer,
+  runs the missing installers from the package's Programs folder (Python passive, with PATH);
+- the project is named Warband Coop Campaign; the module, its menus and Documents\CoopWorld keep the
+  name CoopWorld (saves and kept heroes of earlier builds stay usable).
 A weak PC with both Warband windows open may run out of memory.
