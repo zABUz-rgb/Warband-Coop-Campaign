@@ -533,14 +533,18 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   второй солдат, выбравший этот пункт, попадает в тот же бой. Лорд сохраняет уцелевших.
 
 СОВМЕСТНЫЕ БОИ (сервер мультиплеера)
+  Ограничение - из-за движка игры, есть возможность совместного сражения ТОЛЬКО через второе окно
+  игры, соответственно, перед каждым боем вам потребуется либо каждый раз запустить второе окно
+  игры для захода в бой, либо держать второе окно постоянно открытым на сетевом бое.
   Бой из кампании можно провести на сервере мультиплеера Warband: каждый игрок сражается сам
   своим героем, его отряды - боты под его командованием.
   Важно:
   - У каждого игрока своя лицензия Warband (см. "Что нужно").
-  - Оба окна Warband - в оконном режиме (Start windowed).
   - Сервер боя создавайте в только что запущенном окне Warband, где не загружалась кампания.
   1. Хост запускает второе окно Warband (модуль Warband Coop Campaign) - сервер боя, и сам в нём сражается:
-       Мультиплеер - Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0.
+       Мультиплеер - Создать игру, режим "Битва" (Battle), карта - любое поле, боты - 0. Далее
+       выбираете сторону и снаряжение (без разницы какое и какую сторону) и забываете об этом
+       окне до сражения.
      Мост сам находит этот сервер; без него кнопка совместного боя скажет, что сервера нет.
   2. Каждый друг заходит на этот сервер из второго окна Warband (модуль Warband Coop Campaign):
        Мультиплеер - список серверов (локальная сеть) или Избранное с адресом хоста, например 26.x.x.x:7240.
@@ -672,8 +676,12 @@ SERVING A LORD (Freelancer): two players serving the same lord fight beside him 
   goes into a field battle the soldier menu opens - "CoopWorld: fight beside your commander".
 
 JOINT BATTLES (multiplayer server):
+  A limit of the game's engine: joint battles are fought ONLY in a second game window. So before
+  each battle either start a second window to join the battle, or keep the second window open on
+  the battle server all the time.
   1. The host starts a second Warband window (Warband Coop Campaign) and fights in it: Multiplayer -
-     Host a game, game type Battle, any field map, 0 bots. The bridge finds it by itself.
+     Host a game, game type Battle, any field map, 0 bots. Then pick any side and any equipment
+     and forget about that window until the battle. The bridge finds it by itself.
   2. Every friend joins it from a second Warband window: the LAN list, or Favorites with the
      host's address, e.g. 26.x.x.x:7240 - under exactly the multiplayer name given to
      host.bat / join.bat. Every player needs a different name.
