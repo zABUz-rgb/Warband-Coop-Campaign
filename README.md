@@ -97,7 +97,8 @@ python tools/make_package.py
 PowerShell (Microsoft), Python (Python Software Foundation), Radmin VPN (Famatech).
 
 ## Лицензия
-- Код, написанный для этого проекта (`src/coop`, код слияния, `tools/`, `build.py`, `lang/ru.csv`), — MIT.
+- Код, написанный для этого проекта (`src/coop`, код слияния, `tools/`, `build.py`, `lang/ru.csv`), — MIT,
+  текст лицензии в файле [LICENSE](LICENSE).
 - Остальное (Module System, Diplomacy, Freelancer, русификаторы, текстуры и сцены, установщики
   программ) принадлежит авторам и распространяется на их условиях; MIT на это не распространяется.
 - Мод бесплатный и некоммерческий. Если вы автор чего-то из перечисленного и против — напишите
