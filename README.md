@@ -32,7 +32,7 @@ Mount & Blade и Mount & Blade: Warband — товарные знаки TaleWorl
 
 ## Установка (игрокам)
 1. Скачайте `Warband-Coop-Campaign-1.0-ru.zip` (или английский `Warband-Coop-Campaign-1.0.zip`):
-   [Releases на GitHub](https://github.com/zABUz-rgb/Warband-Coop-Campaign/releases/tag/v1.0) или Яндекс Диск — [русская](https://disk.yandex.ru/d/EY9Jj7cvV33sGg), [английская](https://disk.yandex.ru/d/H7cLrsjGl4z6CQ).
+   [Releases на GitHub](https://github.com/zABUz-rgb/Warband-Coop-Campaign/releases/tag/v1.0) или Яндекс Диск — [русская](https://disk.yandex.ru/d/xfwbftA4KaWosg), [английская](https://disk.yandex.ru/d/xCwTJxhNB3HDxg).
    Всем игрокам нужен один и тот же пакет.
 2. Распакуйте весь архив, лучше всего — в папку с игрой, и запустите `install.bat`. Он предложит
    установить недостающие программы из папки `Programs` (Python 3, Radmin VPN), найдёт
