@@ -255,6 +255,30 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
+  # script_coop_client_drop_gone: the mirror just met, if the server dropped it during the meeting.
+  # Kept till now and told only once, it stood on the player's spot and attacked again and again,
+  # each time a new joint battle against a party the world no longer had.
+  ("coop_client_drop_gone",
+   [
+     (try_begin),
+       (ge, "$g_encountered_party", first_dynamic),
+       (party_is_active, "$g_encountered_party"),
+       (party_slot_eq, "$g_encountered_party", slot_party_coop_gone, 1),
+       (party_get_slot, ":sid", "$g_encountered_party", slot_party_coop_sid),
+       (val_sub, ":sid", 1),
+       (party_set_slot, "p_coop_map", ":sid", 0),
+       # no report of it: the server knows, and its number may be another party's by now
+       (party_get_slot, ":n", "p_coop_enc", 0),
+       (try_for_range, ":k", 0, ":n"),
+         (store_mul, ":base", ":k", 3),
+         (val_add, ":base", 1),
+         (party_slot_eq, "p_coop_enc", ":base", "$g_encountered_party"),
+         (party_set_slot, "p_coop_enc", ":base", -1),
+       (try_end),
+       (remove_party, "$g_encountered_party"),
+     (try_end),
+    ]),
+
   # script_cf_coop_mirror_kept: arg1 = a mirror; succeeds while this game still needs it although
   # the server dropped it: the party it is meeting, until the encounter's result went out (gone, it
   # would be reported destroyed), or the captor the camera follows in captivity
@@ -677,6 +701,7 @@ def net_scripts(first_dynamic):
        (try_begin),
          (eq, ":tmpl", coop_net_removed),
          (eq, ":kept", 1),
+         (party_set_slot, ":cid", slot_party_coop_gone, 1),
        (else_try),
          (eq, ":tmpl", coop_net_removed),
          (try_begin),

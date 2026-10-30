@@ -103,6 +103,7 @@ coop_give_distance = 3          # map distance up to which troops are given from
 coop_own_troops_frames = 120     # client trigger runs between reports of the player's own troops
 coop_srv_troops_radius = 1500    # map units * 100: the server reports troops of parties this close to the puppet
 slot_party_coop_seen = 302       # on a client mirror: the request number of its last update from the server
+slot_party_coop_gone = 303       # on a client mirror: the server dropped it while this game still needed it
 coop_mirror_stale_requests = 900  # a mirror the server has not mentioned for this many requests is gone there
 coop_mirror_sweep_frames = 600    # client trigger runs between looking for such mirrors
 slot_party_coop_sid = 300        # on a client mirror: server party id + 1 (Native party slots end at 249)

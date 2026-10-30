@@ -372,6 +372,12 @@ def net_triggers(first_dynamic):
        (assign, "$coop_pause_reminder", 0),
        (call_script, "script_coop_client_pause_message", "$coop_pause_slot", "$coop_pause_why"),
      (try_end),
+     # the meeting is over (busy 1: it may be starting this very frame)
+     (try_begin),
+       (map_free),
+       (neq, "$coop_busy", 1),
+       (call_script, "script_coop_client_drop_gone"),
+     (try_end),
      # a mirror the server has not mentioned for a long while is gone there (destroyed while this
      # game was away, or a party of the loaded save the world no longer has): it goes here too
      (val_add, "$coop_sweep_frames", 1),

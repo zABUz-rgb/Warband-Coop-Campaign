@@ -832,12 +832,14 @@ mp_campaign_menus = [
        (eq, "$coop_loot_step", 2),
        (assign, "$coop_loot_step", 0),
        (leave_encounter),
+       (call_script, "script_coop_client_drop_gone"),
        (change_screen_return),
      (try_end),
    ],
    [
      ("coop_loot_leave", [], "Back to the map.",
-      [(assign, "$coop_loot_step", 0), (leave_encounter), (change_screen_map)]),
+      [(assign, "$coop_loot_step", 0), (leave_encounter), (call_script, "script_coop_client_drop_gone"),
+       (change_screen_map)]),
    ]),
 
   ("coop_mp_wait", 0,
@@ -890,6 +892,7 @@ mp_campaign_menus = [
       [
         (call_script, "script_coop_client_mp_leave_battle"),
         (leave_encounter),
+        (call_script, "script_coop_client_drop_gone"),
         # change_screen_map, not _return: after the spoils' loot screen this menu's return did nothing
         (change_screen_map),
       ]),
