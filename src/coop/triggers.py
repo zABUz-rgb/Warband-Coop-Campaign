@@ -408,7 +408,7 @@ def net_triggers(first_dynamic):
            (party_slot_eq, "p_coop_map", ":sid", ":mapped"),
            (party_set_slot, "p_coop_map", ":sid", 0),
          (try_end),
-         (remove_party, ":party_no"),
+         (call_script, "script_coop_client_remove_mirror", ":party_no"),
          (val_add, "$coop_net_swept", 1),
        (try_end),
      (try_end),

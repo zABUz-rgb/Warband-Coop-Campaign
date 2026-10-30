@@ -37,6 +37,11 @@ captor that is gone. Ctrl+Space on a client in captivity hung the game once (19:
 Confirmed (build 139875334, tag `stable-2026-10-28-b`, packages kept in dist/stable): the friend's game
 no longer hangs near midnight of its game time (a mirror is no longer attached in a loop of parties
 or to a non-center static party). The bridge logs a quiet player's last request and replies.
+Open (next build, not confirmed yet): session 19:16, 30.10 - a client on the map hung again (picture
+frozen, process running, no error) 7 s after the world ran on, the second window stayed on the server.
+The host's save only coincided: the game went quiet 4 s before the save was sent. Cause not proven.
+A client now lets go of a mirror's attached parties before removing it (an old script error showed
+parties attached to a removed one). If it hangs again: a dump (Task Manager - Create dump file).
 Open (build 590170735, not confirmed yet):
 - serving a lord (Freelancer) on a client: no SCRIPT ERROR "Invalid Party ID" in
   coop_client_apply_positions (a mirror destroyed here no longer stands for the army it was in);

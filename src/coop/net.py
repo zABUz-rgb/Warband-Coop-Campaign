@@ -255,6 +255,19 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
+  # script_coop_client_remove_mirror: arg1 = a mirror. The parties attached to it are let go first:
+  # they would stay attached to a party that is gone, and to whatever gets its id next
+  ("coop_client_remove_mirror",
+   [
+     (store_script_param, ":party_no", 1),
+     (party_get_num_attached_parties, ":n", ":party_no"),
+     (try_for_range_backwards, ":k", 0, ":n"),
+       (party_get_attached_party_with_rank, ":child", ":party_no", ":k"),
+       (party_detach, ":child"),
+     (try_end),
+     (remove_party, ":party_no"),
+    ]),
+
   # script_coop_client_drop_gone: the mirror just met, if the server dropped it during the meeting.
   # Kept till now and told only once, it stood on the player's spot and attacked again and again,
   # each time a new joint battle against a party the world no longer had.
@@ -275,7 +288,7 @@ def net_scripts(first_dynamic):
          (party_slot_eq, "p_coop_enc", ":base", "$g_encountered_party"),
          (party_set_slot, "p_coop_enc", ":base", -1),
        (try_end),
-       (remove_party, "$g_encountered_party"),
+       (call_script, "script_coop_client_remove_mirror", "$g_encountered_party"),
      (try_end),
     ]),
 
@@ -707,7 +720,7 @@ def net_scripts(first_dynamic):
          (try_begin),
            (ge, ":cid", first_dynamic),
            (party_is_active, ":cid"),
-           (remove_party, ":cid"),
+           (call_script, "script_coop_client_remove_mirror", ":cid"),
          (try_end),
          (party_set_slot, "p_coop_map", ":sid", 0),
          (party_set_slot, "p_coop_dead", ":sid", 0),
@@ -732,7 +745,7 @@ def net_scripts(first_dynamic):
            (party_is_active, ":cid"),
            (neq, ":cid", "p_main_party"),
            (eq, ":kept", 0),
-           (remove_party, ":cid"),
+           (call_script, "script_coop_client_remove_mirror", ":cid"),
          (try_end),
          (try_begin),
            (eq, ":have", 0),
