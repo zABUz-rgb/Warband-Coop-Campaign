@@ -113,7 +113,7 @@ function Install-Programs {{
     return
   }}
   $answer = Read-Host "{programs_ask}"
-  if (-not ($answer -eq "" -or $answer -match '^[yYдД]')) {{ Write-Host "{programs_skipped}"; Write-Host ""; return }}
+  if (-not ($answer -eq "" -or $answer -match '^[yYдДнН]')) {{ Write-Host "{programs_skipped}"; Write-Host ""; return }}
   foreach ($p in $missing) {{
     $file = Get-ChildItem $programs -Filter $p.File | Select-Object -First 1
     if (-not $file) {{ Write-Host ("  " + $p.Name + ": {program_no_file} - " + $p.Url) -ForegroundColor Yellow; continue }}
@@ -144,7 +144,7 @@ try {{
   if (-not $Warband) {{
     foreach ($candidate in @(Find-Warband)) {{
       $answer = Read-Host "{found_ask}"
-      if ($answer -eq "" -or $answer -match '^[yYдД]') {{ $Warband = $candidate; break }}
+      if ($answer -eq "" -or $answer -match '^[yYдДнН]') {{ $Warband = $candidate; break }}
     }}
   }}
   if (-not $Warband) {{
@@ -327,7 +327,7 @@ JOIN_BODY = r"""  $hostAddress = $First
     Write-Host ""
     Write-Host "{lan_hint}" -ForegroundColor Cyan
     $answer = Read-Host "{lan_ask}"
-    if ($answer -eq "" -or $answer -match '^[yYдД]') {{
+    if ($answer -eq "" -or $answer -match '^[yYдДнН]') {{
       if (Get-Process mb_warband -ErrorAction SilentlyContinue) {{
         Write-Host "{lan_close}" -ForegroundColor Yellow
       }} else {{

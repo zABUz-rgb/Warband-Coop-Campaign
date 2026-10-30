@@ -958,6 +958,34 @@ def test_host_plays_on_server():
     check(w.server_report([], None, 2.0)[0] is False, "but never the server itself: it is the host's own game")
 
 
+def test_lan_search():
+    # session 13:50, 30.10: a new friend's rgl_config.txt had look_for_server_on_this_machine = 0; the
+    # second window saw no server, and nothing in join.bat's window said why
+    with tempfile.TemporaryDirectory() as d:
+        config = Path(d) / "rgl_config.txt"
+        assert cb.lan_search_on(config) is None
+        config.write_text("first_time = 0\nmax_number_of_connections = 16\n", encoding="utf-8")
+        assert cb.lan_search_on(config) is None
+        config.write_text("look_for_server_on_this_machine = 1\n", encoding="utf-8")
+        assert cb.lan_search_on(config) is True
+        config.write_text("first_time = 0\nlook_for_server_on_this_machine = 0\ngrass_density = 50\n", encoding="utf-8")
+        assert cb.lan_search_on(config) is False
+        lines = []
+        stop = threading.Event()
+        watch = threading.Thread(target=cb.watch_lan_search, args=(config, lines.append, 0.02, stop), daemon=True)
+        watch.start()
+        time.sleep(0.15)
+        assert len(lines) == 1 and "NOT see" in lines[0] and "НЕ увидит" in lines[0], lines
+        config.write_text("look_for_server_on_this_machine = 1\n", encoding="utf-8")
+        time.sleep(0.15)
+        assert len(lines) == 2 and "is on now" in lines[1], lines
+        config.write_text("look_for_server_on_this_machine = 0\n", encoding="utf-8")
+        time.sleep(0.15)
+        stop.set()
+        watch.join(1)
+        assert len(lines) == 3 and "NOT see" in lines[2], lines
+
+
 def test_host_address():
     # session 19:17, 29.10: join.bat with a mistyped address - "getaddrinfo failed" over and over,
     # and the battle relay's thread died with a traceback
@@ -983,7 +1011,8 @@ def test_host_address():
     for i in range(3):
         window.sendto(b"look %d" % i, ("127.0.0.8", 18100))
     time.sleep(0.5)
-    check(len(relay_threads) == 1 and relay_threads[0].is_alive(), "the relay goes on after the failed links")
+    check(len(relay_threads) == 2 and all(t.is_alive() for t in relay_threads),  # the datagrams, the option's watch
+          "the relay goes on after the failed links")
     window.close()
     game.close()
     unreachable = [s for s in lines if "cannot reach the host's bridge" in s]
@@ -1089,4 +1118,5 @@ if __name__ == "__main__":
     test_copy_of_the_hosts_save()
     test_battle_relay()
     test_host_address()
+    test_lan_search()
     print("ALL OK")

@@ -2070,6 +2070,41 @@ def serve_battle_hub(addr, key, port, source, log):
     return hub
 
 
+def lan_search_on(config):
+    """Warband's look_for_server_on_this_machine in its rgl_config.txt: True, False, or None when
+    the file or the line cannot be read."""
+    try:
+        text = Path(config).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        name, _, value = line.partition("=")
+        if name.strip() == "look_for_server_on_this_machine":
+            return value.strip() != "0"
+    return None
+
+
+def watch_lan_search(config, log, every=10, stop=None):
+    """Off, the second window never sends the bridge a thing and the player only sees an empty
+    list: says so in the bridge's window, at once and again whenever a closing Warband turns it off."""
+    told = False
+    while True:
+        on = lan_search_on(config)
+        if on is False and not told:
+            log("battle relay: look_for_server_on_this_machine = 0 - the second window will NOT see the battle "
+                "server. Close every Warband window, run join.bat again and agree to turn it on / "
+                "ВЫКЛЮЧЕНО: второе окно НЕ увидит сервер боя. Закройте все окна Warband, запустите join.bat "
+                "снова и согласитесь включить")
+        elif on and told:
+            log("battle relay: look_for_server_on_this_machine is on now; start Warband again if it was open")
+        if on is not None:
+            told = not on
+        if stop is not None and stop.wait(every):
+            return
+        if stop is None:
+            time.sleep(every)
+
+
 def serve_battle_join(local, hub_addr, key, log):
     """The friend's side: the second Warband window finds and joins the battle server at `local`;
     its datagrams go to the host's bridge with the key's tag, the answers come back."""
@@ -2135,6 +2170,8 @@ def serve_battle_join(local, hub_addr, key, log):
     log(f"battle relay: the battle server waits for the second Warband window at {local[0]}:{local[1]}: "
         "Multiplayer - Join a game - Local area network (needs look_for_server_on_this_machine = 1 "
         "in Documents\\Mount&Blade Warband\\rgl_config.txt)")
+    config = documents_dir() / "Mount&Blade Warband" / "rgl_config.txt"
+    threading.Thread(target=watch_lan_search, args=(config, log), daemon=True).start()
     return game
 
 
