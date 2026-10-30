@@ -2102,18 +2102,31 @@ def serve_battle_hub(addr, key, port, source, log):
     return hub
 
 
-def lan_search_on(config):
-    """Warband's look_for_server_on_this_machine in its rgl_config.txt: True, False, or None when
-    the file or the line cannot be read."""
+def rgl_setting_on(config, setting):
+    """A setting of Warband's rgl_config.txt: True, False, or None when the file or the line cannot
+    be read."""
     try:
         text = Path(config).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
     for line in text.splitlines():
         name, _, value = line.partition("=")
-        if name.strip() == "look_for_server_on_this_machine":
+        if name.strip() == setting:
             return value.strip() != "0"
     return None
+
+
+def lan_search_on(config):
+    return rgl_setting_on(config, "look_for_server_on_this_machine")
+
+
+def tell_full_screen(config, log):
+    """Two full-screen Warband windows hang when switching back after a joint battle (found 28.10):
+    the setting stays the player's, the bridge's window says so."""
+    if rgl_setting_on(config, "start_windowed") is False:
+        log("battle relay: Warband is set to full screen - two full-screen windows can hang. Turn on Start "
+            "windowed in the launcher (Configure) / Warband запускается на весь экран: два полноэкранных окна "
+            "могут зависать. Включите Start windowed в лаунчере (Configure)")
 
 
 def watch_lan_search(config, log, every=10, stop=None):
@@ -2204,6 +2217,7 @@ def serve_battle_join(local, hub_addr, key, log):
         "in Documents\\Mount&Blade Warband\\rgl_config.txt)")
     config = documents_dir() / "Mount&Blade Warband" / "rgl_config.txt"
     threading.Thread(target=watch_lan_search, args=(config, log), daemon=True).start()
+    tell_full_screen(config, log)
     return game
 
 

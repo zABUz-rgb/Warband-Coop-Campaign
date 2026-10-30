@@ -984,6 +984,16 @@ def test_lan_search():
         stop.set()
         watch.join(1)
         assert len(lines) == 3 and "NOT see" in lines[2], lines
+        # session 20:10, 30.10: the friend's game hung with start_windowed = 0
+        told = []
+        cb.tell_full_screen(config, told.append)
+        assert told == [], told
+        config.write_text("start_windowed = 1\n", encoding="utf-8")
+        cb.tell_full_screen(config, told.append)
+        assert told == [], told
+        config.write_text("start_windowed = 0\n", encoding="utf-8")
+        cb.tell_full_screen(config, told.append)
+        assert len(told) == 1 and "full screen" in told[0] and "Start windowed" in told[0], told
 
 
 def test_no_enemy_left():

@@ -1031,6 +1031,19 @@ def client_map_tick():
       (map_free),
       (call_script, "script_coop_client_mp_capture"),
     (try_end),
+    # the world is held: a click on the map is cancelled. At 1% speed the player hardly moved, but
+    # a player on the move keeps the clock running: the pause was only on the screen (session
+    # 20:19, 30.10: 11 game hours a minute on a client while the world stood still)
+    (try_begin),
+      (eq, "$coop_world_paused", 1),
+      (map_free),
+      (neq, "$freelancer_state", 1),
+      (neq, "$g_player_is_captive", 1),
+      (eq, "$coop_leader", 0),
+      (party_get_attached_to, ":attached_to", "p_main_party"),
+      (lt, ":attached_to", 0),
+      (party_set_ai_behavior, "p_main_party", ai_bhvr_hold),
+    (try_end),
   ]
 
 

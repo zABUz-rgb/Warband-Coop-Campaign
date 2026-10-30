@@ -37,7 +37,13 @@ captor that is gone. Ctrl+Space on a client in captivity hung the game once (19:
 Confirmed (build 139875334, tag `stable-2026-10-28-b`, packages kept in dist/stable): the friend's game
 no longer hangs near midnight of its game time (a mirror is no longer attached in a loop of parties
 or to a non-center static party). The bridge logs a quiet player's last request and replies.
-Open (next build, not confirmed yet): session 19:16, 30.10 - a client on the map hung again (picture
+Open (next build, not confirmed yet): session 20:10, 30.10 (build 282377703) - a client hung again at
+20:37:28 and detaching mirrors did not stop it. Both hangs of 30.10 came right after a 5|0 reply (the
+world runs again; such a reply comes 1 time in 50 otherwise); that friend's Warband runs full screen
+(2560x1440, start_windowed 0) on 4 GB, 688 MB free when its log began. join.bat now warns of it.
+While the world is held a click on the map is cancelled (party_set_ai_behavior on the hero, not tried
+in game): the report's "cli" must stand still while PAUSED with a client on the map, it ran 11 h/min.
+Open: session 19:16, 30.10 - a client on the map hung again (picture
 frozen, process running, no error) 7 s after the world ran on, the second window stayed on the server.
 The host's save only coincided: the game went quiet 4 s before the save was sent. Cause not proven.
 A client now lets go of a mirror's attached parties before removing it (an old script error showed
