@@ -22,7 +22,7 @@ coop_build_id = _build_id()
 coop_battle_prep_seconds = 10
 
 # World pace: party speed in percent (100 = Native)
-coop_world_speed_percent = 80
+coop_world_speed_percent = 100
 
 # Bandit party templates: troop stack sizes in percent (100 = Native)
 coop_bandit_size_percent = 50
@@ -80,7 +80,7 @@ coop_net_offset = 100000        # coordinates come back shifted so they are neve
 coop_net_removed = 9999         # template value meaning "this party is gone on the server"
 coop_net_batch_near = 6         # parties near the client's puppet per server report
 coop_net_batch_far = 6          # other parties per server report, round robin (URL length)
-coop_net_near_radius = 3000     # map units * 100: "near the puppet"
+coop_net_near_radius = 4000     # map units * 100: "near the puppet"
 coop_net_max_entries = 17       # entries in one client reply: 3 + 7 * 17 numbers <= 128 registers
 coop_net_resend_frames = 200    # trigger runs to wait for a lost reply
 coop_net_lost_replies = 10      # client requests in a row without an answer from the host: the link is lost
@@ -91,7 +91,7 @@ coop_world_time_speed = 1        # rest time speed; Native's "Wait here" uses 5,
 coop_client_idle_frames = 30     # map frames without moving before the client rests
 coop_mirror_snap = 300           # a mirror further than this (map units * 100) from the server's position
                                  # walks to that position to catch up instead of to its target
-coop_mirror_jump = 2000          # further than this it jumps there at once
+coop_mirror_jump = 1000          # further than this it jumps there at once
 coop_mirror_still = 50           # a target this close to the party's position: it stays put
 
 # Battles and pause

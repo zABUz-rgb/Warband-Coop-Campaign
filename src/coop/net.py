@@ -1119,6 +1119,7 @@ def net_reply_handler():
       (else_try),
         (eq, ":kind", 23),
         (eq, "$coop_role", coop_role_client),
+        (assign, "$coop_profile_frames", coop_profile_period_frames), #the hero goes to the host now, with the save
         (display_message, "@CoopWorld: the host saved the game. Your copy of the world is updated: next time load it to start from there (your hero comes back from the host).", 0x66CCFF),
       (else_try),
         (eq, ":kind", 5),

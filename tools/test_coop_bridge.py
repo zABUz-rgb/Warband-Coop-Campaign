@@ -915,7 +915,7 @@ def test_joint_battle_decline_cancel_pvp():
     req(w, "a", now=0.0, me=[(31, 5)], name="Ivan")
     req(w, "b", x=100, now=0.0, me=[(33, 6)], name="Olga")
     w.mp_request(0, 0, -1, {}, {}, 0.0)
-    req(w, "a", now=1.0, busy=True, mp=mp(1, sid=600))
+    req(w, "a", now=1.0, busy=True, mp=mp(1, sid=600, troops=[(40, 10)]))
     bid = w.battle.bid
     req(w, "b", x=100, now=1.1)
     req(w, "b", x=100, now=1.2, mp=mp(4, bid))
@@ -984,6 +984,54 @@ def test_lan_search():
         stop.set()
         watch.join(1)
         assert len(lines) == 3 and "NOT see" in lines[2], lines
+
+
+def test_no_enemy_left():
+    # session 16:27, 30.10: serving a lord, the battle after his enemy fell had no enemy in it; the
+    # host left it, the friend waited on an empty field and held the world
+    w = cb.World()
+    lines = []
+    w.log = lines.append
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga"}, 1.0)
+    req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[], hero=HERO))
+    bid = w.battle.bid
+    w.players["a"].mp_out.clear()
+    w.players["b"].mp_out.clear()
+    answer, _ = req(w, "b", x=300, now=3.0, busy=True, mp=mp(3, bid, hero=HERO))
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga"}, 4.0) == [0], "a battle without an enemy never starts")
+    check(w.battle is None and any("no enemy left" in s for s in lines), f"the log says why: {lines[-1:]}")
+    check(w.players["a"].mp_out == [[7, bid, 2, 0]] and [7, bid, 2, 0] in [answer] + w.players["b"].mp_out,
+          f"both players are told the battle is off: {w.players['a'].mp_out}, {answer}")
+
+
+def test_map_of_many_parties():
+    # session 15:49, 30.10: 500 parties, 279 of them "gone" in 40 minutes though alive
+    w = cb.World()
+    w.server_report([(i, 1, 90000, 90000) for i in range(1000, 1500)], None, 0.0)
+    for tick in range(1, 400):  # a report every 0.15 s, the sweep goes on elsewhere
+        w.server_report([(1000 + (tick * 6 + k) % 500, 1, 90000, 90000) for k in range(6)], None, tick * 0.15)
+    check(len(w.parties) == 500 and w.stats["gone"] == 0, "a long sweep of the world loses no party")
+    w2 = cb.World()
+    w2.server_report([(i, 1, 90000, 90000) for i in range(1000, 1500)], None, 0.0)
+    for tick in range(1, 1000):  # the sweep reports only half of them: the others are gone
+        w2.server_report([(1000 + tick * 6 % 250, 1, 90000, 90000)], None, tick * 0.15)
+    check(1400 not in w2.parties, "a party really gone still goes")
+    # the parties on the player's screen all stay fresh, not only the 11 closest
+    w3 = cb.World()
+    w3.server_report([(i, 1, (i - 1000) * 100, 0) for i in range(1000, 1030)]
+                     + [(i, 1, 90000, 0) for i in range(2000, 2100)], None, 0.0)
+    seen, far = set(), set()
+    for _ in range(12):
+        nums, _ = req(w3, now=0.0)
+        if nums[0] == 2:
+            sids = {e[0] for e in entries_of(nums)}
+            check(len(sids) <= cb.MAX_ENTRIES, "a reply stays within its size") if not seen else None
+            seen |= sids & set(range(1000, 1030))
+            far |= sids & set(range(2000, 2100))
+    check(len(seen) == 30, f"everything on the screen is refreshed within a few replies: {len(seen)}")
+    check(far, "the rest of the world still gets its turn")
 
 
 def test_host_address():
@@ -1119,4 +1167,6 @@ if __name__ == "__main__":
     test_battle_relay()
     test_host_address()
     test_lan_search()
+    test_no_enemy_left()
+    test_map_of_many_parties()
     print("ALL OK")

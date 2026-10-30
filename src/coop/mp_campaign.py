@@ -566,6 +566,7 @@ mp_campaign_scripts = [
        (assign, "$coop_mp_target_center", -1),
      (try_end),
      (assign, "$coop_busy", 2), #back on the map: the first map frame ends the battle's hold on the world
+     (assign, "$coop_profile_frames", coop_profile_period_frames), #what the battle changed goes to the host
     ]),
 
   # script_coop_append_s18: reg20 onto s18, after a comma unless arg1 = 1

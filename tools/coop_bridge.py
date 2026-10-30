@@ -154,7 +154,9 @@ MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
 CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
 RENAME_EVERY = 40      # requests between asking a game to rename its hero
 PROFILE_PER_REPLY = 120 # 5 + 120 numbers
-STALE_S = 15.0          # a party not reported for this long is gone
+STALE_S = 15.0          # a party not reported for this long is gone, unless a sweep of the world takes longer
+STALE_SWEEPS = 2.5      # a party missed by this many sweeps of the world server's reports is gone
+FAR_PER_REPORT = 6      # parties of a sweep in one report of the world server (coop_net_batch_far)
 GONE_MEMORY_S = 120.0   # a party reported again this soon after it went stale was not gone (logged)
 SRV_SILENT_S = 2.0      # a world server quiet this long was in a menu: its parties do not age meanwhile
 BUSY_TIMEOUT_S = 1200.0 # a player silent this long (crashed, or gone without bye) no longer pauses
@@ -167,6 +169,9 @@ TIME_EVEN_H = 1         # within this many hours either way the clocks count as 
 TIME_SYNC_MAX_H = 24    # further apart than this something else is wrong (another save): left alone
 MAP_BATTLE_S = 6.0      # a world party reported in a map battle counts as fighting this long
 NEAREST_PER_REPLY = 11
+MAX_ENTRIES = 17        # parties in one reply (coop_net_max_entries)
+CLOSEST_PER_REPLY = 5   # the closest ones, in every reply: they can meet the player
+VIEW_RADIUS = 4000      # map units * 100: the parties a player sees on the map (coop_net_near_radius)
 ROTATING_PER_REPLY = 3
 REMOVALS_PER_REPLY = 3
 RESULT_PAIRS = 53       # troop and prisoner pairs of one battle result: 5 + 3 * 4 + 4 + 1 + 2 * 53 <= 128  # 3 header numbers + 7 per entry must stay within 128 registers
@@ -253,6 +258,7 @@ class Player:
         self.companions_expected = 0
         self.faction = 0        # the kingdom the player serves, 0 none
         self.centers_sent = {}  # center -> (faction, lord, besieger + 1) this player was told
+        self.sent_at = {}       # sid -> this player's request that last carried its position
         self.profile_out = []   # the kept hero, in replies, after joining
         self.profile_in = None  # [seq, total, {offset: values}] the hero coming in
         self.leader = None      # cid of the player whose party this one follows
@@ -319,6 +325,7 @@ class World:
         self.last_srv = None    # when the world server last reported
         self.srv_hours = None   # the world's clock (game hours), as the world server last reported it
         self.map_battles = {}   # sid -> (sid of the party it fights, real time last reported)
+        self.report_gap = 0.1   # seconds between the world server's reports, on average
         self.profiles_path = Path(profiles_path) if profiles_path else None
         self.profiles = {}      # player key (multiplayer name, or hero name) -> the hero's numbers
         self.offers = {}        # id -> (giver cid, receiver cid, stacks): troops on their way
@@ -482,6 +489,8 @@ class World:
             if gap > SRV_SILENT_S:
                 for party in self.parties.values():
                     party[3] += gap
+            elif gap > 0:
+                self.report_gap += (gap - self.report_gap) * 0.05
             for sid in [s for s, when in self.tombstones.items() if now - when > TOMBSTONE_S]:
                 del self.tombstones[sid]
             for entry in entries:
@@ -500,7 +509,10 @@ class World:
                 # the world is held and the server sends no parties: nothing goes stale meanwhile
                 for party in self.parties.values():
                     party[3] = now
-            for sid in [s for s, party in self.parties.items() if now - party[3] > STALE_S]:
+            # 500 parties take the world server longer than STALE_S to report: alive ones went
+            # "gone" and came back (279 times in 40 minutes), their mirrors with them
+            stale = max(STALE_S, STALE_SWEEPS * self.report_gap * len(self.parties) / FAR_PER_REPORT)
+            for sid in [s for s, party in self.parties.items() if now - party[3] > stale]:
                 self._forget(sid, except_cid=None)
                 self.stats["gone"] += 1
                 self.gone_at[sid] = now
@@ -734,14 +746,24 @@ class World:
             out = []
             while p.removed and len(out) < REMOVALS_PER_REPLY:
                 out.append((p.removed.pop(0), REMOVED, 0, 0, 0, 0, 0))
-            chosen = {sid for sid, _ in by_distance[:NEAREST_PER_REPLY]}
-            out += [(sid, e[0], e[1], e[2], e[4], e[5], e[6]) for sid, e in by_distance[:NEAREST_PER_REPLY]]
-            rest = [kv for kv in sorted(self.parties.items()) if kv[0] not in chosen]
+            # the closest, then those on the player's screen that waited longest (only the 11
+            # closest used to be fresh: the others walked to their last target and stood there)
+            closest = by_distance[:CLOSEST_PER_REPLY]
+            in_view = [kv for kv in by_distance[CLOSEST_PER_REPLY:]
+                       if (kv[1][1] - x) ** 2 + (kv[1][2] - y) ** 2 <= VIEW_RADIUS ** 2]
+            room = MAX_ENTRIES - len(out) - len(closest) - ROTATING_PER_REPLY
+            in_view = sorted(in_view, key=lambda kv: p.sent_at.get(kv[0], 0))[:max(0, room)]
+            chosen = closest + in_view
+            taken = {sid for sid, _ in chosen}
+            rest = [kv for kv in sorted(self.parties.items()) if kv[0] not in taken]
             if rest:
+                turn = MAX_ENTRIES - len(out) - len(chosen)
                 start = p.cursor % len(rest)
-                for sid, e in (rest[start:] + rest[:start])[:ROTATING_PER_REPLY]:
-                    out.append((sid, e[0], e[1], e[2], e[4], e[5], e[6]))
-                p.cursor = start + ROTATING_PER_REPLY
+                chosen = chosen + (rest[start:] + rest[:start])[:turn]
+                p.cursor = start + turn
+            for sid, e in chosen:
+                p.sent_at[sid] = p.requests
+                out.append((sid, e[0], e[1], e[2], e[4], e[5], e[6]))
             self.stats["entries_out"] += len(out)
             nums = [2, len(out)]
             for sid, tmpl, ex, ey, tx, ty, att in out:
@@ -942,6 +964,16 @@ class World:
                             key=lambda s: -s[3])[:room]
             stacks += allies + enemy
         stacks = [s for s in stacks if s[3] > 0][:MP_MAX_STACKS]
+        if b.center is None and not any(s[0] != b.player_team for s in stacks):
+            # the enemy fell in the last battle and the lord's fight still shows: with nobody to
+            # beat this battle would never end, and the players in it would wait for good
+            self.log(f"joint battle {b.bid}: no enemy left - there is nothing to fight, the battle is off")
+            for cid in set(b.sides) | b.invited:
+                q = self.players.get(cid)
+                if q is not None:
+                    q.mp_out.append([7, b.bid, 2, 0])
+            self.battle = None
+            return
         total = sum(s[3] for s in stacks)
         scale = min(1.0, MP_MAX_BOTS / total) if total else 1.0
         for s in stacks:
