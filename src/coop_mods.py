@@ -5,8 +5,11 @@
 Each mod package exposes <kind>.merge(list, **extra); they run in the order of MODS.
 """
 import importlib
+import os
 
 MODS = ["dplmc_fix", "freelancer", "coop", "custom_troops"]
+if os.environ.get("COOP_TRAIL") == "1":  # a debug build (python build.py --trail): last, it marks what the others wrote
+  MODS.append("trail")
 
 
 def merge(kind, records, **extra):

@@ -547,6 +547,40 @@ def test_bandits():
     check(any(n[:1] == [27] and n[1] == cb.TELL_BANDITS and n[3] == 40 for n in told), f"the others hear: {told}")
 
 
+def test_trail():
+    w, lines = two_players()
+    with tempfile.TemporaryDirectory() as tmp:
+        path, names = Path(tmp) / "trail.log", Path(tmp) / "trail_names.json"
+        names.write_text('{"100001": "menu camp", "200002": "option camp: leave"}', encoding="utf-8")
+        w.trail = cb.make_trail(path, names)
+        before = list(w.players["a"].recent)
+        reply = cb.handle_request(w, "cli", "/tr?trs=5&tr=100001,200002,", 1.0, cid="a")
+        check(reply == str(cb.TRAIL_ACK), "the trail has a reply of its own, not a game's next step")
+        check(w.players["a"].recent == before, "and is no sign of life: a hang stays a silence")
+        said = path.read_text("utf-8").splitlines()
+        check(said[0].endswith(" a 5 menu camp") and said[1].endswith(" a 6 option camp: leave"), f"named, one a line: {said}")
+        cb.handle_request(w, "cli", "/tr?trs=7&tr=300003", 1.1, cid="b")
+        check(path.read_text("utf-8").splitlines()[-1].endswith(" b 7 300003"), "a number with no name stays a number")
+        cb.handle_request(w, "cli", "/tr?trs=20&tr=100001", 1.2, cid="a")
+        said = path.read_text("utf-8").splitlines()
+        check(said[-2].endswith(" a 7 lost 13"), f"a gap is written down: {said}")
+        size = path.stat().st_size
+        cb.handle_request(w, "cli", "/tr?trs=x&tr=1", 1.3, cid="a")
+        cb.handle_request(w, "cli", "/tr?trs=30&tr=a", 1.3, cid="a")
+        check(path.stat().st_size == size, "what cannot be read writes nothing")
+        relay = cb.Relay(("127.0.0.7", 18093), "secret", lambda text: None, timeout=5.0)
+        relay.trail = cb.make_trail(path, names)
+        started = time.time()
+        check(relay.forward("/tr?trs=1&tr=100001,") == str(cb.TRAIL_ACK) and time.time() - started < 1.0,
+              "a friend's bridge answers by itself, with the host away too")
+        check(path.read_text("utf-8").splitlines()[-1].endswith(" local 1 menu camp"), "and keeps its own copy")
+        cb.serve_http(("127.0.0.9", 18097), lambda t: cb.handle_request(w, "cli", t, time.time(), cid="a"),
+                      lambda text: None, "cli")
+        with urllib.request.urlopen("http://127.0.0.9:18097/tr?trs=40&tr=200002,", timeout=5) as answer:
+            check(answer.read().decode() == str(cb.TRAIL_ACK), "over HTTP, as the game asks")
+        check(path.read_text("utf-8").splitlines()[-1].endswith(" a 40 option camp: leave"), "and written down")
+
+
 def test_army():
     w, lines = two_players()
     check(cb.parse_together({"ag": "3,1,10,20,30"}) == {"army_gear": (3, 1, [10, 20, 30])}, "a soldier's gear is read")
@@ -1739,6 +1773,7 @@ if __name__ == "__main__":
     test_follow()
     test_no_marks()
     test_bandits()
+    test_trail()
     test_army()
     test_treasury()
     test_party_store()

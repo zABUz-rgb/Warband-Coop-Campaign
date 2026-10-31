@@ -91,10 +91,25 @@ python tools/make_ru.py
 python -I tools/test_coop_bridge.py
 python -I tools/test_coop_logs.py
 python -I tools/test_coop_tree.py
+python -I tools/test_check_flow.py
+python -I tools/test_trail.py
 python tools/make_package.py
 ```
 `make_package.py` пишет `dist/<версия>/Warband-Coop-Campaign-<версия>.zip` и `...-ru.zip`.
 `python tools/make_ru.py --missing` покажет новые непереведённые строки.
+
+### Проверки и отладочная сборка
+
+`python build.py` сам запускает две проверки без запуска игры и останавливается, если они нашли ошибку в нашем коде:
+`tools/check_module.py` (блоки try, пустые строки, глобальные переменные) и `tools/check_flow.py` (реплики и меню без
+выхода, разговор без строки для этого персонажа, зацикленные переходы меню, неверное число аргументов, экраны, которые
+нечем закрыть, пустые регистры в текстах, расхождения моста и игры). Находки в коде Diplomacy и Native идут заметками:
+`python tools/check_flow.py --notes`.
+
+`python build.py --trail` собирает отладочную версию (`src/trail`): игра сообщает мосту каждое меню, пункт, реплику, экран
+и таймерный триггер, мост пишет `trail.log`, а `tools/coop_logs.py` показывает последние действия перед молчанием и коды
+вылетов из журнала Windows. Сохранения те же; у сборки свой номер, поэтому мост предупредит, если игроки смешают её с
+обычной. Пакеты для игроков: `python tools/make_package.py --trail` (папка `dist/<версия>-debug`).
 
 ### Мост
 - `tools/coop_bridge.py host --key СЕКРЕТ` — хаб у хоста: сервер мира (127.0.0.1:80), своя игра хоста

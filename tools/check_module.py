@@ -247,7 +247,7 @@ def main():
                     else:
                         read.setdefault(p, where)
     for g, where in sorted(read.items()):
-        if g.startswith("$coop_") and g not in written:
+        if g.startswith(("$coop_", "$custom_")) and g not in written:
             problems.append(f"{g} is read ({where}) but never set")
 
     # 5. the multiplayer scripts against the game's own Native (game/Modules/Native, compiled): the

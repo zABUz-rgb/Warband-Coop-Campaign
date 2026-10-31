@@ -176,6 +176,14 @@ item as it happens):
 - camp: build, seen by both, reopens after a restart, treasury and store inside, John Blackborn's dialog
   in Russian, take down.
 
+Open (the debug build, dist/1.0.1-debug: its game side was compiled, never played):
+- trail.log appears in Documents\Warband Coop Campaign at the host and at the friend, the friend's lines at the host too;
+- menus, options, lines and screens show as they happen, and the regular requests go on as in a plain build
+  (no new silences, joint battles, invitations and the store work);
+- the unverified step: a second request while one is held (a ping in a menu); if requests stall, look there first;
+- a save of the plain build loads in the debug build and back;
+- after a hang, the last actions in report.txt are the real last ones (how many are lost is the question to answer).
+
 Open (1.0.1, third part, nothing of this was played either; a new campaign is needed: 40 new troops):
 - John Blackborn: "Talk" opens his talk at once, in the camp and in a town and a castle of the player's;
   a client with no army hears "nothing I can do"; the talk ends back in the menu it started from;

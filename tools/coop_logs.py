@@ -17,19 +17,25 @@ results. The report goes through the last session (--all: every session in bridg
   - silences: a player's game that stopped asking (a menu, a screen, a hang), with the state it was
     last seen in and the replies it got last, and whether it came back. A game in a menu goes on
     answering (the word alive in the stats line), one that hung does not;
-  - the world's parties (sudden drops), how long the world stood still, the bridge's own errors.
+  - the world's parties (sudden drops), how long the world stood still, the bridge's own errors;
+  - from a debug build (python build.py --trail) trail.log: each player's last actions, the last ones
+    before a silence, and the game's crashes and hangs in Windows' own log, with the code and the offset.
 
 Lines marked !! are problems, ?  worth a look, the rest is what happened. The report is printed
 and written to report.txt next to the logs (FOLDER defaults to Documents\\Warband Coop Campaign).
 """
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 DAY = 86400
 STATS_EVERY_S = 5
+TRAIL_SHOWN = 15        # a player's last actions in the report
+TRAIL_BEFORE = 6        # the last ones before a silence
+FAULT_DAYS = 7          # how far back to read Windows' log
 AFTER_BATTLE_S = 120    # a silence that begins this soon after a player got the result is the battle's
 LONG_SILENCE_S = 120    # a menu this long: worth a look
 PARTY_DROP = 0.05       # this share of the world's parties gone between two stats lines (and 15 at least)
@@ -39,8 +45,9 @@ KINDS = {1: "итог для мира", 2: "позиции", 3: "войска", 
          11: "пленные", 12: "владельцы центров", 13: "штурм", 14: "герой", 15: "предложены войска",
          16: "ответ на войска", 17: "просьба вступить", 18: "ответ на просьбу", 19: "вступил/ушёл",
          20: "отпущен", 21: "добыча", 22: "имя", 23: "сохранение хоста", 24: "стать клиентом",
-         25: "бой лорда", 26: "итог события", 27: "вести об игроке", 28: "метки", 29: "казна", 30: "склад",
-         31: "состояние склада", 32: "бой рядом", 33: "проверка связи"}
+         25: "бой лорда", 26: "итог события", 27: "вести об игроке", 28: "лагерь", 29: "казна", 30: "склад",
+         31: "состояние склада", 32: "бой рядом", 33: "проверка связи", 34: "название войска",
+         35: "снаряжение войска"}
 
 SIGNAL_HOW = {0: "сообщение и звук", 1: "окно открылось поверх меню", 2: "окно открылось на карте"}
 FOLLOW_END = {0: "по своей команде", 1: "щёлкнул по карте сам", 2: "цель пропала с карты", 3: "доехал до метки"}
@@ -117,6 +124,8 @@ def together_text(what, f):
 
 LINE = re.compile(r"^(\d\d):(\d\d):(\d\d) (.*)$")
 TRACE = re.compile(r"^(\d\d):(\d\d):(\d\d) (\S+) (\S+) (.*)$")
+TRAIL = re.compile(r"^(\d\d):(\d\d):(\d\d) (\S+) (\d+) (.*)$")
+TRAIL_LOST = re.compile(r"^lost (\d+)$")
 STATS = re.compile(r"^parties (\d+), server [\d.]+/s, players [\d.]+/s \[(.*?)\], (running|PAUSED)")
 FLOW = re.compile(r"parties: (\d+) new, (\d+) gone, (\d+) back$")  # the stats lines of newer bridges
 SLOT = re.compile(r"(\d+):(.*?)( busy)?(?: silent (\d+)s)?( alive)?(?: mp:[^,]*)?(?:, (?=\d+:)|$)")
@@ -212,6 +221,58 @@ def read_trace(paths, last_bridge_t=None):
     return [(t, *e[1:]) for t, e in zip(times, raw)]
 
 
+def read_trail(paths, last_bridge_t=None):
+    """trail.old.log and trail.log -> [(t, cid, text)]."""
+    raw = []
+    for path in paths:
+        if path.exists():
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                m = TRAIL.match(line)
+                if m:
+                    raw.append((clock(*m.groups()[:3]), m.group(4), m.group(6)))
+    times = unwrap([e[0] for e in raw])
+    if times and last_bridge_t is not None:
+        while times[-1] > last_bridge_t + DAY // 2:
+            times = [t - DAY for t in times]
+    return [(t, *e[1:]) for t, e in zip(times, raw)]
+
+
+def action(text):
+    """A line of the trail for the report."""
+    m = TRAIL_LOST.match(text)
+    return f"(потеряно записей: {m.group(1)})" if m else text
+
+
+FAULTS = ("Get-WinEvent -FilterHashtable @{LogName='Application';ProviderName='Application Error','Application Hang';"
+          "StartTime=(Get-Date).AddDays(-%d)} -ErrorAction SilentlyContinue | ForEach-Object {"
+          " $_.TimeCreated.ToString('yyyy-MM-dd HH:mm:ss') + '|' + $_.Id + '|' + ($_.Properties.Value -join '|') }")
+
+
+def parse_faults(text):
+    """Lines of FAULTS -> report lines about the game: event 1000 is a crash (name, versions, the faulting
+    module, the code, the offset), 1002 a window that stopped answering and was closed."""
+    out = []
+    for line in text.splitlines():
+        parts = line.strip().split("|")
+        if len(parts) < 3 or "mb_warband" not in parts[2].lower():
+            continue
+        if parts[1] == "1000" and len(parts) > 9:
+            out.append(f"  {parts[0]} вылет: код {parts[8]}, смещение {parts[9]}, модуль {parts[5]}")
+        elif parts[1] == "1002":
+            out.append(f"  {parts[0]} зависание: окно перестало отвечать, его закрыли")
+    return out
+
+
+def windows_faults():
+    """The game's crashes and hangs in Windows' log; none where it cannot be read."""
+    try:
+        done = subprocess.run(["powershell", "-NoProfile", "-Command", FAULTS % FAULT_DAYS], capture_output=True,
+                              text=True, encoding="utf-8", errors="replace", timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return parse_faults(done.stdout or "")
+
+
 def number(parts, i, default=None):
     try:
         return int(parts[i])
@@ -233,10 +294,11 @@ def state(query):
 
 
 class Session:
-    def __init__(self, events, trace):
+    def __init__(self, events, trace, trail=()):
         self.events = events
         self.start, self.end = events[0][0], events[-1][0]
         self.trace = [e for e in trace if self.start - 1 <= e[0] <= self.end + STATS_EVERY_S]
+        self.trail = [e for e in trail if self.start - 1 <= e[0] <= self.end + STATS_EVERY_S]
         self.findings = []  # (t, mark, text)
         self.names = {}     # cid -> hero name, from the requests
         self.slot_cid = []  # (t, slot, cid)
@@ -269,6 +331,10 @@ class Session:
                 found = e
         return found
 
+    def actions(self, cid, before, count):
+        """The player's last entries of the trail up to a moment."""
+        return [e for e in self.trail if e[1] == cid and e[0] <= before][-count:]
+
     def replies(self, cid, after, before):
         return [e for e in self.trace if e[1] == "cli" and e[2] == cid and after <= e[0] <= before]
 
@@ -292,9 +358,9 @@ def kind_of(parts):
     return number(parts, 1) if parts and parts[0] == "7777" else None
 
 
-def analyze(events, trace, silence=30):
+def analyze(events, trace, silence=30, trail=()):
     """One session's report lines."""
-    s = Session(events, trace)
+    s = Session(events, trace, trail)
     out = [f"Сессия {stamp(s.start)} - {stamp(s.end)} ({span(s.end - s.start)})"]
 
     # ---- players, builds, connections
@@ -466,6 +532,9 @@ def analyze(events, trace, silence=30):
         kinds = [kind_of(e[4]) for e in got if kind_of(e[4]) not in (None, 0, 7)]
         if kinds:
             seen += ", последние ответы: " + ", ".join(f"{k} ({KINDS.get(k, '?')})" for k in kinds[-4:])
+        did = s.actions(cid, begin + 2, TRAIL_BEFORE) if cid else []
+        if did:
+            seen += ". Последние действия: " + "; ".join(f"{stamp(e[0])} {action(e[2])}" for e in did)
         lost = next((t for t, text in events if begin <= t <= last + STATS_EVERY_S * 2
                      and NET_LOST.match(text) and cid and NET_LOST.match(text).group(1) == cid), None)
         after = [r for r in results.get(cid, []) if 0 <= begin - r <= AFTER_BATTLE_S]
@@ -648,6 +717,13 @@ def analyze(events, trace, silence=30):
         out.append("Совместные дела:")
         out += together
 
+    # ---- a debug build's trail
+    if s.trail:
+        out.append("След действий (последнее внизу):")
+        for cid in sorted({e[1] for e in s.trail}):
+            out.append(f"  {s.who(cid)}:")
+            out += [f"    {stamp(e[0])} {action(e[2])}" for e in s.actions(cid, s.end + STATS_EVERY_S, TRAIL_SHOWN)]
+
     # ---- the report
     s.findings.sort(key=lambda f: f[0])
     problems = sum(1 for f in s.findings if f[1] == "!!")
@@ -678,6 +754,11 @@ def default_folder():
         return Path.home() / "Documents" / LOG_FOLDER
 
 
+def fault_lines():
+    faults = windows_faults()
+    return ["", f"Журнал Windows за {FAULT_DAYS} дн.:"] + faults if faults else []
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Warband Coop Campaign: a session's report from bridge.log and trace.log")
     ap.add_argument("folder", nargs="?", help="where the logs are (default: Documents\\Warband Coop Campaign)")
@@ -692,6 +773,11 @@ def main(argv=None):
         if join.exists():
             print(f"{bridge} нет: это компьютер друга. Отчёт строится на компьютере хоста; join.log:")
             print(join.read_text(encoding="utf-8", errors="replace")[-3000:])
+            mine = read_trail([folder / "trail.old.log", folder / "trail.log"])
+            if mine:
+                print("След действий (последнее внизу):")
+                print("\n".join(f"  {stamp(e[0])} {action(e[2])}" for e in mine[-TRAIL_SHOWN:]))
+            print("\n".join(fault_lines()))
             return 0
         print(f"нет {bridge}")
         return 1
@@ -700,11 +786,13 @@ def main(argv=None):
         print(f"{bridge} пуст")
         return 1
     trace = read_trace([folder / "trace.old.log", folder / "trace.log"], events[-1][0])
+    trail = read_trail([folder / "trail.old.log", folder / "trail.log"], events[-1][0])
     chosen = sessions(events) if args.all else sessions(events)[-1:]
     lines = [f"CoopWorld: отчёт по {bridge} и trace.log"]
     for part in chosen:
         lines.append("")
-        lines += analyze(part, trace, args.silence)
+        lines += analyze(part, trace, args.silence, trail)
+    lines += fault_lines()
     text = "\n".join(lines) + "\n"
     try:
         sys.stdout.write(text)

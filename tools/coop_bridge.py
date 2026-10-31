@@ -67,6 +67,7 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
     A player game's triggers do not run in menus, screens and battles: it goes silent, and a player
     silent for SILENT_PAUSE_S pauses the world just like a busy one. Such a game still sends
+    /tr?trs=N&tr=e1,e2,... (a debug build only: what the game did, entries N, N+1...; see src/trail)
     /pg?seq=S&hold=H (its reply handler sends the next one: the bridge holds one with hold=1 for
     PING_HOLD_S), which keeps it silent for the world: only an invitation (kind 6) comes back, else 33.
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...   positions of world parties (tmpl REMOVED: gone)
@@ -260,6 +261,7 @@ STORE_CHUNK = 60        # of them in one reply: 5 + 2 * 60 numbers
 STORE_LOCK_S = 600.0    # a player with the store open this long without giving it back loses it
 TREASURY_TOKENS = 200   # transfers remembered, so that a repeated request changes nothing
 PING_HOLD_S = 0.7       # a game off the map asks this often whether it is called to a battle
+TRAIL_ACK = 7779        # the whole reply to a debug build's /tr (trail_ack in src/trail/marks.py)
 ALIVE_S = 3.0           # a game that pinged this recently answers, though its map does not run
 TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_GOLD, TELL_STORE, TELL_LEFT, TELL_BASE, TELL_BANDITS = 1, 2, 4, 5, 6, 7, 8  # kind 27
 BASE_SLOT = MAX_PLAYERS  # the company's camp goes out in the slot after the players' (coop_base_slot)
@@ -406,6 +408,7 @@ class Battle:
 
 class World:
     log = staticmethod(lambda msg: None)  # run_host sets the bridge's log: joint battles are told there
+    trail = staticmethod(lambda cid, query: None)  # run_host: trail.log, a debug build's game telling what it does
     trace = staticmethod(lambda role, cid, target, reply: None)  # run_host: trace.log of the requests that matter
 
     def __init__(self, profiles_path=None, shared_path=None):
@@ -2042,10 +2045,45 @@ def make_trace(path, limit=20_000_000):
     return trace
 
 
+def make_trail(path, names_path=None, limit=20_000_000):
+    """trail.log: what a debug build's game did (src/trail), an entry per line as it comes, kept under
+    limit bytes as trace.log is. trail_names.json, beside this file in a debug package, says what the
+    numbers stand for. A gap in the numbers is written down as such."""
+    path = Path(path)
+    lock = threading.Lock()
+    awaited = {}
+    try:
+        names = json.loads(Path(names_path or Path(__file__).with_name("trail_names.json")).read_text("utf-8"))
+    except (OSError, ValueError):
+        names = {}
+
+    def trail(cid, query):
+        entries = parse_ints(query.get("tr", "").rstrip(","))
+        if entries is None or not query.get("trs", "").isdigit():
+            return
+        first = int(query["trs"])
+        now = time.strftime("%H:%M:%S")
+        with lock:
+            lines = []
+            if first > awaited.get(cid, first):
+                lines.append(f"{now} {cid} {awaited[cid]} lost {first - awaited[cid]}")
+            lines += [f"{now} {cid} {first + k} {names.get(str(entry), entry)}" for k, entry in enumerate(entries)]
+            awaited[cid] = first + len(entries)
+            try:
+                if path.exists() and path.stat().st_size > limit:
+                    path.replace(path.with_name(path.stem + ".old.log"))
+                with open(path, "a", encoding="utf-8") as f:
+                    f.write("\n".join(lines) + "\n")
+            except OSError:
+                pass
+
+    return trail
+
+
 def handle_request(world, role, target, now, cid="local"):
     reply = _handle_request(world, role, target, now, cid)
     world.trace(role, cid, target, reply)
-    if role == "cli" and not target.startswith("/pg"):
+    if role == "cli" and not target.startswith(("/pg", "/tr")):
         p = world.players.get(cid)
         if p is not None:
             p.recent = (p.recent + [(now, target, reply)])[-RECENT_KEPT:]
@@ -2095,6 +2133,9 @@ def _handle_request(world, role, target, now, cid="local"):
         return reply_text(nums + payload, name)
     if role == "cli" and url.path == "/pg":
         return reply_text([MARKER] + world.ping(cid, now))
+    if role == "cli" and url.path == "/tr":  # not a sign of life: a report's silences stay what they were
+        world.trail(cid, q)
+        return reply_text([TRAIL_ACK])
     if role == "cli" and url.path == "/cli":
         try:
             x, y = int(q.get("x", "0")), int(q.get("y", "0"))
@@ -2443,6 +2484,7 @@ class Relay:
         self.saves = False      # the first save fetched (or tried): the hub then sends any one missed
         self.save_stamp = None  # the host's save this player has (see save_stamp)
         self.quiet_until = 0.0  # a save on its way: replies behind it come late, the link is fine
+        self.trail = lambda cid, query: None  # run_join: this player's own trail.log
         self.late = []          # replies with news that came after their request gave up: next ones
 
     def log(self, msg):
@@ -2522,7 +2564,20 @@ class Relay:
                 if rep and rep.get("text"):
                     sound_the_call(rep["text"], self.local_log)
 
+    def pass_trail(self, target):
+        """A debug build's trail goes by on its own: kept here too, told to the hub without waiting for it
+        (no one waits for reply 0), so it stands in line with no request of the game."""
+        self.trail("local", {k: v[0] for k, v in parse_qs(urlparse(target).query).items()})
+        if self.connected.is_set():
+            try:
+                send_msg(self.sock, self.lock, {"t": "req", "id": 0, "target": target})
+            except (OSError, AttributeError):
+                pass
+        return reply_text([TRAIL_ACK])
+
     def forward(self, target):
+        if target.startswith("/tr"):
+            return self.pass_trail(target)
         hold_ping(target)
         if not self.connected.is_set():
             return reply_text([0, 0])  # no marker: the game frees its request and tries again
@@ -2926,6 +2981,7 @@ def run_host(args, log):
     world = World(args.profiles or Path(args.log).with_name("profiles.json"))
     world.log = log
     world.trace = make_trace(Path(args.log).with_name("trace.log"))
+    world.trail = make_trail(Path(args.log).with_name("trail.log"))
     log(f"logs: {Path(args.log).resolve()} and trace.log next to it (requests about battles, parties, joining)")
     world.set_mp_name("local", args.mp_name)
     serve_http(parse_addr(args.server, 80), lambda t: handle_request(world, "srv", t, time.time()), log, "srv")
@@ -3030,6 +3086,7 @@ def run_join(args, log):
     if f"{hub[0]}:{hub[1]}" not in (args.host.strip(), f"{args.host.strip()}:{NET_PORT}"):
         log(f"relay: the host's address read as {hub[0]}:{hub[1]} (typed '{args.host}')")
     relay = Relay(hub, args.key, log, mp_name=args.mp_name)
+    relay.trail = make_trail(Path(args.log).with_name("trail.log"))
     try:
         relay.connect()
     except (OSError, ConnectionError) as e:

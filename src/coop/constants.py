@@ -5,9 +5,10 @@ def _build_id():
   """A number for this build of CoopWorld: the same sources give the same number. Games tell it to
   the bridge, which warns when a friend runs another build than the host (install the same package)."""
   import os, zlib
+  from coop_mods import MODS
   src = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   crc = 0
-  for part in ("coop", "dplmc_fix", "freelancer", "custom_troops"):  # CoopWorld's own layers over Diplomacy
+  for part in MODS:  # CoopWorld's own layers over Diplomacy; with the trail it is another build
     folder = os.path.join(src, part)
     for name in sorted(os.listdir(folder)):
       if name.endswith(".py"):

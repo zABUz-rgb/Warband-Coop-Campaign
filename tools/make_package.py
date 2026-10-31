@@ -15,6 +15,7 @@ the compiled files over it. The Russian one also adds the mod's Russian texts
 
     python tools/make_ru.py && python tools/make_package.py
 """
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -30,6 +31,7 @@ BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler 
 PREREQS = ROOT / "vendor" / "prereqs"  # installers of the programs the mod needs (not in git)
 VERSION = "1.0.1"
 DIST = ROOT / "dist" / VERSION  # every version keeps its own folder
+DEBUG = ROOT / "dist" / f"{VERSION}-debug"  # python tools/make_package.py --trail
 DISCORD = "https://discord.gg/nfmWC5SWfp"
 BOOSTY = "https://boosty.to/zabuz_0"
 PYTHON_URL = "https://www.python.org/downloads/windows/"
@@ -1023,8 +1025,49 @@ def unbundled(text, used):
   return text
 
 
-def build(name, files, russian=False, programs=True, out=None):
-    """dist/<name>.zip (or `out`), everything in the folder <name>; programs: with the Programs folder."""
+DEBUG_RU = r"""ОТЛАДОЧНАЯ СБОРКА Warband Coop Campaign
+
+Это та же игра, но она сообщает мосту всё, что делает: меню, пункты меню, реплики, экраны, триггеры, начало
+сцены. Такой след нужен, чтобы увидеть, что было последним перед зависанием или вылетом. Сохранения те же, что
+у обычной сборки: играйте дальше с того же места.
+
+1. Поставьте эту сборку (install.bat) и хост, и друг. Смешивать её с обычной нельзя: мост предупредит о разных сборках.
+2. Играйте как всегда, запуская хост и друга обычными host.bat и join.bat.
+3. Случился вылет или зависание: закройте игру, окно моста можно закрыть после этого.
+4. Хост запускает check_logs.bat. В report.txt появятся раздел "След действий", последние действия перед каждым
+   молчанием и журнал Windows с кодами вылетов.
+5. Пришлите из папки Документы\Warband Coop Campaign: хост - report.txt и trail.log, друг - join.log и trail.log.
+
+Чтобы вернуться к обычной сборке, поставьте обычный пакет поверх этого.
+
+Самое последнее действие перед зависанием может не дойти: движок мог зависнуть, не успев отправить запрос.
+Бои на сервере боя в след не входят, их показывает trace.log. Без моста, в одиночной игре, следа нет.
+"""
+
+DEBUG_EN = r"""DEBUG BUILD of Warband Coop Campaign
+
+The same game, but it tells the bridge all it does: menus, their options, lines of talk, screens, triggers, the
+start of a scene. That trail shows what came last before a hang or a crash. It plays the same saves as the
+usual build: go on from where you are.
+
+1. Both the host and the friend install this build (install.bat). Do not mix it with the usual one: the bridge
+   warns about different builds.
+2. Play as always, starting with the usual host.bat and join.bat.
+3. After a crash or a hang close the game; the bridge's window may be closed after that.
+4. The host runs check_logs.bat. report.txt gets a section with the trail, the last actions before each silence
+   and Windows' own log with the crash codes.
+5. Send from Documents\Warband Coop Campaign: the host's report.txt and trail.log, the friend's join.log and trail.log.
+
+To go back, install the usual package over this one.
+
+The very last action before a hang may not arrive: the engine may hang before it sends the request. Battles on the
+battle server are not in the trail, trace.log shows them. With no bridge, in a single-player game, there is no trail.
+"""
+
+
+def build(name, files, russian=False, programs=True, out=None, also=()):
+    """dist/<name>.zip (or `out`), everything in the folder <name>; programs: with the Programs folder;
+    also: more files for the folder of coop_bridge.py."""
     out = out or DIST / f"{name}.zip"
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(MODULE.glob("*.txt")):
@@ -1034,6 +1077,8 @@ def build(name, files, russian=False, programs=True, out=None):
             z.write(source, f"{name}/Warband Coop Campaign/{rel}")
         z.write(ROOT / "tools" / "coop_bridge.py", f"{name}/coop_bridge.py")
         z.write(ROOT / "tools" / "coop_logs.py", f"{name}/coop_logs.py")
+        for f in also:
+            z.write(f, f"{name}/{f.name}")
         for arcname, text in files.items():
             z.writestr(f"{name}/{arcname}", text.encode("utf-8"))
         if russian:
@@ -1060,6 +1105,20 @@ def prereqs():
     return found
 
 
+def debug_packages(base, en, ru):
+    """dist/<version>-debug: the game telling the bridge what it does (src/trail). The module's folder
+    goes back to the plain build afterwards."""
+    DEBUG.mkdir(parents=True, exist_ok=True)
+    subprocess.run([sys.executable, str(ROOT / "build.py"), "--trail"], check=True, stdout=subprocess.DEVNULL)
+    try:
+        names = [MODULE / "trail_names.json"]
+        build(f"{base}-debug", {**en, "DEBUG.txt": DEBUG_EN}, out=DEBUG / f"{base}-debug.zip", also=names)
+        build(f"{base}-debug-ru", {**ru, "ОТЛАДКА.txt": BOM + DEBUG_RU}, russian=True,
+              out=DEBUG / f"{base}-debug-ru.zip", also=names)
+    finally:
+        subprocess.run([sys.executable, str(ROOT / "build.py")], check=True, stdout=subprocess.DEVNULL)
+
+
 def main():
     if not (MODULE / "scripts.txt").exists():
         raise SystemExit("build the module first: python build.py")
@@ -1071,18 +1130,23 @@ def main():
                  for lang in ("en", "ru")}
     if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
         raise SystemExit("no Russian: put the russifier in vendor/l10n_ru and run python tools/make_ru.py")
+    def english(texts):
+        return {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT, "README.txt": texts(README),
+                "START HERE.txt": texts(START_HERE), **launchers["en"]}
+
+    def russian(texts):  # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
+        return {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT, "README.txt": BOM + texts(README_RU),
+                "НАЧНИТЕ ЗДЕСЬ.txt": BOM + texts(START_HERE_RU), **launchers["ru"]}
+
+    if "--trail" in sys.argv:
+        return debug_packages(base, english(str), russian(str))
     nexus = DIST / "nexus"
     nexus.mkdir(exist_ok=True)
     used = set()
     for programs in (True, False):  # the packages, then the same for Nexus Mods without Programs
         texts = (lambda text: text) if programs else (lambda text: unbundled(text, used))
-        build(base, {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT,
-                     "README.txt": texts(README), "START HERE.txt": texts(START_HERE), **launchers["en"]},
-              programs=programs, out=None if programs else nexus / f"{base}-nexus.zip")
-        # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
-        build(f"{base}-ru", {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT,
-                             "README.txt": BOM + texts(README_RU), "НАЧНИТЕ ЗДЕСЬ.txt": BOM + texts(START_HERE_RU),
-                             **launchers["ru"]}, russian=True,
+        build(base, english(texts), programs=programs, out=None if programs else nexus / f"{base}-nexus.zip")
+        build(f"{base}-ru", russian(texts), russian=True,
               programs=programs, out=None if programs else nexus / f"{base}-nexus-ru.zip")
     if len(used) != len(UNBUNDLED):
         raise SystemExit(f"UNBUNDLED passages no longer in the texts: {sorted(set(range(len(UNBUNDLED))) - used)}")

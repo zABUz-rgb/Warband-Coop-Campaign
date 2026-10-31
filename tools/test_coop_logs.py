@@ -11,6 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import coop_logs as cl  # noqa: E402
 
+cl.windows_faults = lambda: []  # a test run has nothing to say about this PC
+
 FRIEND = "net-aaaa@10.0.0.2"
 
 
@@ -68,10 +70,12 @@ def write(folder, bridge, trace):
     (folder / "trace.log").write_text(trace, encoding="utf-8")
 
 
-def report(bridge, trace, *args):
+def report(bridge, trace, *args, trail=""):
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp)
         write(folder, bridge, trace)
+        if trail:
+            (folder / "trail.log").write_text(trail, encoding="utf-8")
         with contextlib.redirect_stdout(io.StringIO()):
             cl.main([str(folder), "--out", str(folder / "report.txt"), *args])
         return (folder / "report.txt").read_text(encoding="utf-8-sig")
@@ -269,6 +273,36 @@ def test_menu_or_hang():
           "a game that stopped answering in the middle of a silence is a problem")
 
 
+def test_trail():
+    hang = [stats(f"12:01:{s:02d}", friend=f" silent {s + 3}s alive") for s in range(0, 20, 5)]
+    hang += [stats(f"12:01:{s:02d}", friend=f" silent {s + 3}s") for s in range(20, 55, 5)]
+    bridge = BRIDGE_START + "\n".join(hang) + "\n"
+    trail = "".join(f"12:00:{s:02d} {FRIEND} {s} menu m{s}\n" for s in range(30, 56, 5))
+    trail += f"12:00:56 {FRIEND} 56 lost 3\n12:00:56 {FRIEND} 59 option town: town_leave\n"
+    trail += f"12:00:40 local 7 menu camp\n"
+    text = report(bridge, "", trail=trail)
+    quiet = next(line for line in text.splitlines() if "молчал" in line)
+    check("Последние действия:" in quiet and "12:00:56 option town: town_leave" in quiet,
+          f"a silence shows what the game did just before it: {quiet}")
+    check("потеряно записей: 3" in quiet, "and says when some of it never arrived")
+    check("menu m30" not in quiet, "only the last few")
+    check("След действий (последнее внизу):" in text and "menu camp" in text, "each player's trail has a section")
+    check("След действий" not in report(bridge, ""), "a plain build's session has none")
+    check(cl.read_trail([Path("no such file")]) == [], "no trail.log, no trail")
+    check(cl.KINDS[34] and cl.KINDS[35], "the army's replies have names")
+
+
+def test_faults():
+    crash = "2026-10-30 22:03:11|1000|mb_warband.exe|1.174.0.0|5a1|mb_warband.exe|1.174.0.0|5a1|c0000005|0003b094|1a|1dc"
+    hang = "2026-10-30 22:05:00|1002|mb_warband.exe|1.174.0.0|15a4|1dc|0"
+    other = "2026-10-30 22:06:00|1000|notepad.exe|1.0|5a1|ntdll.dll|1.0|5a1|c0000005|0003b094|1a|1dc"
+    said = cl.parse_faults("\n".join([crash, hang, other, "garbage", ""]))
+    check(len(said) == 2, f"the game's own, nothing else: {said}")
+    check("код c0000005, смещение 0003b094" in said[0] and "2026-10-30 22:03:11" in said[0], "a crash: its code and offset")
+    check("зависание" in said[1], "a window closed while it did not answer")
+    check(cl.parse_faults("") == [], "nothing found, nothing said")
+
+
 def test_parties():
     bridge = BRIDGE_START + stats("12:00:15", parties=0) + "\n" + stats("12:00:20", parties=300) + "\n" \
         + stats("12:00:25", parties=250) + "\n"
@@ -292,4 +326,6 @@ if __name__ == "__main__":
     test_clocks_and_lords()
     test_together()
     test_menu_or_hang()
+    test_trail()
+    test_faults()
     print("ALL OK")

@@ -150,15 +150,16 @@ dialogs	= [
                 (change_screen_map),
                 ],
                 ],
+#the lord who likes the player too little says no, or nobody would answer
+    [anyone,"lord_request_vacation", [],
+            "No, {playername}. You have not earned any leave from me.", "lord_pretalk", []],
                                         
 
                                 
         
 #dialog_accept_ask_return_from_leave
         [anyone,"ask_return_from_leave",
-        [
-        (ge, "$g_talk_troop_relation", 0),
-                ],
+        [],
         "Welcome back {playername}. Your regiment has missed you I daresay, Now return to your post.", "lord_pretalk",[
         (call_script, "script_party_copy", "p_freelancer_party_backup", "p_main_party"),
                 (remove_member_from_party, "trp_player","p_freelancer_party_backup"),

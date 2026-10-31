@@ -1,6 +1,7 @@
 """Build CoopWorld: runs the module system's process_*.py steps in order (Python 3).
 
     python build.py
+    python build.py --trail      a debug build: the game tells the bridge all it does (src/trail)
 """
 import os
 import subprocess
@@ -24,7 +25,10 @@ STEPS = [
 
 
 def main():
-    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    trail = "--trail" in sys.argv
+    plain = {k: v for k, v in os.environ.items() if k != "COOP_TRAIL"}
+    plain["PYTHONDONTWRITEBYTECODE"] = "1"
+    env = dict(plain, COOP_TRAIL="1") if trail else plain
     for step in STEPS:
         r = subprocess.run([sys.executable, "-W", "ignore", str(RUNNER), step], cwd=SRC, env=env,
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -46,14 +50,25 @@ def main():
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(source.read_bytes())
     # mistakes the compiler lets pass (empty "@" strings, unbalanced try blocks, scripts that end
-    # their caller, globals never set): see tools/check_module.py
-    r = subprocess.run([sys.executable, str(ROOT / "tools" / "check_module.py")], capture_output=True, text=True,
-                       encoding="utf-8", errors="replace")
-    problems = [l for l in r.stdout.splitlines() if not l.startswith("note:")]
-    print("\n".join(problems))
-    if r.returncode != 0:
-        print("BUILD FAILED at check_module")
-        sys.exit(1)
+    # their caller, globals never set): see tools/check_module.py; talks and menus with no way out,
+    # scripts called wrong, the bridge and the game disagreeing: see tools/check_flow.py
+    # (check_flow judges what the mods did to the base game, so the trail's marks stay out of it)
+    for check, its_env in (("check_module", env), ("check_flow", plain)):
+        r = subprocess.run([sys.executable, str(ROOT / "tools" / f"{check}.py")], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", env=its_env)
+        problems = [l for l in r.stdout.splitlines() if not l.startswith("note:")]
+        print("\n".join(problems))
+        if r.returncode != 0:
+            print(f"BUILD FAILED at {check}")
+            sys.exit(1)
+    names = Path(export_dir) / "trail_names.json"
+    if trail:
+        r = subprocess.run([sys.executable, str(ROOT / "tools" / "trail_names.py"), str(names)], env=env)
+        if r.returncode != 0:
+            print("BUILD FAILED at trail_names")
+            sys.exit(1)
+    elif names.exists():
+        names.unlink()
     print("BUILD OK")
 
 
