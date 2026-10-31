@@ -166,6 +166,9 @@ item as it happens):
   option shows, 15 villagers fight, the raid ends, also when a lord's party lives on without men;
 - duel: two players on opposite sides in their own gear, no bots, the round ends at the first death;
   stake moves, xp; declining, no answer, one player not on the server; both gone: a draw;
+- sneaking into a town in Russian: the disguise menu shows items, money and "Попытаться проникнуть...",
+  not three "Продолжить..."; the next screen names the chosen disguise;
+- a joint battle invites a player 30 map units away; none past 40;
 - troop tree: the window fits at 16:9 and 4:3, the rows and lines line up, the portrait and the item
   icons have a sensible size, In development shows its text, Esc and Close work, a click keeps working
   after the window restarts.

@@ -6,7 +6,8 @@ Each text comes from the first of these that has its id:
   2. the Russian translation of Diplomacy (MRCMOD's, vendor/dplmc_ru_mrcmod), for what Diplomacy adds;
   3. lang/ru.csv (kept by hand, "file|id|text"), for the rest: Freelancer, co-op, and what neither has.
      Quick strings and dialog lines there are kept by their English: "quick_strings_en|English|text",
-     "dialogs_en|English|text".
+     "dialogs_en|English|text". "game_menus_over|id|text" replaces a text the base has: for one that
+     Diplomacy rewrote while the base still tells the old story.
 This tool finds every id the build has and none of them translates.
 
 Quick strings and dialog lines are matched by their English text, not by id: their ids come from
@@ -41,6 +42,8 @@ NATIVE_MS = ROOT / "vendor" / "module_system_1171" / "Module_system 1.171"
 DIPLOMACY_COMPILED = ROOT / "vendor" / "dplmc_1174" / "Diplomacy 1.174 prejudice patch" / "Compiled" / "Diplomacy 1.174"
 BY_TEXT = ("quick_strings", "dialogs")  # matched by English text (see above)
 OURS = ROOT / "lang" / "ru.csv"
+OVER = "_over"  # lang/ru.csv: this row wins over the base translations
+UNREACHABLE_MENUS = ("test_scene",)
 FILES = ("game_menus", "dialogs", "quests", "parties", "quick_strings", "game_strings", "troops",
          "item_kinds", "party_templates", "factions", "info_pages", "skills")
 ADDITIONS = ROOT / "dist" / "ru_additions"
@@ -164,8 +167,13 @@ def module_texts():
         texts["skills"][f"skl_{sk[0]}_desc"] = sk[4]
     for m in game_menus:
         texts["game_menus"][f"menu_{m[0]}"] = m[2]
+        shown = {}
         for opt in m[5]:
             texts["game_menus"].setdefault(f"mno_{opt[0]}", opt[2])
+            if (not opt[2].startswith("{!}") and m[0] not in UNREACHABLE_MENUS
+                    and shown.setdefault(opt[0], opt[2]) != opt[2]):
+                print(f"menu {m[0]}: option {opt[0]} shares its id with another, so its translation too: "
+                      f"{opt[2]} (give it its own id in src/dplmc_fix/game_menus.py)", file=sys.stderr)
     texts["dialogs"] = dialog_ids(dialogs, convert_to_identifier)
     for q in quests:
         texts["quests"][f"qst_{q[0]}"] = q[1]
@@ -223,6 +231,7 @@ def match_by_text(texts, native, diplomacy, ours, ours_en):
 
 def main():
     ours = {}
+    over = {}
     ours_en = {f: {} for f in BY_TEXT}
     if OURS.exists():
         for line in OURS.read_text("utf-8-sig").splitlines():
@@ -230,6 +239,8 @@ def main():
                 f, k, v = line.split("|", 2)
                 if f.endswith("_en") and f[:-3] in BY_TEXT:
                     ours_en[f[:-3]][k] = v
+                elif f.endswith(OVER):
+                    over[(f[:-len(OVER)], k)] = v
                 else:
                     ours[(f, k)] = v
     native = {f: load_csv(NATIVE_RU / f"{f}.csv") for f in FILES}
@@ -245,7 +256,7 @@ def main():
     if gaps:
         for f, k, en in gaps:
             print(f"untranslated: {f}|{k}|{en}", file=sys.stderr)
-    unused = [(f, k) for f, k in ours if k not in texts.get(f, {})]
+    unused = [(f, k) for f, k in (*ours, *over) if k not in texts.get(f, {})]
     unused += [(f + "_en", en) for f in BY_TEXT for en in ours_en[f] if en not in set(texts[f].values())]
     for f, k in unused:
         print(f"lang/ru.csv: {f}|{k} is not in the build (renamed or removed?)", file=sys.stderr)
@@ -268,7 +279,10 @@ def main():
         known = base_ids.keys() | {k for k, _ in add}
         add += [(k, v) for (ff, k), v in sorted(ours.items())
                 if ff == f and k in texts.get(f, {}) and k not in known]
+        replaced = {k: v for (ff, k), v in over.items() if ff == f and k in texts.get(f, {})}
+        add = [(k, v) for k, v in add if k not in replaced] + sorted(replaced.items())
         base = path.read_text("utf-8-sig").rstrip("\r\n") if path.exists() else ""
+        base = "\n".join(line for line in base.split("\n") if line.split("|", 1)[0] not in replaced)
         lines = "".join(f"\r\n{k}|{v}" for k, v in add)
         (target / name).write_text("﻿" + (base + lines).lstrip("\r\n") + "\r\n", "utf-8", newline="")
         if add:

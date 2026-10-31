@@ -618,7 +618,7 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
      в своём окне, кого он узнал на сервере ("recognised") и кого нет ("NOT found"). Имена у всех
      разные! Окно игры остаётся на сервере между боями.
   3. Во встрече с отрядом на карте выберите "CoopWorld: сразиться вместе с друзьями". Игроки
-     поблизости получают приглашение ("В бой!" или "Отказаться"); через несколько секунд раунд на
+     в пределах 40 единиц карты получают приглашение ("В бой!" или "Отказаться"); через несколько секунд раунд на
      сервере боя начинается заново с армиями из кампании. Переключитесь в окно мультиплеера.
      Сторона и герой выдаются сами; если всё же открылось окно выбора команды - закройте его (Esc).
      На приглашение есть 45 секунд. Кто ответил позже, всё равно попадает в бой своим героем, но
@@ -835,7 +835,7 @@ JOINT BATTLES (multiplayer server):
      where Warband refuses with "invalid authorization number": join the other and Add to
      Favorites. Join under exactly the multiplayer name given to host.bat / join.bat. Every
      player needs a different name.
-  3. In an encounter: "CoopWorld: fight together with your friends". Players nearby are invited;
+  3. In an encounter: "CoopWorld: fight together with your friends". Players within 40 map units are invited;
      the battle server restarts its round with the campaign's armies. Sides and heroes are given
      by the server (if a team window opens all the same, close it with Esc).
      The invitation waits 45 s. A player who answers later still fights as the hero, but without

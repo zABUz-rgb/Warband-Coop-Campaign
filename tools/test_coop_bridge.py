@@ -450,6 +450,16 @@ def two_players(path=None):
     return w, lines
 
 
+def test_invite_distance():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=3900, now=0.0, me=[(33, 6)], name="Olga")
+    req(w, "c", x=4100, now=0.0, me=[(34, 2)], name="Far")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.0)
+    req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)], hero=HERO))
+    check(w.battle.invited == {"b"}, "a battle invites players up to 40 map units away, no further")
+
+
 def test_game_notes():
     w, lines = two_players()
     check(cb.parse_together({"lg": "1,3,10,2"}) == {"note": [1, 3, 10, 2]}, "a game's note is read")
@@ -1612,6 +1622,7 @@ if __name__ == "__main__":
     test_lan_search()
     test_no_enemy_left()
     test_map_of_many_parties()
+    test_invite_distance()
     test_game_notes()
     test_follow()
     test_marks()

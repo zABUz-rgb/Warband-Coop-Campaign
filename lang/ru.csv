@@ -1937,3 +1937,19 @@ quick_strings_en|{s1} challenges you to a duel. The stake: {reg1} denars; you ca
 quick_strings_en|CoopWorld: you ride after {s1}.|CoopWorld: вы следуете за игроком {s1}.
 quick_strings_en|CoopWorld: the party store is on its way...|CoopWorld: склад отряда уже идёт к вам...
 quick_strings_en|CoopWorld: your mark stands near {s1}.|CoopWorld: ваша метка стоит рядом: {s1}.
+game_menus|mno_dplmc_disguise_items|Выбрать вещи, которые вы возьмёте с собой (не больше {reg1}).
+game_menus|mno_dplmc_disguise_gold|Выбрать, сколько денег взять с собой.
+game_menus|mno_dplmc_disguise_sneak|Попытаться проникнуть...
+game_menus|mno_dplmc_npc_complaints|{reg0?Включить:Выключить} жалобы спутников.
+game_menus|mno_dplmc_village_fugitive_family|Потребовать встречи с семьёй: {s50}.
+game_menus|mno_dplmc_improve_no_treasury|В казне недостаточно денег.
+game_menus|mno_dplmc_appoint_no_chamberlain|Продолжить без камергера.
+game_menus|mno_dplmc_appoint_no_constable|Продолжить без констебля.
+game_menus|mno_dplmc_appoint_no_chancellor|Продолжить без канцлера.
+game_menus|mno_lady_visit_come|Передать служанке, что вы скоро придёте к её госпоже.
+game_menus|mno_lady_visit_decline|Передать служанке, что вы нездоровы и не придёте.
+game_menus|mno_garden_wait_spring|Подождать у источника.
+game_menus|mno_recruit_prisoners_back|Назад.
+game_menus|mno_start_find_inn|Найти постоялый двор...
+game_menus|mno_establish_court_hold_off|Повременить...
+game_menus_over|menu_sneak_into_town_suceeded|Ваша маскировка: {reg1?обманщик:{s1}}. Вы проводите стражу и входите в город.
