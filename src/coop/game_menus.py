@@ -132,8 +132,14 @@ def merge(menus):
   # joint battles on the multiplayer server
   from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option, coop_mp_siege_option
   from coop.mp_campaign import coop_mp_defend_option, coop_mp_lord_option
+  from coop.mp_campaign import coop_mp_arena_option, coop_mp_tournament_option, coop_mp_training_option
   menu_options(menus, "world_map_soldier").insert(0, coop_mp_lord_option)
-  menu_options(menus, "town").insert(0, coop_mp_defend_option)
+  town = menu_options(menus, "town")
+  town.insert(0, coop_mp_defend_option)
+  town.insert(find_by_id(town, "join_tournament") + 1, coop_mp_tournament_option)
+  town.insert(find_by_id(town, "town_arena") + 1, coop_mp_arena_option)
+  training = menu_options(menus, "training_ground")
+  training.insert(find_by_id(training, "camp_train_melee") + 1, coop_mp_training_option)
   outside = menu_options(menus, "castle_outside")
   outside.insert(find_by_id(outside, "castle_leave"), coop_mp_defend_option)
   siege = menu_options(menus, "castle_besiege")

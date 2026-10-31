@@ -400,7 +400,7 @@ def test_joint_battle():
     check(req(w, "c", x=50000, now=3.3, busy=False, mp=mp(1, sid=601))[0] == [7, 0, 2, 0], "one battle at a time")
     w.mp_players = {0: "ivan", 1: "Olga "}
     check(w.mp_request(4, bid, 0, {0: 4, 1: 2, 3: 20}, {0: "ivan", 1: "Olga "}, 9.0,
-                       [(0, 0, 7, 180), (0, 3, 2, 60), (5, 1, 1, 30)], {0: 40, 1: 0}) == [4, bid],
+                       [(0, 0, 7, 180), (0, 3, 2, 60), (5, 1, 1, 30)], {0: 40, 1: 0}) == [4, bid, 0],
           "the outcome is acknowledged")
     check(w.battle is None, "the battle is over")
     xp = 20 * cb.XP_PER_ENEMY // 2
@@ -415,6 +415,155 @@ def test_joint_battle():
           "a player who lost nobody still hears the outcome, after the news it was fought")
     check(req(w, "b", x=300, now=9.1)[0] == [10, bid, 0, -1], "a hero who fell comes back with 0 health")
     check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
+
+
+FIGHTER = 500  # the first arena fighter's troop number, as the game sends it
+
+
+def start_event(w, cid, x, now, event, param=0, bonus=0):
+    return req(w, cid, x=x, now=now, busy=True,
+               mp={**mp(1, hero=HERO), "event": [event, param, 7, FIGHTER, bonus]})[0]
+
+
+def drain(w, cid, now):
+    """What the player's waiting window hears next, but for the reminders of the battle's state."""
+    heard = []
+    for _ in range(12):
+        nums = req(w, cid, now=now)[0]
+        if nums and nums[0] in (6, 8, 9, 10, 21, 26):
+            heard.append(nums)
+    return heard
+
+
+def test_joint_arena():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    check(start_event(w, "a", 0, 1.0, cb.EVENT_ARENA) == [7, 0, 3, 0], "no battle server: no arena")
+    both = {0: "ivan", 1: "Olga"}
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.5)
+    nums = start_event(w, "a", 0, 2.0, cb.EVENT_ARENA)
+    bid = w.battle.bid
+    check(nums == [7, bid, 0, 0] and w.battle.event == cb.EVENT_ARENA, "an arena fight gathers")
+    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 4, w.players["a"].slot, -1],
+          "a player nearby is invited to the arena, not called in")
+    req(w, "b", x=300, now=3.0, busy=True, mp=mp(3, bid, hero=HERO))
+    check(w.battle.sides == {"a": 0, "b": 0}, "the players stand on one side")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, 3.1) == [0], "it waits for every player on the battle server")
+    first = w.mp_request(0, 0, -1, {}, both, 3.2)
+    second = w.mp_request(0, 0, -1, {}, both, 3.3)
+    check(first[:3] == [2, bid, 0] and first[3] == cb.MP_CHUNK and second[:3] == [2, bid, cb.MP_CHUNK],
+          f"the opponents go to the server in chunks: {first[:8]}")
+    foes = [first[k:k + 4] for k in range(4, len(first), 4)] + [second[k:k + 4] for k in range(4, len(second), 4)]
+    check(sum(f[3] for f in foes) == 2 * cb.ARENA_FOES, f"20 opponents for each player: {len(foes)} stacks")
+    check(all(f[0] == 1 and f[1] == -1 and FIGHTER <= f[2] < FIGHTER + 10 for f in foes), f"arena fighters, led by the AI: {foes[:3]}")
+    check(foes[0][2] == FIGHTER, "the weakest comes first")
+    full = HERO[:-2] + [HERO[-1], HERO[-1]]
+    check(w.mp_request(0, 0, -1, {}, both, 3.4) == [5, bid, 0] + full, "a hero comes at full health")
+    check(w.mp_request(0, 0, -1, {}, both, 3.5) == [5, bid, 1] + full, "every player's hero")
+    nums = w.mp_request(0, 0, -1, {}, both, 3.6)
+    check(nums == [1, bid, len(foes), 2, 2 * cb.ARENA_AT_ONCE, 2, 0, 0, 1, 0],
+          f"the start: an arena, a few opponents at a time, both players on team 0: {nums}")
+    check(w.mp_request(4, bid, 0, {0: 1, 3: 1}, both, 9.0, [(0, 0, 3, 30)], {0: 50, 1: 0}, {0: 7, 1: 2}) == [4, bid, 0],
+          "the outcome is acknowledged")
+    check(w.battle is None and not w.results, "the arena ended and the world knows nothing of it")
+    check(drain(w, "a", 9.1) == [[9, bid, 1, 0, 3, 30], [26, bid, 1, 1, 7, 0, 7, 0]],
+          "the player who stood wins the arena, by its kills, and learns from its blows; no losses, no wounds")
+    check(drain(w, "b", 9.1) == [[26, bid, 1, 0, 2, 0, 7, 0]], "the player who fell gets the prize of its kills")
+
+
+def test_joint_tournament():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    alone = {0: "ivan"}
+    w.mp_request(0, 0, -1, {}, alone, 0.5)
+    start_event(w, "a", 0, 1.0, cb.EVENT_TOURNAMENT, bonus=1200)
+    bid = w.battle.bid
+    now = 2.0
+    for number in range(1, cb.TOURNAMENT_ROUNDS + 1):
+        nums = w.mp_request(0, 0, -1, {}, alone, now)
+        check(nums == [2, bid, 0, 1, 1, -1, FIGHTER + 2 * number, 1], f"round {number}: one opponent for one player: {nums}")
+        w.mp_request(0, 0, -1, {}, alone, now)  # the hero
+        nums = w.mp_request(0, 0, -1, {}, alone, now)
+        check(nums == [1, bid, 1, 3, number, 1, 0, 0], f"round {number} starts: a tournament, by round: {nums}")
+        more = 1 if number < cb.TOURNAMENT_ROUNDS else 0
+        check(w.mp_request(4, bid, 0, {0: 1}, alone, now + 1, (), {0: 70}, {0: 1}) == [4, bid, more],
+              f"after round {number} the server hears whether more comes")
+        check(w.mp_request(4, bid, 0, {0: 1}, alone, now + 1.1, (), {0: 70}, {0: 1}) == [4, bid, more],
+              "asked again: the same answer, no round is skipped")
+        if more:
+            check(req(w, "a", now=now + 1.2, busy=True, mp=mp(2, bid))[0] == [7, bid, 1, 0],
+                  "between rounds the window still says they fight")
+        now += 2
+    check(w.battle is None, "the last round ends it")
+    check(drain(w, "a", now) == [[26, bid, 2, 1, 4, 1200, 7, 0]], "the team won all rounds: the prize and the bets")
+    w.mp_request(0, 0, -1, {}, alone, 49.0)
+    start_event(w, "a", 0, 50.0, cb.EVENT_TOURNAMENT, bonus=1200)
+    bid = w.battle.bid
+    for _ in range(3):
+        w.mp_request(0, 0, -1, {}, alone, 51.0)
+    w.mp_request(4, bid, 0, {0: 1}, alone, 52.0, (), {0: 70}, {})
+    for _ in range(3):
+        w.mp_request(0, 0, -1, {}, alone, 53.0)
+    check(w.mp_request(4, bid, 1, {}, alone, 54.0, (), {0: 0}, {}) == [4, bid, 0] and w.battle is None,
+          "beaten in the second round: it ends there")
+    check(drain(w, "a", 54.1) == [[26, bid, 2, 0, 1, 0, 7, 0]], "one round won, no bets paid")
+
+
+def test_joint_training():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 1)], name="Olga")
+    both = {0: "ivan", 1: "Olga"}
+    w.mp_request(0, 0, -1, {}, both, 0.5)
+    start_event(w, "a", 0, 1.0, cb.EVENT_TRAINING, param=2)
+    bid = w.battle.bid
+    req(w, "b", x=300, now=1.1)
+    start_event(w, "b", 300, 1.2, cb.EVENT_TRAINING, param=3)
+    check(w.battle.sides == {"a": 0, "b": 0} and not w.battle.invited and w.battle.param == 2,
+          "a friend in the same place joins by its own start; the first choice stands")
+    nums = w.mp_request(0, 0, -1, {}, both, 1.3)
+    check(nums == [2, bid, 0, 3, 1, -1, 31, 2, 1, -1, 33, 1, 1, -1, FIGHTER + 2, 1],
+          f"each player's own men, a fighter in the place of those it lacks: {nums}")
+    for _ in range(3):
+        nums = w.mp_request(0, 0, -1, {}, both, 1.4)
+    check(nums == [1, bid, 3, 4, 2 * cb.ARENA_AT_ONCE, 2, 0, 0, 1, 0], f"the start: a training: {nums}")
+    check(w.mp_request(4, bid, 1, {0: 2, 1: 1}, both, 5.0, (), {0: 0, 1: 0}) == [4, bid, 0], "acknowledged")
+    pairs = [31, 2, 33, 1, FIGHTER + 2, 1]
+    check(drain(w, "a", 5.1) == [[26, bid, 3, 0, 75, 2, 2, 3] + pairs],
+          "beaten after three of four: 75 percent, with the opponents for the troops' experience")
+    start_event(w, "a", 0, 10.0, cb.EVENT_TRAINING, param=1)
+    bid = w.battle.bid
+    for _ in range(4):
+        w.mp_request(0, 0, -1, {}, {0: "ivan"}, 11.0)
+    check(w.battle.state == "gathering", "the invited friend may still answer")
+    req(w, "b", x=300, now=11.1, busy=True, mp={**mp(4, bid), "event": None})
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 11.2)
+    check(nums[:2] == [2, bid] and w.battle.sides == {"a": 0}, f"a friend who declined does not hold it up: {nums}")
+
+
+def test_joint_event_nobody_there():
+    w = cb.World()
+    lines = []
+    w.log = lines.append
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.5)
+    start_event(w, "a", 0, 1.0, cb.EVENT_ARENA)
+    bid = w.battle.bid
+    req(w, "b", x=300, now=1.1)
+    req(w, "b", x=300, now=2.0, busy=True, mp=mp(3, bid, hero=HERO))
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan"}, 2.1) == [0], "the friend is awaited on the battle server")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 2.0 + cb.GATHER_S + cb.EVENT_WAIT_S)
+    check(nums[:2] == [2, bid] and w.battle.sides == {"a": 0}, f"after a while it starts with those who came: {nums[:4]}")
+    check(any("not on the battle server" in s for s in lines), f"the log says why: {lines[-2:]}")
+    check(req(w, "b", x=300, now=120.0, mp=mp(2, bid))[0] == [7, bid, 2, 0], "the friend's window hears it")
+    w.battle = None
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 129.0)
+    start_event(w, "b", 300, 130.0, cb.EVENT_ARENA)
+    check(w.battle is not None, "started by a player who is not on the battle server")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 130.0 + cb.GATHER_S + cb.EVENT_WAIT_S)
+    check(w.battle is None, "nobody came: it is off, the next battle is free")
 
 
 def test_late_heroes():
@@ -1154,6 +1303,10 @@ if __name__ == "__main__":
     test_clock()
     test_host_plays_on_server()
     test_joint_battle()
+    test_joint_arena()
+    test_joint_tournament()
+    test_joint_training()
+    test_joint_event_nobody_there()
     test_late_heroes()
     test_late_heroes_while_loading()
     test_multiplayer_names()

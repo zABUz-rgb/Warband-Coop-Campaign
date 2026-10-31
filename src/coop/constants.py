@@ -129,6 +129,27 @@ slot_player_coop_hits = 110      # on the battle server: a hero's hits on enemie
 slot_player_coop_damage = 120    # and the damage they did (+ wpt)
 slot_player_coop_health = 130    # a hero's health at the end of the battle in percent + 1 (0: not a hero)
 slot_player_coop_fallen = 131    # 1: the player's hero fell in this battle and does not come back (as in the campaign)
+slot_player_coop_kills = 132     # a joint event: the opponents this player's hero beat
+# Joint events on the battle server: fought by the players' heroes alone, in practice gear, with no
+# wounds, no spoils, nothing changing in the world. An event's number goes in the player's request,
+# the battle server hears it as a mode (1 is a siege)
+coop_event_arena = 1
+coop_event_tournament = 2
+coop_event_training = 3
+coop_mp_mode_arena = 2
+coop_mp_mode_tournament = 3
+coop_mp_mode_training = 4
+coop_mp_tournament_rounds = 4     # as TOURNAMENT_ROUNDS in tools/coop_bridge.py
+coop_mp_no_hero_s = 10            # a joint event with no hero left on the battle server ends after this long
+coop_tournament_prize = 200       # Native's prize for winning a tournament, for every player of the team
+coop_tournament_renown = 20
+coop_tournament_xp = 250
+coop_arena_grand_xp = 200         # Native's experience for the arena's grand prize
+coop_arena_xp = 10                # and for the prizes under it (the lowest gives half)
+# Prisoner Management: the chance in percent that a fallen enemy is taken prisoner, at skill 1, and
+# what each further point adds (skill 0 takes none)
+coop_prisoner_chance_first = 10
+coop_prisoner_chance_step = 5
 coop_hero_knocked_out_health = 5 # a hero who fell in a joint battle comes back to the map wounded, as in Native
 # Weapon proficiency from a joint battle, as Native raises it in battle: for each kind of weapon used,
 # (damage + coop_wpt_hit_bonus * hits) * coop_wpt_gain / (proficiency + coop_wpt_softness) points, so

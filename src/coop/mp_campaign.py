@@ -21,6 +21,14 @@ from coop.constants import *
 #   13 the host stormed a center bid|center (the host's game takes it as Native does)
 #   10 aftermath bid|health|captor (health in percent or -1; captor: the world party that takes
 #      the defeated player prisoner, or -1)   11 prisoners for the winner bid|n|(troop, count)*n
+#   26 a joint event ended bid|event|won|value|bonus|town|n|(troop, count)*n
+#
+# Joint events: an arena, a tournament, a training together, started from Native's own places in a
+# town or at a training ground, fought by the players' heroes on the battle server. They change
+# nothing in the world and hurt nobody; each player's game gives its prize as Native would.
+# $coop_mp_event: 0 a battle of the campaign, else coop_event_arena, _tournament, _training
+# $coop_mp_return_menu: the menu the player started the event from (0: an invited player, back to the map)
+# $coop_mp_bet, $coop_mp_bet_win: the stake on the team, and what it wins on top of it
 
 
 def first_dynamic():
@@ -45,6 +53,11 @@ mp_campaign_scripts = [
        (party_get_slot, "$coop_mp_inv_type", "p_coop_buf", 3),
        (party_get_slot, "$coop_mp_inv_slot", "p_coop_buf", 4),
        (party_get_slot, ":sid", "p_coop_buf", 5),
+       (call_script, "script_coop_client_mp_no_event"),
+       (try_begin),
+         (ge, "$coop_mp_inv_type", 4), #4 an arena, 5 a tournament, 6 a training
+         (store_sub, "$coop_mp_event", "$coop_mp_inv_type", 3),
+       (try_end),
        (assign, ":refuse", 0),
        (try_begin),
          (eq, "$coop_mp_inv_type", 1),
@@ -164,8 +177,21 @@ mp_campaign_scripts = [
      (try_end),
      (try_begin),
        (gt, ":xp", 0),
-       (add_xp_as_reward, ":xp"), #the hero and the troops learn from the battle, as after a Native one
+       (add_xp_as_reward, ":xp"), #the hero learns from the battle
      (try_end),
+     # the troops too, as after a Native battle: by the enemies the winner's share holds (kind 21), a
+     # loser by the experience above. add_xp_as_reward alone left them with nothing.
+     (try_begin),
+       (le, "$coop_mp_troops_xp", 0),
+       (assign, "$coop_mp_troops_xp", ":xp"),
+     (try_end),
+     (try_begin),
+       (gt, "$coop_mp_troops_xp", 0),
+       (party_add_xp, "p_main_party", "$coop_mp_troops_xp"),
+       (assign, reg1, "$coop_mp_troops_xp"),
+       (display_message, "@CoopWorld: your troops gain {reg1} experience from the joint battle.", 0x66FF66),
+     (try_end),
+     (assign, "$coop_mp_troops_xp", 0),
      (assign, reg1, ":killed_all"),
      (assign, reg2, ":wounded_all"),
      (try_begin),
@@ -174,6 +200,13 @@ mp_campaign_scripts = [
      (else_try),
        (display_message, "@CoopWorld: the joint battle is LOST. Your losses: {reg1} killed, {reg2} wounded.", 0xFF6666),
      (try_end),
+     (call_script, "script_coop_client_mp_over", ":bid"),
+    ]),
+
+  # script_coop_client_mp_over: arg1 = the battle whose outcome came: nothing more to wait for
+  ("coop_client_mp_over",
+   [
+     (store_script_param, ":bid", 1),
      (try_begin),
        (eq, ":bid", "$coop_mp_bid"),
        (assign, "$coop_mp_status", 4),
@@ -185,6 +218,215 @@ mp_campaign_scripts = [
          (assign, "$coop_mp_state", 0),
        (try_end),
      (try_end),
+    ]),
+
+  # script_coop_client_mp_event_result: kind 26 reply, a joint event ended for this player
+  ("coop_client_mp_event_result",
+   [
+     (party_get_slot, ":bid", "p_coop_buf", 2),
+     (party_get_slot, ":event", "p_coop_buf", 3),
+     (party_get_slot, ":won", "p_coop_buf", 4),
+     (party_get_slot, ":value", "p_coop_buf", 5),
+     (party_get_slot, ":bonus", "p_coop_buf", 6),
+     (party_get_slot, ":town", "p_coop_buf", 7),
+     (assign, "$coop_mp_last_won", ":won"),
+     (try_begin),
+       (eq, ":event", coop_event_arena),
+       (call_script, "script_coop_client_arena_prize", ":won", ":value"),
+     (else_try),
+       (eq, ":event", coop_event_tournament),
+       (call_script, "script_coop_client_tournament_prize", ":won", ":value", ":bonus", ":town"),
+     (else_try),
+       (eq, ":event", coop_event_training),
+       (call_script, "script_coop_client_training_result", ":value", ":bonus", ":town"),
+     (try_end),
+     (call_script, "script_coop_client_mp_over", ":bid"),
+    ]),
+
+  # script_coop_client_arena_prize: arg1 = this hero stood last, arg2 = the opponents it beat: the prize
+  # the arena master gives in Native (a player beaten gets the prize of its kills)
+  ("coop_client_arena_prize",
+   [
+     (store_script_param, ":won", 1),
+     (store_script_param, ":kills", 2),
+     (assign, ":prize", 0),
+     (assign, ":xp", coop_arena_xp),
+     (try_begin),
+       (eq, ":won", 1),
+       (assign, ":prize", arena_grand_prize),
+       (assign, ":xp", coop_arena_grand_xp),
+     (else_try),
+       (ge, ":kills", arena_tier4_opponents_to_beat),
+       (assign, ":prize", arena_tier4_prize),
+     (else_try),
+       (ge, ":kills", arena_tier3_opponents_to_beat),
+       (assign, ":prize", arena_tier3_prize),
+     (else_try),
+       (ge, ":kills", arena_tier2_opponents_to_beat),
+       (assign, ":prize", arena_tier2_prize),
+     (else_try),
+       (ge, ":kills", arena_tier1_opponents_to_beat),
+       (assign, ":prize", arena_tier1_prize),
+       (val_div, ":xp", 2),
+     (try_end),
+     (assign, reg1, ":kills"),
+     (assign, reg2, ":prize"),
+     (try_begin),
+       (gt, ":prize", 0),
+       (troop_add_gold, "trp_player", ":prize"),
+       (add_xp_to_troop, ":xp", "trp_player"),
+       (display_message, "@CoopWorld: the arena fight is over. You beat {reg1} opponents: {reg2} denars.", 0x66FF66),
+     (else_try),
+       (display_message, "@CoopWorld: the arena fight is over. You beat {reg1} opponents: not enough for a prize.", 0xFFDD66),
+     (try_end),
+    ]),
+
+  # script_coop_client_tournament_prize: arg1 = the team won, arg2 = the rounds it won, arg3 = what the
+  # bets win for every player, arg4 = the town. Every player of a winning team gets Native's prize and
+  # the bets' winnings; the stake leaves only the game of the player who bet, and only here, so a
+  # tournament cancelled on its way costs nothing.
+  ("coop_client_tournament_prize",
+   [
+     (store_script_param, ":won", 1),
+     (store_script_param, ":rounds", 2),
+     (store_script_param, ":bonus", 3),
+     (store_script_param, ":town", 4),
+     (party_set_slot, ":town", slot_town_has_tournament, 0),
+     (party_get_slot, ":odds", ":town", slot_town_player_odds),
+     (try_begin),
+       (eq, ":won", 1),
+       (store_add, ":gold", coop_tournament_prize, ":bonus"),
+       (troop_add_gold, "trp_player", ":gold"),
+       (add_xp_to_troop, coop_tournament_xp, "trp_player"),
+       (call_script, "script_change_troop_renown", "trp_player", coop_tournament_renown),
+       (call_script, "script_change_player_relation_with_center", ":town", 1),
+       (assign, reg1, coop_tournament_prize),
+       (assign, reg2, ":bonus"),
+       (str_store_party_name, s1, ":town"),
+       (display_message, "@CoopWorld: your team won the tournament of {s1}! Prize {reg1} denars, and {reg2} from the bets.", 0x66FF66),
+       (store_div, ":odds_sub", "$coop_mp_bet_win", 5),
+       (val_sub, ":odds", ":odds_sub"),
+       (val_max, ":odds", 250),
+     (else_try),
+       (assign, reg1, ":rounds"),
+       (display_message, "@CoopWorld: your team is out of the tournament after {reg1} rounds won.", 0xFFDD66),
+       (gt, "$coop_mp_bet", 0),
+       (store_troop_gold, ":gold", "trp_player"),
+       (val_min, ":gold", "$coop_mp_bet"),
+       (troop_remove_gold, "trp_player", ":gold"),
+       (assign, reg2, "$coop_mp_bet"),
+       (display_message, "@CoopWorld: your bet of {reg2} denars is lost.", 0xFF6666),
+       (store_div, ":odds_add", "$coop_mp_bet", 5),
+       (val_add, ":odds", ":odds_add"),
+       (val_min, ":odds", 4000),
+     (try_end),
+     (try_begin),
+       (gt, "$coop_mp_bet", 0),
+       (party_set_slot, ":town", slot_town_player_odds, ":odds"),
+     (try_end),
+     (assign, "$coop_mp_bet", 0),
+     (assign, "$coop_mp_bet_win", 0),
+    ]),
+
+  # script_coop_client_training_result: arg1 = the share of the opponents beaten in percent (100: the
+  # players stood), arg2 = opponents for each player, arg3 = players; the reply holds n|(troop, count)*n
+  # from slot 8, the opponents. As Native's training_ground_training_result: all who are fit learn,
+  # those who fought learn more, and the harder the fight the more.
+  ("coop_client_training_result",
+   [
+     (store_script_param, ":ratio", 1),
+     (store_script_param, ":each", 2),
+     (store_script_param, ":players", 3),
+     (party_get_slot, ":foes", "p_coop_buf", 8),
+     (assign, ":old_mode", "$g_mt_mode"),
+     (assign, "$g_mt_mode", ctm_melee),
+     (assign, "$g_training_ground_used_weapon_proficiency", wpt_one_handed_weapon),
+     (assign, ":difficulty", 0),
+     (try_for_range, ":k", 0, ":foes"),
+       (store_mul, ":at", ":k", 2),
+       (val_add, ":at", 9),
+       (party_get_slot, ":troop", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":count", "p_coop_buf", ":at"),
+       (store_character_level, ":level", ":troop"),
+       (val_add, ":level", 10),
+       (val_mul, ":level", ":level"),
+       (val_mul, ":level", ":count"),
+       (val_add, ":difficulty", ":level"),
+     (try_end),
+     (val_max, ":players", 1),
+     (val_div, ":difficulty", ":players"), #what one player faced
+     (store_add, ":multiplier", ":each", 4),
+     (store_mul, "$g_training_ground_training_hardness", ":difficulty", ":multiplier"),
+     (val_div, "$g_training_ground_training_hardness", 2400),
+     (store_skill_level, ":trainer_skill", "skl_trainer", "trp_player"),
+     (val_add, ":trainer_skill", 5),
+     (call_script, "script_write_fit_party_members_to_stack_selection", "p_main_party", 1),
+     (troop_get_slot, ":num_fit", "trp_stack_selection_amounts", 1),
+     (troop_get_slot, ":num_slots", "trp_stack_selection_amounts", 0),
+     (assign, ":earned", 0),
+     (try_begin),
+       (gt, ":ratio", 0),
+       (store_mul, ":xp_ratio", ":ratio", ":ratio"),
+       (try_begin),
+         (eq, ":ratio", 100),
+         (val_mul, ":xp_ratio", 2), #2x when perfect
+       (try_end),
+       (val_div, ":xp_ratio", 2),
+       (val_div, ":xp_ratio", 10), # value over 1000
+       (try_begin),
+         (gt, ":num_fit", 8),
+         (set_fixed_point_multiplier, 1000),
+         (val_mul, ":xp_ratio", 3),
+         (assign, ":divisor", ":num_fit"),
+         (convert_to_fixed_point, ":divisor"),
+         (store_sqrt, ":divisor", ":divisor"),
+         (convert_to_fixed_point, ":xp_ratio"),
+         (val_div, ":xp_ratio", ":divisor"),
+       (try_end),
+       (store_mul, ":xp_ratio_all", ":xp_ratio", ":trainer_skill"),
+       (val_div, ":xp_ratio_all", 10),
+       (party_get_num_companion_stacks, ":num_stacks", "p_main_party"),
+       (store_add, ":end_slot", ":num_slots", 2),
+       (try_for_range, ":i_slot", 2, ":end_slot"),
+         (troop_get_slot, ":amount", "trp_stack_selection_amounts", ":i_slot"),
+         (troop_get_slot, ":troop", "trp_stack_selection_ids", ":i_slot"),
+         (assign, ":end_stack", ":num_stacks"),
+         (try_for_range, ":stack_no", 0, ":end_stack"),
+           (party_stack_get_troop_id, ":stack_troop", "p_main_party", ":stack_no"),
+           (eq, ":stack_troop", ":troop"),
+           (assign, ":end_stack", 0), #break
+           (call_script, "script_cf_training_ground_sub_routine_for_training_result", ":troop", ":stack_no", ":amount", ":xp_ratio_all"),
+           (val_add, ":earned", reg0),
+         (try_end),
+       (try_end),
+       (store_mul, ":xp_ratio_fought", ":xp_ratio", 3),
+       (val_div, ":xp_ratio_fought", 2),
+       (try_for_range, ":k", 0, ":foes"),
+         (store_mul, ":at", ":k", 2),
+         (val_add, ":at", 9),
+         (party_get_slot, ":troop", "p_coop_buf", ":at"),
+         (val_add, ":at", 1),
+         (party_get_slot, ":count", "p_coop_buf", ":at"),
+         (assign, ":end_stack", ":num_stacks"),
+         (try_for_range, ":stack_no", 0, ":end_stack"),
+           (party_stack_get_troop_id, ":stack_troop", "p_main_party", ":stack_no"),
+           (eq, ":stack_troop", ":troop"),
+           (assign, ":end_stack", 0), #break
+           (call_script, "script_cf_training_ground_sub_routine_for_training_result", ":troop", ":stack_no", ":count", ":xp_ratio_fought"),
+           (val_add, ":earned", reg0),
+         (try_end),
+       (try_end),
+       (try_begin),
+         (call_script, "script_cf_training_ground_sub_routine_for_training_result", "trp_player", -1, 1, ":xp_ratio"),
+         (assign, reg2, reg0),
+         (display_message, "@CoopWorld: you earned {reg2} experience in the training.", 0x66FF66),
+       (try_end),
+     (try_end),
+     (assign, "$g_mt_mode", ":old_mode"),
+     (assign, reg1, ":ratio"),
+     (assign, reg2, ":earned"),
+     (display_message, "@CoopWorld: the training is over: {reg1}% of the opponents beaten, your troops earned {reg2} experience.", 0x66FF66),
     ]),
 
   # script_coop_client_mp_weapons: kind 9 reply, how the hero fought: (wpt, hits, damage)*n.
@@ -336,6 +578,10 @@ mp_campaign_scripts = [
      (store_add, reg1, "$coop_mp_team", 1),
      (try_begin),
        (eq, "$coop_mp_status", 1),
+       (gt, "$coop_mp_event", 0),
+       (str_store_string, s1, "@The fight is on!^^Switch to the multiplayer window (the CoopWorld battle server): all players stand on one side, in practice gear.^^This window waits for the outcome. The world stands still meanwhile.{s2}"),
+     (else_try),
+       (eq, "$coop_mp_status", 1),
        (str_store_string, s1, "@The battle is on!^^Switch to the multiplayer window (the CoopWorld battle server) and fight: your side is team {reg1}. Your troops are on the field and obey your orders.^^This window waits for the outcome. The world stands still meanwhile.{s2}"),
      (else_try),
        (eq, "$coop_mp_status", 2),
@@ -346,6 +592,9 @@ mp_campaign_scripts = [
      (else_try),
        (eq, "$coop_mp_status", 4),
        (str_store_string, s1, "@The battle is over. The outcome is in the message log."),
+     (else_try),
+       (gt, "$coop_mp_event", 0),
+       (str_store_string, s1, "@Gathering the players...^^Players nearby are invited. The fight starts as soon as every player who agreed stands on the battle server: switch to the multiplayer window now.{s2}"),
      (else_try),
        (str_store_string, s1, "@Gathering the players for a joint battle...^^Players nearby are invited. The battle starts in a few seconds.{s2}"),
      (try_end),
@@ -390,6 +639,18 @@ mp_campaign_scripts = [
        (party_is_active, ":ally"),
        (call_script, "script_coop_troops_to_s12", ":ally", 1),
        (str_store_string, s16, "@{s16}&mpat={s12}"),
+     (try_end),
+     # a joint event: which, its choice (a training's opponents for each player), the town, the first
+     # arena fighter (the bridge knows no troop numbers), what the bet wins
+     (try_begin),
+       (eq, reg6, 1),
+       (gt, "$coop_mp_event", 0),
+       (assign, reg14, "$coop_mp_event"),
+       (assign, reg15, "$coop_mp_event_param"),
+       (assign, reg16, "$current_town"),
+       (assign, reg17, "trp_arena_training_fighter_1"),
+       (assign, reg18, "$coop_mp_bet_win"),
+       (str_store_string, s16, "@{s16}&mpx={reg14},{reg15},{reg16},{reg17},{reg18}"),
      (try_end),
      (str_clear, s18),
      (str_clear, s20),
@@ -553,6 +814,85 @@ mp_campaign_scripts = [
        (assign, "$coop_loot_ready", 1),
        (display_message, "@CoopWorld: the spoils of the joint battle are waiting for you (the joint battle menu, or Camp - CoopWorld: co-op...).", 0x66FF66),
      (try_end),
+     (call_script, "script_coop_client_mp_fallen_prisoners"),
+     (call_script, "script_coop_client_mp_fallen_xp"),
+    ]),
+
+  # script_coop_client_mp_fallen_prisoners: the same kind 21 reply: every fallen enemy of this player's
+  # share, killed or wounded, may be taken prisoner, by the hero's Prisoner Management
+  # (coop_prisoner_chance_first at skill 1, coop_prisoner_chance_step more for each further point; at
+  # skill 0 none), as far as the party has room for prisoners.
+  ("coop_client_mp_fallen_prisoners",
+   [
+     (store_skill_level, ":skill", "skl_prisoner_management", "trp_player"),
+     (party_get_slot, ":n", "p_coop_buf", 3),
+     (try_begin),
+       (gt, ":skill", 0),
+       (store_sub, ":chance", ":skill", 1),
+       (val_mul, ":chance", coop_prisoner_chance_step),
+       (val_add, ":chance", coop_prisoner_chance_first),
+       (assign, ":taken", 0),
+       (assign, ":no_room", 0),
+       (try_for_range, ":k", 0, ":n"),
+         (store_mul, ":at", ":k", 2),
+         (val_add, ":at", 4),
+         (party_get_slot, ":troop", "p_coop_buf", ":at"),
+         (val_add, ":at", 1),
+         (party_get_slot, ":count", "p_coop_buf", ":at"),
+         (neg|troop_is_hero, ":troop"),
+         (assign, ":caught", 0),
+         (try_for_range, ":unused", 0, ":count"),
+           (store_random_in_range, ":roll", 0, 100),
+           (lt, ":roll", ":chance"),
+           (val_add, ":caught", 1),
+         (try_end),
+         (party_get_free_prisoners_capacity, ":room", "p_main_party"),
+         (try_begin),
+           (gt, ":caught", ":room"),
+           (store_sub, ":left", ":caught", ":room"),
+           (val_add, ":no_room", ":left"),
+           (assign, ":caught", ":room"),
+         (try_end),
+         (gt, ":caught", 0),
+         (party_add_prisoners, "p_main_party", ":troop", ":caught"),
+         (val_add, ":taken", reg0),
+       (try_end),
+       (assign, reg1, ":skill"),
+       (assign, reg2, ":chance"),
+       (assign, reg3, ":taken"),
+       (display_message, "@CoopWorld: Prisoner Management {reg1} ({reg2}% of the fallen): you take {reg3} prisoners.", 0x66FF66),
+       (gt, ":no_room", 0),
+       (assign, reg1, ":no_room"),
+       (display_message, "@CoopWorld: no room for {reg1} more prisoners.", 0xFFDD66),
+     (try_end),
+    ]),
+
+  # script_coop_client_mp_fallen_xp: the same kind 21 reply: what the troops learn from the fallen
+  # enemies of this player's share, as in Native's script_party_give_xp_and_gold; given with the
+  # outcome (kind 8)
+  ("coop_client_mp_fallen_xp",
+   [
+     (party_get_slot, ":n", "p_coop_buf", 3),
+     (assign, ":xp", 0),
+     (try_for_range, ":k", 0, ":n"),
+       (store_mul, ":at", ":k", 2),
+       (val_add, ":at", 4),
+       (party_get_slot, ":troop", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":count", "p_coop_buf", ":at"),
+       (neg|troop_is_hero, ":troop"),
+       (store_character_level, ":gain", ":troop"),
+       (val_add, ":gain", 10),
+       (val_mul, ":gain", ":gain"),
+       (val_div, ":gain", 10),
+       (val_mul, ":gain", ":count"),
+       (val_add, ":xp", ":gain"),
+     (try_end),
+     (val_min, ":xp", 40000),
+     (store_random_in_range, ":r", 50, 100),
+     (val_mul, ":xp", ":r"),
+     (val_div, ":xp", 100),
+     (assign, "$coop_mp_troops_xp", ":xp"),
     ]),
 
   # script_coop_client_mp_leave_battle: the joint battle is over and the player goes back to the map
@@ -567,6 +907,7 @@ mp_campaign_scripts = [
      (try_end),
      (assign, "$coop_busy", 2), #back on the map: the first map frame ends the battle's hold on the world
      (assign, "$coop_profile_frames", coop_profile_period_frames), #what the battle changed goes to the host
+     (call_script, "script_coop_client_mp_no_event"),
     ]),
 
   # script_coop_append_s18: reg20 onto s18, after a comma unless arg1 = 1
@@ -586,6 +927,7 @@ mp_campaign_scripts = [
   ("coop_client_mp_begin_defence",
    [
      (store_script_param, ":center", 1),
+     (call_script, "script_coop_client_mp_no_event"),
      (assign, "$coop_mp_target_center", ":center"),
      (assign, "$coop_mp_target_slot", -1),
      (assign, "$coop_mp_defend", 1),
@@ -622,6 +964,7 @@ mp_campaign_scripts = [
   ("coop_client_mp_begin",
    [
      (store_script_param, ":party_no", 1),
+     (call_script, "script_coop_client_mp_no_event"),
      (assign, "$coop_mp_enemy_party", ":party_no"),
      (assign, "$coop_mp_ally_sid", -1),
      (assign, "$coop_mp_target_sid", -1),
@@ -653,6 +996,51 @@ mp_campaign_scripts = [
      # this game (a background window), and the battle must not wait for it
      (call_script, "script_coop_client_mp_send"),
      (display_message, "@CoopWorld: request for a joint battle sent to the bridge.", 0x66CCFF),
+     (jump_to_menu, "mnu_coop_mp_wait"),
+    ]),
+
+  # script_coop_client_mp_no_event: a battle of the campaign starts, or the event is done: no leftovers
+  ("coop_client_mp_no_event",
+   [
+     (assign, "$coop_mp_event", 0),
+     (assign, "$coop_mp_return_menu", 0),
+     (assign, "$coop_mp_bet", 0),
+     (assign, "$coop_mp_bet_win", 0),
+    ]),
+
+  # script_coop_client_mp_begin_event: arg1 = coop_event_..., arg2 = its choice (a training's opponents
+  # for each player), arg3 = the menu to come back to, arg4 = the stake on the team. Another player
+  # who starts the same event while it gathers joins it (the team's bets add up).
+  ("coop_client_mp_begin_event",
+   [
+     (store_script_param, "$coop_mp_event", 1),
+     (store_script_param, "$coop_mp_event_param", 2),
+     (store_script_param, "$coop_mp_return_menu", 3),
+     (store_script_param, "$coop_mp_bet", 4),
+     (assign, "$coop_mp_bet_win", 0),
+     (try_begin),
+       (gt, "$coop_mp_bet", 0),
+       (assign, "$g_tournament_cur_tier", 0), #the whole tournament: the best odds, as a first round's bet
+       (call_script, "script_get_win_amount_for_tournament_bet"),
+       (store_mul, "$coop_mp_bet_win", reg0, "$coop_mp_bet"),
+       (val_div, "$coop_mp_bet_win", 100),
+       (val_sub, "$coop_mp_bet_win", "$coop_mp_bet"),
+     (try_end),
+     (assign, "$coop_mp_enemy_party", -1),
+     (assign, "$coop_mp_ally_sid", -1),
+     (assign, "$coop_mp_target_sid", -1),
+     (assign, "$coop_mp_target_slot", -1),
+     (assign, "$coop_mp_target_center", -1),
+     (assign, "$coop_mp_defend", 0),
+     (assign, "$coop_mp_bid", 0),
+     (assign, "$coop_mp_status", 0),
+     (assign, "$coop_mp_state", 1),
+     (assign, "$coop_mp_hidden", 0),
+     (assign, "$coop_mp_dbg_sent", 0),
+     (assign, "$coop_mp_dbg_answers", 0),
+     (assign, "$coop_mp_dbg_shown", -100000),
+     (call_script, "script_coop_client_mp_send"),
+     (display_message, "@CoopWorld: request for a joint fight sent to the bridge.", 0x66CCFF),
      (jump_to_menu, "mnu_coop_mp_wait"),
     ]),
 
@@ -690,6 +1078,7 @@ mp_campaign_scripts = [
   # the party he fights; his men fight on the players' side
   ("coop_client_mp_begin_lord",
    [
+     (call_script, "script_coop_client_mp_no_event"),
      (try_begin),
        (call_script, "script_cf_coop_lord_enemy"),
        (assign, "$coop_mp_enemy_party", -1),
@@ -791,6 +1180,55 @@ coop_mp_siege_option = (
   ])
 
 
+# the conditions of a joint event: a co-op player on its feet, not waiting for a battle already
+coop_mp_event_ready = [
+  (this_or_next|eq, "$coop_role", coop_role_client),
+  (eq, "$coop_srv_player", 1),
+  (eq, "$coop_mp_state", 0),
+  (neg|troop_is_wounded, "trp_player"),
+  (neq, "$g_player_is_captive", 1),
+]
+
+
+# the town menu, beside Native's way into the arena
+coop_mp_arena_option = (
+  "coop_mp_arena",
+  coop_mp_event_ready + [
+    (party_slot_eq, "$current_town", slot_party_type, spt_town),
+    (eq, "$sneaked_into_town", disguise_none),
+    (neq, "$all_doors_locked", 1),
+    (neq, "$town_nighttime", 1),
+  ],
+  "CoopWorld: fight in the arena together (on the multiplayer server).",
+  [
+    (call_script, "script_coop_client_mp_begin_event", coop_event_arena, 0, "mnu_town", 0),
+  ])
+
+
+# the town menu, beside Native's "Join the tournament": the bet first
+coop_mp_tournament_option = (
+  "coop_mp_tournament",
+  coop_mp_event_ready + [
+    (neg|is_currently_night),
+    (party_slot_ge, "$current_town", slot_town_has_tournament, 1),
+    (eq, "$entry_to_town_forbidden", 0),
+  ],
+  "CoopWorld: join the tournament together (on the multiplayer server).",
+  [
+    (jump_to_menu, "mnu_coop_tournament_bet"),
+  ])
+
+
+# the training ground, beside Native's sparring: how many opponents first
+coop_mp_training_option = (
+  "coop_mp_training",
+  coop_mp_event_ready,
+  "CoopWorld: train together with your friends (on the multiplayer server).",
+  [
+    (jump_to_menu, "mnu_coop_training_pick"),
+  ])
+
+
 coop_mp_encounter_option = (
   "coop_mp_battle",
   [
@@ -818,6 +1256,40 @@ coop_mp_encounter_option = (
 
 
 mp_campaign_menus = [
+  ("coop_tournament_bet", 0,
+   "CoopWorld: the tournament of {s1}.^^Your team fights {reg2} rounds in a row, as many against as many as it has players; it stands as long as one of its heroes does. If it wins the last round every player gets the prize of the tournament.^^Whoever bets stakes on the whole team: 100 denars win {reg1} more, for every player, and if the team is beaten only the stake is lost. How much do you bet?",
+   "none",
+   [
+     (str_store_party_name, s1, "$current_town"),
+     (assign, "$g_tournament_cur_tier", 0),
+     (call_script, "script_get_win_amount_for_tournament_bet"),
+     (store_sub, reg1, reg0, 100),
+     (assign, reg2, coop_mp_tournament_rounds),
+   ],
+   [
+     ("coop_bet_" + str(amount),
+      [(store_troop_gold, ":gold", "trp_player"), (ge, ":gold", amount)],
+      str(amount) + " denars.",
+      [(call_script, "script_coop_client_mp_begin_event", coop_event_tournament, 0, "mnu_town", amount)])
+     for amount in (5, 10, 20, 50, 100)
+   ] + [
+     ("coop_bet_none", [], "No bet.",
+      [(call_script, "script_coop_client_mp_begin_event", coop_event_tournament, 0, "mnu_town", 0)]),
+     ("coop_bet_back", [], "Go back.", [(jump_to_menu, "mnu_town")]),
+   ]),
+
+  ("coop_training_pick", 0,
+   "CoopWorld: the training together.^^All players fight side by side, in practice gear, against your own men. How many opponents for each player?",
+   "none",
+   [],
+   [
+     ("coop_train_" + str(number), [], text + ".",
+      [(call_script, "script_coop_client_mp_begin_event", coop_event_training, number, "mnu_training_ground", 0)])
+     for number, text in ((1, "One"), (2, "Two"), (3, "Three"), (4, "Four"))
+   ] + [
+     ("coop_train_back", [], "Cancel.", [(jump_to_menu, "mnu_training_ground")]),
+   ]),
+
   # the spoils as Native's victory menu shows them: the loot screen from the menu's own code (set
   # $coop_loot_step 1 and jump here), and when it closes the menu's code runs again and leaves for
   # the map. A loot screen opened from an option left that menu's options dead afterwards.
@@ -860,7 +1332,8 @@ mp_campaign_menus = [
      ("coop_mp_show", [(is_between, "$coop_mp_state", 1, 4)], "Show the battle.",
       [(assign, "$coop_mp_hidden", 0), (start_presentation, "prsnt_coop_mp_wait")]),
      ("coop_mp_cancel", [(eq, "$coop_mp_state", 2), (eq, "$coop_mp_status", 0)], "Cancel the joint battle.",
-      [(assign, "$coop_mp_state", 4), (leave_encounter), (change_screen_return)]),
+      [(assign, "$coop_mp_state", 4), (call_script, "script_coop_client_mp_no_event"),
+       (leave_encounter), (change_screen_return)]),
      ("coop_mp_loot", [(neg|is_between, "$coop_mp_state", 1, 4), (eq, "$coop_loot_ready", 1),
                        (le, "$coop_mp_captor", 0), (le, "$coop_mp_taken_center", 0)],
       "Take your share of the spoils (then back to the map).",
@@ -888,7 +1361,16 @@ mp_campaign_menus = [
                            (lt, ":relation", 0)],
       "Back to the siege.",
       [(assign, "$coop_mp_target_center", -1), (jump_to_menu, "mnu_castle_besiege")]),
+     # a joint event started in a town or at a training ground: back there
+     ("coop_mp_back_menu", [(neg|is_between, "$coop_mp_state", 1, 4), (gt, "$coop_mp_return_menu", 0)], "Back.",
+      [
+        (assign, ":menu", "$coop_mp_return_menu"),
+        (call_script, "script_coop_client_mp_no_event"),
+        (assign, "$coop_profile_frames", coop_profile_period_frames), #what the fight changed goes to the host
+        (jump_to_menu, ":menu"),
+      ]),
      ("coop_mp_back", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_captor", 0),
+                       (le, "$coop_mp_return_menu", 0),
                        (le, "$coop_mp_taken_center", 0)], "Back to the map.",
       [
         (call_script, "script_coop_client_mp_leave_battle"),
@@ -913,6 +1395,15 @@ mp_campaign_menus = [
        (str_store_party_name, s1, ":puppet"),
      (try_end),
      (try_begin),
+       (eq, "$coop_mp_inv_type", 4),
+       (str_store_string, s2, "@{s1} calls you to fight in the arena together.^^You fight side by side on the multiplayer server, in practice gear. Nobody is hurt in earnest, and each player gets the prize for the opponents they beat."),
+     (else_try),
+       (eq, "$coop_mp_inv_type", 5),
+       (str_store_string, s2, "@{s1} calls you to the tournament together.^^You fight side by side on the multiplayer server, in practice gear, round after round. If your team wins, every player gets the prize and what the bets won."),
+     (else_try),
+       (eq, "$coop_mp_inv_type", 6),
+       (str_store_string, s2, "@{s1} calls you to train together.^^You fight side by side on the multiplayer server, in practice gear, against your own men, and your troops learn from it."),
+     (else_try),
        (eq, "$coop_mp_inv_type", 3),
        (str_store_string, s2, "@{s1}, whose party you follow, goes into battle - you are called!^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side. Join it there; if you do not, your troops fight without you."),
      (else_try),
@@ -930,9 +1421,10 @@ mp_campaign_menus = [
         (assign, "$coop_mp_hidden", 0),
         (jump_to_menu, "mnu_coop_mp_wait"),
       ]),
-     ("coop_mp_decline", [(eq, "$coop_mp_inv_type", 1)], "Decline.",
+     ("coop_mp_decline", [(this_or_next|eq, "$coop_mp_inv_type", 1), (ge, "$coop_mp_inv_type", 4)], "Decline.",
       [
         (assign, "$coop_mp_state", 4),
+        (call_script, "script_coop_client_mp_no_event"),
         (change_screen_return),
       ]),
    ]),
@@ -1098,8 +1590,13 @@ def client_request_suffix():
 
 
 def reply_branches():
-  """else_try branches for net_reply_handler: kinds 6 to 11 and 13."""
+  """else_try branches for net_reply_handler: kinds 6 to 11, 13 and 26."""
   return [
+    (else_try),
+      (eq, ":kind", 26),
+      (this_or_next|eq, "$coop_role", coop_role_client),
+      (eq, "$coop_srv_player", 1),
+      (call_script, "script_coop_client_mp_event_result"),
     (else_try),
       (eq, ":kind", 6),
       (this_or_next|eq, "$coop_role", coop_role_client),

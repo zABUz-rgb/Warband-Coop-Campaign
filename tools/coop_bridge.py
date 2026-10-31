@@ -77,7 +77,10 @@ Joint battles (the player game's waiting window adds &mp=OP&bid=B[&mpe=sid][&mpp
 [&compn=N&ter=T with a start or an acceptance: the companions coming and the terrain][&comp=troop,hero...:
 one companion per request after that]
 [&hero=...]; hero, with a start or an acceptance: HERO_NUMBERS numbers, the hero's equipment, attributes,
-combat skills, weapon proficiencies and hit points (now, at most), in the order of coop/constants.py):
+combat skills, weapon proficiencies and hit points (now, at most), in the order of coop/constants.py)
+[&mpx=event,param,town,fighter,bonus with a start: a joint event instead of a battle: 1 an arena, 2 a
+tournament, 3 a training; param: a training's opponents for each player, town: where it is held, fighter:
+the troop number of the first arena fighter, bonus: what the player's bet wins]:
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them), the
     player in puppet slot, or storm the town or castle mpc (a siege: the players are team 1, the
     garrison team 0); with &mpd=1 defend that center against its besieger mpe (the players and the
@@ -85,8 +88,12 @@ combat skills, weapon proficiencies and hit points (now, at most), in the order 
     2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
     With &mpa=sid[&mpat=t1,n1,...] (a start against a world party) the world party sid, the lord the
     player serves, fights on the players' side with its troops (mpat: as the player sees them). A
-    start against the enemy of a battle still gathering joins that battle.
-    reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked;
+    start against the enemy of a battle still gathering joins that battle; so does a start of the
+    joint event gathering. A joint event is fought by the players' heroes alone, in practice gear, on
+    one side against bots; it changes nothing in the world, and starts when its players stand on
+    the battle server.
+    reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked,
+                                     3 + event a joint event (it may be declined);
                                      sid: the world party fought (-1: a player), so the game can see
                                      whether it would fight its own allies
           7777|7|bid|status|team["name"]   0 gathering, 1 fought on the battle server (team 0 or 1),
@@ -113,21 +120,29 @@ combat skills, weapon proficiencies and hit points (now, at most), in the order 
           7777|19|slot|joined                  to a leader: the player in slot joined (1) or left (0)
           7777|20|slot                         the leader in slot let this player go
           7777|21|bid|n|(troop,count)*n        the player's share of the fallen enemies, to loot
+          7777|26|bid|event|won|value|bonus|town|n|(troop,count)*n   a joint event ended: an arena's value is
+                                               the opponents beaten; a tournament's the rounds won (bonus: what
+                                               the bets won); a training's the share of the opponents beaten in
+                                               percent (bonus: opponents for each player, town: the players;
+                                               the pairs: the opponents)
     A follower is called into the leader's joint battles: invitation type 3, which cannot be declined.
 
-Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...]
-                  &pl=no~name;...
+Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...
+                  &kl=no,count;...]&pl=no~name;...
     PHASE 0 an ordinary round, 1-3 a battle of the campaign, 4 over (w: winning team, r: the bots
     each stack lost; hp: the heroes' health at the end, 0 fallen; wx: the heroes' hits and damage by
-    weapon proficiency);
+    weapon proficiency; kl: the opponents each hero beat in a joint event);
     pl: the players on the server, matched to the players of the campaign by name.
     reply 7778|0                                  nothing
           7778|2|bid|offset|n|(team,player,troop,count)*n   stacks to spawn (player: who commands them, -1 the AI)
           7778|5|bid|player|hero...               a player fights as the campaign hero (after the stacks)
           7778|6|bid|troop|hero...                a companion's gear and stats (its stack spawns it)
           7778|1|bid|stacks|mode|hint|n|(player,team)*n   start: players onto their sides, the round
-                                                  restarts; mode 1 a siege (Siege game type, map by hint)
-          7778|4|bid                              the outcome arrived
+                                                  restarts; mode 1 a siege (Siege game type, map by hint),
+                                                  2 an arena (hint: opponents at a time), 3 a tournament
+                                                  (hint: the round), 4 a training
+          7778|4|bid|more                         the outcome arrived; more 1: the next round of this
+                                                  tournament follows
 
 Coordinates are map units * 100, shifted by COORD_OFFSET in replies so the games only get
 non-negative numbers. A reply holds at most 128 numbers (the engine's registers).
@@ -137,6 +152,7 @@ import base64
 import hmac
 import ipaddress
 import json
+import random
 import secrets
 import socket
 import threading
@@ -203,6 +219,12 @@ XP_PER_ENEMY = 30       # battle experience for each fallen enemy, shared by the
 MODULE_NAME = "Warband Coop Campaign"  # the module folder in Modules, and its save folder
 HERO_NUMBERS = 31       # 9 equipment slots, 4 attributes, 9 combat skills, 7 proficiencies, hit points now and at most
 COMPANIONS_WAIT_S = 5.0 # a battle waits this long for the starter's companions to arrive
+EVENT_ARENA, EVENT_TOURNAMENT, EVENT_TRAINING = 1, 2, 3  # joint events (coop_event_... in coop/constants.py)
+ARENA_FOES = 20         # opponents of a joint arena fight, for each player
+ARENA_SEQUENCE = 40     # Native's arena sends this many, the weak ones first
+ARENA_AT_ONCE = 3       # opponents standing at a time, for each player
+TOURNAMENT_ROUNDS = 4   # rounds of a joint tournament (coop_mp_tournament_rounds)
+EVENT_WAIT_S = 60.0     # a joint event waits this long for its players on the battle server
 
 
 def parse_ints(text):
@@ -299,6 +321,18 @@ class Battle:
         self.created = now
         self.started = None
         self.told = set()         # invited players told on the battle server to answer in the campaign
+        self.event = 0            # a joint event: EVENT_ARENA, _TOURNAMENT or _TRAINING; 0 a battle of the campaign
+        self.param = 0            # a training: opponents for each player
+        self.town = 0             # where the event is held
+        self.fighter = 0          # the troop number of the first arena fighter
+        self.bonus = 0            # a tournament: what the bets win, for every player
+        self.round = 1            # a tournament: the round being fought
+        self.kills = {}           # cid -> opponents its hero beat
+
+    @property
+    def fighting(self):
+        """1 while the players fight on the battle server (a tournament: between its rounds too)."""
+        return 1 if self.state == "running" or self.round > 1 else 0
 
 
 class World:
@@ -701,7 +735,7 @@ class World:
                 # the waiting window: how the battle stands
                 b = self.battle
                 if b is not None and cid in b.sides:
-                    return [7, b.bid, 1 if b.state == "running" else 0, b.sides[cid]], wanted
+                    return [7, b.bid, b.fighting, b.sides[cid]], wanted
                 return [7, mp["bid"], 0, 0], wanted
             by_distance = sorted(self.parties.items(),
                                  key=lambda kv: (kv[1][1] - x) ** 2 + (kv[1][2] - y) ** 2)
@@ -815,6 +849,16 @@ class World:
             troop, numbers = mp["comp"]
             p.companions[troop] = numbers
         if op == 1:
+            event = mp.get("event")
+            if (event and b is not None and b.state == "gathering" and p.cid not in b.sides
+                    and b.event == event[0]):
+                # two friends in one town: the second one's start joins the event, and its bet counts
+                self.log(f"joint battle {b.bid}: {self._who(p)} joins it (the same event)")
+                b.invited.discard(p.cid)
+                b.sides[p.cid] = 0
+                b.bonus += event[4]
+                p.mp_out.append([7, b.bid, 0, 0])
+                return
             if (b is not None and b.state == "gathering" and p.cid not in b.sides and mp["sid"] >= 0
                     and b.enemy_sid == mp["sid"]):
                 # the same enemy (two soldiers of one lord): this player joins the battle gathering
@@ -828,7 +872,7 @@ class World:
                     self.log(f"joint battle: refused - battle {b.bid} ({b.state}) is still on")
                     p.mp_out.append([7, 0, 2, 0])  # another battle is on
                 else:  # the answer to this player's start got lost: its battle, again
-                    p.mp_out.append([7, b.bid, 1 if b.state == "running" else 0, b.sides[p.cid]])
+                    p.mp_out.append([7, b.bid, b.fighting, b.sides[p.cid]])
                 return
             if not self._mp_online(now):
                 self.log("joint battle: refused - no battle server (Multiplayer - Host a game, Battle)")
@@ -837,7 +881,10 @@ class World:
             self.battle_seq += 1
             b = Battle(self.battle_seq, p.cid, now)
             defender = None
-            if mp.get("center", -1) > 0 and mp.get("defend") and mp["sid"] > 0:
+            if event:
+                # the players' heroes alone, on one side, against bots
+                b.event, b.param, b.town, b.fighter, b.bonus = event
+            elif mp.get("center", -1) > 0 and mp.get("defend") and mp["sid"] > 0:
                 # a defence: the players and the garrison hold the walls (team 0) against the
                 # besieger and the parties attached to it, its army (team 1)
                 b.center, b.defence, b.player_team = mp["center"], True, 0
@@ -879,7 +926,7 @@ class World:
                 p.mp_out.append([7, 0, 2, 0])
                 return
             for q in self.players.values():
-                if q.leader == p.cid and q is not defender and q.slot is not None:
+                if q.leader == p.cid and q is not defender and q.slot is not None and not b.event:
                     # the starter's followers: called in, they fight on the starter's side
                     b.sides[q.cid] = b.player_team
                     b.invited.add(q.cid)
@@ -893,7 +940,7 @@ class World:
                 if (q.pos[0] - p.pos[0]) ** 2 + (q.pos[1] - p.pos[1]) ** 2 <= INVITE_DIST ** 2:
                     b.invited.add(q.cid)
                     target = b.enemy_sid if b.enemy_sid is not None else (b.center if b.center is not None else -1)
-                    q.mp_out.append([6, b.bid, 1, p.slot, target])
+                    q.mp_out.append([6, b.bid, 3 + b.event if b.event else 1, p.slot, target])
             b.terrain = mp.get("terrain", 0)
             self.battle = b
             invited = ", ".join(self._who(self.players[c]) for c in sorted(b.invited) if c in self.players)
@@ -901,7 +948,7 @@ class World:
             p.mp_out.append([7, b.bid, 0, 0])
         elif b is not None and bid == 0 and op == 2 and p.cid in b.sides:
             # waiting without the battle's number (the answer to the start got lost): tell it
-            p.mp_out.append([7, b.bid, 1 if b.state == "running" else 0, b.sides[p.cid]])
+            p.mp_out.append([7, b.bid, b.fighting, b.sides[p.cid]])
         elif b is None or b.bid != bid:
             if op in (2, 3):
                 p.mp_out.append([7, bid, 2, 0])  # that battle is gone
@@ -917,7 +964,7 @@ class World:
                 b.sides[p.cid] = b.player_team
                 self.log(f"joint battle {b.bid}: {self._who(p)} accepted late - joins the battle as its hero; "
                          "its troops stay out of it")
-                p.mp_out.append([7, b.bid, 1 if b.state == "running" else 0, b.player_team])
+                p.mp_out.append([7, b.bid, b.fighting, b.player_team])
                 return
             b.invited.discard(p.cid)
             b.sides.setdefault(p.cid, b.player_team)  # an invited player fights on the starter's side
@@ -937,6 +984,9 @@ class World:
     def _battle_tick(self, now):
         b = self.battle
         if b is None or b.state != "gathering" or (b.invited and now < b.until):
+            return
+        if b.event:
+            self._event_tick(b, now)
             return
         # the companions come one per request: wait for them a little
         waiting = any(len(q.companions) < q.companions_expected
@@ -983,6 +1033,69 @@ class World:
                  + ", ".join(f"{self._who(self.players[c])}=team {t}" for c, t in b.sides.items() if c in self.players)
                  + ")")
 
+    def _event_tick(self, b, now):
+        """A joint event is fought by the heroes alone, no troops stand in for a player: it starts
+        when its players stand on the battle server, or after EVENT_WAIT_S with those who came."""
+        present = [cid for cid in b.sides if self._mp_player_number(cid) >= 0
+                   and cid in self.players and self.players[cid].hero]
+        if len(present) < len(b.sides) and now < b.until + EVENT_WAIT_S:
+            return
+        for cid in set(b.sides) - set(present):
+            del b.sides[cid]
+            q = self.players.get(cid)
+            if q is not None:
+                self.log(f"joint battle {b.bid}: {self._who(q)} is not on the battle server - left out of the event")
+                q.mp_out.append([7, b.bid, 2, 0])
+        if not b.sides:
+            self.battle = None
+            return
+        self._load_event_round(b)
+
+    def _load_event_round(self, b):
+        """The next fight of a joint event goes to the battle server (a tournament has several)."""
+        b.stacks = self._event_stacks(b)
+        b.sent, b.heroes, b.heroes_given, b.companion_data, b.late = 0, None, set(), [], []
+        b.state = "loading"
+        self.log(f"joint battle {b.bid}: going to the battle server ({len(b.stacks)} stacks, sides "
+                 + ", ".join(f"{self._who(self.players[c])}=team {t}" for c, t in b.sides.items() if c in self.players)
+                 + ")")
+
+    def _event_stacks(self, b):
+        """The opponents of a joint event, on team 1: Native's line of arena fighters, stronger ones
+        with each round of a tournament, or for a training each player's own men."""
+        players = len(b.sides)
+        if b.event == EVENT_ARENA:
+            total = ARENA_FOES * players
+            foes = []
+            for i in range(total):
+                k = i * ARENA_SEQUENCE // total
+                foes.append(b.fighter + min(9, k // 6 + k % 6))
+        elif b.event == EVENT_TOURNAMENT:
+            foes = [b.fighter + 2 * b.round + k % 2 for k in range(players)]
+        else:
+            foes = []
+            for cid in b.sides:
+                q = self.players.get(cid)
+                men = (q.stacks_last or []) if q is not None else []
+                pool = [troop for troop, n in men for _ in range(min(n, b.param))]
+                picked = random.sample(pool, min(b.param, len(pool)))
+                foes += picked + [b.fighter + 2] * (b.param - len(picked))
+        stacks = []
+        for troop in foes:
+            if stacks and stacks[-1][2] == troop:
+                stacks[-1][3] += 1
+                stacks[-1][4] += 1
+            else:
+                stacks.append([1, None, troop, 1, 1])
+        return stacks
+
+    def _hero_numbers(self, b, q):
+        """A player's hero for the battle server: in a joint event at full health."""
+        hero = list(q.hero)
+        if b.event:
+            hero[-2] = hero[-1]
+        return hero
+
     def _mp_wanted_name(self, cid):
         """The name a campaign player is expected under on the battle server: the one given to the
         launcher, else the hero's."""
@@ -1017,7 +1130,50 @@ class World:
                 out.append((p.slot, p.name or p.cid, self._mp_wanted_name(p.cid), no if no >= 0 else None))
             return out
 
-    def _finish(self, b, winner, fallen, now, weapons=(), health=None):
+    def _finish_event(self, b, winner, fallen, weapons, health, kills):
+        """A fight of a joint event is over. Nobody is lost, wounded or taken in it; the heroes learn
+        from their blows as in a battle, and each player's game gives the prize as Native would."""
+        won = 1 if winner == 0 else 0
+        for cid in b.sides:
+            q, no = self.players.get(cid), self._mp_player_number(cid)
+            if q is None:
+                continue
+            b.kills[cid] = b.kills.get(cid, 0) + (kills.get(no, 0) if no >= 0 else 0)
+            used = [(wpt, hits, damage) for player, wpt, hits, damage in weapons if player == no >= 0]
+            if used:
+                q.mp_out.append([9, b.bid, len(used)] + [v for entry in used for v in entry])
+        if (b.event == EVENT_TOURNAMENT and won and b.round < TOURNAMENT_ROUNDS
+                and any(self._mp_player_number(cid) >= 0 for cid in b.sides)):
+            self.log(f"joint battle {b.bid}: tournament round {b.round} won")
+            b.round += 1
+            self._load_event_round(b)
+            return
+        foes = {}
+        for team, owner, troop, count, spawned in b.stacks:
+            foes[troop] = foes.get(troop, 0) + count
+        total = sum(foes.values())
+        fell = min(total, sum(fallen.get(i, 0) for i in range(len(b.stacks))))
+        for cid in b.sides:
+            q, no = self.players.get(cid), self._mp_player_number(cid)
+            if q is None:
+                continue
+            if b.event == EVENT_ARENA:
+                stood = 1 if won and (health or {}).get(no, 0) > 0 else 0
+                q.mp_out.append([26, b.bid, b.event, stood, b.kills.get(cid, 0), 0, b.town, 0])
+            elif b.event == EVENT_TOURNAMENT:
+                rounds = b.round if won else b.round - 1
+                q.mp_out.append([26, b.bid, b.event, won, rounds, b.bonus if won else 0, b.town, 0])
+            else:
+                ratio = 100 if won else fell * 100 // max(1, total)
+                pairs = sorted(foes.items())
+                q.mp_out.append([26, b.bid, b.event, won, ratio, b.param, len(b.sides), len(pairs)] + flat(pairs))
+        self.log(f"joint battle {b.bid}: event {b.event} over ({'the players won' if won else 'the players were beaten'})")
+        self.battle = None
+
+    def _finish(self, b, winner, fallen, now, weapons=(), health=None, kills=None):
+        if b.event:
+            self._finish_event(b, winner, fallen, weapons, health, kills or {})
+            return
         losses = {cid: [] for cid in b.sides}
         left = {cid: [] for cid in b.sides}  # what each player has after the battle
         enemy_left = []
@@ -1126,7 +1282,7 @@ class World:
                 self.players[taker].mp_out.append([11, b.bid, len(taken)] + flat(taken))
         self.battle = None
 
-    def mp_request(self, phase, bid, winner, fallen, players, now, weapons=(), health=None):
+    def mp_request(self, phase, bid, winner, fallen, players, now, weapons=(), health=None, kills=None):
         """The battle server asks; returns the reply numbers after the marker."""
         with self.lock:
             self.mp_last = now
@@ -1134,8 +1290,10 @@ class World:
             b = self.battle
             if phase == 4:
                 if b is not None and b.bid == bid and b.state == "running":
-                    self._finish(b, winner, fallen, now, weapons, health)
-                return [4, bid]
+                    self._finish(b, winner, fallen, now, weapons, health, kills)
+                # the same answer when asked again: the next round of a tournament is already loading
+                more = 1 if self.battle is not None and self.battle.bid == bid else 0
+                return [4, bid, more]
             self._battle_tick(now)
             b = self.battle
             if b is None:
@@ -1154,7 +1312,7 @@ class World:
                     for cid in b.sides:
                         q, no = self.players.get(cid), self._mp_player_number(cid)
                         if q is not None and q.hero and no >= 0 and len(b.heroes_given) < MP_MAX_HEROES:
-                            b.heroes.append((no, q.hero))
+                            b.heroes.append((no, self._hero_numbers(b, q)))
                             b.heroes_given.add(cid)
                 if b.heroes:
                     no, hero = b.heroes.pop(0)
@@ -1175,6 +1333,9 @@ class World:
                         q.mp_out.append([7, b.bid, 1, team])
                 mode = 1 if b.center is not None else 0
                 hint = b.center if b.center is not None else b.terrain
+                if b.event:
+                    mode = b.event + 1
+                    hint = b.round if b.event == EVENT_TOURNAMENT else ARENA_AT_ONCE * len(b.sides)
                 return [1, b.bid, len(b.stacks), mode, hint, len(pairs) // 2] + pairs
             if b.state == "running" and phase in (1, 2, 3):
                 if not b.late:
@@ -1201,7 +1362,7 @@ class World:
             if q is None or not q.hero or no < 0:
                 continue
             b.heroes_given.add(cid)
-            b.late += [[5, b.bid, no] + q.hero, [9, b.bid, no, team]]
+            b.late += [[5, b.bid, no] + self._hero_numbers(b, q), [9, b.bid, no, team]]
             self.log(f"joint battle {b.bid}: {self._who(q)} is on the battle server now - its hero joins the battle (team {team})")
             return
 
@@ -1343,6 +1504,16 @@ def parse_mp_players(text):
         if sep and no.strip().isdigit() and name.strip():
             players[int(no)] = game_text_in(name).strip()
     return players
+
+
+def parse_event(text):
+    """mpx: [event, param, town, fighter, bonus], or None when malformed."""
+    values = parse_ints(text) if text else None
+    if values is None or len(values) != 5 or not EVENT_ARENA <= values[0] <= EVENT_TRAINING:
+        return None
+    if values[0] == EVENT_TRAINING and not 1 <= values[1] <= 4:
+        return None
+    return values
 
 
 def parse_fallen(text):
@@ -1527,6 +1698,7 @@ def _handle_request(world, role, target, now, cid="local"):
                   "compn": query_int(q, "compn", 0) if "compn" in q else None,
                   "comp": (comp[0], comp[1:]) if comp and len(comp) == HERO_NUMBERS + 1 else None,
                   "terrain": query_int(q, "ter", 0),
+                  "event": parse_event(q.get("mpx", "")),
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
                   "ally": query_int(q, "mpa", -1),
                   "ally_troops": parse_stacks(parse_ints(q.get("mpat", "").lstrip(","))) or [],
@@ -1544,7 +1716,8 @@ def _handle_request(world, role, target, now, cid="local"):
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
                                 parse_fallen(q.get("r", "")), parse_mp_players(q.get("pl", "")), now,
-                                parse_weapons(q.get("wx", "")), parse_fallen(q.get("hp", "")))
+                                parse_weapons(q.get("wx", "")), parse_fallen(q.get("hp", "")),
+                                parse_fallen(q.get("kl", "")))
         string = None
         if nums == [0]:
             notice = world.mp_notice()

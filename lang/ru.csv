@@ -1781,8 +1781,45 @@ quick_strings_en|CoopWorld: this game is a copy of the host's save on a friend's
 game_menus|mno_coop_mp_lord_battle|CoopWorld: сражаться рядом с командиром вместе с друзьями (совместный бой на сервере мультиплеера).
 quick_strings|qstr_CoopWorld:_your_time|CoopWorld: ваше время на несколько часов впереди мира - стоя на месте, вы ждёте его (ходить можно).
 quick_strings|qstr_CoopWorld:_your_time_|CoopWorld: ваше время отстаёт от мира - стоя на месте, вы догоняете его быстрее.
-quick_strings|qstr_CoopWorld:_request_fo|CoopWorld: запрос на совместный бой рядом с командиром отправлен мосту.
+quick_strings_en|CoopWorld: request for a joint battle beside your commander sent to the bridge.|CoopWorld: запрос на совместный бой рядом с командиром отправлен мосту.
 quick_strings|qstr_CoopWorld:_your_comm|CoopWorld: ваш командир уже не в бою.
 quick_strings|qstr_CoopWorld:_your_comma|CoopWorld: ваш командир вступает в бой!
 quick_strings|qstr_CoopWorld:_{reg20}_b|CoopWorld: {reg20} ботов всё же пришли на конях.
 quick_strings|qstr_CoopWorld:_{s1}_s_he|CoopWorld: герой игрока {s1} пал и в этот бой не вернётся.
+game_menus|mno_coop_mp_tournament|CoopWorld: участвовать в турнире вместе (на сервере мультиплеера).
+game_menus|mno_coop_mp_arena|CoopWorld: сразиться на арене вместе (на сервере мультиплеера).
+game_menus|mno_coop_mp_training|CoopWorld: тренироваться вместе с друзьями (на сервере мультиплеера).
+game_menus|menu_coop_tournament_bet|CoopWorld: турнир, {s1}.^^Ваша команда проводит {reg2} раунда подряд, соперников в каждом столько же, сколько в ней игроков; она держится, пока стоит хоть один её герой. Если она выиграет последний раунд, каждый игрок получит приз турнира.^^Ставка делается на всю команду: 100 денаров принесут ещё {reg1}, каждому игроку, а если команду победят, сделавший ставку потеряет только её. Сколько вы ставите?
+game_menus|mno_coop_bet_5|5 денаров.
+game_menus|mno_coop_bet_10|10 денаров.
+game_menus|mno_coop_bet_20|20 денаров.
+game_menus|mno_coop_bet_50|50 денаров.
+game_menus|mno_coop_bet_100|100 денаров.
+game_menus|mno_coop_bet_none|Без ставки.
+game_menus|mno_coop_bet_back|Назад.
+game_menus|menu_coop_training_pick|CoopWorld: тренировка вместе.^^Все игроки сражаются плечом к плечу, в тренировочном снаряжении, против ваших собственных бойцов. Сколько соперников на каждого игрока?
+game_menus|mno_coop_train_1|Один.
+game_menus|mno_coop_train_2|Двое.
+game_menus|mno_coop_train_3|Трое.
+game_menus|mno_coop_train_4|Четверо.
+game_menus|mno_coop_train_back|Отмена.
+game_menus|mno_coop_mp_back_menu|Назад.
+quick_strings_en|CoopWorld: the arena fight begins! All players stand together.|CoopWorld: бой на арене начинается! Все игроки стоят вместе.
+quick_strings_en|CoopWorld: the tournament, round {reg20} of {reg21}! All players stand together.|CoopWorld: турнир, раунд {reg20} из {reg21}! Все игроки стоят вместе.
+quick_strings_en|CoopWorld: the training begins! All players stand together.|CoopWorld: тренировка начинается! Все игроки стоят вместе.
+quick_strings_en|CoopWorld: your troops gain {reg1} experience from the joint battle.|CoopWorld: ваши войска получают {reg1} опыта за совместный бой.
+quick_strings_en|CoopWorld: the arena fight is over. You beat {reg1} opponents: {reg2} denars.|CoopWorld: бой на арене окончен. Побеждено соперников: {reg1}, награда: {reg2} денаров.
+quick_strings_en|CoopWorld: the arena fight is over. You beat {reg1} opponents: not enough for a prize.|CoopWorld: бой на арене окончен. Побеждено соперников: {reg1}, для награды этого мало.
+quick_strings_en|CoopWorld: your team won the tournament of {s1}! Prize {reg1} denars, and {reg2} from the bets.|CoopWorld: ваша команда выиграла турнир ({s1})! Приз {reg1} денаров и {reg2} со ставок.
+quick_strings_en|CoopWorld: your team is out of the tournament after {reg1} rounds won.|CoopWorld: ваша команда выбыла из турнира. Выиграно раундов: {reg1}.
+quick_strings_en|CoopWorld: your bet of {reg2} denars is lost.|CoopWorld: ваша ставка в {reg2} денаров проиграна.
+quick_strings_en|CoopWorld: you earned {reg2} experience in the training.|CoopWorld: вы получили {reg2} опыта на тренировке.
+quick_strings_en|CoopWorld: the training is over: {reg1}% of the opponents beaten, your troops earned {reg2} experience.|CoopWorld: тренировка окончена: побеждено {reg1}% соперников, ваши войска получили {reg2} опыта.
+quick_strings_en|The fight is on!^^Switch to the multiplayer window (the CoopWorld battle server): all players stand on one side, in practice gear.^^This window waits for the outcome. The world stands still meanwhile.{s2}|Бой идёт!^^Переключитесь в окно мультиплеера (сервер боя CoopWorld): все игроки стоят на одной стороне, в тренировочном снаряжении.^^Это окно ждёт итога. Мир пока стоит.{s2}
+quick_strings_en|Gathering the players...^^Players nearby are invited. The fight starts as soon as every player who agreed stands on the battle server: switch to the multiplayer window now.{s2}|Сбор игроков...^^Игроки поблизости приглашены. Бой начнётся, как только все согласившиеся будут на сервере боя: переключитесь сейчас в окно мультиплеера.{s2}
+quick_strings_en|CoopWorld: Prisoner Management {reg1} ({reg2}% of the fallen): you take {reg3} prisoners.|CoopWorld: Содержание пленных {reg1} ({reg2}% павших): взято пленных: {reg3}.
+quick_strings_en|CoopWorld: no room for {reg1} more prisoners.|CoopWorld: не хватило места ещё для {reg1} пленных.
+quick_strings_en|CoopWorld: request for a joint fight sent to the bridge.|CoopWorld: запрос на совместный бой отправлен мосту.
+quick_strings_en|{s1} calls you to fight in the arena together.^^You fight side by side on the multiplayer server, in practice gear. Nobody is hurt in earnest, and each player gets the prize for the opponents they beat.|{s1} зовёт вас сразиться на арене вместе.^^Вы сражаетесь плечом к плечу на сервере мультиплеера, в тренировочном снаряжении. Никто не пострадает всерьёз, каждый игрок получит награду за побеждённых им соперников.
+quick_strings_en|{s1} calls you to the tournament together.^^You fight side by side on the multiplayer server, in practice gear, round after round. If your team wins, every player gets the prize and what the bets won.|{s1} зовёт вас на турнир вместе.^^Вы сражаетесь плечом к плечу на сервере мультиплеера, в тренировочном снаряжении, раунд за раундом. Если команда победит, каждый игрок получит приз и выигрыш со ставок.
+quick_strings_en|{s1} calls you to train together.^^You fight side by side on the multiplayer server, in practice gear, against your own men, and your troops learn from it.|{s1} зовёт вас потренироваться вместе.^^Вы сражаетесь плечом к плечу на сервере мультиплеера, в тренировочном снаряжении, против своих бойцов, а ваши войска получают опыт.

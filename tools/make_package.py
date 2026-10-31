@@ -1,5 +1,5 @@
-"""Build the Warband Coop Campaign packages for players: dist/Warband-Coop-Campaign-<version>.zip
-(English) and dist/Warband-Coop-Campaign-<version>-ru.zip (Russian: game texts, installer and
+"""Build the Warband Coop Campaign packages for players: dist/<version>/Warband-Coop-Campaign-<version>.zip
+(English) and dist/<version>/Warband-Coop-Campaign-<version>-ru.zip (Russian: game texts, installer and
 instructions). The module folder, its saves and the logs folder in Documents are named like the
 project; only the mod's entries in the game's menus keep the prefix "CoopWorld:".
 
@@ -7,7 +7,7 @@ They hold only what the mod adds: the compiled module files (*.txt), Diplomacy's
 changed scenes (tools/dplmc_assets.py), the bridge and an installer, and in Programs the installers
 of the programs the mod needs (vendor/prereqs: Python, Radmin VPN), which install.bat
 offers to run for what is missing. The scripts run in Windows PowerShell 5.1, part of Windows 10/11.
-dist/nexus gets the same two packages for Nexus Mods without Programs: install.bat and the texts send
+dist/<version>/nexus gets the same two packages for Nexus Mods without Programs: install.bat and the texts send
 the player to the programs' own sites instead.
 No game files: the installer copies each player's own Modules/Native to Modules/Warband Coop Campaign and puts
 the compiled files over it. The Russian one also adds the mod's Russian texts
@@ -28,7 +28,8 @@ MODULE = ROOT / "game" / "Modules" / PROJECT
 RUSSIFIER_UI = ROOT / "vendor" / "l10n_ru" / "languages" / "ru"  # the russifier's engine interface
 BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler state; quick_strings.txt is read by the game
 PREREQS = ROOT / "vendor" / "prereqs"  # installers of the programs the mod needs (not in git)
-VERSION = "1.0"
+VERSION = "1.0.1"
+DIST = ROOT / "dist" / VERSION  # every version keeps its own folder
 DISCORD = "https://discord.gg/nfmWC5SWfp"
 BOOSTY = "https://boosty.to/zabuz_0"
 PYTHON_URL = "https://www.python.org/downloads/windows/"
@@ -635,7 +636,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   урон тем видом оружия, которым вы сражались, герой и отряд получают опыт за павших врагов
   (проигравшие - треть). Компаньоны выходят в бой ботами со своим снаряжением, навыками и
   здоровьем и подчиняются вам; павший компаньон возвращается тяжело раненым, но живым.
-  Победители делят добычу с павших врагов (окно добычи, как после обычного боя). Карта полевого
+  Победители делят добычу с павших врагов (окно добычи, как после обычного боя). Они же берут
+  пленных: каждый павший враг их доли, убитый или раненый, попадает в плен с шансом по навыку
+  "Содержание пленных" героя: 10% на уровне 1 и ещё по 5% за каждый следующий (на уровне 0 пленных
+  нет), пока хватает места. Карта полевого
   боя подбирается по местности: степь, лес, горы, снег, пустыня, река. Большие армии уменьшаются
   до 150 ботов на поле, потери пересчитываются обратно.
   Пока не переносится: качество предметов ("закалённый", "тяжёлый", "ржавый" и т.п.) - на сервере
@@ -656,6 +660,30 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   игроки и гарнизон (команда 1) на стенах, осаждающий лорд и его армия (команда 2) штурмуют.
   Отбились - осаждающие теряют павших; не удержали стены - центр переходит их королевству,
   а защитники попадают в плен, как в обычной игре.
+
+АРЕНА, ТУРНИР И ТРЕНИРОВКА ВМЕСТЕ
+  Они идут на том же сервере боя, во втором окне. Сражаются только герои игроков, все на одной
+  стороне, в тренировочном снаряжении и с полным здоровьем, без войск и компаньонов. На кампанию
+  влияет только награда: ни ран, ни потерь, мир о них не знает.
+  Игроки поблизости получают приглашение (только на карте: в меню города его не видно). Друг,
+  стоящий в том же городе, выбирает тот же пункт, пока событие собирается, и попадает в него.
+  Событие начинается, когда все согласившиеся стоят на сервере боя; кого нет через 1 мин 45 с,
+  оно оставляет без него. Войдите на сервер боя заранее.
+  АРЕНА: меню города - "CoopWorld: сразиться на арене вместе" (днём, не тайком). По 20 соперников на
+  игрока, от слабых к сильным, одновременно не больше 3 на игрока. Кто устоял до конца - главный
+  приз арены (250 денаров), павший - награда за своих побеждённых, как в одиночной игре. Карта
+  The Arena.
+  ТУРНИР: меню города, когда в нём идёт турнир - "CoopWorld: участвовать в турнире вместе". Сначала
+  ставка на всю команду (5-100 денаров или без неё). Четыре раунда подряд, в каждом соперников
+  столько же, сколько игроков (NxN), с каждым раундом они сильнее; команда держится, пока стоит
+  хоть один герой, а в следующем раунде вернутся все. Победа: каждому игроку приз 200 денаров,
+  250 опыта, 20 известности, +1 к отношению с городом и выигрыш со всех ставок команды. Поражение:
+  сделавший ставку теряет только её. Ставка списывается в конце, отменённый турнир ничего не стоит.
+  Карта The Arena.
+  ТРЕНИРОВКА: тренировочный лагерь - "CoopWorld: тренироваться вместе с друзьями", выберите от 1 до
+  4 соперников на игрока. Соперники - ваши собственные бойцы (если их мало, бойцы арены) с
+  тренировочным оружием. Опыт как в одиночной тренировке: зависит от доли побеждённых, сложности и
+  навыка "Тренер", бойцы, вышедшие на поле, получают больше. Карта Field by the River.
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
@@ -782,7 +810,10 @@ JOINT BATTLES (multiplayer server):
   4. The battle lasts until one side has nobody left, bots and heroes. A fallen hero does not come
      back into that battle. The losses go back to the campaign.
   You fight as your hero: equipment, attributes, combat skills, proficiencies and health (now and
-  at most) go to the battle server; health, experience and proficiency gains come back.
+  at most) go to the battle server; health, experience and proficiency gains come back, and your
+  troops gain experience as after a Native battle. The winners may take prisoners: every fallen
+  enemy of a player's share, killed or wounded, is taken with a chance by the hero's Prisoner
+  Management: 10% at level 1, 5% more for each further level (none at level 0), room permitting.
   Companions fight as bots under your command. Big armies are scaled down to 150 bots.
   Not carried yet: item quality (tempered, heavy, rusty...) - the hero has the same items on the
   battle server, of plain quality.
@@ -791,6 +822,27 @@ JOINT BATTLES (multiplayer server):
   storm them. Bots fight on foot; the server raises the ladders and sends storming bots stuck
   under a wall to them. JOINT DEFENCE: "CoopWorld: defend the walls together" when a world army
   besieges a center of your side.
+
+ARENA, TOURNAMENT AND TRAINING TOGETHER: on the same battle server, in the second window. Only the
+  players' heroes fight, all on one side, in practice gear and at full health, without troops or
+  companions. Only the prize reaches the campaign: no wounds, no losses. Players nearby are invited
+  (on the map; a town menu shows no invitation): a friend in the same town picks the same option
+  while the event gathers. It starts when all who agreed stand on the battle server; after 1 min 45 s
+  it goes on without those who did not come. Be on the battle server beforehand.
+  ARENA: town menu - "CoopWorld: fight in the arena together" (by day, not in disguise). 20 opponents
+  per player, the weak ones first, 3 per player at a time. Who stands at the end gets the arena's
+  grand prize (250 denars), who falls the prize for the opponents beaten, as in the single player
+  game. Map: The Arena.
+  TOURNAMENT: town menu, when the town holds one - "CoopWorld: join the tournament together". First a
+  bet on the whole team (5-100 denars, or none). Four rounds in a row, as many opponents as players
+  (NxN), stronger each round; the team stands while one hero does, and all come back next round.
+  Won: every player gets 200 denars, 250 experience, 20 renown, +1 with the town and what all the
+  team's bets won. Lost: who bet loses the stake only (taken at the end: a cancelled tournament
+  costs nothing). Map: The Arena.
+  TRAINING: training ground - "CoopWorld: train together with your friends", then 1 to 4 opponents
+  per player: your own men (arena fighters if you have too few) with practice weapons. Experience
+  as in a single player training: by the share beaten, how hard it was and the Trainer skill; the
+  men who fought gain more. Map: Field by the River.
 
 FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its
   enemies hunt the player. Fiefs and Diplomacy's diplomacy go only to the host for now.
@@ -808,7 +860,7 @@ the Warband folder (copied before the game restarts) and what happened, and to w
 BOM = "\ufeff"
 
 
-# Nexus Mods (dist/nexus): the same packages without the other programs' installers (Programs): Nexus
+# Nexus Mods (dist/<version>/nexus): the same packages without the other programs' installers (Programs): Nexus
 # takes only what the mod needs, and an installer that downloads things is not welcome there. The player
 # gets Python and Radmin VPN from their sites; these passages of the texts say so instead. Nexus has
 # its own donations, and its rules frown on asking for others: no Boosty link there.
@@ -873,7 +925,7 @@ def unbundled(text, used):
 
 def build(name, files, russian=False, programs=True, out=None):
     """dist/<name>.zip (or `out`), everything in the folder <name>; programs: with the Programs folder."""
-    out = out or ROOT / "dist" / f"{name}.zip"
+    out = out or DIST / f"{name}.zip"
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(MODULE.glob("*.txt")):
             if f.name not in BUILD_ONLY:
@@ -911,7 +963,7 @@ def prereqs():
 def main():
     if not (MODULE / "scripts.txt").exists():
         raise SystemExit("build the module first: python build.py")
-    (ROOT / "dist").mkdir(exist_ok=True)
+    DIST.mkdir(parents=True, exist_ok=True)
     base = f"{PROJECT.replace(' ', '-')}-{VERSION}"
     launchers = {lang: {"host.ps1": BOM + launcher("host", lang), "join.ps1": BOM + launcher("join", lang),
                         "host.bat": launcher_bat("host"), "join.bat": launcher_bat("join"),
@@ -919,7 +971,7 @@ def main():
                  for lang in ("en", "ru")}
     if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
         raise SystemExit("no Russian: put the russifier in vendor/l10n_ru and run python tools/make_ru.py")
-    nexus = ROOT / "dist" / "nexus"
+    nexus = DIST / "nexus"
     nexus.mkdir(exist_ok=True)
     used = set()
     for programs in (True, False):  # the packages, then the same for Nexus Mods without Programs

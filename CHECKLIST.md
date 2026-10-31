@@ -127,3 +127,19 @@ friend's first join.bat ended in "getaddrinfo failed" and a traceback of the bat
 mistyped host address). Now join reads a dot typed as 'ю'/'б' or ',' and spaces as slips, stops
 at once with what to type when the address is no address, and the battle relay goes on (says
 once) when it cannot reach the host's bridge.
+Open (1.0.1, nothing of this was played yet: the bridge's side is tested in test_coop_bridge.py,
+the game's side only compiles):
+- after a won joint battle: "Prisoner Management N (X% of the fallen)", the prisoners are in the party
+  (none at skill 0, "no room" when the party is full); a lost battle takes none;
+- after a joint battle "your troops gain N experience" and the troops' experience really grows, for
+  the winner by its share of the fallen, for the loser by the bridge's number;
+- arena: 20 fighters per player, in blue practice gear, 3 per player at a time, the next one comes
+  when one falls; the heroes in red, at full health; the round ends after the last fighter;
+- tournament: a bet, round after round without the team window in between, the bots stronger each
+  round, the team window after the last; gold, renown, relation and odds; a lost bet leaves the
+  player who bet only;
+- training: the player's own men in practice gear on Field by the River; the experience;
+- "Back." returns to the town or training ground, an invited player to the map; a campaign battle
+  right after an event spawns the bots with their own gear again (script_coop_mp_gear_back);
+- entry overrides on the multiplayer server: if the fighters come with no weapons, the override
+  does not reach bots there: script_coop_mp_arm_fighters is the fallback.
