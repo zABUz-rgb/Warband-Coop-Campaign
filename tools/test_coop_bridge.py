@@ -186,6 +186,18 @@ def test_lord_battle():
     w.server_report([], None, 20.0)
     told = [r[0] for r in (req(w, "a", now=20.1, lord=700) for _ in range(12)) if r[0][0] == 25]
     check(told == [[25, -1, -1]], "the lord's battle is over: the soldier is told")
+    # 31.10 19:12: the lord far off on a soldier's map stood where it was seen last, and the soldier with it
+    w3 = cb.World()
+    req(w3, "a", now=0.0, me=[], name="Ivan", lord=700)
+    w3.parties[700] = [1, 9000, 9000, 0.0, 9000, 9000, 0]
+    for k in range(40):
+        w3.parties[800 + k] = [1, k, 0, 0.0, k, 0, 0]
+    seen = []
+    for i in range(8):
+        r = req(w3, "a", now=1.0 + i, lord=700)[0]
+        if r[0] == 2:
+            seen.append(any(r[2 + 7 * e] == 700 for e in range(r[1])))
+    check(seen and all(seen), f"the lord comes in every reply of positions, however far ({len(seen)})")
     w2 = cb.World()
     req(w2, "host", now=0.0, on_server=True, lord=700)
     w2.server_report([], None, 0.5, battles=[(700, 800)])
@@ -487,6 +499,31 @@ def test_follow():
           "a player who leaves leaves its followers alone")
 
 
+def test_base():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[], name="Ivan")
+    req(w, "b", x=100, now=0.0, me=[], name="Olga")
+    check(cb.parse_together({"bs": "-1500,200"}) == {"base": (-1500, 200)}, "the camp is read, west of 0 too")
+    check(cb.parse_together({"bs": "-"}) == {"base": ()}, "and taken down")
+    mine = replies(w, "a", 1.0, 28, together={"base": (-1500, 200)})[0]
+    theirs = replies(w, "b", 1.0, 28)[0]
+    camp = [cb.BASE_SLOT, -1500 + OFF, 200 + OFF, 0]
+    check(mine == [28, 1] + camp == theirs, f"everybody's map shows the camp, in the slot after the players': {mine}")
+    check(w.shared["base"] == [-1500, 200], "it is kept with the treasury")
+    req(w, "b", now=2.0, together={"base": (1, 2)})
+    check(w.shared["base"] == [-1500, 200], "the first camp stands")
+    req(w, "a", now=2.1, together={"mark": (5, 6)})
+    nums = replies(w, "b", 2.2, 28)[0]
+    check(nums[1] == 2 and camp == nums[-4:], f"the marks do not take it away: {nums}")
+    req(w, "a", now=3.0, together={"mark": ()})
+    req(w, "b", now=3.1, together={"base": ()})
+    check(not w.shared["base"] and replies(w, "a", 3.2, 28)[0] == [28, 0], "any player takes it down")
+    w2 = cb.World()
+    w2.shared["base"] = [7, 8]
+    first = replies(w2, "a", 0.0, 28, me=[], name="Ivan")[0]
+    check(first == [28, 1, cb.BASE_SLOT, 7 + OFF, 8 + OFF, 0], f"a game coming in hears of the camp: {first}")
+
+
 def test_marks():
     w, lines = two_players()
     check(cb.parse_together({"mk": "-1500,200"}) == {"mark": (-1500, 200)}, "a mark is read, west of 0 too")
@@ -762,6 +799,39 @@ def test_joint_arena():
     check(drain(w, "b", 9.1) == [[26, bid, 1, 0, 2, 0, 7, 0]], "the player who fell gets the prize of its kills")
 
 
+def to_event_start(w, players, now):
+    """The battle server's requests up to the start of a joint event's fight: [stacks], the start."""
+    stacks = []
+    for _ in range(12):
+        nums = w.mp_request(0, 0, -1, {}, players, now)
+        if nums[0] == 2:
+            stacks += [nums[k:k + 4] for k in range(4, len(nums), 4)]
+        if nums[0] == 1:
+            return stacks, nums
+    raise AssertionError(f"no start: {nums}")
+
+
+def test_tournament_teams():
+    w = cb.World()
+    for players in (1, 2, 4):
+        seen = set()
+        for number in range(1, cb.TOURNAMENT_ROUNDS + 1):
+            for _ in range(60):
+                b = cb.Battle(1, "a", 0.0)
+                b.event, b.fighter, b.round = cb.EVENT_TOURNAMENT, FIGHTER, number
+                b.sides = {f"p{k}": 0 for k in range(players)}
+                men = {}
+                for team, owner, troop, count, spawned in w._event_stacks(b):
+                    assert FIGHTER + 2 * number <= troop <= FIGHTER + 2 * number + 1 <= FIGHTER + 9, troop
+                    men[team] = men.get(team, 0) + count
+                men[0] = men.get(0, 0) + players
+                assert 2 not in men, men
+                assert len(men) == b.teams and cb.TOURNAMENT_TEAMS[0] <= b.teams <= cb.TOURNAMENT_TEAMS[1], men
+                assert min(men.values()) >= 2 and len(set(men.values())) == 1, men
+                seen.add(b.teams)
+        check(seen == {2, 3, 4}, f"{players} players: 2 to 4 even teams of at least 2, never on the spectators' team")
+
+
 def test_joint_tournament():
     w = cb.World()
     req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
@@ -771,11 +841,11 @@ def test_joint_tournament():
     bid = w.battle.bid
     now = 2.0
     for number in range(1, cb.TOURNAMENT_ROUNDS + 1):
-        nums = w.mp_request(0, 0, -1, {}, alone, now)
-        check(nums == [2, bid, 0, 1, 1, -1, FIGHTER + 2 * number, 1], f"round {number}: one opponent for one player: {nums}")
-        w.mp_request(0, 0, -1, {}, alone, now)  # the hero
-        nums = w.mp_request(0, 0, -1, {}, alone, now)
-        check(nums == [1, bid, 1, 3, number, 1, 0, 0], f"round {number} starts: a tournament, by round: {nums}")
+        stacks, nums = to_event_start(w, alone, now)
+        check(all(FIGHTER + 2 * number <= s[2] <= FIGHTER + 2 * number + 1 for s in stacks),
+              f"round {number}: fighters of that round: {stacks}")
+        check(nums == [1, bid, len(stacks), 3, number + 10 * w.battle.teams, 1, 0, 0],
+              f"round {number} starts: a tournament, by round and teams: {nums}")
         more = 1 if number < cb.TOURNAMENT_ROUNDS else 0
         check(w.mp_request(4, bid, 0, {0: 1}, alone, now + 1, (), {0: 70}, {0: 1}) == [4, bid, more],
               f"after round {number} the server hears whether more comes")
@@ -790,11 +860,9 @@ def test_joint_tournament():
     w.mp_request(0, 0, -1, {}, alone, 49.0)
     start_event(w, "a", 0, 50.0, cb.EVENT_TOURNAMENT, bonus=1200)
     bid = w.battle.bid
-    for _ in range(3):
-        w.mp_request(0, 0, -1, {}, alone, 51.0)
+    to_event_start(w, alone, 51.0)
     w.mp_request(4, bid, 0, {0: 1}, alone, 52.0, (), {0: 70}, {})
-    for _ in range(3):
-        w.mp_request(0, 0, -1, {}, alone, 53.0)
+    to_event_start(w, alone, 53.0)
     check(w.mp_request(4, bid, 1, {}, alone, 54.0, (), {0: 0}, {}) == [4, bid, 0] and w.battle is None,
           "beaten in the second round: it ends there")
     check(drain(w, "a", 54.1) == [[26, bid, 2, 0, 1, 0, 7, 0]], "one round won, no bets paid")
@@ -1589,6 +1657,8 @@ if __name__ == "__main__":
     test_shared_pause()
     test_clock_sync()
     test_lord_battle()
+    test_tournament_teams()
+    test_base()
     test_troops_results_tombstones()
     test_clock()
     test_host_plays_on_server()

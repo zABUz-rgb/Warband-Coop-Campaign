@@ -64,16 +64,28 @@ EVENT_SCENES = [
   (coop_mp_mode_training, "scn_multi_scene_7"),     # Field by the River
   (coop_mp_mode_duel, "scn_multi_scene_17"),
 ]
-# The practice gear of a joint event, by the kind of weapon: 0 one handed, 1 two handed, 2 polearm,
-# 3 ranged. A hero takes the set nearest to its own weapons, the bots take them in turn; a training is
-# sparring, by hand, as in Native (the first SPARRING_SETS only).
+# The practice gear of a joint event: 0 one handed, 1 two handed, 2 polearm, 3 ranged, then more. The bots
+# take the sets in turn, the heroes another one each round of an arena or a tournament. A training is
+# sparring, by hand, as in Native (the first SPARRING_SETS only), each hero with the set nearest to its
+# own weapons.
 EVENT_SETS = [
   ["itm_practice_sword", "itm_practice_shield"],
   ["itm_heavy_practice_sword"],
   ["itm_practice_staff"],
   ["itm_practice_bow", "itm_practice_arrows", "itm_practice_dagger"],
+  ["itm_practice_crossbow", "itm_practice_bolts", "itm_practice_dagger"],
+  ["itm_practice_javelin", "itm_practice_sword", "itm_practice_shield"],
 ]
 SPARRING_SETS = 3
+# The sides of a joint event: (team, entry point, helmet, tunic). Team 2 is Native's spectators, and the
+# mission knows no entry past 63: these stand around the sand of the arena's map (read from its scene).
+EVENT_SIDES = [
+  (0, 36, "itm_red_tourney_helmet", "itm_arena_tunic_red"),       # the fighters on the players' side
+  (1, multi_initial_spawn_point_team_2, "itm_blue_tourney_helmet", "itm_arena_tunic_blue"),
+  (3, 37, "itm_green_tourney_helmet", "itm_arena_tunic_green"),
+  (4, 52, "itm_gold_tourney_helmet", "itm_arena_tunic_yellow"),
+]
+ARENA_SIDES = [1, 3, 4]    # an arena's fighters all are of team 1, enemies of each other: only their looks differ
 EVENT_FIGHTER_ITEMS = ["itm_practice_sword", "itm_practice_shield", "itm_heavy_practice_sword",
                        "itm_practice_staff", "itm_arena_tunic_blue"]
 MP_BUF = "trp_temp_array_b"
@@ -239,6 +251,8 @@ mp_scripts = [
        (troop_get_slot, ":hint", MP_BUF, 5),
        (assign, "$coop_mp_hint", ":hint"),
        (assign, "$coop_mp_event_turn", 0),
+       (store_random_in_range, ":step", 1, len(EVENT_SETS)), #never the set of the last fight
+       (val_add, "$coop_mp_event_round", ":step"),
        (assign, "$coop_mp_no_hero_left", 0),
        # the players' sides, kept until the battle's mission is up
        (troop_get_slot, "$coop_mp_pairs", MP_BUF, 6),
@@ -306,12 +320,13 @@ mp_scripts = [
          (str_store_string, s0, "@CoopWorld: a siege of the campaign begins! Team 1 holds the walls, team 2 storms them."),
        (else_try),
          (eq, "$coop_mp_mode", coop_mp_mode_arena),
-         (str_store_string, s0, "@CoopWorld: the arena fight begins! All players stand together."),
+         (str_store_string, s0, "@CoopWorld: the arena fight begins! All players stand together, every fighter is against all."),
        (else_try),
          (eq, "$coop_mp_mode", coop_mp_mode_tournament),
-         (assign, reg20, ":hint"),
+         (store_mod, reg20, ":hint", 10), #round + 10 * teams
          (assign, reg21, coop_mp_tournament_rounds),
-         (str_store_string, s0, "@CoopWorld: the tournament, round {reg20} of {reg21}! All players stand together."),
+         (store_div, reg22, ":hint", 10),
+         (str_store_string, s0, "@CoopWorld: the tournament, round {reg20} of {reg21}, {reg22} teams! All players stand together."),
        (else_try),
          (eq, "$coop_mp_mode", coop_mp_mode_training),
          (str_store_string, s0, "@CoopWorld: the training begins! All players stand together."),
@@ -384,6 +399,9 @@ mp_scripts = [
      (store_script_param, ":code", 2),
      (store_script_param, ":value", 3),
      (try_begin),
+       (eq, ":code", coop_mp_stat_team_event),
+       (call_script, "script_coop_mp_team_event_set", ":value"),
+     (else_try),
        (lt, ":code", 4),
        (store_attribute_level, ":now", ":troop", ":code"),
        (store_sub, ":delta", ":value", ":now"),
@@ -468,7 +486,7 @@ mp_scripts = [
     ]),
 
   # script_coop_mp_event_hero_gear: arg1 = player, arg2 = its hero's troop: the practice gear of a joint
-  # event, the set nearest to the hero's own weapons
+  # event: in a training the set nearest to the hero's own weapons, else another one each round
   ("coop_mp_event_hero_gear",
    [
      (store_script_param, ":player_no", 1),
@@ -496,7 +514,10 @@ mp_scripts = [
      (try_end),
      (val_max, ":set", 0),
      (try_begin),
-       (eq, "$coop_mp_mode", coop_mp_mode_training),
+       (neq, "$coop_mp_mode", coop_mp_mode_training),
+       (store_add, ":set", "$coop_mp_event_round", ":player_no"),
+       (val_mod, ":set", len(EVENT_SETS)),
+     (else_try),
        (ge, ":set", SPARRING_SETS),
        (assign, ":set", 0),
      (try_end),
@@ -511,12 +532,27 @@ mp_scripts = [
      (player_add_spawn_item, ":player_no", ek_foot, "itm_practice_boots"),
     ]),
 
-  # script_coop_mp_event_bot_gear: arg1 = the entry point a bot comes in at, arg2 = the bot's turn: its
-  # practice gear, through that entry point's override (as Native's arena gives it)
+  # script_coop_mp_event_bot_gear: arg1 = the bot's team, arg2 = the bot's turn: its practice gear, through
+  # an entry point's override (as Native's arena gives it). reg0 = that entry point: each side has its own
   ("coop_mp_event_bot_gear",
    [
-     (store_script_param, ":entry", 1),
+     (store_script_param, ":side", 1),
      (store_script_param, ":turn", 2),
+     (try_begin),
+       (eq, "$coop_mp_mode", coop_mp_mode_arena),
+       (store_mod, ":pick", ":turn", len(ARENA_SIDES)),
+       ] + [op for k, side in enumerate(ARENA_SIDES) for op in [
+       (try_begin), (eq, ":pick", k), (assign, ":side", side), (try_end),
+       ]] + [
+     (try_end),
+     ] + [op for side, entry, helmet, tunic in EVENT_SIDES for op in [
+     (try_begin),
+       (eq, ":side", side),
+       (assign, ":entry", entry),
+       (assign, ":helmet", helmet),
+       (assign, ":tunic", tunic),
+     (try_end),
+     ]] + [
      (try_begin),
        (eq, "$coop_mp_mode", coop_mp_mode_training),
        (store_mod, ":set", ":turn", SPARRING_SETS),
@@ -531,16 +567,46 @@ mp_scripts = [
        ] + [(mission_tpl_entry_add_override_item, "mt_multiplayer_bt", ":entry", item) for item in items] + [
      (try_end),
      ]] + [
-     (mission_tpl_entry_add_override_item, "mt_multiplayer_bt", ":entry", "itm_blue_tourney_helmet"),
-     (mission_tpl_entry_add_override_item, "mt_multiplayer_bt", ":entry", "itm_arena_tunic_blue"),
+     (mission_tpl_entry_add_override_item, "mt_multiplayer_bt", ":entry", ":helmet"),
+     (mission_tpl_entry_add_override_item, "mt_multiplayer_bt", ":entry", ":tunic"),
      (mission_tpl_entry_add_override_item, "mt_multiplayer_bt", ":entry", "itm_practice_boots"),
+     (assign, reg0, ":entry"),
     ]),
 
-  # script_coop_mp_gear_back: the spawn point of the bots gives their own gear again
+  # script_coop_mp_gear_back: the spawn points of the bots give their own gear again
   ("coop_mp_gear_back",
    [
-     (mission_tpl_entry_set_override_flags, "mt_multiplayer_bt", multi_initial_spawn_point_team_2, 0),
-     (mission_tpl_entry_clear_override_items, "mt_multiplayer_bt", multi_initial_spawn_point_team_2),
+     ] + [op for side, entry, helmet, tunic in EVENT_SIDES for op in [
+     (mission_tpl_entry_set_override_flags, "mt_multiplayer_bt", entry, 0),
+     (mission_tpl_entry_clear_override_items, "mt_multiplayer_bt", entry),
+     ]] + [
+    ]),
+
+  # script_coop_mp_team_event_set: arg1 = $coop_mp_team_event: the mode of the joint event whose sides are
+  # more than Native's two (an arena, a tournament), 0 none. Runs in every game: the relations are each
+  # game's own, and Native's count of the living ends no such round.
+  ("coop_mp_team_event_set",
+   [
+     (store_script_param, "$coop_mp_team_event", 1),
+     (assign, ":own", 1),
+     (try_begin),
+       (eq, "$coop_mp_team_event", coop_mp_mode_arena),
+       (assign, ":own", -1), #each fighter of team 1 is an enemy of the others
+     (try_end),
+     (team_set_relation, 1, 1, ":own"),
+     ] + [(team_set_relation, a[0], b[0], -1) for i, a in enumerate(EVENT_SIDES) for b in EVENT_SIDES[i + 1:]] + [
+    ]),
+
+  # script_coop_mp_team_event_tell: arg1 = as above: here and in the players' games
+  ("coop_mp_team_event_tell",
+   [
+     (store_script_param, ":event", 1),
+     (call_script, "script_coop_mp_team_event_set", ":event"),
+     (get_max_players, ":num_players"),
+     (try_for_range, ":player_no", 1, ":num_players"), #0 is the server itself
+       (player_is_active, ":player_no"),
+       (multiplayer_send_3_int_to_player, ":player_no", coop_mp_event_hero_stat, 0, coop_mp_stat_team_event, ":event"),
+     (try_end),
     ]),
 
   # script_coop_mp_arm_fighters: the arena's fighters own nothing but boots (Native's arena gives them
@@ -1033,6 +1099,62 @@ mp_battle_triggers = [
      (assign, "$g_multiplayer_num_bots_required_team_2", 0),
      (assign, "$coop_mp_spawn_i", 0),
      (assign, "$coop_mp_phase", 2),
+     (assign, ":event", 0),
+     (try_begin),
+       (this_or_next|eq, "$coop_mp_mode", coop_mp_mode_arena),
+       (eq, "$coop_mp_mode", coop_mp_mode_tournament),
+       (assign, ":event", "$coop_mp_mode"),
+     (try_end),
+     (call_script, "script_coop_mp_team_event_tell", ":event"),
+    ]),
+
+  # an arena or a tournament ends here: Native counts teams 0 and 1 only, it would end one with a third
+  # team on the sand or with the next fighters still to come. The players are beaten when their last hero
+  # falls; none having fallen yet, the check for no hero at all below sees to it.
+  (1, 0, 0,
+   [
+     (multiplayer_is_server),
+     (is_between, "$coop_mp_phase", 2, 4),
+     (gt, "$coop_mp_team_event", 0),
+     (eq, "$g_round_ended", 0),
+   ],
+   [
+     (assign, ":heroes", 0),
+     (assign, ":fallen", 0),
+     (get_max_players, ":num_players"),
+     (try_for_range, ":player_no", 0, ":num_players"),
+       (player_is_active, ":player_no"),
+       (player_slot_ge, ":player_no", slot_player_coop_hero, 1),
+       (try_begin),
+         (player_slot_eq, ":player_no", slot_player_coop_fallen, 0),
+         (val_add, ":heroes", 1),
+       (else_try),
+         (val_add, ":fallen", 1),
+       (try_end),
+     (try_end),
+     (assign, ":foes", 0),
+     (try_for_agents, ":agent_no"),
+       (agent_is_alive, ":agent_no"),
+       (agent_is_human, ":agent_no"),
+       (agent_slot_ge, ":agent_no", slot_agent_coop_stack, 1),
+       (agent_get_team, ":team", ":agent_no"),
+       (neq, ":team", 0),
+       (val_add, ":foes", 1),
+     (try_end),
+     (assign, ":winner", -1),
+     (try_begin),
+       (eq, ":heroes", 0),
+       (gt, ":fallen", 0),
+       (assign, ":winner", 1),
+     (else_try),
+       (eq, "$coop_mp_phase", 3), #all came
+       (eq, ":foes", 0),
+       (assign, ":winner", 0),
+     (try_end),
+     (ge, ":winner", 0),
+     (assign, "$g_winner_team", ":winner"),
+     (store_mission_timer_a, "$g_round_finish_time"),
+     (assign, "$g_round_ended", 1),
     ]),
 
   # while a campaign battle is on: a player who was still loading its map when the sides were set (or
@@ -1211,7 +1333,8 @@ mp_battle_triggers = [
        (try_end),
        (try_begin),
          (ge, "$coop_mp_mode", coop_mp_mode_arena),
-         (call_script, "script_coop_mp_event_bot_gear", ":entry", "$coop_mp_event_turn"),
+         (call_script, "script_coop_mp_event_bot_gear", ":team", "$coop_mp_event_turn"),
+         (assign, ":entry", reg0),
          (val_add, "$coop_mp_event_turn", 1),
        (try_end),
        (assign, "$coop_mp_spawning_stack", ":i"),
@@ -1286,6 +1409,14 @@ mp_battle_triggers = [
      (agent_is_non_player, ":agent_no"),
      (store_add, ":tag", "$coop_mp_spawning_stack", 1),
      (agent_set_slot, ":agent_no", slot_agent_coop_stack, ":tag"),
+     (assign, ":i", "$coop_mp_spawning_stack"),
+     ] + stack_slot(S_TEAM) + [
+     (troop_get_slot, ":team", MP_ARR, ":slot"),
+     (try_begin),
+       (agent_get_team, ":now", ":agent_no"),
+       (neq, ":now", ":team"), #the entry point's own team came first
+       (agent_set_team, ":agent_no", ":team"),
+     (try_end),
      ] + [(agent_set_slot, ":agent_no", slot, 0) for slot in
           (slot_agent_coop_x, slot_agent_coop_y, slot_agent_coop_still, slot_agent_coop_ladder,
            slot_agent_coop_tries)] + [
@@ -1377,6 +1508,7 @@ mp_battle_triggers = [
      (assign, "$coop_mp_phase", 4),
      (call_script, "script_coop_mp_horses_back"),
      (call_script, "script_coop_mp_gear_back"),
+     (call_script, "script_coop_mp_team_event_tell", 0),
      (assign, "$coop_mp_pending", 0), #report at once
      (str_store_string, s0, "@CoopWorld: the battle is over. The outcome goes back to the campaign."),
      (call_script, "script_coop_mp_tell_all"),
@@ -1427,11 +1559,13 @@ def merge_battle_template(mission_templates):
   buy = (call_script, "script_multiplayer_buy_agent_equipment", ":player_no")
   may_spawn = (player_slot_eq, ":player_no", slot_player_spawned_this_round, 0)
   spawn_new = (eq, ":spawn_new", 1)
+  round_over = (this_or_next|eq, ":team1_living_players", 0)
   for template_id in ("multiplayer_bt", "multiplayer_sg"):
     template_triggers = get_by_id(mission_templates, template_id)[5]
     found = 0
     gates = 0
     late = 0
+    counts = 0
     for trigger in template_triggers:
       block = trigger[4]
       i = 0
@@ -1440,6 +1574,10 @@ def merge_battle_template(mission_templates):
         if op == may_spawn:  # in a campaign battle only a hero spawns, and a fallen one does not again
           block.insert(i + 1, (call_script, "script_cf_coop_mp_may_spawn", ":player_no"))
           gates += 1
+          i += 1
+        elif op == round_over and template_id == "multiplayer_bt":  # see "an arena or a tournament ends here"
+          block.insert(i, (eq, "$coop_mp_team_event", 0))
+          counts += 1
           i += 1
         elif op == spawn_new and template_id == "multiplayer_bt":  # Battle lets players spawn only in a round's first seconds: a hero later too
           block[i:i] = [
@@ -1469,4 +1607,6 @@ def merge_battle_template(mission_templates):
       raise MergeError(f"{template_id}: expected one player spawn check, found {gates}")
     if template_id == "multiplayer_bt" and late != 1:
       raise MergeError(f"{template_id}: expected one 'may a new agent spawn' check, found {late}")
+    if template_id == "multiplayer_bt" and counts != 1:
+      raise MergeError(f"{template_id}: expected one count of the living ending a round, found {counts}")
     template_triggers.extend(mp_battle_triggers)

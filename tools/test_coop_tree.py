@@ -36,26 +36,39 @@ def test_branches():
         for troop_id, depth, parent in branch:
             if parent >= 0:
                 check(branch[parent][1] == depth - 1 and parent < branch.index((troop_id, depth, parent)),
-                      f"{troop_id} stands right under {branch[parent][0]}")
+                      f"{troop_id} stands right after {branch[parent][0]}")
                 check(troop_id in tree.upgrades_of(ids[branch[parent][0]], troops),
                       f"{branch[parent][0]} does grow into {troop_id}")
             check(troop_id in here, "")
 
 
 def test_fits():
-    from module_troops import troops
-    ids = {t[0]: t for t in troops}
     for (name, _), branch in zip(tree.BRANCHES, tree.layout()):
-        height = len(branch) * tree.ROW_HEIGHT
-        widest = max(d * tree.ROW_INDENT + 6 + len(ids[t][1]) * tree.TEXT_WIDTH for t, d, _ in branch)
-        check(widest <= tree.TREE_WIDTH, f"{name}: the widest row ({widest}) fits the box")
-        check(height <= tree.TREE_HEIGHT * 2, f"{name}: {height} high, with the box's scroll bar at the worst")
+        at = tree.place(branch)
+        check(len(set(at)) == len(at), f"{name}: no two portraits on one spot")
+        right = max(x for x, _ in at) + tree.PORTRAIT // 2
+        check(right <= tree.TREE_WIDTH - 20, f"{name}: the tree ends at {right}, within the box and its scroll bar")
+        low = min(y for _, y in at) - tree.PORTRAIT // 2 - tree.NAME_HEIGHT
+        check(low >= 0, f"{name}: the lowest name ends at {low}, inside the box")
+        for i, (troop_id, depth, parent) in enumerate(branch):
+            if parent >= 0:
+                check(at[parent][0] + tree.COLUMN == at[i][0], "")
+        for x, y, width, height in tree.links(branch, at):
+            check(width > 0 and height > 0 and y >= 0 and x + width <= tree.TREE_WIDTH, "")
+        rows = {y for _, y in at}
+        for row in sorted(rows):
+            xs = sorted(x for x, y in at if y == row)
+            check(all(b - a >= tree.COLUMN for a, b in zip(xs, xs[1:])), "")
     bottom = 660 - len(tree.BRANCHES) * 52
     check(bottom >= 30, f"all the branch buttons fit on the screen (the last at {bottom})")
-    check(tree.TREE_X + tree.TREE_WIDTH <= tree.DETAIL_X, "the tree and the troop's panel do not overlap")
-    gap = [row for branch in tree.layout() for row in branch]
-    needed = 40 + 3 * len(max(tree.layout(), key=len))
-    check(needed < tree.MAP_SLOTS, f"overlays of a branch fit the table of what they stand for ({needed}, {len(gap)} troops)")
+    check(24 + 8 * 19 <= tree.TREE_X + 20, "the branch buttons stop where the box starts")
+    check(tree.TREE_X + tree.TREE_WIDTH <= 1000, "the box stays on the screen")
+    check(tree.TREE_Y + tree.TREE_HEIGHT <= 705, "and under the titles")
+    longest = 2 * len(tree.SKILLS) // 2 + len(tree.PROFICIENCIES) + 3
+    check(tree.CARD_TOP - longest * tree.CARD_ROW > 60, "a card's skills and proficiencies fit without a scroll bar")
+    check(tree.CARD_TOP - tree.GEAR_HEIGHT - 10 >= 60, "a card's gear stands above the button")
+    needed = 40 + max(2 * len(branch) + len(tree.links(branch, tree.place(branch))) for branch in tree.layout())
+    check(needed < tree.MAP_SLOTS, f"overlays of a branch fit the table of what they stand for ({needed})")
 
 
 if __name__ == "__main__":

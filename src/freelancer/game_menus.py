@@ -6,6 +6,7 @@
 from header_game_menus import *
 from module_constants import *
 from freelancer.constants import *
+from coop.constants import coop_role_client
 from header_items import *
 
 ####################################################################################################################
@@ -55,6 +56,7 @@ game_menus = [
         ],
         [
                 ("join_commander_battle",[
+                        (neq, "$coop_role", coop_role_client), #CoopWorld: a mirror fights nobody here, the option above it does
                         (party_get_battle_opponent, ":commander_opponent", "$enlisted_party"),
                         (gt, ":commander_opponent", 0),
                 ],"Follow the commander into battle.",[
@@ -77,7 +79,7 @@ game_menus = [
         ("enter_town",[(party_is_in_any_town,"$enlisted_party"),] ,"Enter stationed town.",
         [(party_get_cur_town, ":town_no", "$enlisted_party"),(start_encounter, ":town_no"),(change_screen_map),]),
          
-                ("commander",[(party_get_battle_opponent, ":commander_opponent", "$enlisted_party"),(lt, ":commander_opponent", 0),],
+                ("commander",[(party_get_battle_opponent, ":commander_opponent", "$enlisted_party"),(this_or_next|eq, "$coop_role", coop_role_client),(lt, ":commander_opponent", 0),],
                    "Request audience with your commander.",
         [(jump_to_menu, "mnu_commander_aud"),]),
                 
@@ -92,6 +94,7 @@ game_menus = [
                 
                 ("return_to_duty",[
                         (party_get_battle_opponent, ":commander_opponent", "$enlisted_party"),
+                        (this_or_next|eq, "$coop_role", coop_role_client),
                         (this_or_next|lt, ":commander_opponent", 0),
                         (troop_is_wounded, "trp_player"),
                 ],"Return to duty.",

@@ -258,7 +258,8 @@ def net_scripts(first_dynamic):
     ]),
 
   # script_coop_client_remove_mirror: arg1 = a mirror. The parties attached to it are let go first:
-  # they would stay attached to a party that is gone, and to whatever gets its id next
+  # they would stay attached to a party that is gone, and to whatever gets its id next. It also lets
+  # go of the party it hangs on: that one's list of children must not keep a stale id.
   ("coop_client_remove_mirror",
    [
      (store_script_param, ":party_no", 1),
@@ -266,6 +267,11 @@ def net_scripts(first_dynamic):
      (try_for_range_backwards, ":k", 0, ":n"),
        (party_get_attached_party_with_rank, ":child", ":party_no", ":k"),
        (party_detach, ":child"),
+     (try_end),
+     (try_begin),
+       (party_get_attached_to, ":up", ":party_no"),
+       (ge, ":up", 0),
+       (party_detach, ":party_no"),
      (try_end),
      (remove_party, ":party_no"),
     ]),
@@ -663,8 +669,8 @@ def net_scripts(first_dynamic):
          (val_sub, ":dy", ":y"),
          (val_abs, ":dx"),
          (val_abs, ":dy"),
-         (this_or_next|gt, ":dx", coop_mirror_jump),
-         (gt, ":dy", coop_mirror_jump),
+         (this_or_next|gt, ":dx", coop_puppet_jump),
+         (gt, ":dy", coop_puppet_jump),
          (party_set_position, ":puppet", pos1),
        (else_try),
          (party_set_ai_behavior, ":puppet", ai_bhvr_travel_to_point),
@@ -794,44 +800,16 @@ def net_scripts(first_dynamic):
          (try_end),
          (eq, ":have", 1),
          (party_set_slot, ":cid", slot_party_coop_seen, "$coop_net_seq"),
-         # inside a town or an army on the server: the same here (spawned parties have other ids)
-         (try_begin),
-           (ge, ":att", first_dynamic),
-           (party_get_slot, ":att", "p_coop_map", ":att"),
-           (val_sub, ":att", 1),
-           (try_begin),
-             (lt, ":att", first_dynamic), #that party has no mirror here (yet)
-             (assign, ":att", -1),
-           (else_try),
-             # its mirror was destroyed here (a battle of this game) and the map still points to it
-             (neg|party_is_active, ":att"),
-             (assign, ":att", -1),
-           (try_end),
-         (else_try),
-           # below the dynamic ids only a center is the same party here; the server's own hero
-           # party (the host) or a puppet would be this game's hero or a player's marker
-           (is_between, ":att", 0, first_dynamic),
-           (neg|is_between, ":att", centers_begin, centers_end),
-           (assign, ":att", -1),
-         (try_end),
-         # an army formed from older news may hang the other way round here already: attaching
-         # would close a loop of parties, which the engine never gets out of
+         # inside a town on the server: the same here. Only a center takes a mirror in: a mirror hung
+         # on a mirror (an army) closed loops of parties over a stale id, and the engine's count of a
+         # party's strength, which goes down the attached parties, ran out of stack (0xC00000FD,
+         # 31.10 19:12). A party of an army stands where the server has it, without walking off.
          (try_begin),
            (ge, ":att", 0),
-           (assign, ":up", ":att"),
-           (try_for_range, ":unused", 0, 16),
-             (ge, ":up", 0),
-             (try_begin),
-               (eq, ":up", ":cid"),
-               (assign, ":att", -1),
-               (assign, ":up", -1),
-             (else_try),
-               (party_is_active, ":up"),
-               (party_get_attached_to, ":up", ":up"),
-             (else_try),
-               (assign, ":up", -1),
-             (try_end),
-           (try_end),
+           (neg|is_between, ":att", centers_begin, centers_end),
+           (assign, ":att", -1),
+           (assign, ":tx", ":x"),
+           (assign, ":ty", ":y"),
          (try_end),
          (party_get_attached_to, ":cur_att", ":cid"),
          (try_begin),

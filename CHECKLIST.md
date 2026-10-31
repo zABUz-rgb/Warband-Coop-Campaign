@@ -169,6 +169,11 @@ item as it happens):
 - sneaking into a town in Russian: the disguise menu shows items, money and "Попытаться проникнуть...",
   not three "Продолжить..."; the next screen names the chosen disguise;
 - a joint battle invites a player 30 map units away; none past 40;
-- troop tree: the window fits at 16:9 and 4:3, the rows and lines line up, the portrait and the item
-  icons have a sensible size, In development shows its text, Esc and Close work, a click keeps working
-  after the window restarts.
+- troop tree: portraits and names fit their cells, lines meet the portraits, In development shows its
+  text, a click opens the card, Back and Esc return to the tree, Close leaves it;
+- sync: on a lord's service the client's map keeps up with the host; no crash when armies gather;
+- arena: bots fight each other (team 1 hostile to itself), the fight does not end while fighters are to come;
+- tournament: 2-4 teams in their colours from different sides (bots on teams 3 and 4 appear and fight),
+  a round ends only with one team left; a new gear set each round;
+- camp: build, seen by both, reopens after a restart, treasury and store inside, John Blackborn's dialog
+  in Russian, take down; a mark set meanwhile does not break the open camp menu.

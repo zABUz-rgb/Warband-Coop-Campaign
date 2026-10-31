@@ -57,7 +57,7 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     release: let all followers go; give: offer troops to the player in slot; giveans: the answer
     to offer id (see coop/players.py);
     lg: a note for the log (GAME_NOTES below); fl: ride after the player in slot (0: stop); mk: this
-    player's mark on everybody's map (-: take it away); tg: put amount denars into the shared treasury,
+    player's mark on everybody's map (-: take it away); bs: the company's camp, the same way; tg: put amount denars into the shared treasury,
     or take them (negative), repeated until kind 29 answers that token; st: open the party store;
     sti: part of the party store coming back, pairs (item, modifier + 100 * amount), repeated until kind 31;
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
@@ -242,6 +242,9 @@ ARENA_FOES = 20         # opponents of a joint arena fight, for each player
 ARENA_SEQUENCE = 40     # Native's arena sends this many, the weak ones first
 ARENA_AT_ONCE = 3       # opponents standing at a time, for each player
 TOURNAMENT_ROUNDS = 4   # rounds of a joint tournament (coop_mp_tournament_rounds)
+TOURNAMENT_TEAMS = (2, 4)  # each round this many teams, picked at random
+TOURNAMENT_MEN = (2, 5)    # of this many men each (more if more players stand together), fighters fill the players' team
+TOURNAMENT_SIDES = (0, 1, 3, 4)  # those teams on the battle server: 0 the players', 2 is Native's spectators
 EVENT_WAIT_S = 60.0     # a joint event waits this long for its players on the battle server
 EVENT_DUEL = 4          # two heroes against each other: no bots, nobody hurt in earnest, a stake
 KIND_LAIR, KIND_CARAVAN, KIND_VILLAGE = 1, 2, 3  # what a joint battle is about (coop_kind_... in coop/constants.py)
@@ -255,7 +258,8 @@ STORE_LOCK_S = 600.0    # a player with the store open this long without giving 
 TREASURY_TOKENS = 200   # transfers remembered, so that a repeated request changes nothing
 PING_HOLD_S = 0.7       # a game off the map asks this often whether it is called to a battle
 ALIVE_S = 3.0           # a game that pinged this recently answers, though its map does not run
-TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_MARK, TELL_GOLD, TELL_STORE, TELL_LEFT = 1, 2, 3, 4, 5, 6  # kind 27
+TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_MARK, TELL_GOLD, TELL_STORE, TELL_LEFT, TELL_BASE = 1, 2, 3, 4, 5, 6, 7  # kind 27
+BASE_SLOT = MAX_PLAYERS  # the company's camp goes out with the marks, in the slot after the players' (coop_base_slot)
 # what a game tells the log with &lg=code,a,b,c (coop_note_... in coop/constants.py): the name in the
 # log's "together" line, and what a, b and c are
 GAME_NOTES = {
@@ -381,6 +385,7 @@ class Battle:
         self.param = 0            # a training: opponents for each player
         self.town = 0             # where the event is held
         self.fighter = 0          # the troop number of the first arena fighter
+        self.teams = 0            # a tournament's round: how many teams fight in it
         self.bonus = 0            # a tournament: what the bets win, for every player
         self.round = 1            # a tournament: the round being fought
         self.kills = {}           # cid -> opponents its hero beat
@@ -525,8 +530,11 @@ class World:
                 after.mp_out.append([27, TELL_FOLLOWED, p.slot, 0, 0])
 
     def _marks_reply(self, p):
-        nums = [28, len(self.marks)]
-        for slot, (x, y) in sorted(self.marks.items()):
+        marks = dict(self.marks)
+        if self.shared.get("base"):
+            marks[BASE_SLOT] = tuple(self.shared["base"])
+        nums = [28, len(marks)]
+        for slot, (x, y) in sorted(marks.items()):
             nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, 1 if slot == p.slot else 0]
         return nums
 
@@ -549,6 +557,22 @@ class World:
         for q in self.players.values():
             if q is not p:
                 q.mp_out.append([27, TELL_MARK, p.slot, 1 if where else 0, 0])
+
+    def _base(self, p, where):
+        """The company's camp on everybody's map, one for all, kept with the treasury; where () takes it
+        down. Of two players building at one moment the first one's stands."""
+        if p.slot is None or bool(where) == bool(self.shared.get("base")):
+            return
+        self.shared["base"] = list(where) or None
+        self._save_shared()
+        if where:
+            self._act(p, "base", x=where[0], y=where[1])
+        else:
+            self._act(p, "base_off")
+        self._marks_out()
+        for q in self.players.values():
+            if q is not p:
+                q.mp_out.append([27, TELL_BASE, p.slot, 1 if where else 0, 0])
 
     def _save_shared(self):
         if self.shared_path is None:
@@ -726,6 +750,8 @@ class World:
             self._follow(p, together["follow"])
         if together.get("mark") is not None:
             self._mark(p, together["mark"])
+        if together.get("base") is not None:
+            self._base(p, together["base"])
         if together.get("treasury") is not None:
             self._treasury(p, *together["treasury"])
         if together.get("store_open"):
@@ -956,7 +982,7 @@ class World:
                 self._together(p, together, now)
             if not p.together_told:
                 p.together_told = True
-                if self.marks or self.shared["gold"] or on_server:  # a host's save may hold old marks
+                if self.marks or self.shared["gold"] or self.shared.get("base") or on_server:  # a host's save may hold old marks
                     p.shared_out = [self._marks_reply(p), [29, 0, 0, self.shared["gold"]]]
             back = self.returns.pop(self._profile_key(cid) or "", None)
             if back:
@@ -1048,10 +1074,12 @@ class World:
             out = []
             while p.removed and len(out) < REMOVALS_PER_REPLY:
                 out.append((p.removed.pop(0), REMOVED, 0, 0, 0, 0, 0))
-            # the closest, then those on the player's screen that waited longest (only the 11
-            # closest used to be fresh: the others walked to their last target and stood there)
-            closest = by_distance[:CLOSEST_PER_REPLY]
-            in_view = [kv for kv in by_distance[CLOSEST_PER_REPLY:]
+            # the lord this player serves in every reply: the player rides with him; then the
+            # closest, then those on the player's screen that waited longest (only the 11 closest
+            # used to be fresh: the others walked to their last target and stood there)
+            near = [kv for kv in by_distance if kv[0] != p.lord]
+            closest = [kv for kv in by_distance if kv[0] == p.lord] + near[:CLOSEST_PER_REPLY]
+            in_view = [kv for kv in near[CLOSEST_PER_REPLY:]
                        if (kv[1][1] - x) ** 2 + (kv[1][2] - y) ** 2 <= VIEW_RADIUS ** 2]
             room = MAX_ENTRIES - len(out) - len(closest) - ROTATING_PER_REPLY
             in_view = sorted(in_view, key=lambda kv: p.sent_at.get(kv[0], 0))[:max(0, room)]
@@ -1363,34 +1391,38 @@ class World:
                  + ")")
 
     def _event_stacks(self, b):
-        """The opponents of a joint event, on team 1: Native's line of arena fighters, stronger ones
-        with each round of a tournament, or for a training each player's own men. A duel has none."""
+        """The bots of a joint event. On team 1: Native's line of arena fighters, or for a training each
+        player's own men. A tournament's round: 2 to 4 teams of fighters, stronger ones with each round,
+        the players' team filled up with them. A duel has none."""
         players = len(b.sides)
         if b.event == EVENT_DUEL:
             return []
+        foes = []  # (team, troop)
         if b.event == EVENT_ARENA:
             total = ARENA_FOES * players
-            foes = []
             for i in range(total):
                 k = i * ARENA_SEQUENCE // total
-                foes.append(b.fighter + min(9, k // 6 + k % 6))
+                foes.append((1, b.fighter + min(9, k // 6 + k % 6)))
         elif b.event == EVENT_TOURNAMENT:
-            foes = [b.fighter + 2 * b.round + k % 2 for k in range(players)]
+            b.teams = random.randint(*TOURNAMENT_TEAMS)
+            men = max(players, random.randint(*TOURNAMENT_MEN))
+            self.log(f"joint battle {b.bid}: tournament round {b.round}: {b.teams} teams of {men}")
+            for team in TOURNAMENT_SIDES[:b.teams]:
+                foes += [(team, b.fighter + 2 * b.round + k % 2) for k in range(men - players if team == 0 else men)]
         else:
-            foes = []
             for cid in b.sides:
                 q = self.players.get(cid)
                 men = (q.stacks_last or []) if q is not None else []
                 pool = [troop for troop, n in men for _ in range(min(n, b.param))]
                 picked = random.sample(pool, min(b.param, len(pool)))
-                foes += picked + [b.fighter + 2] * (b.param - len(picked))
+                foes += [(1, troop) for troop in picked + [b.fighter + 2] * (b.param - len(picked))]
         stacks = []
-        for troop in foes:
-            if stacks and stacks[-1][2] == troop:
+        for team, troop in foes:
+            if stacks and stacks[-1][0] == team and stacks[-1][2] == troop:
                 stacks[-1][3] += 1
                 stacks[-1][4] += 1
             else:
-                stacks.append([1, None, troop, 1, 1])
+                stacks.append([team, None, troop, 1, 1])
         return stacks
 
     def _hero_numbers(self, b, q):
@@ -1657,7 +1689,7 @@ class World:
                 hint = b.center if b.center is not None else b.terrain
                 if b.event:
                     mode = b.event + 1
-                    hint = b.round if b.event == EVENT_TOURNAMENT else ARENA_AT_ONCE * len(b.sides)
+                    hint = b.round + 10 * b.teams if b.event == EVENT_TOURNAMENT else ARENA_AT_ONCE * len(b.sides)
                 return [1, b.bid, len(b.stacks), mode, hint, len(pairs) // 2] + pairs
             if b.state == "running" and phase in (1, 2, 3):
                 if not b.late:
@@ -1775,6 +1807,10 @@ def parse_together(q):
         v = [] if q["mk"] == "-" else parse_ints(q["mk"])
         if v is not None and len(v) in (0, 2):
             out["mark"] = tuple(v)
+    if "bs" in q:
+        v = [] if q["bs"] == "-" else parse_ints(q["bs"])
+        if v is not None and len(v) in (0, 2):
+            out["base"] = tuple(v)
     v = parse_ints(q.get("tg", "")) if "tg" in q else None
     if v and len(v) == 2 and v[0] > 0:
         out["treasury"] = (v[0], v[1])

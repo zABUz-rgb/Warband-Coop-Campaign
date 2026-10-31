@@ -9,6 +9,7 @@ from header_triggers import *
 
 from module_constants import *
 from freelancer.constants import *
+from coop.constants import coop_role_client
 
 ####################################################################################################################
 #  Each trigger contains the following fields:
@@ -78,7 +79,8 @@ triggers = [
                         (try_end),
                 (try_end),
                 
-                #Is currently in battle
+                #Is currently in battle (CoopWorld: a client's lord is a mirror, the bridge tells of his battles)
+        (neq, "$coop_role", coop_role_client),
         (party_get_battle_opponent, ":commander_enemy", "$enlisted_party"),
         (gt, ":commander_enemy", 0),
                 

@@ -64,3 +64,4 @@ prsnt_adv_diplomacy_preferences = 62
 prsnt_taragoth_lords_report = 63
 prsnt_coop_mp_wait = 64
 prsnt_coop_troop_tree = 65
+prsnt_coop_troop_card = 66

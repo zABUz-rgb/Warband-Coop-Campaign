@@ -692,7 +692,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   слушается приказа идти, игра сама переносит его к другу и пишет об этом.
   МЕТКИ: "метки на карте". У каждого игрока одна метка, её видят все; поставьте её там, где стоите,
   уберите, поезжайте к метке друга. Метка - значок на карте, с ней нельзя столкнуться или сразиться.
-  ОБЩАЯ КАЗНА И СКЛАД: "общая казна и склад отряда". Деньги и вещи передаются откуда угодно. Склад
+  ЛАГЕРЬ ОТРЯДА: один на всех, виден на карте у каждого. Лагерь - CoopWorld - "разбить здесь лагерь
+  отряда" (1000 денаров), потом "поехать в лагерь" или щелчок по нему на карте. Внутри казна, склад
+  и Джон Блэкборн; лагерь можно свернуть, казна и склад при этом сохраняются.
+  ОБЩАЯ КАЗНА И СКЛАД: теперь только в лагере отряда. Склад
   открыт только у одного игрока: взятое вдвоём существовало бы дважды. Вещей до 96 (сколько вмещает
   окно добычи). Всё хранится у хоста в файле shared.json в "Документы\\Warband Coop Campaign" и
   остаётся от сессии к сессии, поэтому без хоста казна и склад недоступны.
@@ -717,8 +720,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 
 ДРЕВО ВОЙСК
   "CoopWorld: древо войск". Слева ветви: шесть королевств, горожане и наёмники, женщины, разбойники
-  и "В разработке" (пока пустая: новые бойцы меняют содержимое сохранения). Щелчок по бойцу покажет
-  его уровень, здоровье, характеристики, жалованье, навыки, владение оружием, развитие и снаряжение.
+  и "В разработке" (пока пустая: новые бойцы меняют содержимое сохранения). Бойцы показаны портретами
+  с линиями развития. Щелчок по портрету откроет карточку: уровень, здоровье, характеристики, жалованье, навыки, владение оружием, развитие и снаряжение.
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
@@ -885,7 +888,9 @@ TOGETHER WITHOUT MEETING ON THE MAP: all in Camp - CoopWorld: co-op.
   to the friend and says so.
   MARKS: "marks on the map". One mark for each player, seen by all: set it where you stand, take it
   away, ride to a friend's. A mark is an icon on the map, nothing can fight it.
-  SHARED TREASURY AND PARTY STORE: money and things pass from anywhere. The store is open for one
+  THE COMPANY'S CAMP: one for all, on everybody's map. Camp - CoopWorld - "set up the company's camp here"
+  (1000 denars), then ride there or click it. It holds the treasury, the store and John Blackborn.
+  SHARED TREASURY AND PARTY STORE: in the company's camp only. The store is open for one
   player at a time; up to 96 things (what the loot window holds). They are kept at the host, in
   shared.json in "Documents\\Warband Coop Campaign", from session to session: no host, no treasury.
   CALL TO BATTLE: an invitation comes with a sound and a message at once; its window opens on the map
@@ -908,7 +913,8 @@ NEW JOINT BATTLES
   experience for the winner, 50 for the loser. If both leave the server it is a draw.
 
 TROOP TREE: "CoopWorld: the troop tree". The kingdoms, townsfolk and mercenaries, women, outlaws, and "In
-  development" (empty for now: new troops change what a save holds). Click a troop for its level, hit
+  development" (empty for now: new troops change what a save holds). Troops are portraits joined by
+  upgrade lines; click one for its card: level, hit
   points, attributes, wage, skills, proficiencies, upgrades and equipment.
 
 FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its

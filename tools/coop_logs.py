@@ -80,6 +80,10 @@ def together_text(what, f):
         return f"поставил метку ({n('x') // 100}, {n('y') // 100})"
     if what == "mark_off":
         return "убрал метку"
+    if what == "base":
+        return f"поставил лагерь отряда ({n('x') // 100}, {n('y') // 100})"
+    if what == "base_off":
+        return "убрал лагерь отряда"
     if what == "gold":
         moved = n("moved")
         word = f"положил {moved}" if moved > 0 else f"взял {-moved}" if moved < 0 else "казна пуста, ничего не взято"
@@ -609,12 +613,12 @@ def analyze(events, trace, silence=30):
         for slot, name, team in b["sides"]:
             cid = s.cid_of(slot, name, b["t"])
             got = [e for e in s.trace if e[1] == "cli" and e[2] == cid and e[0] >= t_end - 1
-                   and kind_of(e[4]) in (8, 9, 10, 11, 13, 21) and number(e[4], 2) == bid]
+                   and kind_of(e[4]) in (8, 9, 10, 11, 13, 21, 26) and number(e[4], 2) == bid]
             line = []
             for e in got:
                 line.append(f"{KINDS[kind_of(e[4])]}{detail(e[4])} {stamp(e[0])} ({state(e[3])})")
             out.append(f"    {name}: " + ("; ".join(line) if line else "ничего не получил"))
-            result = next((e for e in got if kind_of(e[4]) == 8), None)
+            result = next((e for e in got if kind_of(e[4]) in (8, 26)), None)  # 26: a joint event's end
             if result is None:
                 s.note(t_end, "!!", f"бой {bid}: результат не дошёл до игрока {name}")
                 continue

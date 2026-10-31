@@ -1804,8 +1804,8 @@ game_menus|mno_coop_train_3|Трое.
 game_menus|mno_coop_train_4|Четверо.
 game_menus|mno_coop_train_back|Отмена.
 game_menus|mno_coop_mp_back_menu|Назад.
-quick_strings_en|CoopWorld: the arena fight begins! All players stand together.|CoopWorld: бой на арене начинается! Все игроки стоят вместе.
-quick_strings_en|CoopWorld: the tournament, round {reg20} of {reg21}! All players stand together.|CoopWorld: турнир, раунд {reg20} из {reg21}! Все игроки стоят вместе.
+quick_strings_en|CoopWorld: the arena fight begins! All players stand together, every fighter is against all.|CoopWorld: бой на арене начинается! Все игроки стоят вместе, а бойцы дерутся каждый против всех.
+quick_strings_en|CoopWorld: the tournament, round {reg20} of {reg21}, {reg22} teams! All players stand together.|CoopWorld: турнир, раунд {reg20} из {reg21}, команд: {reg22}! Все игроки в одной команде.
 quick_strings_en|CoopWorld: the training begins! All players stand together.|CoopWorld: тренировка начинается! Все игроки стоят вместе.
 quick_strings_en|CoopWorld: your troops gain {reg1} experience from the joint battle.|CoopWorld: ваши войска получают {reg1} опыта за совместный бой.
 quick_strings_en|CoopWorld: the arena fight is over. You beat {reg1} opponents: {reg2} denars.|CoopWorld: бой на арене окончен. Побеждено соперников: {reg1}, награда: {reg2} денаров.
@@ -1826,11 +1826,10 @@ quick_strings_en|{s1} calls you to train together.^^You fight side by side on th
 game_menus|mno_coop_mp_help|CoopWorld: защитить вместе: {s1} (совместный бой на сервере боя).
 game_menus|mno_coop_mp_village|CoopWorld: прогнать налётчиков вместе (совместный бой на сервере боя).
 game_menus|mno_coop_mp_lair|CoopWorld: взять логово вместе (совместный бой на сервере боя).
-game_menus|mno_coop_shared|CoopWorld: общая казна и склад отряда...
 game_menus|mno_coop_marks|CoopWorld: метки на карте...
 game_menus|mno_coop_tree|CoopWorld: древо войск.
 game_menus|mno_coop_pl_stop_follow|Перестать следовать за игроком {s1}.
-game_menus|menu_coop_shared|CoopWorld: общая казна и склад отряда.^^В казне {reg1} денаров, у вас с собой {reg2}. Каждый игрок кладёт и берёт деньги и вещи откуда угодно, встречаться не нужно. Всё это хранится у хоста, в файле shared.json, и остаётся от сессии к сессии.
+game_menus|menu_coop_shared|CoopWorld: лагерь отряда.^^В казне {reg1} денаров, у вас с собой {reg2}. Здесь каждый игрок может положить деньги и забрать их; то же с вещами склада. Всё хранится у хоста в shared.json и остаётся от сессии к сессии.
 game_menus|mno_coop_tg_in_100|Положить 100 денаров.
 game_menus|mno_coop_tg_in_1000|Положить 1000 денаров.
 game_menus|mno_coop_tg_in_all|Положить всё, что есть.
@@ -1838,7 +1837,7 @@ game_menus|mno_coop_tg_out_100|Взять 100 денаров.
 game_menus|mno_coop_tg_out_1000|Взять 1000 денаров.
 game_menus|mno_coop_tg_out_all|Забрать всё из казны.
 game_menus|mno_coop_store_open|Открыть склад отряда (по одному игроку).
-game_menus|mno_coop_shared_back|Назад.
+game_menus|mno_coop_shared_back|Вернуться на карту.
 game_menus|menu_coop_store|CoopWorld: склад отряда.
 game_menus|mno_coop_store_leave|Вернуться на карту.
 game_menus|menu_coop_marks|CoopWorld: метки на карте.^^У каждого игрока одна метка, её видят все: место встречи, город для штурма, найденное логово. Отсюда можно поехать к метке друга, можно и щёлкнуть по ней на карте.
@@ -1953,3 +1952,16 @@ game_menus|mno_recruit_prisoners_back|Назад.
 game_menus|mno_start_find_inn|Найти постоялый двор...
 game_menus|mno_establish_court_hold_off|Повременить...
 game_menus_over|menu_sneak_into_town_suceeded|Ваша маскировка: {reg1?обманщик:{s1}}. Вы проводите стражу и входите в город.
+game_menus|mno_coop_base_build|CoopWorld: разбить здесь лагерь отряда (1000 денаров).
+game_menus|mno_coop_base_ride|CoopWorld: поехать в лагерь отряда (там общая казна и склад).
+game_menus|mno_coop_blackborn|Поговорить с Джоном Блэкборном.
+game_menus|mno_coop_base_down|Свернуть лагерь (казна и склад останутся у отряда, денары не вернутся).
+dialogs_en|Go away, traveller.|Уходи, путник.
+dialogs_en|Leave.|Уйти.
+quick_strings_en|Back|Назад
+quick_strings_en|The company's camp|Лагерь отряда
+quick_strings_en|John Blackborn|Джон Блэкборн
+quick_strings_en|CoopWorld: {s1} set up the company's camp: the treasury and the party store are there.|CoopWorld: {s1}: лагерь отряда разбит, там общая казна и склад.
+quick_strings_en|CoopWorld: {s1} took the company's camp down.|CoopWorld: {s1}: лагерь отряда свёрнут.
+quick_strings_en|CoopWorld: the tents go up. Ride into the camp for the treasury and the party store.|CoopWorld: палатки поставлены. Заезжайте в лагерь за казной и складом.
+quick_strings_en|CoopWorld: the tents come down.|CoopWorld: палатки сняты.

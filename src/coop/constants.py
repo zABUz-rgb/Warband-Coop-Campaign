@@ -89,10 +89,11 @@ coop_net_lost_replies = 10      # client requests in a row without an answer fro
 coop_world_time_speed = 1        # rest time speed; Native's "Wait here" uses 5, which ran the
                                  # world at about 75 game hours per real minute (bridge clock log)
 coop_client_idle_frames = 30     # map frames without moving before the client rests
-coop_mirror_snap = 300           # a mirror further than this (map units * 100) from the server's position
+coop_mirror_snap = 60            # a mirror further than this (map units * 100) from the server's position
                                  # walks to that position to catch up instead of to its target
-coop_mirror_jump = 1000          # further than this it jumps there at once
+coop_mirror_jump = 150           # further than this it jumps there at once
 coop_mirror_still = 50           # a target this close to the party's position: it stays put
+coop_puppet_jump = 1000          # another player's marker jumps only further than this: it knows no target
 
 # Battles and pause
 coop_net_max_numbers = 128       # the engine's registers: a reply never holds more numbers
@@ -144,6 +145,7 @@ coop_mp_mode_duel = 5
 coop_duel_xp_win = 100
 coop_duel_xp_lose = 50
 coop_mp_tournament_rounds = 4     # as TOURNAMENT_ROUNDS in tools/coop_bridge.py
+coop_mp_stat_team_event = 1000    # the code in coop_mp_event_hero_stat telling every game of $coop_mp_team_event
 coop_mp_no_hero_s = 10            # a joint event with no hero left on the battle server ends after this long
 coop_tournament_prize = 200       # Native's prize for winning a tournament, for every player of the team
 coop_tournament_renown = 20
@@ -171,6 +173,12 @@ coop_village_relation = 3         # what a village beaten free of raiders thinks
 
 # Players together (coop/together.py)
 slot_party_coop_mark = 304        # on a mark on the map: its player's slot + 1
+coop_base_slot = coop_max_players # the company's camp goes to the games with the marks, as the slot after
+                                  # the players' (BASE_SLOT in tools/coop_bridge.py)
+coop_base_tag = coop_base_slot + 1 # and its party's slot_party_coop_mark
+coop_base_cost = 1000             # denars it takes to set the camp up
+coop_blackborn = "trp_tutorial_trainer" # John Blackborn: a new troop would change what a save holds, so he
+                                  # is the spare hero of Native's old tutorial, named by script_coop_blackborn_ready
 slot_party_coop_fights = 305      # on a client's mirror: the world party it fights there + 1 (mirrors fight nobody here)
 coop_store_items = 120            # as SHARED_ITEMS in tools/coop_bridge.py; the loot screen holds fewer
 coop_store_chunk = 25             # items of the party store sent with one request
@@ -192,6 +200,7 @@ coop_tell_mark = 3
 coop_tell_gold = 4
 coop_tell_store = 5
 coop_tell_left = 6
+coop_tell_base = 7
 coop_note_cap = 16                # notes for the bridge's log kept while no request can carry them
 coop_note_prisoners = 1           # as GAME_NOTES in tools/coop_bridge.py
 coop_note_troops_xp = 2

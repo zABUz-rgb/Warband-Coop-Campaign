@@ -93,6 +93,7 @@ together_scripts = [
      (assign, "$coop_follow_set", 0),
      (assign, "$coop_follow_send", 0),
      (assign, "$coop_mark_send", 0),
+     (assign, "$coop_base_send", 0),
      (assign, "$coop_store_state", 0),
      (assign, "$coop_store_step", 0),
      (assign, "$coop_ping_on", 0),
@@ -106,6 +107,11 @@ together_scripts = [
   ("coop_follow_end",
    [
      (store_script_param, ":why", 1),
+     (assign, ":base", 0),
+     (try_begin),
+       (eq, "$coop_follow_mark", coop_base_tag),
+       (assign, ":base", "$coop_follow_party"),
+     (try_end),
      (try_begin),
        (gt, "$coop_follow", 0),
        (assign, "$coop_follow_send", coop_follow_word_stop),
@@ -121,6 +127,11 @@ together_scripts = [
      (else_try),
        (eq, ":why", coop_follow_end_gone),
        (display_message, "@CoopWorld: whom you rode after is no longer on the map.", 0xFFDD66),
+     (else_try),
+       (eq, ":why", coop_follow_end_arrived),
+       (gt, ":base", 0),
+       (party_is_active, ":base"),
+       (start_encounter, ":base"), #the camp opens by itself
      (else_try),
        (eq, ":why", coop_follow_end_arrived),
        (display_message, "@CoopWorld: you reached the mark.", 0x66FF66),
@@ -276,7 +287,6 @@ together_scripts = [
        (party_add_members, ":mark", "trp_farmer", 1),
        (party_set_faction, ":mark", "fac_neutral"),
        (party_set_flags, ":mark", pf_always_visible, 1),
-       (party_set_icon, ":mark", "icon_flagbearer_a"),
        (party_set_ai_behavior, ":mark", ai_bhvr_hold),
        (store_add, ":tag", ":slot", 1),
        (party_set_slot, ":mark", slot_party_coop_mark, ":tag"),
@@ -285,13 +295,20 @@ together_scripts = [
        (position_set_y, pos2, ":y"),
        (party_set_position, ":mark", pos2),
        (try_begin),
-         (eq, ":mine", 1),
-         (str_store_troop_name, s1, "trp_player"),
+         (eq, ":slot", coop_base_slot),
+         (party_set_icon, ":mark", "icon_camp"),
+         (str_store_string, s5, "@The company's camp"),
        (else_try),
-         (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
-         (str_store_party_name, s1, ":puppet"),
+         (party_set_icon, ":mark", "icon_flagbearer_a"),
+         (try_begin),
+           (eq, ":mine", 1),
+           (str_store_troop_name, s1, "trp_player"),
+         (else_try),
+           (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+           (str_store_party_name, s1, ":puppet"),
+         (try_end),
+         (str_store_string, s5, "@Mark of {s1}"),
        (try_end),
-       (str_store_string, s5, "@Mark of {s1}"),
        (party_set_name, ":mark", s5),
      (try_end),
      (try_begin), #a mark ridden to was spawned anew, or went
@@ -312,6 +329,16 @@ together_scripts = [
        (party_slot_eq, ":party_no", slot_party_coop_mark, ":tag"),
        (assign, reg0, ":party_no"),
      (try_end),
+    ]),
+
+  # script_coop_blackborn_ready: the man of the company's camp, as he is to be met
+  ("coop_blackborn_ready",
+   [
+     (troop_set_name, coop_blackborn, "@John Blackborn"),
+     (troop_clear_inventory, coop_blackborn),
+     ] + [(troop_add_item, coop_blackborn, item) for item in
+          ("itm_black_hood", "itm_leather_jerkin", "itm_leather_gloves", "itm_leather_boots", "itm_sword_medieval_b")] + [
+     (troop_equip_items, coop_blackborn),
     ]),
 
   # script_coop_treasury_move: arg1 = denars into the treasury, or out of it (negative). What goes in
@@ -502,6 +529,14 @@ together_scripts = [
            (display_message, "@CoopWorld: {s1} set a mark on the map (Camp - CoopWorld - marks).", 0x66CCFF),
          (else_try),
            (display_message, "@CoopWorld: {s1} took the mark away.", 0xFFDD66),
+         (try_end),
+       (else_try),
+         (eq, ":code", coop_tell_base),
+         (try_begin),
+           (eq, reg1, 1),
+           (display_message, "@CoopWorld: {s1} set up the company's camp: the treasury and the party store are there.", 0x66CCFF),
+         (else_try),
+           (display_message, "@CoopWorld: {s1} took the company's camp down.", 0xFFDD66),
          (try_end),
        (else_try),
          (eq, ":code", coop_tell_gold),
@@ -820,6 +855,17 @@ def request_suffix():
       (str_store_string, s17, "@{s17}&mk=-"),
     (try_end),
     (try_begin),
+      (eq, "$coop_base_send", 1),
+      (assign, "$coop_base_send", 0),
+      (assign, reg7, "$coop_base_x"),
+      (assign, reg8, "$coop_base_y"),
+      (str_store_string, s17, "@{s17}&bs={reg7},{reg8}"),
+    (else_try),
+      (eq, "$coop_base_send", 2),
+      (assign, "$coop_base_send", 0),
+      (str_store_string, s17, "@{s17}&bs=-"),
+    (try_end),
+    (try_begin),
       (neq, "$coop_tg_token", 0),
       (val_sub, "$coop_tg_wait", 1),
       (le, "$coop_tg_wait", 0),
@@ -870,10 +916,15 @@ def map_tick():
 
 
 def encounter_end():
-  """Ops at the end of script_game_event_party_encounter: a mark, or a battle a client's mirrors cannot
-  show, take the place of the menu Native chose; the party met is noted for a call to a battle."""
+  """Ops at the end of script_game_event_party_encounter: the company's camp, a mark, or a battle a
+  client's mirrors cannot show, take the place of the menu Native chose; the party met is noted for a
+  call to a battle."""
   return [
     (try_begin),
+      (ge, "$g_encountered_party", first_dynamic()),
+      (party_slot_eq, "$g_encountered_party", slot_party_coop_mark, coop_base_tag),
+      (jump_to_menu, "mnu_coop_shared"),
+    (else_try),
       (ge, "$g_encountered_party", first_dynamic()),
       (party_slot_ge, "$g_encountered_party", slot_party_coop_mark, 1),
       (jump_to_menu, "mnu_coop_mark"),
@@ -902,8 +953,35 @@ def reply_branches():
 
 def camp_options():
   return [
-    ("coop_shared", plays(), "CoopWorld: the shared treasury and the party store...",
-     [(jump_to_menu, "mnu_coop_shared")]),
+    ("coop_base_build", plays() + [(call_script, "script_coop_mark_of", coop_base_tag), (eq, reg0, 0),
+                                   (eq, "$coop_base_send", 0),
+                                   (try_begin),
+                                     (store_troop_gold, ":gold", "trp_player"),
+                                     (lt, ":gold", coop_base_cost),
+                                     (disable_menu_option),
+                                   (try_end)],
+     "CoopWorld: set up the company's camp here (%d denars)." % coop_base_cost,
+     [
+       (troop_remove_gold, "trp_player", coop_base_cost),
+       (set_fixed_point_multiplier, 100),
+       (party_get_position, pos1, "p_main_party"),
+       (position_get_x, "$coop_base_x", pos1),
+       (position_get_y, "$coop_base_y", pos1),
+       (assign, "$coop_base_send", 1),
+       (display_message, "@CoopWorld: the tents go up. Ride into the camp for the treasury and the party store.", 0x66CCFF),
+       (change_screen_return),
+     ]),
+    ("coop_base_ride", plays() + [(call_script, "script_coop_mark_of", coop_base_tag), (gt, reg0, 0),
+                                  (eq, "$coop_leader", 0)],
+     "CoopWorld: ride to the company's camp (the treasury and the party store are there).",
+     [
+       (call_script, "script_coop_mark_of", coop_base_tag),
+       (assign, "$coop_follow_party", reg0),
+       (assign, "$coop_follow_mark", coop_base_tag),
+       (assign, "$coop_follow", 0),
+       (assign, "$coop_follow_set", 0),
+       (change_screen_return),
+     ]),
     ("coop_marks", plays(), "CoopWorld: marks on the map...", [(jump_to_menu, "mnu_coop_marks")]),
     ("coop_tree", [], "CoopWorld: the troop tree.",
      [(start_presentation, "prsnt_coop_troop_tree")]),
@@ -1004,20 +1082,20 @@ def treasury_options():
     options.append(("coop_tg_in_%d" % amount,
                     [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (ge, ":gold", amount)],
                     "Put in %d denars." % amount,
-                    [(call_script, "script_coop_treasury_move", amount), (change_screen_return)]))
+                    [(call_script, "script_coop_treasury_move", amount), (leave_encounter), (change_screen_return)]))
   options.append(("coop_tg_in_all",
                   [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (gt, ":gold", 0)],
                   "Put in everything you carry.",
                   [(store_troop_gold, ":gold", "trp_player"), (call_script, "script_coop_treasury_move", ":gold"),
-                   (change_screen_return)]))
+                   (leave_encounter), (change_screen_return)]))
   for amount in (100, 1000):
     options.append(("coop_tg_out_%d" % amount, [(eq, "$coop_tg_token", 0), (ge, "$coop_shared_gold", amount)],
                     "Take %d denars." % amount,
-                    [(call_script, "script_coop_treasury_move", -amount), (change_screen_return)]))
+                    [(call_script, "script_coop_treasury_move", -amount), (leave_encounter), (change_screen_return)]))
   options.append(("coop_tg_out_all", [(eq, "$coop_tg_token", 0), (gt, "$coop_shared_gold", 0)],
                   "Take everything in it.",
                   [(store_sub, ":amount", 0, "$coop_shared_gold"), (call_script, "script_coop_treasury_move", ":amount"),
-                   (change_screen_return)]))
+                   (leave_encounter), (change_screen_return)]))
   return options
 
 
@@ -1043,10 +1121,11 @@ def mark_ride_options():
 
 
 together_menus = [
+  # the company's camp, met on the map: the treasury, the store and its people
   ("coop_shared", 0,
-   "CoopWorld: the shared treasury and the party store.^^The treasury holds {reg1} denars; you carry {reg2}. Every player can put money in and take it out from anywhere; so with the store's things. They are kept at the host, in shared.json, and stay there from session to session.",
+   "CoopWorld: the company's camp.^^The treasury holds {reg1} denars; you carry {reg2}. Here every player can put money in and take it out; so with the store's things. They are kept at the host, in shared.json, and stay there from session to session.",
    "none",
-   [(assign, reg1, "$coop_shared_gold"), (store_troop_gold, reg2, "trp_player")],
+   [(set_background_mesh, "mesh_pic_camp"), (assign, reg1, "$coop_shared_gold"), (store_troop_gold, reg2, "trp_player")],
    treasury_options() + [
      ("coop_store_open", [(eq, "$coop_store_state", 0)],
       "Open the party store (one player at a time).",
@@ -1054,9 +1133,20 @@ together_menus = [
         (assign, "$coop_store_state", 1),
         (assign, "$coop_store_wait", 0),
         (display_message, "@CoopWorld: the party store is on its way...", 0x66CCFF),
+        (leave_encounter),
         (change_screen_return),
       ]),
-     ("coop_shared_back", [], "Back.", [(jump_to_menu, "mnu_coop_camp")]),
+     ("coop_blackborn", [], "Talk to John Blackborn.",
+      [(call_script, "script_coop_blackborn_ready"), (start_map_conversation, coop_blackborn)]),
+     ("coop_base_down", [],
+      "Take the camp down (the treasury and the store stay with the company, the denars do not come back).",
+      [
+        (assign, "$coop_base_send", 2),
+        (display_message, "@CoopWorld: the tents come down.", 0xFFDD66),
+        (leave_encounter),
+        (change_screen_return),
+      ]),
+     ("coop_shared_back", [], "Back to the map.", [(leave_encounter), (change_screen_return)]),
    ]),
 
   # the store as Native's victory menu shows the loot (see coop_loot): the screen from the menu's own
