@@ -435,6 +435,286 @@ def drain(w, cid, now):
     return heard
 
 
+def replies(w, cid, now, kind, tries=14, **first):
+    """The replies of one kind the player hears in its next requests; first: what the first one carries."""
+    heard = [req(w, cid, now=now, **first)[0]] + [req(w, cid, now=now)[0] for _ in range(tries)]
+    return [nums for nums in heard if nums and nums[0] == kind]
+
+
+def two_players(path=None):
+    w = cb.World(path) if path else cb.World()
+    lines = []
+    w.log = lines.append
+    req(w, "a", x=0, name="ivan", hello=True)
+    req(w, "b", x=300, name="olga", hello=True)
+    return w, lines
+
+
+def test_game_notes():
+    w, lines = two_players()
+    check(cb.parse_together({"lg": "1,3,10,2"}) == {"note": [1, 3, 10, 2]}, "a game's note is read")
+    check(cb.parse_together({"lg": "1,3"}) is None, "a note of another length is not")
+    req(w, "a", now=1.0, together={"note": [1, 3, 10, 2]})
+    req(w, "a", now=1.0, together={"note": [99, 1, 2, 3]})
+    check("together 0:ivan: prisoners taken=3 chance=10 no_room=2" in lines, f"a note goes to the log: {lines}")
+    check("together 0:ivan: note99 a=1 b=2 c=3" in lines, "a note of a newer game still shows")
+
+
+def test_follow():
+    w, lines = two_players()
+    check(cb.parse_together({"fl": "2"}) == {"follow": 2}, "fl is read")
+    req(w, "a", now=1.0, together={"follow": 2})
+    check(w.players["a"].follows == 1, "ivan rides after olga")
+    check([cb.TELL_FOLLOWED, 0] == replies(w, "b", 1.0, 27)[0][1:3], "olga is told")
+    check(any(s.startswith("together 0:ivan: follow target=1:olga") for s in lines), "the log says who follows whom")
+    req(w, "a", now=2.0, together={"follow": 2})
+    check(not replies(w, "b", 2.0, 27), "the same word twice tells nothing new")
+    req(w, "a", now=3.0, together={"follow": 0})
+    check(w.players["a"].follows is None and replies(w, "b", 3.0, 27)[0][1] == cb.TELL_UNFOLLOWED, "and stops")
+    replies(w, "a", 4.0, 27, together={"follow": 2})
+    req(w, "b", now=5.0, bye=True)
+    check(w.players["a"].follows is None and replies(w, "a", 5.0, 27)[0][1:3] == [cb.TELL_LEFT, 1],
+          "a player who leaves leaves its followers alone")
+
+
+def test_marks():
+    w, lines = two_players()
+    check(cb.parse_together({"mk": "-1500,200"}) == {"mark": (-1500, 200)}, "a mark is read, west of 0 too")
+    check(cb.parse_together({"mk": "-"}) == {"mark": ()}, "and taken away")
+    mine, theirs = replies(w, "a", 1.0, 28, together={"mark": (-1500, 200)})[0], replies(w, "b", 1.0, 28)[0]
+    check(mine == [28, 1, 0, -1500 + OFF, 200 + OFF, 1], f"my own mark: {mine}")
+    check(theirs == [28, 1, 0, -1500 + OFF, 200 + OFF, 0], f"and everybody else's: {theirs}")
+    late = cb.World()
+    late.marks = {3: (5, 6)}
+    first = [req(late, "c", now=float(k), hello=k == 0)[0] for k in range(10)]
+    check([28, 1, 3, 5 + OFF, 6 + OFF, 0] in first, f"a player who joins later sees it: {first}")
+    req(w, "a", now=2.0, together={"mark": ()})
+    check(replies(w, "b", 2.0, 28)[0] == [28, 0] and "together 0:ivan: mark_off" in lines, "gone for everybody")
+    req(w, "b", now=3.0, together={"mark": (1, 2)})
+    replies(w, "a", 3.0, 28)
+    req(w, "b", now=3.0, bye=True)
+    check(replies(w, "a", 3.0, 28)[0] == [28, 0], "the mark of a player who left goes")
+
+
+def test_treasury():
+    folder = Path(tempfile.mkdtemp())
+    path = folder / "profiles.json"
+    w, lines = two_players(path)
+    check(cb.parse_together({"tg": "77,-100"}) == {"treasury": (77, -100)}, "a transfer is read")
+    check(replies(w, "a", 1.0, 29, together={"treasury": (11, 500)})[0] == [29, 11, 500, 500], "the money goes in")
+    check(replies(w, "a", 1.0, 29, together={"treasury": (11, 500)})[0] == [29, 11, 500, 500] and w.shared["gold"] == 500,
+          "the same transfer asked again changes nothing")
+    heard = replies(w, "b", 1.0, 29)
+    check(heard[0] == [29, 0, 0, 500], f"the others see the balance: {heard}")
+    check(replies(w, "b", 2.0, 29, together={"treasury": (12, -800)})[0] == [29, 12, -500, 0], "no more comes out than there is")
+    check(any("together 1:olga: gold asked=-800 moved=-500 balance=0" == s for s in lines), f"logged: {lines}")
+    req(w, "a", now=3.0, together={"treasury": (13, 250)})
+    again = cb.World(path)
+    check(again.shared["gold"] == 250, "the treasury outlives the bridge")
+    first = [req(again, "c", now=float(k), hello=k == 0)[0] for k in range(10)]
+    check([29, 0, 0, 250] in first, f"and a player who joins hears of it: {first}")
+
+
+def test_party_store():
+    folder = Path(tempfile.mkdtemp())
+    path = folder / "profiles.json"
+    w, lines = two_players(path)
+    check(replies(w, "a", 1.0, 30, together={"store_open": True})[0] == [30, 0, 0, 0], "an empty store")
+    check(replies(w, "b", 2.0, 31, together={"store_open": True})[0] == [31, 0, 0], "one player at a time")
+    check(any("store_refused used_by=0:ivan" in s for s in lines), "and the log says who has it")
+    pairs = [v for k in range(70) for v in (400 + k, 100 * (k % 3))]
+    check(cb.parse_together({"sti": "5,0,70," + ",".join(map(str, pairs[:50]))})["store_put"][:3] == [5, 0, 70], "read")
+    req(w, "a", now=3.0, together={"store_put": [5, 0, 70] + pairs[:50]})
+    check(w.store_lock is not None and w.shared["items"] == [], "nothing is saved until all of it is here")
+    req(w, "a", now=3.0, together={"store_put": [5, 25, 70] + pairs[50:100]})
+    saved = req(w, "a", now=3.0, together={"store_put": [5, 50, 70] + pairs[100:]})[0]
+    check(w.shared["items"] == pairs and w.store_lock is None, "all of it, and the store is free again")
+    check(saved == [31, 1, 0], "saved")
+    check(replies(w, "a", 3.5, 31, together={"store_put": [5, 50, 70] + pairs[100:]})[0] == [31, 1, 0] and w.shared["items"] == pairs, "a repeat only hears the answer")
+    check(replies(w, "b", 3.5, 27)[0][1:4] == [cb.TELL_STORE, 0, 70], "the others hear of it")
+    parts = replies(w, "b", 4.0, 30, together={"store_open": True})
+    check([p[1:4] for p in parts] == [[0, 70, 60], [60, 70, 10]] and all(len(p) + 1 <= 128 for p in parts),
+          f"the store comes in parts within a reply: {[p[:4] for p in parts]}")
+    check(cb.World(path).shared["items"] == pairs, "it outlives the bridge")
+    req(w, "b", now=4.0 + cb.STORE_LOCK_S + 1, bye=True)
+    check(w.store_lock is None, "a player who leaves leaves the store free")
+    w.store_lock = ("nobody", 0.0)
+    req(w, "a", now=5.0, together={"store_open": True})
+    check(w.store_lock[0] == "a", "as does a holder who is gone")
+    w.store_lock = ("b", 0.0)
+    req(w, "b", now=5.0, name="olga")
+    req(w, "a", now=cb.STORE_LOCK_S + 1, together={"store_open": True})
+    check(w.store_lock[0] == "a", "or who held it for too long")
+
+
+def test_ping():
+    w, lines = two_players()
+    target = "/pg?seq=9&hold=0"
+    w.players["b"].last = 1.0
+    check(cb.handle_request(w, "cli", target, 5.0, cid="b") == "7777|33", "a ping with nothing to tell")
+    check(w.players["b"].last == 1.0 and w.players["b"].pinged == 5.0, "keeps the player silent for the world")
+    check(w.pause_cause(5.0, but=w.players["a"]) == (1, 2), "so its menu still holds the world")
+    check(not any(r[1].startswith("/pg") for r in w.players["b"].recent), "and stays out of the last requests")
+    check(not cb.worth_tracing("cli", target, "7777|33") and not cb.carries_news("7777|33"), "it is not news")
+    w.mp_last = 5.0
+    req(w, "a", now=5.0, busy=True, mp=mp(1, sid=500, troops=[(1, 5)], hero=HERO))
+    reply = cb.handle_request(w, "cli", target, 5.5, cid="b")
+    check(reply.startswith("7777|6|") and cb.worth_tracing("cli", target, reply), f"an invitation comes with it: {reply}")
+    check(any("invite_off_map" in s for s in lines), "and the log says it came off the map")
+    check(cb.handle_request(w, "cli", target, 6.0, cid="b") == "7777|33", "once")
+    check(cb.handle_request(w, "cli", target, 6.0, cid="nobody") == "7777|33", "a game the bridge does not know yet")
+    check(cb.carries_news("7777|6|1|1|0|500"), "an invitation that comes late is not lost on a relay")
+    check(w.signal_text("a") is None, "the starter is not called")
+    text = w.signal_text("b")
+    check(text and "ivan" in text, f"the bridge's window calls the invited player: {text}")
+    check(w.signal_text("b") is None, "once for a battle")
+    start = time.time()
+    cb.hold_ping(target)
+    fast = time.time() - start
+    start = time.time()
+    cb.hold_ping("/pg?seq=9&hold=1")
+    check(fast < 0.2 and time.time() - start >= cb.PING_HOLD_S * 0.9, "a held ping waits, the first one does not")
+    start = time.time()
+    cb.hold_ping("/cli?seq=9&hold=1")
+    check(time.time() - start < 0.2, "and nothing else ever does")
+
+
+def test_map_battles_told():
+    w, _ = two_players()
+    w.server_report([(500, 3, 0, 0), (501, 4, 10, 10), (900, 3, 90000, 0), (901, 4, 90000, 10)], None, 1.0,
+                    battles=[(500, 501), (900, 901)])
+    heard = replies(w, "a", 1.0, 32)
+    check(sorted(map(tuple, heard)) == [(32, 500, 501, 1), (32, 501, 500, 1)], f"the battles near the player: {heard}")
+    w.server_report([(500, 3, 0, 0), (501, 4, 10, 10)], None, 1.0 + cb.MAP_BATTLE_S + 1)
+    heard = replies(w, "a", 1.0 + cb.MAP_BATTLE_S + 1, 32)
+    check(sorted(map(tuple, heard)) == [(32, 500, 501, 0), (32, 501, 500, 0)], f"and their end: {heard}")
+    host = cb.World()
+    req(host, "local", on_server=True, name="host", hello=True)
+    host.server_report([(500, 3, 0, 0), (501, 4, 10, 10)], None, 1.0, battles=[(500, 501)])
+    check(all(req(host, "local", now=1.0, on_server=True)[0][0] != 32 for _ in range(14)),
+          "the host's own game sees the world's battles itself")
+
+
+def kinds_of_battle(kind, ally=-1, ally_troops=None, center=-1):
+    w, lines = two_players()
+    w.mp_last = 0.0
+    w.mp_players = {0: "ivan", 1: "olga"}
+    w.troops[500] = (1, [(10, 8)])
+    req(w, "a", now=0.0, me=[(1, 5)])
+    fight = {**mp(1, sid=500, troops=[(10, 8)], hero=HERO), "kind": kind, "ally": ally,
+             "ally_troops": ally_troops or [], "terrain": 3}
+    req(w, "a", now=1.0, busy=True, mp=fight)
+    req(w, "a", now=1.0 + cb.GATHER_S + 1, busy=True, mp=mp(2, bid=w.battle.bid))
+    return w, lines
+
+
+def run_battle(w, now, winner, fallen):
+    b = w.battle
+    for _ in range(12):
+        nums = w.mp_request(0, 0, -1, {}, w.mp_players, now)
+        if nums and nums[0] == 1:
+            break
+    w.mp_request(4, b.bid, winner, fallen, w.mp_players, now + 1, (), {}, {})
+
+
+def test_lair_caravan_village():
+    w, lines = kinds_of_battle(cb.KIND_LAIR)
+    check(w.battle.terrain == cb.LAIR_TERRAIN, "a hideout on the plain is fought on a map with cover")
+    run_battle(w, 100.0, 0, {1: 8})
+    check(w.results and w.results[0][:2] == (500, 1), f"the lair falls: {w.results}")
+    check(any(s.startswith("together 0:ivan: battle_end kind=lair") and "won=1" in s for s in lines), f"logged: {lines}")
+
+    w, lines = kinds_of_battle(cb.KIND_CARAVAN, ally=600, ally_troops=[(20, 6)])
+    check([s for s in w.battle.stacks if isinstance(s[1], tuple)] != [], "the caravan's men fight beside the players")
+    index = next(i for i, s in enumerate(w.battle.stacks) if isinstance(s[1], tuple))
+    enemy = next(i for i, s in enumerate(w.battle.stacks) if s[1] is None)
+    run_battle(w, 100.0, 0, {index: 6, enemy: 8})
+    check((600, 1, [], []) in w.results, f"a caravan with nobody left is gone: {w.results}")
+
+    w, lines = kinds_of_battle(0, ally=600, ally_troops=[(20, 6)])
+    index = next(i for i, s in enumerate(w.battle.stacks) if isinstance(s[1], tuple))
+    run_battle(w, 100.0, 0, {index: 6})
+    check((600, 0, [], []) in w.results, f"a lord's party stays, however it went: {w.results}")
+
+    w, lines = kinds_of_battle(cb.KIND_VILLAGE, ally=30, ally_troops=[(20, 12)])
+    check(any(s[2] == 20 and isinstance(s[1], tuple) for s in w.battle.stacks), "the village's militia fights")
+    enemy = next(i for i, s in enumerate(w.battle.stacks) if s[1] is None)
+    run_battle(w, 100.0, 0, {enemy: 8})
+    check(all(r[0] != 30 for r in w.results) and w.results[0][:2] == (500, 1),
+          f"a village is no party of the world: {w.results}")
+
+
+def duel(w, stake=500):
+    w.mp_last = 0.0
+    w.mp_players = {0: "ivan", 1: "olga"}
+    start = req(w, "a", now=1.0, busy=True,
+                mp={**mp(1, hero=HERO), "event": [cb.EVENT_DUEL, 1, 0, FIGHTER, stake]})[0]
+    return w.battle, start
+
+
+def test_duel():
+    check(cb.parse_event("4,1,0,500,100") == [4, 1, 0, 500, 100] and cb.parse_event("4,7,0,500,100") is None,
+          "a duel names its opponent")
+    w, lines = two_players()
+    b, _ = duel(w)
+    check(b.sides == {"a": 0, "b": 1} and b.invited == {"b"}, "the challenged player answers, on the other side")
+    heard = replies(w, "b", 1.0, 6)
+    check(heard == [[6, b.bid, 7, 0, 500]], f"told who calls and the stake: {heard}")
+    req(w, "b", now=2.0, busy=True, mp=mp(4, bid=b.bid))
+    check(w.battle is None and replies(w, "a", 2.0, 7)[0][1:3] == [b.bid, 2], "declined: the starter hears at once")
+    check(any("duel_off" in s and "why=declined" in s for s in lines), "logged")
+
+    w, lines = two_players()
+    w.mp_last = 0.0
+    third = req(w, "c", x=100, name="petr", hello=True)
+    b, _ = duel(w)
+    check("c" not in b.invited, "a duel calls nobody else")
+    req(w, "a", now=1.0 + cb.GATHER_S + 1)
+    check(w.battle is None and any("why=no_answer" in s for s in lines), "no answer: no duel")
+
+    w, lines = two_players()
+    b, _ = duel(w)
+    req(w, "b", now=2.0, busy=True, mp=mp(3, bid=b.bid, hero=HERO))
+    req(w, "a", now=3.0)
+    check(b.state == "loading" and b.stacks == [], "both are there: no bots")
+    first = w.mp_request(0, 0, -1, {}, w.mp_players, 3.0)
+    check(first == [2, b.bid, 0, 0], f"the battle server still hears of a new battle: {first}")
+    check(w.mp_request(0, 0, -1, {}, w.mp_players, 3.0)[0] == 5, "then the heroes")
+    check(w.mp_request(0, 0, -1, {}, w.mp_players, 3.0)[0] == 5, "both")
+    start = w.mp_request(0, 0, -1, {}, w.mp_players, 3.0)
+    check(start[:4] == [1, b.bid, 0, cb.EVENT_DUEL + 1] and start[5:] == [2, 0, 0, 1, 1],
+          f"the fight starts, each on a side: {start}")
+    w.mp_request(4, b.bid, 1, {}, w.mp_players, 10.0, [(1, 0, 3, 40)], {}, {})
+    check(replies(w, "a", 10.0, 26) == [[26, b.bid, cb.EVENT_DUEL, 0, 500, 0, 0, 0]], "the starter lost")
+    won = replies(w, "b", 10.0, 26)
+    check(won == [[26, b.bid, cb.EVENT_DUEL, 1, 500, 0, 0, 0]], f"the other one won: {won}")
+    check(w.battle is None and not w.results, "nothing changes in the world")
+
+    w, lines = two_players()
+    b, _ = duel(w)
+    req(w, "b", now=2.0, busy=True, mp=mp(3, bid=b.bid, hero=HERO))
+    for _ in range(6):
+        w.mp_request(0, 0, -1, {}, w.mp_players, 3.0)
+    w.mp_request(4, b.bid, -1, {}, w.mp_players, 10.0, (), {}, {})
+    check(replies(w, "a", 10.0, 26)[0][3] == 2, "a draw: nobody pays")
+
+    w, lines = two_players()
+    w.mp_players = {0: "ivan"}
+    b, _ = duel(w)
+    w.mp_players = {0: "ivan"}
+    req(w, "b", now=2.0, busy=True, mp=mp(3, bid=b.bid, hero=HERO))
+    req(w, "a", now=3.0)
+    check(w.battle is b, "it waits for the other hero on the battle server")
+    req(w, "a", now=1.0 + cb.GATHER_S + cb.EVENT_WAIT_S + 1)
+    check(w.battle is None and any("why=not_on_the_battle_server" in s for s in lines), "not for ever")
+
+    w = cb.World()
+    req(w, "a", name="ivan", hello=True)
+    w.mp_last = 0.0
+    nums = req(w, "a", now=1.0, busy=True, mp={**mp(1, hero=HERO), "event": [cb.EVENT_DUEL, 2, 0, FIGHTER, 0]})[0]
+    check(w.battle is None and nums == [7, 0, 2, 0], "nobody in that slot: no duel")
+
+
 def test_joint_arena():
     w = cb.World()
     req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
@@ -1332,4 +1612,13 @@ if __name__ == "__main__":
     test_lan_search()
     test_no_enemy_left()
     test_map_of_many_parties()
+    test_game_notes()
+    test_follow()
+    test_marks()
+    test_treasury()
+    test_party_store()
+    test_ping()
+    test_map_battles_told()
+    test_lair_caravan_village()
+    test_duel()
     print("ALL OK")

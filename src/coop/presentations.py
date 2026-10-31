@@ -2,6 +2,9 @@ def merge(presentations, **unused):
   # the waiting window of a joint battle (coop/mp_campaign.py)
   from coop.mp_campaign import mp_campaign_presentations
   presentations.extend(mp_campaign_presentations)
+  # the troop tree (coop/tree.py)
+  from coop.tree import tree_presentations
+  presentations.extend(tree_presentations)
   # the weekly budget: the host's and the clients' money changes as always, the window closes at
   # once and the outcome is a message (a window would stop the world for everybody)
   from header_operations import (store_troop_gold, store_sub, try_begin, try_end, else_try, eq, ge, lt, this_or_next,

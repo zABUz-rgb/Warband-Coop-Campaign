@@ -21,6 +21,7 @@ def net_triggers(first_dynamic):
   from coop.mp_campaign import client_map_tick, client_request_suffix
   from coop.profile import client_tick as profile_tick
   from coop.players import map_tick as players_tick
+  from coop.together import map_tick as together_tick
   puppets_end = puppet_range()[1]
   return [
   # World server held for a joining client: only asks whether the client has joined.
@@ -112,7 +113,7 @@ def net_triggers(first_dynamic):
          (assign, "$coop_read_news", 0),
          (display_message, "@CoopWorld: all news read.", 0xFFDD66),
        (try_end),
-       ] + client_map_tick() + players_tick() + [
+       ] + client_map_tick() + players_tick() + together_tick() + [
        # the world is held by another player: remind now and then why nothing moves
        (try_begin),
          (eq, "$coop_world_paused", 1),
@@ -178,6 +179,7 @@ def net_triggers(first_dynamic):
          (try_for_range, ":party_no", ":from", ":end"),
            (assign, "$coop_near_cursor", ":party_no"),
            (party_is_active, ":party_no"),
+           (neg|party_slot_ge, ":party_no", slot_party_coop_mark, 1), #the host's own marks are no parties of the world
            (party_get_position, pos4, ":party_no"),
            (position_get_x, ":dx", pos4),
            (position_get_y, ":dy", pos4),
@@ -213,6 +215,7 @@ def net_triggers(first_dynamic):
        (try_for_range, ":party_no", ":from", ":end"),
          (assign, "$coop_net_cursor", ":party_no"),
          (party_is_active, ":party_no"),
+         (neg|party_slot_ge, ":party_no", slot_party_coop_mark, 1),
          (call_script, "script_coop_append_entry", ":party_no"),
          (val_add, ":far", 1),
          (val_add, ":count", 1),
@@ -238,6 +241,7 @@ def net_triggers(first_dynamic):
            (this_or_next|is_between, ":party_no", walled_centers_begin, walled_centers_end),
            (ge, ":party_no", first_dynamic),
            (party_is_active, ":party_no"),
+           (neg|party_slot_ge, ":party_no", slot_party_coop_mark, 1),
            (party_get_position, pos4, ":party_no"),
            (position_get_x, ":dx", pos4),
            (position_get_y, ":dy", pos4),
@@ -270,6 +274,10 @@ def net_triggers(first_dynamic):
        (store_faction_of_party, reg17, "$coop_center_cursor"),
        (party_get_slot, reg18, "$coop_center_cursor", slot_town_lord),
        (party_get_slot, reg19, "$coop_center_cursor", slot_center_is_besieged_by),
+       (try_begin),
+         (neg|is_between, "$coop_center_cursor", walled_centers_begin, walled_centers_end),
+         (party_get_slot, reg19, "$coop_center_cursor", slot_village_raided_by), #a village's raider, the same way
+       (try_end),
        (val_max, reg19, -1),
        (val_add, reg19, 1), #+ 1: 0 when nobody besieges it
        (str_store_string, s13, "@{s13}&cf={reg16},{reg17},{reg18},{reg19}"),
@@ -293,7 +301,7 @@ def net_triggers(first_dynamic):
    [
      (eq, "$coop_role", coop_role_client),
    ],
-   client_map_tick() + players_tick() + [
+   client_map_tick() + players_tick() + together_tick() + [
      # time on the map flows only while the player moves or rests: rest when standing still,
      # a click on the map ends the rest as in Native "Wait here"
      (try_begin),

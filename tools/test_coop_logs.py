@@ -206,6 +206,70 @@ def test_clocks_and_lords():
     check(any("отряд 700), бьётся с отрядом 800" in line for line in marked(text, "  ")), "the lord's battle")
 
 
+def test_together():
+    lines = [
+        "together 1:D: prisoners taken=3 chance=20 no_room=1",
+        "together 1:D: troops_xp xp=120 won=1",
+        "together 1:D: arena kills=4 prize=30 won=0",
+        "together 1:D: tournament rounds=4 gold=250 stake_lost=0",
+        "together 0:O: tournament rounds=1 gold=0 stake_lost=50",
+        "together 1:D: training ratio=75 earned=900",
+        "together 1:D: tree troop=120",
+        "together 0:O: follow target=1:D the Great",
+        "together 0:O: follow_jump distance=12",
+        "together 0:O: follow_end why=1",
+        "together 1:D: mark x=-1500 y=2500",
+        "together 1:D: gold asked=100 moved=100 balance=600",
+        "together 0:O: gold asked=-700 moved=-600 balance=0",
+        "together 0:O: store_open items=3",
+        "together 1:D: store_refused used_by=0:O",
+        "together 0:O: store_saved items=2",
+        "together 0:O: invite_off_map battle=2 type=1",
+        "together 0:O: signal how=1 invite=1",
+        "together 0:O: signal_bridge battle=2",
+        "together 1:D: battle_lair battle=3 enemy=800 ally=None",
+        "together 1:D: battle_end kind=lair battle=3 won=1",
+        "together 1:D: lair won=1 quest=1",
+        "together 1:D: village center=120 won=1 relation=3",
+        "together 1:D: caravan won=0",
+        "together 1:D: duel_call rival=0:O stake=500",
+        "together 1:D: duel_off battle=4 why=no_answer",
+        "together 0:O: duel result=1 stake=500 gold=500",
+        "together 1:D: something_new a=1",
+    ]
+    text = report(BRIDGE_START + "".join(f"12:01:{k:02d} {line}\n" for k, line in enumerate(lines))
+                  + stats("12:02:00") + "\n", "")
+    for said in ("пленные после боя: взято 3, шанс 20%, без места осталось 1", "опыт отряду за бой: 120 (победа)",
+                 "арена: побеждено 4, награда 30", "турнир выигран: раундов 4, получено 250",
+                 "турнир проигран: раундов выиграно 1, ставка потеряна 50",
+                 "тренировка: побеждено 75%", "древо войск: открыт юнит 120", "едет за игроком 1:D the Great",
+                 "поход окончен: щёлкнул по карте сам", "поставил метку (-15, 25)",
+                 "казна: положил 100, остаток 600", "казна: взял 600, остаток 0", "открыл склад: вещей 3",
+                 "склад занят: его держит 0:O", "склад сохранён: вещей 2",
+                 "приглашение (бой 2, бой рядом) дошло вне карты", "сигнал к бою: окно открылось поверх меню (бой рядом)",
+                 "сигнал к бою 2 показан в окне моста", "начал бой: логово, бой 3, враг 800",
+                 "бой 3 (логово) окончен: победа", "логово: победа, задание выполнено",
+                 "деревня 120: победа, отношение +3", "защита каравана: поражение",
+                 "вызвал на дуэль игрока 0:O, ставка 500", "дуэль 4 отменена: соперник не ответил",
+                 "дуэль: победа, ставка 500, деньги +500", "something_new a=1"):
+        check(said in text, f"the report says: {said}")
+    check(any("не послушался приказа" in line for line in marked(text, "? ")), "a ride that had to jump is worth a look")
+
+
+def test_menu_or_hang():
+    menu = [stats(f"12:01:{s:02d}", friend=f" silent {s + 3}s alive") for s in range(0, 40, 5)]
+    menu.append(stats("12:01:40"))
+    text = report(BRIDGE_START + "\n".join(menu) + "\n", "")
+    quiet = [line for line in text.splitlines() if "молчал" in line]
+    check(quiet and "это меню, а не зависание" in quiet[0] and "!!" not in quiet[0],
+          "a game silent for the world that goes on answering is in a menu")
+    hang = [stats(f"12:01:{s:02d}", friend=f" silent {s + 3}s alive") for s in range(0, 20, 5)]
+    hang += [stats(f"12:01:{s:02d}", friend=f" silent {s + 3}s") for s in range(20, 55, 5)]
+    text = report(BRIDGE_START + "\n".join(hang) + "\n", "")
+    check(any("потом перестала: зависание или закрытие" in line for line in marked(text, "!!")),
+          "a game that stopped answering in the middle of a silence is a problem")
+
+
 def test_parties():
     bridge = BRIDGE_START + stats("12:00:15", parties=0) + "\n" + stats("12:00:20", parties=300) + "\n" \
         + stats("12:00:25", parties=250) + "\n"
@@ -227,4 +291,6 @@ if __name__ == "__main__":
     test_captor_gone()
     test_quiet_at_the_end()
     test_clocks_and_lords()
+    test_together()
+    test_menu_or_hang()
     print("ALL OK")

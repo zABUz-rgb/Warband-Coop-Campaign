@@ -11,8 +11,12 @@ results. The report goes through the last session (--all: every session in bridg
   - players, their builds (a different build than the host's), connections lost and made again;
   - every joint battle: who started it, who was invited and answered, the sides, the outcome from
     the battle server, and when each player got the result and the spoils, in which state;
+  - what the players did together, item by item: prisoners, troops' experience, arena, tournament,
+    training, the troop tree, the ride after a friend, marks, the treasury, the store, the call to
+    battle, lairs, caravans, villages, duels;
   - silences: a player's game that stopped asking (a menu, a screen, a hang), with the state it was
-    last seen in and the replies it got last, and whether it came back;
+    last seen in and the replies it got last, and whether it came back. A game in a menu goes on
+    answering (the word alive in the stats line), one that hung does not;
   - the world's parties (sudden drops), how long the world stood still, the bridge's own errors.
 
 Lines marked !! are problems, ?  worth a look, the rest is what happened. The report is printed
@@ -34,13 +38,90 @@ KINDS = {1: "итог для мира", 2: "позиции", 3: "войска", 
          7: "состояние боя", 8: "результат боя", 9: "владение оружием", 10: "здоровье/плен",
          11: "пленные", 12: "владельцы центров", 13: "штурм", 14: "герой", 15: "предложены войска",
          16: "ответ на войска", 17: "просьба вступить", 18: "ответ на просьбу", 19: "вступил/ушёл",
-         20: "отпущен", 21: "добыча", 22: "имя", 23: "сохранение хоста", 24: "стать клиентом"}
+         20: "отпущен", 21: "добыча", 22: "имя", 23: "сохранение хоста", 24: "стать клиентом",
+         25: "бой лорда", 26: "итог события", 27: "вести об игроке", 28: "метки", 29: "казна", 30: "склад",
+         31: "состояние склада", 32: "бой рядом", 33: "проверка связи"}
+
+SIGNAL_HOW = {0: "сообщение и звук", 1: "окно открылось поверх меню", 2: "окно открылось на карте"}
+FOLLOW_END = {0: "по своей команде", 1: "щёлкнул по карте сам", 2: "цель пропала с карты", 3: "доехал до метки"}
+DUEL_OFF = {"declined": "соперник отказался", "no_answer": "соперник не ответил",
+            "not_on_the_battle_server": "кто-то не вышел на сервер боя"}
+BATTLE_KINDS = {"lair": "логово", "caravan": "караван или крестьяне", "village": "деревня"}
+INVITE_TYPES = {1: "бой рядом", 2: "нападение", 3: "бой лидера", 4: "арена", 5: "турнир", 6: "тренировка", 7: "дуэль"}
+
+
+def together_text(what, f):
+    """What a line of the bridge's "together" log says, or None for one this report does not know."""
+    n = lambda key: int(f.get(key, "0") or 0)  # noqa: E731
+    won = lambda: "победа" if f.get("won") == "1" else "поражение"  # noqa: E731
+    if what == "prisoners":
+        room = f", без места осталось {n('no_room')}" if n("no_room") else ""
+        return (f"пленные после боя: взято {n('taken')}, шанс {n('chance')}%{room}" if n("chance")
+                else "пленные после боя: нет навыка Содержание пленных, никого не взято")
+    if what == "troops_xp":
+        return f"опыт отряду за бой: {n('xp')} ({won()})"
+    if what == "arena":
+        return f"арена: побеждено {n('kills')}, награда {n('prize')} денаров" + (", устоял до конца" if n("won") else "")
+    if what == "tournament":
+        return (f"турнир выигран: раундов {n('rounds')}, получено {n('gold')} денаров" if n("gold")
+                else f"турнир проигран: раундов выиграно {n('rounds')}, ставка потеряна {n('stake_lost')}")
+    if what == "training":
+        return f"тренировка: побеждено {n('ratio')}% противников, отряд получил {n('earned')} опыта"
+    if what == "tree":
+        return f"древо войск: открыт юнит {n('troop')}"
+    if what == "follow":
+        target = f.get("target", "-")
+        return "едет один" if target == "-" else f"едет за игроком {target}"
+    if what == "follow_jump":
+        return f"поход: приказ двигаться не сработал, отряд перенесён к цели (было {n('distance')} км)"
+    if what == "follow_end":
+        return "поход окончен: " + FOLLOW_END.get(n("why"), "?")
+    if what == "mark":
+        return f"поставил метку ({n('x') // 100}, {n('y') // 100})"
+    if what == "mark_off":
+        return "убрал метку"
+    if what == "gold":
+        moved = n("moved")
+        word = f"положил {moved}" if moved > 0 else f"взял {-moved}" if moved < 0 else "казна пуста, ничего не взято"
+        return f"казна: {word}, остаток {n('balance')}"
+    if what == "store_open":
+        return f"открыл склад: вещей {n('items')}"
+    if what == "store_saved":
+        return f"склад сохранён: вещей {n('items')}"
+    if what == "store_refused":
+        return f"склад занят: его держит {f.get('used_by', '?')}"
+    if what == "invite_off_map":
+        return f"приглашение (бой {n('battle')}, {INVITE_TYPES.get(n('type'), '?')}) дошло вне карты"
+    if what == "signal":
+        return f"сигнал к бою: {SIGNAL_HOW.get(n('how'), '?')} ({INVITE_TYPES.get(n('invite'), '?')})"
+    if what == "signal_bridge":
+        return f"сигнал к бою {n('battle')} показан в окне моста"
+    if what == "duel_call":
+        return f"вызвал на дуэль игрока {f.get('rival', '?')}, ставка {n('stake')}"
+    if what == "duel_off":
+        return f"дуэль {n('battle')} отменена: {DUEL_OFF.get(f.get('why'), f.get('why', '?'))}"
+    if what == "duel":
+        word = {0: "проигрыш", 1: "победа", 2: "ничья"}.get(n("result"), "?")
+        return f"дуэль: {word}, ставка {n('stake')}, деньги {n('gold'):+d}"
+    if what in ("battle_lair", "battle_caravan", "battle_village"):
+        return f"начал бой: {BATTLE_KINDS[what[7:]]}, бой {n('battle')}, враг {n('enemy')}"
+    if what == "battle_end":
+        return f"бой {n('battle')} ({BATTLE_KINDS.get(f.get('kind'), '?')}) окончен: {won()}"
+    if what == "lair":
+        return f"логово: {won()}" + (", задание выполнено" if n("quest") else "")
+    if what == "village":
+        return f"деревня {n('center')}: {won()}, отношение {n('relation'):+d}"
+    if what == "caravan":
+        return f"защита каравана: {won()}"
+    return None
 
 LINE = re.compile(r"^(\d\d):(\d\d):(\d\d) (.*)$")
 TRACE = re.compile(r"^(\d\d):(\d\d):(\d\d) (\S+) (\S+) (.*)$")
 STATS = re.compile(r"^parties (\d+), server [\d.]+/s, players [\d.]+/s \[(.*?)\], (running|PAUSED)")
 FLOW = re.compile(r"parties: (\d+) new, (\d+) gone, (\d+) back$")  # the stats lines of newer bridges
-SLOT = re.compile(r"(\d+):(.*?)( busy)?(?: silent (\d+)s)?(?: mp:[^,]*)?(?:, (?=\d+:)|$)")
+SLOT = re.compile(r"(\d+):(.*?)( busy)?(?: silent (\d+)s)?( alive)?(?: mp:[^,]*)?(?:, (?=\d+:)|$)")
+TOGETHER = re.compile(r"^together (\d+):(.*?): (\w+)(?: (.*))?$")
+TOGETHER_FIELD = re.compile(r"(\w+)=(.*?)(?= \w+=|$)")
 START = re.compile(r"^joint battle: (\d+):(.*?) starts a joint battle \(battle -?\d+, enemy party (-?\d+), "
                    r"player slot (-?\d+), center (-?\d+)")
 GATHER = re.compile(r"^joint battle (\d+): gathering; invited: (.*)$")
@@ -323,7 +404,7 @@ def analyze(events, trace, silence=30):
             if m.group(2) != "none":
                 for sm in SLOT.finditer(m.group(2)):
                     slots[int(sm.group(1))] = (sm.group(2), bool(sm.group(3)),
-                                               int(sm.group(4)) if sm.group(4) else 0)
+                                               int(sm.group(4)) if sm.group(4) else 0, bool(sm.group(5)))
             stats.append((t, int(m.group(1)), m.group(3) == "PAUSED", slots))
             f = FLOW.search(text)
             if f:
@@ -349,18 +430,19 @@ def analyze(events, trace, silence=30):
         if role == "cli" and kind_of(parts) == 8:
             results.setdefault(cid, []).append(t)
 
-    episodes = []  # [slot, name, start, last t, longest, how it ended]
+    episodes = []  # [slot, name, start, last t, longest, how it ended, busy, answered at all, answering last]
     open_ = {}
     for i, (t, _, _, slots) in enumerate(stats):
-        for slot, (name, _, quiet) in slots.items():
+        for slot, (name, _, quiet, alive) in slots.items():
             ep = open_.get(slot)
             if quiet:
                 if ep is not None and ep[1] == name and quiet > ep[4]:
                     ep[3], ep[4] = t, quiet
+                    ep[7], ep[8] = ep[7] or alive, alive
                 else:
                     if ep is not None:
                         ep[5] = "back"
-                    open_[slot] = ep = [slot, name, t - quiet, t, quiet, None, slots[slot][1]]
+                    open_[slot] = ep = [slot, name, t - quiet, t, quiet, None, slots[slot][1], alive, alive]
                     episodes.append(ep)
             elif ep is not None:
                 ep[5] = "back"
@@ -370,7 +452,7 @@ def analyze(events, trace, silence=30):
     for ep in open_.values():
         ep[5] = "end"
 
-    for slot, name, begin, last, longest, ended, busy in episodes:
+    for slot, name, begin, last, longest, ended, busy, answered, answering in episodes:
         # a game that never came back is reported however short: the session may have been closed on it
         if longest < (min(silence, 10) if ended != "back" else silence):
             continue
@@ -410,8 +492,17 @@ def analyze(events, trace, silence=30):
         came_back = ended == "back" and lost is None
         if after:
             text += f". Это через {span(begin - after[-1])} после результата боя"
-        if after and not came_back:
+        hung = answered and not answering
+        if answering:
+            text += ". Игра отвечала на проверку связи: это меню, а не зависание"
+        elif hung:
+            text += ". Игра отвечала на проверку связи, потом перестала: зависание или закрытие"
+        if hung:
             mark = "!!"
+        elif after and not came_back:
+            mark = "!!"
+        elif answering:
+            mark = "  "
         elif not came_back:
             mark, text = "? ", text + " - игру закрыли, или она зависла"
         elif longest >= LONG_SILENCE_S or (after and longest >= 60):
@@ -535,6 +626,27 @@ def analyze(events, trace, silence=30):
                                       "(ждёт в Лагерь - CoopWorld: кооператив)")
             if team == winner and loot is None and winner in (0, 1):
                 out.append(f"    ({name}: добычи нет - павших врагов не было, или их добыча ушла другим)")
+
+    # ---- what the players did together
+    together, known = [], set()
+    for t, text in events:
+        m = TOGETHER.match(text)
+        if not m:
+            continue
+        what, fields = m.group(3), dict(TOGETHER_FIELD.findall(m.group(4) or ""))
+        said = together_text(what, fields)
+        name = m.group(2)
+        together.append(f"  {stamp(t)} {name}: {said if said is not None else what + ' ' + (m.group(4) or '')}")
+        known.add(what)
+        if what == "follow_jump":
+            s.note(t, "? ", f"игрок {name}: отряд не послушался приказа идти за другом и был перенесён к цели")
+        elif what == "store_refused":
+            s.note(t, "  ", f"игрок {name}: склад занят другим игроком")
+        elif what == "duel_off" and fields.get("why") != "declined":
+            s.note(t, "? ", f"игрок {name}: {together_text(what, fields)}")
+    if together:
+        out.append("Совместные дела:")
+        out += together
 
     # ---- the report
     s.findings.sort(key=lambda f: f[0])

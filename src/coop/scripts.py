@@ -179,6 +179,10 @@ def merge(orig_scripts):
   orig_scripts.extend(profile_scripts)
   from coop.players import players_scripts
   orig_scripts.extend(players_scripts)
+  from coop.together import together_scripts, encounter_end
+  orig_scripts.extend(together_scripts)
+  from coop.tree import tree_scripts
+  orig_scripts.extend(tree_scripts)
   response[:0] = mp_reply_hook()
   script_block(orig_scripts, "game_receive_network_message")[:0] = mp_network_hook()
   # Diplomacy's own acts on the world (treaties, envoys, gifts, patrols, recruiters, scouts) would
@@ -232,6 +236,8 @@ def merge(orig_scripts):
         (call_script, "script_coop_client_encounter_start"),
       (try_end),
   ])
+  # after Native's chain of menus for what was met, so that these two take its place
+  script_block(orig_scripts, "game_event_party_encounter").extend(encounter_end())
   # the server never auto-resolves a fight of the client's puppet: the client fights it itself
   from coop.triggers import puppet_range
   puppets_end = puppet_range()[1]

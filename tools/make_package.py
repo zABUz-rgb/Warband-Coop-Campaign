@@ -665,8 +665,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   Они идут на том же сервере боя, во втором окне. Сражаются только герои игроков, все на одной
   стороне, в тренировочном снаряжении и с полным здоровьем, без войск и компаньонов. На кампанию
   влияет только награда: ни ран, ни потерь, мир о них не знает.
-  Игроки поблизости получают приглашение (только на карте: в меню города его не видно). Друг,
-  стоящий в том же городе, выбирает тот же пункт, пока событие собирается, и попадает в него.
+  Игроки поблизости получают приглашение (см. СИГНАЛ К БОЮ). Друг, стоящий в том же городе, может
+  и сам выбрать тот же пункт, пока событие собирается, и попадёт в него.
   Событие начинается, когда все согласившиеся стоят на сервере боя; кого нет через 1 мин 45 с,
   оно оставляет без него. Войдите на сервер боя заранее.
   АРЕНА: меню города - "CoopWorld: сразиться на арене вместе" (днём, не тайком). По 20 соперников на
@@ -684,6 +684,41 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   4 соперников на игрока. Соперники - ваши собственные бойцы (если их мало, бойцы арены) с
   тренировочным оружием. Опыт как в одиночной тренировке: зависит от доли побеждённых, сложности и
   навыка "Тренер", бойцы, вышедшие на поле, получают больше. Карта Field by the River.
+
+ВМЕСТЕ БЕЗ ВСТРЕЧИ НА КАРТЕ
+  Всё это - в меню Лагерь - CoopWorld: кооператив.
+  СЛЕДОВАТЬ ЗА ДРУГОМ: "другие игроки" - "Следовать за игроком ...". Отряд сам едет к другу и
+  держится рядом, друг получает сообщение. Свой щелчок по карте останавливает поход. Если отряд не
+  слушается приказа идти, игра сама переносит его к другу и пишет об этом.
+  МЕТКИ: "метки на карте". У каждого игрока одна метка, её видят все; поставьте её там, где стоите,
+  уберите, поезжайте к метке друга. Метка - значок на карте, с ней нельзя столкнуться или сразиться.
+  ОБЩАЯ КАЗНА И СКЛАД: "общая казна и склад отряда". Деньги и вещи передаются откуда угодно. Склад
+  открыт только у одного игрока: взятое вдвоём существовало бы дважды. Вещей до 96 (сколько вмещает
+  окно добычи). Всё хранится у хоста в файле shared.json в "Документы\\Warband Coop Campaign" и
+  остаётся от сессии к сессии, поэтому без хоста казна и склад недоступны.
+  СИГНАЛ К БОЮ: приглашение приходит со звуком и сообщением сразу, окно боя открывается на карте и
+  поверх меню города, деревни или лагеря; отказ возвращает в то же меню. На прогулке по городу и в
+  бою будет только звук и сообщение, окно откроется при выходе в меню. После согласия из города
+  игрок окажется на карте. В окне моста при этом тоже появляется строка, с коротким сигналом.
+
+НОВЫЕ СОВМЕСТНЫЕ БОИ
+  ЛОГОВА БАНДИТОВ: подъехав к логову, выберите "CoopWorld: взять логово вместе". Бой идёт на сервере
+  боя (не на карте логова из одиночной игры: на ней не могут ходить боты), на равнине карта лесная.
+  Победа убирает логово из мира и засчитывает задание на него тому, кто начал бой.
+  КАРАВАНЫ И КРЕСТЬЯНЕ: у кого рядом идёт бой с караваном или крестьянами, тот получает сообщение.
+  Подъехав к бою, выберите "защитить вместе": выжившие защитники остаются на карте.
+  ДЕРЕВНИ: когда напали на деревню, не враждебную вам, игроки получают сообщение. В меню деревни -
+  "CoopWorld: прогнать налётчиков вместе". Рядом с вами бьются 15 крестьян. Победа снимает налёт, а
+  начавшему бой даёт +3 к отношению с деревней. Бандиты, засевшие в деревне, этим не прогоняются.
+  ДУЭЛИ: "другие игроки" - "Вызвать на дуэль", ставка 0-1000 денаров. Соперник видит ставку и может
+  отказаться, при нехватке денег согласиться нельзя. Бой один на один на карте The Arena, в своём
+  снаряжении, с полным здоровьем, без войск. Ни ран, ни плена, ни потерь; победитель забирает ставку,
+  100 опыта победителю и 50 проигравшему. Если оба ушли с сервера, ничья и ставка остаётся.
+
+ДРЕВО ВОЙСК
+  "CoopWorld: древо войск". Слева ветви: шесть королевств, горожане и наёмники, женщины, разбойники
+  и "В разработке" (пока пустая: новые бойцы меняют содержимое сохранения). Щелчок по бойцу покажет
+  его уровень, здоровье, характеристики, жалованье, навыки, владение оружием, развитие и снаряжение.
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
@@ -826,7 +861,7 @@ JOINT BATTLES (multiplayer server):
 ARENA, TOURNAMENT AND TRAINING TOGETHER: on the same battle server, in the second window. Only the
   players' heroes fight, all on one side, in practice gear and at full health, without troops or
   companions. Only the prize reaches the campaign: no wounds, no losses. Players nearby are invited
-  (on the map; a town menu shows no invitation): a friend in the same town picks the same option
+  (see CALL TO BATTLE); a friend in the same town may also pick the same option
   while the event gathers. It starts when all who agreed stand on the battle server; after 1 min 45 s
   it goes on without those who did not come. Be on the battle server beforehand.
   ARENA: town menu - "CoopWorld: fight in the arena together" (by day, not in disguise). 20 opponents
@@ -843,6 +878,38 @@ ARENA, TOURNAMENT AND TRAINING TOGETHER: on the same battle server, in the secon
   per player: your own men (arena fighters if you have too few) with practice weapons. Experience
   as in a single player training: by the share beaten, how hard it was and the Trainer skill; the
   men who fought gain more. Map: Field by the River.
+
+TOGETHER WITHOUT MEETING ON THE MAP: all in Camp - CoopWorld: co-op.
+  RIDE AFTER A FRIEND: "the other players" - "Ride after ...". Your party rides to the friend and stays
+  close; a click of your own on the map stops it. If the party ignores the order, the game moves it
+  to the friend and says so.
+  MARKS: "marks on the map". One mark for each player, seen by all: set it where you stand, take it
+  away, ride to a friend's. A mark is an icon on the map, nothing can fight it.
+  SHARED TREASURY AND PARTY STORE: money and things pass from anywhere. The store is open for one
+  player at a time; up to 96 things (what the loot window holds). They are kept at the host, in
+  shared.json in "Documents\\Warband Coop Campaign", from session to session: no host, no treasury.
+  CALL TO BATTLE: an invitation comes with a sound and a message at once; its window opens on the map
+  and over a town's, a village's or the camp's menu, and declining goes back to that menu. Walking in
+  a town or in a battle you get the sound and the message, the window waits for the next menu.
+  Accepting from a town leaves you on the map afterwards. The bridge's window shows it too, with a beep.
+
+NEW JOINT BATTLES
+  BANDIT LAIRS: at a lair - "CoopWorld: storm the hideout together". Fought on the battle server (not on
+  the single player lair's map: bots cannot walk there). Won: the lair is gone from the world and the
+  quest on it counts for who began the battle.
+  CARAVANS AND FARMERS: a message tells of a fight beside you. Ride up and choose to defend them; the
+  defenders who live go on.
+  VILLAGES: a message tells of a raid on a village not hostile to you. Village menu - "CoopWorld: drive the
+  raiders off together": 15 villagers fight beside you. Won: the raid ends, +3 relation with the village
+  for who began the battle. Bandits settled inside a village are not covered by this.
+  DUELS: "the other players" - "Challenge ... to a duel", stake 0-1000 denars. The other player sees the
+  stake, may decline, and cannot accept without the money. One against one on The Arena, in your own
+  gear, at full health, no troops. No wounds, no prisoners, no losses; the winner takes the stake, 100
+  experience for the winner, 50 for the loser. If both leave the server it is a draw.
+
+TROOP TREE: "CoopWorld: the troop tree". The kingdoms, townsfolk and mercenaries, women, outlaws, and "In
+  development" (empty for now: new troops change what a save holds). Click a troop for its level, hit
+  points, attributes, wage, skills, proficiencies, upgrades and equipment.
 
 FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its
   enemies hunt the player. Fiefs and Diplomacy's diplomacy go only to the host for now.

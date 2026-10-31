@@ -143,3 +143,29 @@ the game's side only compiles):
   right after an event spawns the bots with their own gear again (script_coop_mp_gear_back);
 - entry overrides on the multiplayer server: if the fighters come with no weapons, the override
   does not reach bots there: script_coop_mp_arm_fighters is the fallback.
+Open (1.0.1, second part, nothing of this was played either; the report's "Совместные дела" lists each
+item as it happens):
+- ride after a friend: the party really goes by the march order (party_set_ai_behavior on the main
+  party is the unverified step); no "the march order did not take" message; a click ends the ride;
+  the follower stops close to the friend, rests there, rides on when the friend moves;
+- marks: seen on every map, none in the world report, a click on one opens "Mark of ...", no fights,
+  no mirror of it at a client; a ride to a mark survives another player's new mark;
+- treasury: a deposit, a withdrawal, both at once from two players; survives a bridge restart;
+- store: food and ammunition keep their amounts, modified items their modifier; a second player is
+  refused; survives a bridge restart;
+- call to battle in a town's, a village's and the camp's menu: the sound, the window over the menu
+  (jump_to_menu from a reply is the unverified step), Decline comes back and reaches the bridge at
+  once; on a walk through a town only the message; during a rest the rest ends and the window opens;
+- the world stays held while a game in a menu pings (the ping must not count as a request);
+- report: a menu shows "alive" (это меню), a hang does not;
+- lair: the option shows on a client's mirror and on the host; won: the lair goes, the template's
+  slot is free again, the quest succeeds; a lost storm keeps the lair;
+- caravan or farmers: kind 32 reaches a client, the mirror opens coop_map_fight; the host's pre_join
+  option; the caravan's survivors stay, a caravan with nobody left goes;
+- village: "being raided" reaches a client (cf for a village carries slot_village_raided_by), the
+  option shows, 15 villagers fight, the raid ends, also when a lord's party lives on without men;
+- duel: two players on opposite sides in their own gear, no bots, the round ends at the first death;
+  stake moves, xp; declining, no answer, one player not on the server; both gone: a draw;
+- troop tree: the window fits at 16:9 and 4:3, the rows and lines line up, the portrait and the item
+  icons have a sensible size, In development shows its text, Esc and Close work, a click keeps working
+  after the window restarts.

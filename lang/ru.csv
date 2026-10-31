@@ -1823,3 +1823,117 @@ quick_strings_en|CoopWorld: request for a joint fight sent to the bridge.|CoopWo
 quick_strings_en|{s1} calls you to fight in the arena together.^^You fight side by side on the multiplayer server, in practice gear. Nobody is hurt in earnest, and each player gets the prize for the opponents they beat.|{s1} зовёт вас сразиться на арене вместе.^^Вы сражаетесь плечом к плечу на сервере мультиплеера, в тренировочном снаряжении. Никто не пострадает всерьёз, каждый игрок получит награду за побеждённых им соперников.
 quick_strings_en|{s1} calls you to the tournament together.^^You fight side by side on the multiplayer server, in practice gear, round after round. If your team wins, every player gets the prize and what the bets won.|{s1} зовёт вас на турнир вместе.^^Вы сражаетесь плечом к плечу на сервере мультиплеера, в тренировочном снаряжении, раунд за раундом. Если команда победит, каждый игрок получит приз и выигрыш со ставок.
 quick_strings_en|{s1} calls you to train together.^^You fight side by side on the multiplayer server, in practice gear, against your own men, and your troops learn from it.|{s1} зовёт вас потренироваться вместе.^^Вы сражаетесь плечом к плечу на сервере мультиплеера, в тренировочном снаряжении, против своих бойцов, а ваши войска получают опыт.
+game_menus|mno_coop_mp_help|CoopWorld: защитить вместе: {s1} (совместный бой на сервере боя).
+game_menus|mno_coop_mp_village|CoopWorld: прогнать налётчиков вместе (совместный бой на сервере боя).
+game_menus|mno_coop_mp_lair|CoopWorld: взять логово вместе (совместный бой на сервере боя).
+game_menus|mno_coop_shared|CoopWorld: общая казна и склад отряда...
+game_menus|mno_coop_marks|CoopWorld: метки на карте...
+game_menus|mno_coop_tree|CoopWorld: древо войск.
+game_menus|mno_coop_pl_stop_follow|Перестать следовать за игроком {s1}.
+game_menus|menu_coop_shared|CoopWorld: общая казна и склад отряда.^^В казне {reg1} денаров, у вас с собой {reg2}. Каждый игрок кладёт и берёт деньги и вещи откуда угодно, встречаться не нужно. Всё это хранится у хоста, в файле shared.json, и остаётся от сессии к сессии.
+game_menus|mno_coop_tg_in_100|Положить 100 денаров.
+game_menus|mno_coop_tg_in_1000|Положить 1000 денаров.
+game_menus|mno_coop_tg_in_all|Положить всё, что есть.
+game_menus|mno_coop_tg_out_100|Взять 100 денаров.
+game_menus|mno_coop_tg_out_1000|Взять 1000 денаров.
+game_menus|mno_coop_tg_out_all|Забрать всё из казны.
+game_menus|mno_coop_store_open|Открыть склад отряда (по одному игроку).
+game_menus|mno_coop_shared_back|Назад.
+game_menus|menu_coop_store|CoopWorld: склад отряда.
+game_menus|mno_coop_store_leave|Вернуться на карту.
+game_menus|menu_coop_marks|CoopWorld: метки на карте.^^У каждого игрока одна метка, её видят все: место встречи, город для штурма, найденное логово. Отсюда можно поехать к метке друга, можно и щёлкнуть по ней на карте.
+game_menus|mno_coop_mark_set|Поставить мою метку здесь.
+game_menus|mno_coop_mark_off|Убрать мою метку.
+game_menus|mno_coop_mark_stop|Перестать ехать к метке.
+game_menus|mno_coop_marks_back|Назад.
+game_menus|menu_coop_mark|CoopWorld: {s1}.
+game_menus|mno_coop_mark_met_leave|Ехать дальше.
+game_menus|menu_coop_map_fight|CoopWorld: здесь бой: {s2} нападают, {s1} защищаются.
+game_menus|mno_coop_fight_join|Защитить их вместе с друзьями: {s1} (совместный бой на сервере боя).
+game_menus|mno_coop_fight_leave|Не вмешиваться.
+game_menus|menu_coop_duel_stake|CoopWorld: дуэль, соперник {s1}.^^Вы бьётесь друг с другом на сервере боя, в своём снаряжении, без войск. Никто не ранен всерьёз, никто не попадает в плен, отряд ничего не теряет. Соперник видит ставку и может отказаться; победитель забирает её у проигравшего, и оба получают опыт.
+game_menus|mno_coop_duel_100|100 денаров.
+game_menus|mno_coop_duel_500|500 денаров.
+game_menus|mno_coop_duel_1000|1000 денаров.
+game_menus|mno_coop_duel_free|Без ставки.
+game_menus|mno_coop_duel_back|Назад.
+game_menus|mno_coop_pl_follow_0|Следовать за игроком {s1} (свой щелчок по карте остановит поход).
+game_menus|mno_coop_pl_duel_0|Вызвать на дуэль: {s1}.
+game_menus|mno_coop_mark_ride_0|Ехать к метке игрока {s1}.
+game_menus|mno_coop_pl_follow_1|Следовать за игроком {s1} (свой щелчок по карте остановит поход).
+game_menus|mno_coop_pl_duel_1|Вызвать на дуэль: {s1}.
+game_menus|mno_coop_mark_ride_1|Ехать к метке игрока {s1}.
+game_menus|mno_coop_pl_follow_2|Следовать за игроком {s1} (свой щелчок по карте остановит поход).
+game_menus|mno_coop_pl_duel_2|Вызвать на дуэль: {s1}.
+game_menus|mno_coop_mark_ride_2|Ехать к метке игрока {s1}.
+game_menus|mno_coop_pl_follow_3|Следовать за игроком {s1} (свой щелчок по карте остановит поход).
+game_menus|mno_coop_pl_duel_3|Вызвать на дуэль: {s1}.
+game_menus|mno_coop_mark_ride_3|Ехать к метке игрока {s1}.
+quick_strings_en|Troop tree|Древо войск
+quick_strings_en|Townsfolk and mercenaries|Горожане и наёмники
+quick_strings_en|Women|Женщины
+quick_strings_en|Outlaws|Разбойники
+quick_strings_en|In development|В разработке
+quick_strings_en|Troops still being made for this mod will stand here.|Здесь встанут войска, которые ещё делаются для этого мода.
+quick_strings_en|None is ready yet: a new troop changes what a save holds,|Пока ни один не готов: новый отряд меняет содержимое сохранения,
+quick_strings_en|so they come together, with a new campaign.|поэтому они появятся вместе, с новой кампанией.
+quick_strings_en|CoopWorld: {s1} is being raided! Ride there to drive the raiders off together.|CoopWorld: {s1}: налёт на деревню! Скачите туда и прогоните налётчиков вместе.
+quick_strings_en|CoopWorld: the duel begins! One against the other, in your own gear.|CoopWorld: дуэль начинается! Один на один, в своём снаряжении.
+quick_strings_en|The duel is on!^^Switch to the multiplayer window (the CoopWorld battle server): you stand against each other in your own gear, without troops. Nobody is hurt in earnest.^^This window waits for the outcome. The world stands still meanwhile.{s2}|Дуэль идёт!^^Перейдите в окно мультиплеера (сервер боя CoopWorld): вы стоите друг против друга в своём снаряжении, без войск. Никто не ранен всерьёз.^^Это окно ждёт итога. Мир пока стоит.{s2}
+quick_strings_en|Waiting for the other player's answer...^^The duel starts as soon as you both stand on the battle server: switch to the multiplayer window now.{s2}|Ждём ответа соперника...^^Дуэль начнётся, как только вы оба будете на сервере боя: перейдите в окно мультиплеера.{s2}
+quick_strings_en|CoopWorld: you took the reins: you ride on your own again.|CoopWorld: вы взяли поводья: дальше едете сами.
+quick_strings_en|CoopWorld: whom you rode after is no longer on the map.|CoopWorld: того, за кем вы ехали, больше нет на карте.
+quick_strings_en|CoopWorld: you reached the mark.|CoopWorld: вы у метки.
+quick_strings_en|CoopWorld: the march order did not take; your party rides straight there.|CoopWorld: приказ идти не сработал, отряд перенесён прямо туда.
+quick_strings_en|Mark of {s1}|Метка: {s1}
+quick_strings_en|CoopWorld: to the shared treasury...|CoopWorld: обращаемся к общей казне...
+quick_strings_en|CoopWorld: {s1} rides after you.|CoopWorld: {s1} едет за вами.
+quick_strings_en|CoopWorld: {s1} rides on alone.|CoopWorld: {s1} больше не едет за вами.
+quick_strings_en|CoopWorld: {s1} set a mark on the map (Camp - CoopWorld - marks).|CoopWorld: {s1}: новая метка на карте (Лагерь - CoopWorld - метки).
+quick_strings_en|CoopWorld: {s1} took the mark away.|CoopWorld: {s1}: метка убрана.
+quick_strings_en|CoopWorld: {s1} put {reg3} denars into the shared treasury.|CoopWorld: {s1}: в общую казну положено {reg3} денаров.
+quick_strings_en|CoopWorld: {s1} took {reg3} denars from the shared treasury.|CoopWorld: {s1}: из общей казны взято {reg3} денаров.
+quick_strings_en|CoopWorld: {s1} closed the party store: {reg1} things in it.|CoopWorld: {s1}: склад отряда закрыт, вещей в нём: {reg1}.
+quick_strings_en|CoopWorld: you took {reg2} denars. {reg1} left in the shared treasury.|CoopWorld: вы взяли {reg2} денаров. В общей казне осталось {reg1}.
+quick_strings_en|CoopWorld: {reg2} denars went in. {reg1} in the shared treasury.|CoopWorld: положено {reg2} денаров. В общей казне {reg1}.
+quick_strings_en|CoopWorld: the shared treasury is empty.|CoopWorld: общая казна пуста.
+quick_strings_en|CoopWorld: the party store is saved at the host: {reg1} things.|CoopWorld: склад отряда сохранён у хоста, вещей: {reg1}.
+quick_strings_en|CoopWorld: {s1} has the party store open: wait for it to close.|CoopWorld: склад сейчас открыт у игрока {s1}, дождитесь, пока закроет.
+quick_strings_en|CoopWorld: {s1} is under attack nearby! Ride up to defend it together.|CoopWorld: {s1}: нападение рядом с вами! Подъезжайте, защитим вместе.
+quick_strings_en|CoopWorld: you won the duel! The stake: {reg1} denars.|CoopWorld: вы выиграли дуэль! Ставка: {reg1} денаров.
+quick_strings_en|CoopWorld: you lost the duel. The stake: {reg1} denars.|CoopWorld: вы проиграли дуэль. Ставка: {reg1} денаров.
+quick_strings_en|CoopWorld: the duel ended in a draw: the stake stays with each of you.|CoopWorld: дуэль закончилась вничью: ставка остаётся у каждого.
+quick_strings_en|CoopWorld: {s1} calls you to battle!|CoopWorld: {s1} зовёт вас в бой!
+quick_strings_en|CoopWorld: the raiders are not here any more.|CoopWorld: налётчиков здесь уже нет.
+quick_strings_en|CoopWorld: the raid on {s1} is beaten off.|CoopWorld: налёт отбит: {s1}.
+quick_strings_en|Click a troop to see what it can do and what it carries.|Щёлкните по бойцу, чтобы увидеть его умения и снаряжение.
+quick_strings_en|Level: {reg1}|Уровень: {reg1}
+quick_strings_en|Hit points: {reg1}|Здоровье: {reg1}
+quick_strings_en|Strength: {reg1}|Сила: {reg1}
+quick_strings_en|Agility: {reg1}|Ловкость: {reg1}
+quick_strings_en|Intelligence: {reg1}|Интеллект: {reg1}
+quick_strings_en|Charisma: {reg1}|Харизма: {reg1}
+quick_strings_en|Wage: {reg1} denars a week|Жалованье: {reg1} денаров в неделю
+quick_strings_en|Skills|Навыки
+quick_strings_en|Ironflesh: {reg1}|Железная кожа: {reg1}
+quick_strings_en|Power Strike: {reg1}|Мощный удар: {reg1}
+quick_strings_en|Power Throw: {reg1}|Мощный бросок: {reg1}
+quick_strings_en|Power Draw: {reg1}|Мощный выстрел: {reg1}
+quick_strings_en|Weapon Master: {reg1}|Мастер оружия: {reg1}
+quick_strings_en|Shield: {reg1}|Щит: {reg1}
+quick_strings_en|Athletics: {reg1}|Атлетика: {reg1}
+quick_strings_en|Riding: {reg1}|Верховая езда: {reg1}
+quick_strings_en|Horse Archery: {reg1}|Стрельба верхом: {reg1}
+quick_strings_en|Weapon proficiencies|Владение оружием
+quick_strings_en|One Handed Weapons: {reg1}|Одноручное: {reg1}
+quick_strings_en|Two Handed Weapons: {reg1}|Двуручное: {reg1}
+quick_strings_en|Polearms: {reg1}|Древковое: {reg1}
+quick_strings_en|Archery: {reg1}|Лук: {reg1}
+quick_strings_en|Crossbows: {reg1}|Арбалет: {reg1}
+quick_strings_en|Throwing: {reg1}|Метательное: {reg1}
+quick_strings_en|Grows into: {s1}|Растёт в: {s1}
+quick_strings_en|Equipment|Снаряжение
+quick_strings_en|{s1} challenges you to a duel. The stake: {reg1} denars; you carry {reg2}.^^You fight each other on the multiplayer server, in your own gear, without troops. Nobody is hurt in earnest, nobody is taken. The winner takes the stake from the loser.|{s1}: вызов на дуэль. Ставка {reg1} денаров, у вас с собой {reg2}.^^Вы бьётесь друг с другом на сервере боя, в своём снаряжении, без войск. Никто не ранен всерьёз, никто не попадает в плен. Победитель забирает ставку у проигравшего.
+quick_strings_en|CoopWorld: you ride after {s1}.|CoopWorld: вы следуете за игроком {s1}.
+quick_strings_en|CoopWorld: the party store is on its way...|CoopWorld: склад отряда уже идёт к вам...
+quick_strings_en|CoopWorld: your mark stands near {s1}.|CoopWorld: ваша метка стоит рядом: {s1}.

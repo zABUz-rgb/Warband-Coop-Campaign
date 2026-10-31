@@ -172,3 +172,24 @@ def merge(menus):
   stop = find_by_id(coop_camp, "coop_role_stop")
   coop_camp[stop:stop] = camp_options()
   coop_camp.append(("coop_camp_back", [], "Back.", [(jump_to_menu, "mnu_camp")]))
+  # together without meeting: the ride after a friend, marks, the treasury and the store, duels; lairs,
+  # caravans and villages defended on the battle server
+  from coop.mp_campaign import coop_mp_event_ready
+  from coop import together
+  menus.extend(together.together_menus)
+  stop = find_by_id(coop_camp, "coop_role_stop")
+  coop_camp[stop:stop] = together.camp_options()
+  players = menu_options(menus, "coop_players")
+  at = find_by_id(players, "coop_pl_write_hero")
+  for k in range(coop_max_players):
+    puppet = f"p_coop_puppet_{k + 1}"
+    players[at:at] = together.players_menu_options(k, [(party_is_active, puppet), (str_store_party_name, s1, puppet)])
+    at = find_by_id(players, "coop_pl_write_hero")
+  players.insert(at, together.players_stop_option())
+  lair = menu_options(menus, "bandit_lair")
+  lair.insert(find_by_id(lair, "leave_no_attack"), together.lair_option(coop_mp_event_ready))
+  pre_join = menu_options(menus, "pre_join")
+  pre_join.insert(find_by_id(pre_join, "pre_join_leave"), together.pre_join_option(coop_mp_event_ready))
+  menu_options(menus, "village").insert(0, together.village_option(coop_mp_event_ready))
+  # the camp stops the map's requests: a call to battle must still get through
+  menu_block(menus, "camp")[0:0] = [(call_script, "script_coop_ping_kick")]

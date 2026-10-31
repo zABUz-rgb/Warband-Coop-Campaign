@@ -56,12 +56,13 @@ TERRAIN_SCENES = [
   (13, "scn_multi_scene_20"),             # desert forest: Desert Town
   (8, "scn_multi_scene_7"),               # river: Field by the River
 ]
-# Joint events: Native's multiplayer arena for the arena and the tournament, an open field for the
-# training. The single player arenas and training grounds have no AI mesh: bots there would not walk.
+# Joint events: Native's multiplayer arena for the arena, the tournament and a duel, an open field for
+# the training. The single player arenas and training grounds have no AI mesh: bots there would not walk.
 EVENT_SCENES = [
   (coop_mp_mode_arena, "scn_multi_scene_17"),       # The Arena
   (coop_mp_mode_tournament, "scn_multi_scene_17"),
   (coop_mp_mode_training, "scn_multi_scene_7"),     # Field by the River
+  (coop_mp_mode_duel, "scn_multi_scene_17"),
 ]
 # The practice gear of a joint event, by the kind of weapon: 0 one handed, 1 two handed, 2 polearm,
 # 3 ranged. A hero takes the set nearest to its own weapons, the bots take them in turn; a training is
@@ -315,6 +316,9 @@ mp_scripts = [
          (eq, "$coop_mp_mode", coop_mp_mode_training),
          (str_store_string, s0, "@CoopWorld: the training begins! All players stand together."),
        (else_try),
+         (eq, "$coop_mp_mode", coop_mp_mode_duel),
+         (str_store_string, s0, "@CoopWorld: the duel begins! One against the other, in your own gear."),
+       (else_try),
          (str_store_string, s0, "@CoopWorld: a battle of the campaign begins!"),
        (try_end),
        (call_script, "script_coop_mp_tell_all"),
@@ -452,6 +456,7 @@ mp_scripts = [
      (player_set_troop_id, ":player_no", ":troop"),
      (try_begin),
        (ge, "$coop_mp_mode", coop_mp_mode_arena),
+       (neq, "$coop_mp_mode", coop_mp_mode_duel), #friends duel with their own weapons
        (call_script, "script_coop_mp_event_hero_gear", ":player_no", ":troop"),
      (else_try),
        (try_for_range, ":ek", 0, coop_hero_items),
@@ -1117,6 +1122,10 @@ mp_battle_triggers = [
        (ge, "$coop_mp_no_hero_left", coop_mp_no_hero_s),
        (assign, "$coop_mp_no_hero_left", 0),
        (assign, "$g_winner_team", 1),
+       (try_begin),
+         (eq, "$coop_mp_mode", coop_mp_mode_duel), #nobody beat anybody: a draw
+         (assign, "$g_winner_team", -1),
+       (try_end),
        (store_mission_timer_a, "$g_round_finish_time"),
        (assign, "$g_round_ended", 1),
      (try_end),

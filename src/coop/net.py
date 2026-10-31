@@ -36,6 +36,7 @@ def net_scripts(first_dynamic):
      (assign, "$coop_net_cursor", -1),
      (assign, "$coop_srv_paused", 0),
      (assign, "$coop_mp_state", 0),
+     (call_script, "script_coop_together_reset"),
      (try_begin),
        (eq, "$coop_srv_player", 1),
        (display_message, "@CoopWorld: this game is now the WORLD SERVER, and you play in it.", 0x66CCFF),
@@ -126,6 +127,7 @@ def net_scripts(first_dynamic):
      (assign, "$coop_profile_sent", 0),
      (assign, "$coop_profile_frames", coop_profile_period_frames),
      (party_set_slot, "p_coop_enc", 0, 0),
+     (call_script, "script_coop_together_reset"), #the save's marks go first: they are no parties of the world
      (try_for_parties, ":party_no"),
        (ge, ":party_no", first_dynamic),
        (store_add, ":mapped", ":party_no", 1),
@@ -372,11 +374,17 @@ def net_scripts(first_dynamic):
        (try_begin),
          (eq, ":destroyed", 1),
          (ge, ":sid", first_dynamic), #a center is never removed
+         (call_script, "script_coop_server_raids_over", ":sid"),
          (party_stack_get_troop_id, ":leader", ":sid", 0),
          (try_begin),
            (troop_is_hero, ":leader"), #a lord's party: the lord stays, his men are gone
            (call_script, "script_coop_set_party_troops", ":sid", ":base", 0, 1),
          (else_try),
+           # a lair stormed: as Native's own menu after a victory, its bandits may settle again
+           (try_for_range, ":bandit_template", bandit_party_templates_begin, bandit_party_templates_end),
+             (party_template_slot_eq, ":bandit_template", slot_party_template_lair_party, ":sid"),
+             (party_template_set_slot, ":bandit_template", slot_party_template_lair_party, 0),
+           (try_end),
            (remove_party, ":sid"),
          (try_end),
        (else_try),
@@ -448,6 +456,16 @@ def net_scripts(first_dynamic):
          (ge, ":relation", 0),
          (str_store_party_name, s1, ":center"),
          (display_message, "@CoopWorld: {s1} is under siege! Ride there to defend its walls together.", 0xFF6666),
+       (try_end),
+       (try_begin),
+         # raiders at a village on the player's side (for a village the server reports its raider)
+         (gt, ":besieger", 0),
+         (party_slot_eq, ":center", slot_center_coop_besieger, 0),
+         (neg|is_between, ":center", walled_centers_begin, walled_centers_end),
+         (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
+         (ge, ":relation", 0),
+         (str_store_party_name, s1, ":center"),
+         (display_message, "@CoopWorld: {s1} is being raided! Ride there to drive the raiders off together.", 0xFF6666),
        (try_end),
        (party_set_slot, ":center", slot_center_coop_besieger, ":besieger"),
        (store_faction_of_party, ":had", ":center"),
@@ -1013,6 +1031,7 @@ def net_reply_handler():
   """Appended to game_receive_url_response."""
   from coop.mp_campaign import reply_branches as mp_reply_branches
   from coop.players import reply_branches as players_reply_branches
+  from coop.together import reply_branches as together_reply_branches
   copy = [(party_set_slot, "p_coop_buf", i, reg(i)) for i in range(coop_net_max_numbers)]
   return [
     (try_begin),
@@ -1139,7 +1158,8 @@ def net_reply_handler():
         (this_or_next|eq, "$coop_role", coop_role_client),
         (eq, "$coop_srv_player", 1), #the host playing on the server: who holds the world, and why
         (call_script, "script_coop_client_set_world_pause"),
-      ] + mp_reply_branches() + players_reply_branches() + [
+      ] + mp_reply_branches() + players_reply_branches() + together_reply_branches() + [
       (try_end),
+      (call_script, "script_coop_ping_next"),
     (try_end),
   ]

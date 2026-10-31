@@ -47,6 +47,7 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
                     [&pf=seq,offset,total,v1,v2,...][&pfq=1][&join=slot][&joinans=slot,yes][&leave=1][&release=1]
                     [&give=slot,t1,n1,...][&giveans=id,yes]
+                    [&lg=code,a,b,c][&fl=slot+1][&mk=x,y|-][&tg=token,amount][&st=1][&sti=token,offset,total,pairs...]
                     [&me=t1,n1,...][&name=player name]
     fac: the kingdom the player serves (0: none); lord: the world party of the lord the player serves
     as a soldier (Freelancer), -1 or absent: none; pf: part of the player's hero (the profile, see
@@ -55,13 +56,19 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     party; joinans: the answer to the player in slot asking; leave: leave the leader's party;
     release: let all followers go; give: offer troops to the player in slot; giveans: the answer
     to offer id (see coop/players.py);
+    lg: a note for the log (GAME_NOTES below); fl: ride after the player in slot (0: stop); mk: this
+    player's mark on everybody's map (-: take it away); tg: put amount denars into the shared treasury,
+    or take them (negative), repeated until kind 29 answers that token; st: open the party store;
+    sti: part of the party store coming back, pairs (item, modifier + 100 * amount), repeated until kind 31;
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
     dbg: a client's state for the log when it goes quiet: parties, mirrors spawned, swept, Freelancer's
     state, clock (-1 ahead, 1 behind), the party its own is attached to;
     srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
     A player game's triggers do not run in menus, screens and battles: it goes silent, and a player
-    silent for SILENT_PAUSE_S pauses the world just like a busy one.
+    silent for SILENT_PAUSE_S pauses the world just like a busy one. Such a game still sends
+    /pg?seq=S&hold=H (its reply handler sends the next one: the bridge holds one with hold=1 for
+    PING_HOLD_S), which keeps it silent for the world: only an invitation (kind 6) comes back, else 33.
     reply 7777|2|n|sid|tmpl|x|y|tx|ty|att|...   positions of world parties (tmpl REMOVED: gone)
           7777|3|sid|n|t1|n1|...               troops of one party near the player
           7777|4|slot|x|y|troops|kingdom[|name]  another player's party, and whom it serves
@@ -79,8 +86,10 @@ one companion per request after that]
 [&hero=...]; hero, with a start or an acceptance: HERO_NUMBERS numbers, the hero's equipment, attributes,
 combat skills, weapon proficiencies and hit points (now, at most), in the order of coop/constants.py)
 [&mpx=event,param,town,fighter,bonus with a start: a joint event instead of a battle: 1 an arena, 2 a
-tournament, 3 a training; param: a training's opponents for each player, town: where it is held, fighter:
-the troop number of the first arena fighter, bonus: what the player's bet wins]:
+tournament, 3 a training, 4 a duel; param: a training's opponents for each player, a duel's opponent
+(slot), town: where it is held, fighter: the troop number of the first arena fighter, bonus: what the
+player's bet wins, a duel's stake]
+[&mpk=K with a start: 1 a bandit lair, 2 the defence of a caravan or farmers, 3 of a village]:
     OP 1 start a battle against the world party sid (mpt: its troops as the player sees them), the
     player in puppet slot, or storm the town or castle mpc (a siege: the players are team 1, the
     garrison team 0); with &mpd=1 defend that center against its besieger mpe (the players and the
@@ -91,11 +100,12 @@ the troop number of the first arena fighter, bonus: what the player's bet wins]:
     start against the enemy of a battle still gathering joins that battle; so does a start of the
     joint event gathering. A joint event is fought by the players' heroes alone, in practice gear, on
     one side against bots; it changes nothing in the world, and starts when its players stand on
-    the battle server.
+    the battle server. A duel is the challenged player's to accept, its two heroes fight each other in
+    their own gear, with no bots.
     reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked,
                                      3 + event a joint event (it may be declined);
                                      sid: the world party fought (-1: a player), so the game can see
-                                     whether it would fight its own allies
+                                     whether it would fight its own allies; a duel's: the stake
           7777|7|bid|status|team["name"]   0 gathering, 1 fought on the battle server (team 0 or 1),
                                      2 cancelled or another battle is on, 3 no battle server;
                                      "name": the name the player is expected under on the battle server
@@ -124,7 +134,15 @@ the troop number of the first arena fighter, bonus: what the player's bet wins]:
                                                the opponents beaten; a tournament's the rounds won (bonus: what
                                                the bets won); a training's the share of the opponents beaten in
                                                percent (bonus: opponents for each player, town: the players;
-                                               the pairs: the opponents)
+                                               the pairs: the opponents); a duel's won: 1 won, 0 lost, 2 a draw,
+                                               its value the stake
+          7777|27|code|slot|a|b                news about the player in slot (TELL_... below)
+          7777|28|n|(slot,x,y,mine)*n          the players' marks on the map
+          7777|29|token|delta|balance          the shared treasury: what the transfer token did to it (token 0: news)
+          7777|30|offset|total|n|(item,value)*n  the party store (offset 0: from the start)
+          7777|31|state|slot                   the party store: 0 in use by the player in slot, 1 saved
+          7777|32|sid|enemy|on                 a world party near this player fights the party enemy (on 0: no longer)
+          7777|33                              nothing (the answer to a ping)
     A follower is called into the leader's joint battles: invitation type 3, which cannot be declined.
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...
@@ -140,7 +158,7 @@ Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent
           7778|1|bid|stacks|mode|hint|n|(player,team)*n   start: players onto their sides, the round
                                                   restarts; mode 1 a siege (Siege game type, map by hint),
                                                   2 an arena (hint: opponents at a time), 3 a tournament
-                                                  (hint: the round), 4 a training
+                                                  (hint: the round), 4 a training, 5 a duel
           7778|4|bid|more                         the outcome arrived; more 1: the next round of this
                                                   tournament follows
 
@@ -225,6 +243,36 @@ ARENA_SEQUENCE = 40     # Native's arena sends this many, the weak ones first
 ARENA_AT_ONCE = 3       # opponents standing at a time, for each player
 TOURNAMENT_ROUNDS = 4   # rounds of a joint tournament (coop_mp_tournament_rounds)
 EVENT_WAIT_S = 60.0     # a joint event waits this long for its players on the battle server
+EVENT_DUEL = 4          # two heroes against each other: no bots, nobody hurt in earnest, a stake
+KIND_LAIR, KIND_CARAVAN, KIND_VILLAGE = 1, 2, 3  # what a joint battle is about (coop_kind_... in coop/constants.py)
+KIND_NAMES = {KIND_LAIR: "lair", KIND_CARAVAN: "caravan", KIND_VILLAGE: "village"}
+PLAIN_TERRAINS = (2, 3) # steppe and plain: a hideout there is fought on a map with cover
+LAIR_TERRAIN = 11       # the forest's: Forest Hideout
+MAP_BATTLE_DIST = 1500  # map units * 100: a map battle this close to a player is told to that player
+SHARED_ITEMS = 120      # things the party store holds
+STORE_CHUNK = 60        # of them in one reply: 5 + 2 * 60 numbers
+STORE_LOCK_S = 600.0    # a player with the store open this long without giving it back loses it
+TREASURY_TOKENS = 200   # transfers remembered, so that a repeated request changes nothing
+PING_HOLD_S = 0.7       # a game off the map asks this often whether it is called to a battle
+ALIVE_S = 3.0           # a game that pinged this recently answers, though its map does not run
+TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_MARK, TELL_GOLD, TELL_STORE, TELL_LEFT = 1, 2, 3, 4, 5, 6  # kind 27
+# what a game tells the log with &lg=code,a,b,c (coop_note_... in coop/constants.py): the name in the
+# log's "together" line, and what a, b and c are
+GAME_NOTES = {
+    1: ("prisoners", ("taken", "chance", "no_room")),
+    2: ("troops_xp", ("xp", "won")),
+    3: ("arena", ("kills", "prize", "won")),
+    4: ("tournament", ("rounds", "gold", "stake_lost")),
+    5: ("training", ("ratio", "earned")),
+    6: ("tree", ("troop",)),
+    7: ("follow_jump", ("distance",)),
+    8: ("signal", ("how", "invite")),
+    9: ("lair", ("won", "quest")),
+    10: ("village", ("center", "won", "relation")),
+    11: ("caravan", ("won",)),
+    12: ("duel", ("result", "stake", "gold")),
+    13: ("follow_end", ("why",)),
+}
 
 
 def parse_ints(text):
@@ -290,6 +338,14 @@ class Player:
         self.clock_since = None # when it last stopped being the same time
         self.lord = -1          # the world party of the lord it serves (Freelancer), -1 none
         self.lord_told = (-1, -1)  # (lord, enemy) it was last told
+        self.follows = None     # the slot of the player it rides after
+        self.together_told = False  # the marks and the treasury went to its game
+        self.shared_out = []    # those replies, after the first word on the world
+        self.fights_told = {}   # sid -> enemy: the map battles near it that it knows of
+        self.pinged = None      # real time of its last ping: its game lives, off the map
+        self.signal_told = None # the battle its bridge window sounded for
+        self.store_in = None    # [token, {offset: values}] the party store coming back
+        self.store_done = None  # the last token that came back in full
 
 
 class Battle:
@@ -328,6 +384,8 @@ class Battle:
         self.bonus = 0            # a tournament: what the bets win, for every player
         self.round = 1            # a tournament: the round being fought
         self.kills = {}           # cid -> opponents its hero beat
+        self.kind = 0             # KIND_LAIR, _CARAVAN, _VILLAGE; 0 an ordinary battle
+        self.no_stacks_told = False  # a duel has none, but the battle server starts anew by them
 
     @property
     def fighting(self):
@@ -339,7 +397,7 @@ class World:
     log = staticmethod(lambda msg: None)  # run_host sets the bridge's log: joint battles are told there
     trace = staticmethod(lambda role, cid, target, reply: None)  # run_host: trace.log of the requests that matter
 
-    def __init__(self, profiles_path=None):
+    def __init__(self, profiles_path=None, shared_path=None):
         self.lock = threading.Lock()
         self.parties = {}       # sid -> [tmpl, x, y, last_seen, tx, ty, att]
         self.players = {}       # cid -> Player
@@ -376,6 +434,17 @@ class World:
                       "new": 0, "gone": 0, "back": 0}  # parties learnt, gone stale, back after going stale
         self.gone_at = {}       # sid -> when it went stale: one reported again soon after was alive all along
         self.captors = {}       # sid of a world party -> the players it took prisoner in a joint battle
+        self.marks = {}         # slot -> (x, y): the players' marks on the map
+        self.treasury_done = {} # transfer token -> what it did to the treasury
+        self.store_lock = None  # (cid, since): who has the party store open
+        self.shared_path = Path(shared_path) if shared_path else (
+            self.profiles_path.with_name("shared.json") if self.profiles_path else None)
+        self.shared = {"gold": 0, "items": []}  # the treasury and the party store, kept in shared.json
+        if self.shared_path is not None and self.shared_path.exists():
+            try:
+                self.shared.update(json.loads(self.shared_path.read_text("utf-8")))
+            except (OSError, ValueError):
+                pass
 
     # ---- players
 
@@ -414,6 +483,15 @@ class World:
             if receiver == cid:
                 del self.offers[oid]
                 self._offer_answer(oid, giver, stacks, 0)
+        if self.store_lock is not None and self.store_lock[0] == cid:
+            self.store_lock = None
+        if p.slot is not None:
+            for q in self.players.values():
+                if q.follows == p.slot and q is not p:
+                    q.follows = None
+                    q.mp_out.append([27, TELL_LEFT, p.slot, 0, 0])
+            if self.marks.pop(p.slot, None) is not None:
+                self._marks_out(but=p)
 
     def _player_in_slot(self, slot, but=None):
         return next((q for q in self.players.values() if q.slot == slot and q is not but), None)
@@ -429,8 +507,174 @@ class World:
                 self.returns.setdefault(key, []).extend(stacks)
         self._offer_keys.pop(oid, None)
 
-    def _together(self, p, together):
-        """Joining parties and giving troops (coop/players.py)."""
+    def _act(self, p, what, **fields):
+        """One line for each thing the players do together: tools/coop_logs.py builds its report on them."""
+        text = " ".join(f"{k}={v}" for k, v in fields.items())
+        self.log(f"together {self._who(p)}: {what}{' ' + text if text else ''}")
+
+    def _follow(self, p, target):
+        """p rides after the player in slot target - 1, or alone (target 0); its game does the riding."""
+        before = self._player_in_slot(p.follows, but=p) if p.follows is not None else None
+        after = self._player_in_slot(target - 1, but=p) if target > 0 else None
+        p.follows = after.slot if after is not None else None
+        self._act(p, "follow", target=self._who(after) if after is not None else "-")
+        if before is not after and p.slot is not None:
+            if before is not None:
+                before.mp_out.append([27, TELL_UNFOLLOWED, p.slot, 0, 0])
+            if after is not None:
+                after.mp_out.append([27, TELL_FOLLOWED, p.slot, 0, 0])
+
+    def _marks_reply(self, p):
+        nums = [28, len(self.marks)]
+        for slot, (x, y) in sorted(self.marks.items()):
+            nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, 1 if slot == p.slot else 0]
+        return nums
+
+    def _marks_out(self, but=None):
+        for q in self.players.values():
+            if q is not but:
+                q.mp_out.append(self._marks_reply(q))
+
+    def _mark(self, p, where):
+        """p's mark on everybody's map, one for each player; where () takes it away."""
+        if p.slot is None:
+            return
+        if where:
+            self.marks[p.slot] = where
+            self._act(p, "mark", x=where[0], y=where[1])
+        else:
+            self.marks.pop(p.slot, None)
+            self._act(p, "mark_off")
+        self._marks_out()
+        for q in self.players.values():
+            if q is not p:
+                q.mp_out.append([27, TELL_MARK, p.slot, 1 if where else 0, 0])
+
+    def _save_shared(self):
+        if self.shared_path is None:
+            return
+        try:
+            tmp = self.shared_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.shared), "utf-8")
+            tmp.replace(self.shared_path)
+        except OSError:
+            pass
+
+    def _treasury(self, p, token, amount):
+        """amount > 0 goes in (the game took it from the hero already), < 0 comes out as far as there
+        is any. The game repeats the token until it hears back: the same answer, nothing moves twice."""
+        if token in self.treasury_done:
+            p.mp_out.append([29, token, self.treasury_done[token], self.shared["gold"]])
+            return
+        delta = max(amount, -self.shared["gold"])
+        self.shared["gold"] += delta
+        self.treasury_done[token] = delta
+        while len(self.treasury_done) > TREASURY_TOKENS:
+            del self.treasury_done[next(iter(self.treasury_done))]
+        self._save_shared()
+        self._act(p, "gold", asked=amount, moved=delta, balance=self.shared["gold"])
+        p.mp_out.append([29, token, delta, self.shared["gold"]])
+        if delta:
+            for q in self.players.values():
+                if q is not p:
+                    q.mp_out.append([29, 0, 0, self.shared["gold"]])
+                    if p.slot is not None:
+                        q.mp_out.append([27, TELL_GOLD, p.slot, abs(delta), 1 if delta > 0 else 0])
+
+    def _store_open(self, p, now):
+        """The party store goes to p's game, and stays with p until it comes back: one at a time, or
+        what two players took at once would exist twice."""
+        lock = self.store_lock
+        if lock is not None and lock[0] != p.cid and lock[0] in self.players and now - lock[1] < STORE_LOCK_S:
+            holder = self.players[lock[0]]
+            p.mp_out.append([31, 0, holder.slot if holder.slot is not None else 0])
+            self._act(p, "store_refused", used_by=self._who(holder))
+            return
+        self.store_lock = (p.cid, now)
+        items = self.shared["items"]
+        self._act(p, "store_open", items=len(items) // 2)
+        count = len(items) // 2
+        for at in range(0, max(1, count), STORE_CHUNK):
+            part = items[at * 2:(at + STORE_CHUNK) * 2]
+            p.mp_out.append([30, at, count, len(part) // 2] + part)
+
+    def _store_put(self, p, values):
+        """Part of the party store comes back: (token, offset, total, pairs...); saved once all of it is here."""
+        token, offset, total, pairs = values[0], values[1], values[2], values[3:]
+        if token == p.store_done:
+            p.mp_out.append([31, 1, p.slot if p.slot is not None else 0])
+            return
+        if p.store_in is None or p.store_in[0] != token:
+            p.store_in = [token, {}]
+        p.store_in[1][offset] = pairs
+        expected, items = 0, []
+        for at, part in sorted(p.store_in[1].items()):
+            if at != expected:
+                return
+            expected += len(part) // 2
+            items += part
+        if expected != total:
+            return
+        self.shared["items"] = items[:SHARED_ITEMS * 2]
+        p.store_in, p.store_done = None, token
+        if self.store_lock is not None and self.store_lock[0] == p.cid:
+            self.store_lock = None
+        self._save_shared()
+        self._act(p, "store_saved", items=len(self.shared["items"]) // 2)
+        p.mp_out.append([31, 1, p.slot if p.slot is not None else 0])
+        for q in self.players.values():
+            if q is not p and p.slot is not None:
+                q.mp_out.append([27, TELL_STORE, p.slot, len(self.shared["items"]) // 2, 0])
+
+    def ping(self, cid, now):
+        """A game off the map asks. Only an invitation comes back; the player stays silent for the
+        world, which it holds as before."""
+        with self.lock:
+            p = self.players.get(cid)
+            if p is None:
+                return [33]
+            p.pinged = now
+            for nums in p.mp_out:
+                if nums[0] == 6:
+                    p.mp_out.remove(nums)
+                    self._act(p, "invite_off_map", battle=nums[1], type=nums[2])
+                    return nums
+            return [33]
+
+    def signal_text(self, cid):
+        """The call to a battle for the bridge's window of this player, once; None without one."""
+        with self.lock:
+            b, p = self.battle, self.players.get(cid)
+            if b is None or p is None or b.state != "gathering" or cid not in b.invited or p.signal_told == b.bid:
+                return None
+            p.signal_told = b.bid
+            starter = self.players.get(b.starter)
+            self._act(p, "signal_bridge", battle=b.bid)
+            return (f"*** {starter.name if starter is not None and starter.name else '?'} зовёт в бой "
+                    f"(calls you to a battle) ***")
+
+    def _map_battle_news(self, p):
+        """A world party near this client fights: a client's mirrors fight nobody, so it hears of it
+        here. One change a request; the host's own game sees the world's battles itself."""
+        if p.on_server or p.pos is None:
+            return None
+        near = {}
+        for sid, (enemy, _) in self.map_battles.items():
+            party = self.parties.get(sid)
+            if party is not None and (party[1] - p.pos[0]) ** 2 + (party[2] - p.pos[1]) ** 2 <= MAP_BATTLE_DIST ** 2:
+                near[sid] = enemy
+        for sid, enemy in sorted(p.fights_told.items()):
+            if near.get(sid) != enemy:
+                del p.fights_told[sid]
+                return [32, sid, enemy, 0]
+        for sid, enemy in sorted(near.items()):
+            if sid not in p.fights_told:
+                p.fights_told[sid] = enemy
+                return [32, sid, enemy, 1]
+        return None
+
+    def _together(self, p, together, now):
+        """What the players do together on the map (coop/players.py, coop/together.py)."""
         if together.get("join") is not None:
             leader = self._player_in_slot(together["join"], but=p)
             if leader is not None and p.slot is not None:
@@ -474,6 +718,20 @@ class World:
             if offer is not None and offer[1] == p.cid:
                 del self.offers[oid]
                 self._offer_answer(oid, offer[0], offer[2], 1 if yes else 0)
+        if together.get("note") is not None:
+            code, *values = together["note"]
+            name, fields = GAME_NOTES.get(code, (f"note{code}", ("a", "b", "c")))
+            self._act(p, name, **dict(zip(fields, values)))
+        if together.get("follow") is not None:
+            self._follow(p, together["follow"])
+        if together.get("mark") is not None:
+            self._mark(p, together["mark"])
+        if together.get("treasury") is not None:
+            self._treasury(p, *together["treasury"])
+        if together.get("store_open"):
+            self._store_open(p, now)
+        if together.get("store_put") is not None:
+            self._store_put(p, together["store_put"])
 
     def host_saved(self):
         """The host saved the game (and the relays got the file): each player's game is told."""
@@ -685,6 +943,7 @@ class World:
                 p.name, p.name_pending = name, True
             if hello:
                 self.joins += 1
+                p.together_told = False
             if (hello or profile_ask) and not on_server and not p.profile_out:
                 # the hero kept for this player goes back to its game, or word that there is none
                 kept = self.profiles.get(self._profile_key(cid) or "", [])
@@ -694,7 +953,11 @@ class World:
             if profile is not None and not on_server:
                 self._profile_part(p, profile)
             if together:
-                self._together(p, together)
+                self._together(p, together, now)
+            if not p.together_told:
+                p.together_told = True
+                if self.marks or self.shared["gold"] or on_server:  # a host's save may hold old marks
+                    p.shared_out = [self._marks_reply(p), [29, 0, 0, self.shared["gold"]]]
             back = self.returns.pop(self._profile_key(cid) or "", None)
             if back:
                 p.mp_out.append([16, 0, 0, len(back)] + flat(back[:MAX_STACKS]))
@@ -749,6 +1012,9 @@ class World:
                     if told[0] >= 0:
                         self.log(f"player {self._who(p)}: the lord it serves (party {told[0]}) fights party {told[1]}")
                     return [25, *told], None
+            news = self._map_battle_news(p)
+            if news is not None:
+                return news, None
             # whether another player holds the world still: at once when it changes, and now and then
             cause = self.pause_cause(now, but=p)
             # the clocks: never a pause (a player held still kept its clock running whenever it tried
@@ -762,6 +1028,8 @@ class World:
                 return [5, *status], None
             if p.profile_out:  # the kept hero, right after the first word on the world
                 return p.profile_out.pop(0), None
+            if p.shared_out:
+                return p.shared_out.pop(0), None
             # every other reply: troops of the nearest party whose troops this player has not seen
             if p.requests % 2 == 0:
                 for sid, _ in by_distance[:NEAREST_PER_REPLY]:
@@ -851,7 +1119,7 @@ class World:
         if op == 1:
             event = mp.get("event")
             if (event and b is not None and b.state == "gathering" and p.cid not in b.sides
-                    and b.event == event[0]):
+                    and b.event == event[0] and event[0] != EVENT_DUEL):
                 # two friends in one town: the second one's start joins the event, and its bet counts
                 self.log(f"joint battle {b.bid}: {self._who(p)} joins it (the same event)")
                 b.invited.discard(p.cid)
@@ -880,10 +1148,22 @@ class World:
                 return
             self.battle_seq += 1
             b = Battle(self.battle_seq, p.cid, now)
+            b.kind = mp.get("kind", 0)
             defender = None
             if event:
                 # the players' heroes alone, on one side, against bots
                 b.event, b.param, b.town, b.fighter, b.bonus = event
+                if b.event == EVENT_DUEL:
+                    # or against each other: the challenged player answers, and is told the stake
+                    defender = self._player_in_slot(b.param, but=p)
+                    if defender is None:
+                        self.log(f"joint battle: refused - no player in slot {b.param} to duel")
+                        p.mp_out.append([7, 0, 2, 0])
+                        return
+                    b.sides[defender.cid] = 1
+                    b.invited.add(defender.cid)
+                    defender.mp_out.append([6, b.bid, 3 + EVENT_DUEL, p.slot, b.bonus])
+                    self._act(p, "duel_call", rival=self._who(defender), stake=b.bonus)
             elif mp.get("center", -1) > 0 and mp.get("defend") and mp["sid"] > 0:
                 # a defence: the players and the garrison hold the walls (team 0) against the
                 # besieger and the parties attached to it, its army (team 1)
@@ -935,13 +1215,17 @@ class World:
             for q in self.players.values():
                 if q is p or q is defender or q.slot is None or q.pos is None or p.pos is None:
                     continue
-                if q.cid in b.sides:
+                if q.cid in b.sides or b.event == EVENT_DUEL:
                     continue
                 if (q.pos[0] - p.pos[0]) ** 2 + (q.pos[1] - p.pos[1]) ** 2 <= INVITE_DIST ** 2:
                     b.invited.add(q.cid)
                     target = b.enemy_sid if b.enemy_sid is not None else (b.center if b.center is not None else -1)
                     q.mp_out.append([6, b.bid, 3 + b.event if b.event else 1, p.slot, target])
             b.terrain = mp.get("terrain", 0)
+            if b.kind == KIND_LAIR and b.terrain in PLAIN_TERRAINS:
+                b.terrain = LAIR_TERRAIN
+            if b.kind in KIND_NAMES:
+                self._act(p, "battle_" + KIND_NAMES[b.kind], battle=b.bid, enemy=b.enemy_sid, ally=b.ally_sid)
             self.battle = b
             invited = ", ".join(self._who(self.players[c]) for c in sorted(b.invited) if c in self.players)
             self.log(f"joint battle {b.bid}: gathering; invited: {invited or 'nobody (no other player near)'}")
@@ -972,7 +1256,9 @@ class World:
             b.invited.discard(p.cid)
             if b.state == "running":
                 return  # the battle goes on: that player's troops fight without the player
-            if p.cid == b.starter:
+            if p.cid == b.starter or b.event == EVENT_DUEL:  # a duel takes both
+                if b.event == EVENT_DUEL:
+                    self._act(p, "duel_off", battle=b.bid, why="declined")
                 for cid in set(b.sides) | b.invited:
                     q = self.players.get(cid)
                     if q is not None and q is not p:
@@ -1038,7 +1324,13 @@ class World:
         when its players stand on the battle server, or after EVENT_WAIT_S with those who came."""
         present = [cid for cid in b.sides if self._mp_player_number(cid) >= 0
                    and cid in self.players and self.players[cid].hero]
+        if b.event == EVENT_DUEL and b.invited:
+            self._duel_off(b, "no answer")
+            return
         if len(present) < len(b.sides) and now < b.until + EVENT_WAIT_S:
+            return
+        if b.event == EVENT_DUEL and len(present) < len(b.sides):
+            self._duel_off(b, "not on the battle server")
             return
         for cid in set(b.sides) - set(present):
             del b.sides[cid]
@@ -1051,6 +1343,16 @@ class World:
             return
         self._load_event_round(b)
 
+    def _duel_off(self, b, why):
+        for cid in set(b.sides) | b.invited:
+            q = self.players.get(cid)
+            if q is not None:
+                q.mp_out.append([7, b.bid, 2, 0])
+        starter = self.players.get(b.starter)
+        if starter is not None:
+            self._act(starter, "duel_off", battle=b.bid, why=why.replace(" ", "_"))
+        self.battle = None
+
     def _load_event_round(self, b):
         """The next fight of a joint event goes to the battle server (a tournament has several)."""
         b.stacks = self._event_stacks(b)
@@ -1062,8 +1364,10 @@ class World:
 
     def _event_stacks(self, b):
         """The opponents of a joint event, on team 1: Native's line of arena fighters, stronger ones
-        with each round of a tournament, or for a training each player's own men."""
+        with each round of a tournament, or for a training each player's own men. A duel has none."""
         players = len(b.sides)
+        if b.event == EVENT_DUEL:
+            return []
         if b.event == EVENT_ARENA:
             total = ARENA_FOES * players
             foes = []
@@ -1142,6 +1446,15 @@ class World:
             used = [(wpt, hits, damage) for player, wpt, hits, damage in weapons if player == no >= 0]
             if used:
                 q.mp_out.append([9, b.bid, len(used)] + [v for entry in used for v in entry])
+        if b.event == EVENT_DUEL:
+            for cid, team in b.sides.items():
+                q = self.players.get(cid)
+                if q is not None:
+                    outcome = 2 if winner not in (0, 1) else 1 if team == winner else 0
+                    q.mp_out.append([26, b.bid, EVENT_DUEL, outcome, b.bonus, 0, 0, 0])
+            self.log(f"joint battle {b.bid}: the duel is over (team {winner} won)")
+            self.battle = None
+            return
         if (b.event == EVENT_TOURNAMENT and won and b.round < TOURNAMENT_ROUNDS
                 and any(self._mp_player_number(cid) >= 0 for cid in b.sides)):
             self.log(f"joint battle {b.bid}: tournament round {b.round} won")
@@ -1269,10 +1582,16 @@ class World:
         elif b.enemy_sid is not None:
             destroyed = 1 if winner == b.player_team or not enemy_left else 0
             self._record_result((b.enemy_sid, destroyed, enemy_left, [] if destroyed else world_captives), None, now)
-            if b.ally_sid is not None and b.ally_sid in npc_left:
+            if b.ally_sid is not None and b.ally_sid in npc_left and b.kind != KIND_VILLAGE:
                 # the lord's party keeps what survived; never destroyed: the server keeps the lord, and
-                # his soldiers' games must not lose the party they serve in
-                self._record_result((b.ally_sid, 0, npc_left[b.ally_sid], []), None, now)
+                # his soldiers' games must not lose the party they serve in. A caravan or farmers with
+                # nobody left are gone; a village's militia has no party of the world
+                kept = npc_left[b.ally_sid]
+                self._record_result((b.ally_sid, 1 if b.kind == KIND_CARAVAN and not kept else 0, kept, []),
+                                    None, now)
+            if b.kind in KIND_NAMES and b.starter in self.players:
+                self._act(self.players[b.starter], "battle_end", kind=KIND_NAMES[b.kind], battle=b.bid,
+                          won=1 if winner == b.player_team else 0)
         elif captives:
             # a battle between players: the winner's side takes the prisoners
             taker = next((cid for cid, team in sorted(b.sides.items(), key=lambda kv: kv[0] != b.starter)
@@ -1299,6 +1618,9 @@ class World:
             if b is None:
                 return [0]
             if b.state == "loading" and phase == 0:
+                if not b.stacks and not b.no_stacks_told:
+                    b.no_stacks_told = True
+                    return [2, b.bid, 0, 0]
                 if b.sent < len(b.stacks):
                     chunk = b.stacks[b.sent:b.sent + MP_CHUNK]
                     nums = [2, b.bid, b.sent, len(chunk)]
@@ -1426,7 +1748,7 @@ def parse_entries(d):
 
 
 def parse_together(q):
-    """Joining parties and giving troops: {join, joinans, leave, release, give, giveans} or None."""
+    """What a player does together with the others (see World._together), or None."""
     out = {}
     if "join" in q:
         out["join"] = query_int(q, "join", -1)
@@ -1444,6 +1766,23 @@ def parse_together(q):
     v = parse_ints(q.get("giveans", "")) if "giveans" in q else None
     if v and len(v) == 2:
         out["giveans"] = (v[0], v[1])
+    v = parse_ints(q.get("lg", "")) if "lg" in q else None
+    if v and len(v) == 4:
+        out["note"] = v
+    if "fl" in q:
+        out["follow"] = query_int(q, "fl", 0)
+    if "mk" in q:
+        v = [] if q["mk"] == "-" else parse_ints(q["mk"])
+        if v is not None and len(v) in (0, 2):
+            out["mark"] = tuple(v)
+    v = parse_ints(q.get("tg", "")) if "tg" in q else None
+    if v and len(v) == 2 and v[0] > 0:
+        out["treasury"] = (v[0], v[1])
+    if q.get("st") == "1":
+        out["store_open"] = True
+    v = parse_ints(q.get("sti", "")) if "sti" in q else None
+    if v and len(v) >= 3 and len(v) % 2 == 1:
+        out["store_put"] = v
     return out or None
 
 
@@ -1509,9 +1848,11 @@ def parse_mp_players(text):
 def parse_event(text):
     """mpx: [event, param, town, fighter, bonus], or None when malformed."""
     values = parse_ints(text) if text else None
-    if values is None or len(values) != 5 or not EVENT_ARENA <= values[0] <= EVENT_TRAINING:
+    if values is None or len(values) != 5 or not EVENT_ARENA <= values[0] <= EVENT_DUEL:
         return None
     if values[0] == EVENT_TRAINING and not 1 <= values[1] <= 4:
+        return None
+    if values[0] == EVENT_DUEL and not 0 <= values[1] < MAX_PLAYERS:
         return None
     return values
 
@@ -1578,8 +1919,8 @@ def reply_text(numbers, string=None):
 
 
 TRACE_KEYS = ("mp=", "join=", "joinans=", "leave=", "release=", "give=", "giveans=", "hello=", "bye=",
-              "res=", "pfq=")
-QUIET_KINDS = {0, 2, 3, 4, 5, 12}  # replies that come round all the time (positions, troops, pause...)
+              "res=", "pfq=", "&lg=", "&fl=", "&mk=", "&tg=", "&st=", "&sti=", "&mpk=")
+QUIET_KINDS = {0, 2, 3, 4, 5, 12, 33}  # replies that come round all the time (positions, troops, pause...)
 
 
 def worth_tracing(role, target, reply):
@@ -1627,7 +1968,7 @@ def make_trace(path, limit=20_000_000):
 def handle_request(world, role, target, now, cid="local"):
     reply = _handle_request(world, role, target, now, cid)
     world.trace(role, cid, target, reply)
-    if role == "cli":
+    if role == "cli" and not target.startswith("/pg"):
         p = world.players.get(cid)
         if p is not None:
             p.recent = (p.recent + [(now, target, reply)])[-RECENT_KEPT:]
@@ -1675,6 +2016,8 @@ def _handle_request(world, role, target, now, cid="local"):
         for slot, x, y, faction in puppets:
             nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, faction]
         return reply_text(nums + payload, name)
+    if role == "cli" and url.path == "/pg":
+        return reply_text([MARKER] + world.ping(cid, now))
     if role == "cli" and url.path == "/cli":
         try:
             x, y = int(q.get("x", "0")), int(q.get("y", "0"))
@@ -1699,6 +2042,7 @@ def _handle_request(world, role, target, now, cid="local"):
                   "comp": (comp[0], comp[1:]) if comp and len(comp) == HERO_NUMBERS + 1 else None,
                   "terrain": query_int(q, "ter", 0),
                   "event": parse_event(q.get("mpx", "")),
+                  "kind": query_int(q, "mpk", 0),
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
                   "ally": query_int(q, "mpa", -1),
                   "ally_troops": parse_stacks(parse_ints(q.get("mpat", "").lstrip(","))) or [],
@@ -1799,7 +2143,23 @@ def carries_news(body):
     """Whether a reply tells the game something it is not told again anyway: everything but the
     positions, other players' parties and the pause status, which come round all the time."""
     kind = body.split("|")[1] if body.count("|") >= 1 and body.startswith(str(MARKER)) else ""
-    return kind.isdigit() and int(kind) not in (0, 2, 4, 5)
+    return kind.isdigit() and int(kind) not in (0, 2, 4, 5, 33)
+
+
+def hold_ping(target):
+    """A game off the map keeps one ping on its way: held here, it costs next to nothing."""
+    if target.startswith("/pg") and "hold=1" in target:
+        time.sleep(PING_HOLD_S)
+
+
+def sound_the_call(text, log):
+    """The bridge's window calls too: the game's own signal does not reach every screen."""
+    log(text)
+    try:
+        import winsound
+        winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+    except (ImportError, RuntimeError):
+        pass
 
 
 def keep_alive(sock):
@@ -1958,6 +2318,8 @@ def serve_relays(addr, world, key, save_dir, log):
                 elif msg.get("t") == "req":
                     body = handle_request(world, "cli", msg.get("target", "/"), time.time(), cid=cid)
                     send_msg(conn, lock, {"t": "rep", "id": msg.get("id"), "body": body})
+                elif msg.get("t") == "sig":
+                    send_msg(conn, lock, {"t": "sig", "text": world.signal_text(cid)})
                 elif msg.get("t") == "save":
                     path = newest_save(save_dir)
                     if path is None:
@@ -2051,7 +2413,7 @@ class Relay:
                     self._take_pushed_save(msg)
                     continue
                 waiter = self.waiting.pop(msg.get("id"), None) if msg.get("t") == "rep" else \
-                    self.waiting.pop("save", None) if msg.get("t") == "save" else None
+                    self.waiting.pop(msg["t"], None) if msg.get("t") in ("save", "sig") else None
                 if waiter:
                     waiter[1] = msg
                     waiter[0].set()
@@ -2075,7 +2437,16 @@ class Relay:
         self.waiting.pop(wait_key, None)
         return waiter[1]
 
+    def watch_signal(self):
+        while True:
+            time.sleep(1.0)
+            if self.connected.is_set():
+                rep = self.call({"t": "sig"}, "sig")
+                if rep and rep.get("text"):
+                    sound_the_call(rep["text"], self.local_log)
+
     def forward(self, target):
+        hold_ping(target)
         if not self.connected.is_set():
             return reply_text([0, 0])  # no marker: the game frees its request and tries again
         with self.lock:
@@ -2481,8 +2852,21 @@ def run_host(args, log):
     log(f"logs: {Path(args.log).resolve()} and trace.log next to it (requests about battles, parties, joining)")
     world.set_mp_name("local", args.mp_name)
     serve_http(parse_addr(args.server, 80), lambda t: handle_request(world, "srv", t, time.time()), log, "srv")
-    serve_http(parse_addr(args.client, 80), lambda t: handle_request(world, "cli", t, time.time()), log, "cli")
+
+    def answer_player(target):
+        hold_ping(target)
+        return handle_request(world, "cli", target, time.time())
+
+    def watch_signal():
+        while True:
+            time.sleep(1.0)
+            text = world.signal_text("local")
+            if text:
+                sound_the_call(text, log)
+
+    serve_http(parse_addr(args.client, 80), answer_player, log, "cli")
     serve_http(parse_addr(args.mp, 80), lambda t: handle_request(world, "mp", t, time.time()), log, "mp")
+    threading.Thread(target=watch_signal, daemon=True).start()
     if args.key:
         serve_relays(parse_addr(args.listen, NET_PORT), world, args.key, args.save_dir, log)
         serve_battle_hub(parse_addr(args.listen, NET_PORT), args.key, args.battle_port, args.battle_from, log)
@@ -2529,8 +2913,10 @@ def run_host(args, log):
                     if note:
                         log(note)
                 p.quiet_told = quiet
+            def alive(p):  # silent for the world, but its game answers: a menu, not a hang
+                return " alive" if p.pinged is not None and now - p.pinged < ALIVE_S else ""
             players = ", ".join(f"{p.slot}:{p.name or p.cid}{' busy' if p.busy else ''}"
-                                f"{f' silent {now - p.last:.0f}s' if p.last is not None and now - p.last > 2 else ''}"
+                                f"{f' silent {now - p.last:.0f}s{alive(p)}' if p.last is not None and now - p.last > 2 else ''}"
                                 f"{' mp:' + world.mp_names[p.cid] if p.cid in world.mp_names else ''}"
                                 for p in sorted(world.players.values(), key=lambda p: (p.slot is None, p.slot)))
             mp_text = "battle server " + ("on" if world._mp_online(time.time()) else "off")
@@ -2573,6 +2959,7 @@ def run_join(args, log):
         log(f"relay: cannot reach the host: {e}")
     relay.save_dir = args.save_dir if args.fetch_save else None  # each new save of the host lands here too
     threading.Thread(target=relay.keep_connected, daemon=True).start()  # retries until the host answers
+    threading.Thread(target=relay.watch_signal, daemon=True).start()
     serve_battle_join(parse_addr(args.battle_listen, BATTLE_PORT), hub, args.key, relay.log)
     if args.fetch_save:
         if not relay.connected.is_set():
