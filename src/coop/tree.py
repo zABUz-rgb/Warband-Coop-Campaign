@@ -5,6 +5,7 @@ from header_triggers import *
 from header_troops import *
 from module_constants import *
 from coop.constants import *
+from custom_troops.constants import BRANCH_NAMES, TIERS, custom_holder, kind_of, troop_id
 
 # The troop tree (Camp - CoopWorld): the branches on the left and the branch shown as a tree of portraits,
 # growing to the right, each troop halfway between those it grows into. A click on a portrait opens the
@@ -30,13 +31,11 @@ BRANCHES = [
   ("@Women", ["refugee", "peasant_woman"]),
   ("@Outlaws", ["looter", "steppe_bandit", "taiga_bandit", "sea_raider", "desert_bandit", "bandit", "manhunter"]),
 ]
-# The troops of this mod still being made: their ids go here, they show under "In development". A new
-# troop changes what a save holds, so none is in the game yet: they come together, with a new campaign.
-DEVELOPMENT_TROOPS = []
-DEVELOPMENT = "@In development"
-DEVELOPMENT_TEXT = ["Troops still being made for this mod will stand here.",
-                    "None is ready yet: a new troop changes what a save holds,",
-                    "so they come together, with a new campaign."]
+# The last branch is the player's own army (src/custom_troops), under the name the player gave it: one
+# portrait for each kind of soldier, at the highest level of stats the player has.
+ARMY_TEXT = ["You have no company of your own yet.",
+             "John Blackborn raises it, at the company's camp or in a town or castle of yours.",
+             "In a co-op game the host raises it, and it is the same for all the players."]
 
 TREE_X = 170          # the branch's box
 TREE_Y = 60
@@ -96,12 +95,23 @@ def branch_rows(roots, troops, taken):
   return rows
 
 
+def army_rows():
+  """The army's rows: the recruit, then each branch's tiers (a row's number is its kind of soldier)."""
+  rows = [(troop_id(0, 1), 0, -1)]
+  for branch in BRANCH_NAMES:
+    parent = 0
+    for tier in TIERS:
+      rows.append((troop_id(kind_of(branch, tier), 1), tier - 1, parent))
+      parent = len(rows) - 1
+  return rows
+
+
 def layout():
-  """Every branch's rows, the last one "In development"."""
+  """Every branch's rows, the last one the player's army."""
   from module_troops import troops
   taken = set()
   rows = [branch_rows(roots, troops, taken) for _, roots in BRANCHES]
-  return rows + [branch_rows(DEVELOPMENT_TROOPS, troops, taken)]
+  return rows + [army_rows()]
 
 
 def place(rows):
@@ -150,6 +160,8 @@ def links(rows, at):
 def branch_name_to_s0(name):
   if name.startswith("fac_"):
     return [(str_store_faction_name, s0, name)]
+  if name.startswith("trp_"):
+    return [(str_store_troop_name, s0, name)]
   return [(str_store_string, s0, name)]
 
 
@@ -165,8 +177,14 @@ def rows_ops():
   for i, rows in enumerate(layout()):
     ops += [(eq, "$coop_tree_branch", i)] if not ops else [(else_try), (eq, "$coop_tree_branch", i)]
     at = place(rows)
+    if i == len(BRANCHES):
+      ops += [(eq, "$custom_army_made", 1)]
     ops += [(call_script, "script_coop_tree_plane", *line) for line in links(rows, at)]
-    ops += [(call_script, "script_coop_tree_node", "trp_" + row[0], x, y) for row, (x, y) in zip(rows, at)]
+    if i == len(BRANCHES):
+      for kind, (x, y) in enumerate(at):
+        ops += [(call_script, "script_custom_shown", kind), (call_script, "script_coop_tree_node", reg0, x, y)]
+    else:
+      ops += [(call_script, "script_coop_tree_node", "trp_" + row[0], x, y) for row, (x, y) in zip(rows, at)]
   return [(try_begin)] + ops + [(try_end)]
 
 
@@ -367,7 +385,7 @@ tree_scripts = [
 def branch_buttons():
   """Ops: the branches' buttons down the left side."""
   ops = []
-  names = [name for name, _ in BRANCHES] + [DEVELOPMENT]
+  names = [name for name, _ in BRANCHES] + [custom_holder]
   for i, name in enumerate(names):
     ops += branch_name_to_s0(name) + [
       (create_button_overlay, reg0, s0, 0),
@@ -386,15 +404,12 @@ def branch_buttons():
   return ops
 
 
-def development_text():
-  """Ops: what "In development" says while it holds no troop."""
-  ops = []
-  if not DEVELOPMENT_TROOPS:
-    ops = [(try_begin), (eq, "$coop_tree_branch", len(BRANCHES))]
-    for k, line in enumerate(DEVELOPMENT_TEXT):
-      ops += [(str_store_string, s0, "@" + line), (call_script, "script_coop_tree_text", TREE_X + 10, 620 - k * CARD_ROW)]
-    ops += [(try_end)]
-  return ops
+def army_text():
+  """Ops: what the army's branch says while there is no army."""
+  ops = [(try_begin), (eq, "$coop_tree_branch", len(BRANCHES)), (eq, "$custom_army_made", 0)]
+  for k, line in enumerate(ARMY_TEXT):
+    ops += [(str_store_string, s0, "@" + line), (call_script, "script_coop_tree_text", TREE_X + 10, 620 - k * CARD_ROW)]
+  return ops + [(try_end)]
 
 
 def window_ops():
@@ -433,7 +448,7 @@ tree_presentations = [
         (set_container_overlay, "$coop_tree_box"),
         (call_script, "script_coop_tree_rows"),
         (set_container_overlay, -1),
-        ] + development_text() + [
+        ] + army_text() + [
         (create_game_button_overlay, "$coop_tree_close", "@Close"),
         (position_set_x, pos1, 830),
         (position_set_y, pos1, 16),

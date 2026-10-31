@@ -210,6 +210,9 @@ ROTATING_PER_REPLY = 3
 REMOVALS_PER_REPLY = 3
 RESULT_PAIRS = 53       # troop and prisoner pairs of one battle result: 5 + 3 * 4 + 4 + 1 + 2 * 53 <= 128  # 3 header numbers + 7 per entry must stay within 128 registers
 MAX_STACKS = 30         # troop stacks per party in one message
+ARMY_KINDS = 13         # the player's own army: kinds of soldier (src/custom_troops/constants.py)
+ARMY_GEAR_MAX = 24      # items a kind may carry
+ARMY_NAME_MAX = 40
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350           # the relays' TCP link, and (UDP) the battle relay
 BATTLE_PORT = 7240        # the battle server's own port (Multiplayer - Host a game)
@@ -347,6 +350,7 @@ class Player:
         self.follows = None     # the slot of the player it rides after
         self.together_told = False  # the marks and the treasury went to its game
         self.shared_out = []    # those replies, after the first word on the world
+        self.army_out = []      # (reply, text): what this game has not heard of the army
         self.fights_told = {}   # sid -> enemy: the map battles near it that it knows of
         self.pinged = None      # real time of its last ping: its game lives, off the map
         self.signal_told = None # the battle its bridge window sounded for
@@ -445,6 +449,8 @@ class World:
         self.store_lock = None  # (cid, since): who has the party store open
         self.shared_path = Path(shared_path) if shared_path else (
             self.profiles_path.with_name("shared.json") if self.profiles_path else None)
+        self.army = {"names": {}, "gear": {}}  # the player's own army: the host's save is its master
+        self.army_told = {}     # kind -> items: what the battle server's game has of its gear
         self.shared = {"gold": 0, "items": []}  # the treasury and the party store, kept in shared.json
         if self.shared_path is not None and self.shared_path.exists():
             try:
@@ -733,6 +739,10 @@ class World:
                 for q in self.players.values():
                     if q is not p:
                         q.mp_out.append([27, TELL_BANDITS, p.slot, values[0], 0])
+        if together.get("army_name") is not None:
+            self._army_name(p, *together["army_name"])
+        if together.get("army_gear") is not None:
+            self._army_gear(p, *together["army_gear"])
         if together.get("follow") is not None:
             self._follow(p, together["follow"])
         if together.get("base") is not None:
@@ -917,6 +927,27 @@ class World:
         except OSError:
             pass
 
+    def _army_name(self, p, index, text):
+        """The host names its army (0) or a soldier (1 + kind): the other games hear it."""
+        if p.on_server and text:
+            self.army["names"][index] = text
+            for q in self.players.values():
+                if q is not p:
+                    q.army_out.append(([34, index], text))
+
+    def _army_gear(self, p, kind, bought, items):
+        """What a soldier carries, whoever chose it: the other games hear it, the battle server when it asks."""
+        self.army["gear"][kind] = (bought, items)
+        for q in self.players.values():
+            if q is not p:
+                q.army_out.append(([35, kind, bought, len(items)] + items, None))
+
+    def _army_replies(self):
+        """All of the army, for a game that comes in."""
+        names = [([34, index], text) for index, text in sorted(self.army["names"].items())]
+        return names + [([35, kind, bought, len(items)] + items, None)
+                        for kind, (bought, items) in sorted(self.army["gear"].items())]
+
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
                        on_server=False, faction=None, profile=None, together=None, profile_ask=False,
                        build=None, hours=None, lord=None):
@@ -967,6 +998,8 @@ class World:
                 self._together(p, together, now)
             if not p.together_told:
                 p.together_told = True
+                if not on_server:
+                    p.army_out = self._army_replies()
                 if self.shared["gold"] or self.shared.get("base") or on_server:  # a host's save may hold an old camp
                     p.shared_out = [self._marks_reply(p), [29, 0, 0, self.shared["gold"]]]
             back = self.returns.pop(self._profile_key(cid) or "", None)
@@ -984,6 +1017,8 @@ class World:
             if p.mp_out:
                 nums = p.mp_out.pop(0)
                 return nums, wanted if nums[0] == 7 else None
+            if p.army_out:
+                return p.army_out.pop(0)
             # the hero bears the name its player gave the launcher (join.bat, host.bat): asked for
             # until the game reports it
             given = self.mp_names.get(cid)
@@ -1630,6 +1665,8 @@ class World:
     def mp_request(self, phase, bid, winner, fallen, players, now, weapons=(), health=None, kills=None):
         """The battle server asks; returns the reply numbers after the marker."""
         with self.lock:
+            if self.mp_last is None or now - self.mp_last > MP_ONLINE_S:  # a battle server started anew
+                self.army_told = {}
             self.mp_last = now
             self.mp_players = players
             b = self.battle
@@ -1644,6 +1681,11 @@ class World:
             if b is None:
                 return [0]
             if b.state == "loading" and phase == 0:
+                # the player's army goes into the battle as it is equipped: first what changed of that
+                for kind, (_, items) in sorted(self.army["gear"].items()):
+                    if self.army_told.get(kind) != items:
+                        self.army_told[kind] = items
+                        return [10, b.bid, kind, len(items)] + items
                 if not b.stacks and not b.no_stacks_told:
                     b.no_stacks_told = True
                     return [2, b.bid, 0, 0]
@@ -1809,6 +1851,12 @@ def parse_together(q):
     v = parse_ints(q.get("sti", "")) if "sti" in q else None
     if v and len(v) >= 3 and len(v) % 2 == 1:
         out["store_put"] = v
+    v = parse_ints(q.get("ag", "")) if "ag" in q else None
+    if v and len(v) >= 2 and 0 <= v[0] < ARMY_KINDS and len(v) - 2 <= ARMY_GEAR_MAX and all(item > 0 for item in v[2:]):
+        out["army_gear"] = (v[0], v[1], v[2:])
+    index, _, text = q.get("an", "").partition(",")
+    if index.isdigit() and int(index) <= ARMY_KINDS:
+        out["army_name"] = (int(index), game_text_in(text).replace("|", " ").strip()[:ARMY_NAME_MAX])
     return out or None
 
 
@@ -1940,13 +1988,15 @@ def game_text_out(text):
 
 def reply_text(numbers, string=None):
     text = "|".join(str(int(v)) for v in numbers)
+    if string and numbers[1:2] == [34] and string.lstrip("-").isdigit():
+        string = f'"{string}"'  # a name stays a string, even "1"
     if string and not string.lstrip("-").isdigit():  # a number would land in a register, not s0
         text += "|" + game_text_out(string.replace("|", " "))
     return text
 
 
 TRACE_KEYS = ("mp=", "join=", "joinans=", "leave=", "release=", "give=", "giveans=", "hello=", "bye=",
-              "res=", "pfq=", "&lg=", "&fl=", "&bs=", "&tg=", "&st=", "&sti=", "&mpk=")
+              "res=", "pfq=", "&lg=", "&fl=", "&bs=", "&tg=", "&st=", "&sti=", "&mpk=", "&ag=", "&an=")
 QUIET_KINDS = {0, 2, 3, 4, 5, 12, 33}  # replies that come round all the time (positions, troops, pause...)
 
 

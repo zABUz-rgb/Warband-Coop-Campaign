@@ -20,8 +20,11 @@ def test_branches():
     from module_troops import troops
     ids = {t[0]: t for t in troops}
     rows = tree.layout()
-    check(len(rows) == len(tree.BRANCHES) + 1, "a branch for each name, and In development last")
-    check(rows[-1] == [] and tree.DEVELOPMENT_TEXT, "In development holds no troop yet, and says why")
+    check(len(rows) == len(tree.BRANCHES) + 1, "a branch for each name, and the player's army last")
+    check(len(rows[-1]) == 13 and tree.ARMY_TEXT, "the army shows each kind of soldier once, and says how to raise it")
+    army = rows.pop()
+    check([row[1] for row in army] == [0] + [1, 2, 3, 4] * 3 and [row[2] for row in army[:6]] == [-1, 0, 1, 2, 3, 0],
+          "a recruit, and three branches growing from it")
     for (name, _), branch in zip(tree.BRANCHES, rows):
         check(len(branch) >= 3, f"{name}: {len(branch)} troops")
     shown = [row[0] for branch in rows for row in branch]
@@ -43,7 +46,7 @@ def test_branches():
 
 
 def test_fits():
-    for (name, _), branch in zip(tree.BRANCHES, tree.layout()):
+    for (name, _), branch in zip(tree.BRANCHES + [("the army", [])], tree.layout()):
         at = tree.place(branch)
         check(len(set(at)) == len(at), f"{name}: no two portraits on one spot")
         right = max(x for x, _ in at) + tree.PORTRAIT // 2

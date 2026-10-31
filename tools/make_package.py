@@ -690,8 +690,6 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   СЛЕДОВАТЬ ЗА ДРУГОМ: "другие игроки" - "Следовать за игроком ...". Отряд сам едет к другу и
   держится рядом, друг получает сообщение. Свой щелчок по карте останавливает поход. Если отряд не
   слушается приказа идти, игра сама переносит его к другу и пишет об этом.
-  МЕТКИ: "метки на карте". У каждого игрока одна метка, её видят все; поставьте её там, где стоите,
-  уберите, поезжайте к метке друга. Метка - значок на карте, с ней нельзя столкнуться или сразиться.
   ЛАГЕРЬ ОТРЯДА: один на всех, виден на карте у каждого. Лагерь - CoopWorld - "разбить здесь лагерь
   отряда" (1000 динаров), потом "поехать в лагерь" или щелчок по нему на карте. Внутри казна, склад
   и Джон Блэкборн; лагерь можно свернуть, казна и склад при этом сохраняются.
@@ -720,8 +718,24 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 
 ДРЕВО ВОЙСК
   "CoopWorld: древо войск". Слева ветви: шесть королевств, горожане и наёмники, женщины, разбойники
-  и "В разработке" (пока пустая: новые бойцы меняют содержимое сохранения). Бойцы показаны портретами
+  и ваше собственное войско. Бойцы показаны портретами
   с линиями развития. Щелчок по портрету откроет карточку: уровень, здоровье, характеристики, жалованье, навыки, владение оружием, развитие и снаряжение.
+
+СОБСТВЕННОЕ ВОЙСКО
+  Отдельная ветвь войск, не привязанная к фракциям: рекрут и три ветви (пехота, лучники, всадники) до 5 тира,
+  у каждого рода три уровня характеристик. Нужна новая кампания. В кооперативе войско создаёт хост, оно одно на
+  всех: клиенты тоже нанимают, обучают и одевают, а если хост войска не создал, Джону им сказать нечего.
+  ДЖОН БЛЭКБОРН: в лагере отряда и в любом вашем городе или замке. Он спросит название отряда и воинов,
+  дальше нанимает рекрутов (5, 10 или 20, по 20 динаров), обучает, одевает, переименовывает (только хост).
+  РОСТ: рекрут и воины растут в бою как обычно, в пехоту или лучников. Движок даёт войску только два пути,
+  поэтому всадниками рекруты становятся у Джона, за 100 динаров с человека.
+  СНАРЯЖЕНИЕ: слева что можно купить, справа что есть; щелчок покупает или продаёт. Тир воина ограничивает выбор,
+  коней получают только всадники. Цена - стоимость предмета, умноженная на 4, Торговля её снижает; продажа - половина
+  стоимости, Торговля её повышает. Снаряжение общее на всех воинов одного рода и одного тира (так устроен движок),
+  и у всех игроков; пока для старшего тира ничего не покупали, он носит то же, что младший. За то, что досталось
+  от младшего тира, при продаже денег нет.
+  ОБУЧЕНИЕ: уровень 2 и 3 за всех воинов одного рода на этом уровне, цена зависит от тира, Торговля на неё не влияет.
+  Игра не даёт скрипту прочитать опыт отряда, поэтому накопленный к следующему тиру опыт обучение обнуляет.
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
@@ -886,8 +900,6 @@ TOGETHER WITHOUT MEETING ON THE MAP: all in Camp - CoopWorld: co-op.
   RIDE AFTER A FRIEND: "the other players" - "Ride after ...". Your party rides to the friend and stays
   close; a click of your own on the map stops it. If the party ignores the order, the game moves it
   to the friend and says so.
-  MARKS: "marks on the map". One mark for each player, seen by all: set it where you stand, take it
-  away, ride to a friend's. A mark is an icon on the map, nothing can fight it.
   THE COMPANY'S CAMP: one for all, on everybody's map. Camp - CoopWorld - "set up the company's camp here"
   (1000 denars), then ride there or click it. It holds the treasury, the store and John Blackborn.
   SHARED TREASURY AND PARTY STORE: in the company's camp only. The store is open for one
@@ -912,10 +924,25 @@ NEW JOINT BATTLES
   gear, at full health, no troops. No wounds, no prisoners, no losses; the winner takes the stake, 100
   experience for the winner, 50 for the loser. If both leave the server it is a draw.
 
-TROOP TREE: "CoopWorld: the troop tree". The kingdoms, townsfolk and mercenaries, women, outlaws, and "In
-  development" (empty for now: new troops change what a save holds). Troops are portraits joined by
+TROOP TREE: "CoopWorld: the troop tree". The kingdoms, townsfolk and mercenaries, women, outlaws, and your own
+  army. Troops are portraits joined by
   upgrade lines; click one for its card: level, hit
   points, attributes, wage, skills, proficiencies, upgrades and equipment.
+
+YOUR OWN ARMY: a branch of troops of no faction: a recruit and three branches (infantry, archers, riders) up to
+  tier 5, each kind in three levels of stats. It needs a new campaign. In co-op the host raises it and it is the same
+  for everyone: clients hire, train and equip too; if the host has not raised it, John has nothing to say to them.
+  JOHN BLACKBORN: at the company's camp and in any town or castle of yours. He asks for the names, then hires
+  recruits (5, 10 or 20 at 20 denars), trains, equips, renames (the host only).
+  GROWTH: recruits and soldiers rise by battle as usual, into infantry or archers. The engine gives a troop two
+  paths, so recruits become riders at John's, for 100 denars a man.
+  GEAR: what can be bought on the left, what the soldier has on the right; a click buys or sells. The tier limits the
+  choice, only riders get horses. An item costs 4 times its value, less with Trade; it sells for half its value,
+  more with Trade. Gear is shared by all soldiers of a kind and tier (the engine works so) and by all players; a
+  higher tier wears what the lower one wears until something is bought for it. What came from a lower tier sells
+  for nothing.
+  TRAINING: levels 2 and 3, for all the men of a kind at that level, at a price set by the tier, Trade does not
+  change it. No script can read a party's experience, so training clears what was gathered towards the next tier.
 
 FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its
   enemies hunt the player. Fiefs and Diplomacy's diplomacy go only to the host for now.

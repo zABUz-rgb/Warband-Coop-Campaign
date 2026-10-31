@@ -1860,10 +1860,6 @@ quick_strings_en|Troop tree|Древо войск
 quick_strings_en|Townsfolk and mercenaries|Горожане и наёмники
 quick_strings_en|Women|Женщины
 quick_strings_en|Outlaws|Разбойники
-quick_strings_en|In development|В разработке
-quick_strings_en|Troops still being made for this mod will stand here.|Здесь встанут войска, которые ещё делаются для этого мода.
-quick_strings_en|None is ready yet: a new troop changes what a save holds,|Пока ни один не готов: новый отряд меняет содержимое сохранения,
-quick_strings_en|so they come together, with a new campaign.|поэтому они появятся вместе, с новой кампанией.
 quick_strings_en|CoopWorld: the duel begins! One against the other, in your own gear.|CoopWorld: дуэль начинается! Один на один, в своём снаряжении.
 quick_strings_en|The duel is on!^^Switch to the multiplayer window (the CoopWorld battle server): you stand against each other in your own gear, without troops. Nobody is hurt in earnest.^^This window waits for the outcome. The world stands still meanwhile.{s2}|Дуэль идёт!^^Перейдите в окно мультиплеера (сервер боя CoopWorld): вы стоите друг против друга в своём снаряжении, без войск. Никто не ранен всерьёз.^^Это окно ждёт итога. Мир пока стоит.{s2}
 quick_strings_en|Waiting for the other player's answer...^^The duel starts as soon as you both stand on the battle server: switch to the multiplayer window now.{s2}|Ждём ответа соперника...^^Дуэль начнётся, как только вы оба будете на сервере боя: перейдите в окно мультиплеера.{s2}
@@ -1917,7 +1913,6 @@ quick_strings_en|Grows into: {s1}|Растёт в: {s1}
 quick_strings_en|Equipment|Снаряжение
 quick_strings_en|{s1} challenges you to a duel. The stake: {reg1} denars; you carry {reg2}.^^You fight each other on the multiplayer server, in your own gear, without troops. Nobody is hurt in earnest, nobody is taken. The winner takes the stake from the loser.|{s1}: вызов на дуэль. Ставка {reg1} динаров, у вас с собой {reg2}.^^Вы бьётесь друг с другом на сервере боя, в своём снаряжении, без войск. Никто не ранен всерьёз, никто не попадает в плен. Победитель забирает ставку у проигравшего.
 quick_strings_en|CoopWorld: you ride after {s1}.|CoopWorld: вы следуете за игроком {s1}.
-quick_strings_en|CoopWorld: the party store is on its way...|CoopWorld: склад отряда уже идёт к вам...
 game_menus|mno_dplmc_disguise_items|Выбрать вещи, которые вы возьмёте с собой (не больше {reg1}).
 game_menus|mno_dplmc_disguise_gold|Выбрать, сколько денег взять с собой.
 game_menus|mno_dplmc_disguise_sneak|Попытаться проникнуть...
@@ -1955,3 +1950,177 @@ quick_strings_en|CoopWorld: the party store does not answer.|CoopWorld: скла
 quick_strings_en|CoopWorld: {s1} drove the bandits out of {s2}.|CoopWorld: {s1}: разбойники выбиты из деревни {s2}.
 quick_strings_en|CoopWorld: the bandits are driven out of {s1}.|CoopWorld: разбойники выбиты из деревни {s1}.
 quick_strings_en|CoopWorld: a fighter did not come, the next one goes on.|CoopWorld: боец не вышел на арену, бой идёт дальше.
+game_menus|mno_custom_blackborn|Поговорить с Джоном Блэкборном.
+game_menus|menu_custom_screen|Джон Блэкборн ждёт вашего слова.
+game_menus|mno_custom_screen_talk|Поговорить с Джоном Блэкборном.
+game_menus|mno_custom_screen_back|Назад.
+game_menus|menu_custom_train|Джон Блэкборн осматривает ваших людей. Обучение стоит одну цену за всех людей одного рода на одном уровне, а опыт, накопленный к следующему тиру, теряется. Рекруты, получив коней, становятся всадниками.^^У вас {reg10} динаров.
+game_menus|mno_custom_train_back|На этом всё.
+game_menus|mno_custom_train_0_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_0_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_1_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_1_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_2_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_2_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_3_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_3_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_4_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_4_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_5_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_5_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_6_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_6_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_7_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_7_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_8_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_8_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_9_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_9_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_10_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_10_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_11_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_11_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_12_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_12_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_mount_1|{s1}: дать коней и сделать всадниками ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_mount_2|{s1}: дать коней и сделать всадниками ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_mount_3|{s1}: дать коней и сделать всадниками ({reg3} чел.): {reg4} динаров.
+dialogs_en|Sorry, there is nothing I can do for you.|Извини, мне нечем тебе помочь.
+dialogs_en|Good day. What brings you to me?|Добрый день. С чем пожаловали?
+dialogs_en|Good to see you, my lord.|Рад вас видеть, мой лорд.
+dialogs_en|I want to raise a company of my own.|Я хочу создать свой собственный отряд.
+dialogs_en|Nothing. Farewell.|Ничего. Прощай.
+dialogs_en|What would you like to call it? And how shall the men of each tier be known?|Как бы вы хотели его назвать? И как звать воинов каждого тира?
+dialogs_en|I will write the names myself.|Дай мне вписать названия.
+dialogs_en|Leave the usual names.|Оставь обычные названия.
+dialogs_en|It is done: {s1} stands ready, my lord. What now?|Готово: отряд «{s1}» создан, мой лорд. Что дальше?
+dialogs_en|I need to see to my own troops.|Мне нужно заняться моими личными войсками.
+dialogs_en|Of course, my lord. What exactly do you wish to do?|Конечно, мой лорд. Что именно вы хотите сделать?
+dialogs_en|Change my men's gear. Show me the equipment.|Переодеть моих людей. Покажи снаряжение.
+dialogs_en|Teach them new skills. Improve their stats.|Обучить их новым навыкам. Улучшить характеристики.
+dialogs_en|I want to buy soldiers for the company.|Я хочу купить войска в отряд.
+dialogs_en|I want to rename the company.|Я хочу переименовать отряд.
+dialogs_en|I want to rename my soldiers.|Я хочу переименовать воинов.
+dialogs_en|Nothing, let us go on.|Ничего, продолжим.
+dialogs_en|You have none of my men.|У вас нет моих людей.
+dialogs_en|How many men do you want? Each one costs {reg1} dinars.|Сколько вы хотите купить воинов? Каждый стоит {reg1} динаров.
+dialogs_en|Nothing, forget it.|Ничего, забудь.
+dialogs_en|They are yours, my lord. Anything else?|Они ваши, мой лорд. Что-нибудь ещё?
+quick_strings_en|You have no company of your own yet.|Своего отряда у вас пока нет.
+quick_strings_en|John Blackborn raises it, at the company's camp or in a town or castle of yours.|Его создаёт Джон Блэкборн: в лагере отряда, в вашем городе или замке.
+quick_strings_en|In a co-op game the host raises it, and it is the same for all the players.|В совместной игре его создаёт хост, и он один на всех игроков.
+quick_strings_en|Soldier:|Воин:
+quick_strings_en|Items:|Предметы:
+quick_strings_en|One-handed weapons|Одноручное оружие
+quick_strings_en|Two-handed weapons|Двуручное оружие
+quick_strings_en|Bows|Луки
+quick_strings_en|Throwing weapons|Метательное оружие
+quick_strings_en|Arrows|Стрелы
+quick_strings_en|Bolts|Болты
+quick_strings_en|Shields|Щиты
+quick_strings_en|Helmets|Шлемы
+quick_strings_en|Armor|Доспехи
+quick_strings_en|Boots|Сапоги
+quick_strings_en|Gloves|Перчатки
+quick_strings_en|Horses|Лошади
+quick_strings_en|Tier {reg1}. You have {reg2} dinars.|Тир {reg1}. У вас {reg2} динаров.
+quick_strings_en|A click on the left buys, a click on the right sells.|Щелчок слева покупает, щелчок справа продаёт.
+quick_strings_en|Names: leave a box as it is to keep the name.|Названия: не меняйте строку, если название подходит.
+quick_strings_en|The company|Отряд
+quick_strings_en|Soldiers of this tier may not have that.|Воинам этого тира это не положено.
+quick_strings_en|A soldier carries no more than {reg1} things.|Воин несёт не больше {reg1} предметов.
+quick_strings_en|You have too few dinars.|Не хватает динаров.
+quick_strings_en|{s1}: {reg1} dinars|{s1}: {reg1} динаров
+quick_strings_en|{s1}: sell for {reg1} dinars|{s1}: продать за {reg1} динаров
+quick_strings_en|Infantry, tier 2|Пехота, тир 2
+quick_strings_en|Infantry, tier 3|Пехота, тир 3
+quick_strings_en|Infantry, tier 4|Пехота, тир 4
+quick_strings_en|Infantry, tier 5|Пехота, тир 5
+quick_strings_en|Archers, tier 2|Лучники, тир 2
+quick_strings_en|Archers, tier 3|Лучники, тир 3
+quick_strings_en|Archers, tier 4|Лучники, тир 4
+quick_strings_en|Archers, tier 5|Лучники, тир 5
+quick_strings_en|Riders, tier 2|Всадники, тир 2
+quick_strings_en|Riders, tier 3|Всадники, тир 3
+quick_strings_en|Riders, tier 4|Всадники, тир 4
+quick_strings_en|Riders, tier 5|Всадники, тир 5
+troops|trp_custom_t1_recruit_lvl1|Рекрут
+troops|trp_custom_t1_recruit_lvl1_pl|Рекруты
+troops|trp_custom_t1_recruit_lvl2|Рекрут
+troops|trp_custom_t1_recruit_lvl2_pl|Рекруты
+troops|trp_custom_t1_recruit_lvl3|Рекрут
+troops|trp_custom_t1_recruit_lvl3_pl|Рекруты
+troops|trp_custom_t2_inf_lvl1|Ополченец-пехотинец
+troops|trp_custom_t2_inf_lvl1_pl|Ополченцы-пехотинцы
+troops|trp_custom_t2_inf_lvl2|Ополченец-пехотинец
+troops|trp_custom_t2_inf_lvl2_pl|Ополченцы-пехотинцы
+troops|trp_custom_t2_inf_lvl3|Ополченец-пехотинец
+troops|trp_custom_t2_inf_lvl3_pl|Ополченцы-пехотинцы
+troops|trp_custom_t3_inf_lvl1|Пехотинец
+troops|trp_custom_t3_inf_lvl1_pl|Пехотинцы
+troops|trp_custom_t3_inf_lvl2|Пехотинец
+troops|trp_custom_t3_inf_lvl2_pl|Пехотинцы
+troops|trp_custom_t3_inf_lvl3|Пехотинец
+troops|trp_custom_t3_inf_lvl3_pl|Пехотинцы
+troops|trp_custom_t4_inf_lvl1|Ветеран-пехотинец
+troops|trp_custom_t4_inf_lvl1_pl|Ветераны-пехотинцы
+troops|trp_custom_t4_inf_lvl2|Ветеран-пехотинец
+troops|trp_custom_t4_inf_lvl2_pl|Ветераны-пехотинцы
+troops|trp_custom_t4_inf_lvl3|Ветеран-пехотинец
+troops|trp_custom_t4_inf_lvl3_pl|Ветераны-пехотинцы
+troops|trp_custom_t5_inf_lvl1|Чемпион-пехотинец
+troops|trp_custom_t5_inf_lvl1_pl|Чемпионы-пехотинцы
+troops|trp_custom_t5_inf_lvl2|Чемпион-пехотинец
+troops|trp_custom_t5_inf_lvl2_pl|Чемпионы-пехотинцы
+troops|trp_custom_t5_inf_lvl3|Чемпион-пехотинец
+troops|trp_custom_t5_inf_lvl3_pl|Чемпионы-пехотинцы
+troops|trp_custom_t2_arc_lvl1|Ополченец-лучник
+troops|trp_custom_t2_arc_lvl1_pl|Ополченцы-лучники
+troops|trp_custom_t2_arc_lvl2|Ополченец-лучник
+troops|trp_custom_t2_arc_lvl2_pl|Ополченцы-лучники
+troops|trp_custom_t2_arc_lvl3|Ополченец-лучник
+troops|trp_custom_t2_arc_lvl3_pl|Ополченцы-лучники
+troops|trp_custom_t3_arc_lvl1|Лучник
+troops|trp_custom_t3_arc_lvl1_pl|Лучники
+troops|trp_custom_t3_arc_lvl2|Лучник
+troops|trp_custom_t3_arc_lvl2_pl|Лучники
+troops|trp_custom_t3_arc_lvl3|Лучник
+troops|trp_custom_t3_arc_lvl3_pl|Лучники
+troops|trp_custom_t4_arc_lvl1|Ветеран-лучник
+troops|trp_custom_t4_arc_lvl1_pl|Ветераны-лучники
+troops|trp_custom_t4_arc_lvl2|Ветеран-лучник
+troops|trp_custom_t4_arc_lvl2_pl|Ветераны-лучники
+troops|trp_custom_t4_arc_lvl3|Ветеран-лучник
+troops|trp_custom_t4_arc_lvl3_pl|Ветераны-лучники
+troops|trp_custom_t5_arc_lvl1|Чемпион-лучник
+troops|trp_custom_t5_arc_lvl1_pl|Чемпионы-лучники
+troops|trp_custom_t5_arc_lvl2|Чемпион-лучник
+troops|trp_custom_t5_arc_lvl2_pl|Чемпионы-лучники
+troops|trp_custom_t5_arc_lvl3|Чемпион-лучник
+troops|trp_custom_t5_arc_lvl3_pl|Чемпионы-лучники
+troops|trp_custom_t2_cav_lvl1|Ополченец-всадник
+troops|trp_custom_t2_cav_lvl1_pl|Ополченцы-всадники
+troops|trp_custom_t2_cav_lvl2|Ополченец-всадник
+troops|trp_custom_t2_cav_lvl2_pl|Ополченцы-всадники
+troops|trp_custom_t2_cav_lvl3|Ополченец-всадник
+troops|trp_custom_t2_cav_lvl3_pl|Ополченцы-всадники
+troops|trp_custom_t3_cav_lvl1|Всадник
+troops|trp_custom_t3_cav_lvl1_pl|Всадники
+troops|trp_custom_t3_cav_lvl2|Всадник
+troops|trp_custom_t3_cav_lvl2_pl|Всадники
+troops|trp_custom_t3_cav_lvl3|Всадник
+troops|trp_custom_t3_cav_lvl3_pl|Всадники
+troops|trp_custom_t4_cav_lvl1|Ветеран-всадник
+troops|trp_custom_t4_cav_lvl1_pl|Ветераны-всадники
+troops|trp_custom_t4_cav_lvl2|Ветеран-всадник
+troops|trp_custom_t4_cav_lvl2_pl|Ветераны-всадники
+troops|trp_custom_t4_cav_lvl3|Ветеран-всадник
+troops|trp_custom_t4_cav_lvl3_pl|Ветераны-всадники
+troops|trp_custom_t5_cav_lvl1|Чемпион-всадник
+troops|trp_custom_t5_cav_lvl1_pl|Чемпионы-всадники
+troops|trp_custom_t5_cav_lvl2|Чемпион-всадник
+troops|trp_custom_t5_cav_lvl2_pl|Чемпионы-всадники
+troops|trp_custom_t5_cav_lvl3|Чемпион-всадник
+troops|trp_custom_t5_cav_lvl3_pl|Чемпионы-всадники
+troops|trp_custom_army|Войско игрока
+troops|trp_custom_army_pl|Войско игрока

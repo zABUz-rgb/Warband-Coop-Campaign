@@ -522,7 +522,7 @@ def test_base():
 
 def test_no_marks():
     w, lines = two_players()
-    check(cb.parse_together({"mk": "-1500,200"}) == {}, "a player's mark is no word of the bridge's any more")
+    check(not cb.parse_together({"mk": "-1500,200"}), "a player's mark is no word of the bridge's any more")
     check(replies(w, "a", 1.0, 28, name="Ivan") in ([], [[28, 0]]), "and with no camp nothing stands on the map")
 
 
@@ -536,6 +536,7 @@ def test_bandits():
     start = {"op": 1, "bid": 0, "sid": -1, "slot": -1, "center": -1, "defend": False, "compn": None, "comp": None,
              "terrain": 0, "event": None, "kind": cb.KIND_BANDITS, "troops": [(77, 12)], "ally": 40,
              "ally_troops": [(9, 6)], "hero": [1] * cb.HERO_NUMBERS}
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 0.7)
     req(w, "a", now=1.0, mp=start)
     b = w.battle
     check(b is not None and b.enemy_stacks == [(77, 12)], "the bandits of a village are the enemy, no party needed")
@@ -544,6 +545,44 @@ def test_bandits():
     req(w, "a", now=1.1, together={"note": [cb.NOTE_BANDITS, 40, 1, 3]})
     told = [req(w, "b", now=1.2)[0] for _ in range(6)]
     check(any(n[:1] == [27] and n[1] == cb.TELL_BANDITS and n[3] == 40 for n in told), f"the others hear: {told}")
+
+
+def test_army():
+    w, lines = two_players()
+    check(cb.parse_together({"ag": "3,1,10,20,30"}) == {"army_gear": (3, 1, [10, 20, 30])}, "a soldier's gear is read")
+    check(cb.parse_together({"ag": "3,0"}) == {"army_gear": (3, 0, [])}, "a soldier may carry nothing")
+    check(cb.parse_together({"ag": "13,1,10"}) is None, "there is no such soldier")
+    check(cb.parse_together({"ag": "3,1," + ",".join(["5"] * 25)}) is None, "nor so much gear")
+    check(cb.parse_together({"an": "0,The Wolves"}) == {"army_name": (0, "The Wolves")}, "a name is read, spaces and all")
+    check(cb.parse_together({"an": "14,x"}) is None, "and only of what has a name")
+    req(w, "h", on_server=True, now=0.5, together={"army_name": (0, "The Wolves")})
+    heard = [req(w, "a", now=0.6) for _ in range(3)]
+    check(([34, 0], "The Wolves") in heard, f"the clients hear the army's name: {heard}")
+    req(w, "a", now=0.7, together={"army_gear": (2, 1, [10, 20])})
+    gear = ([35, 2, 1, 2, 10, 20], None)
+    check(gear in [req(w, "h", on_server=True, now=0.8) for _ in range(3)], "a client's purchase reaches the host's save")
+    check(gear in [req(w, "b", now=0.8) for _ in range(3)], "and the other client")
+    check(gear not in [req(w, "a", now=0.8) for _ in range(3)], "not the one who bought it")
+    req(w, "a", now=0.9, together={"army_name": (0, "Mine")})
+    check(w.army["names"][0] == "The Wolves", "only the host names the army")
+    first = [req(w, "c", now=1.0, hello=k == 0) for k in range(5)]
+    check(([34, 0], "The Wolves") in first and gear in first, f"a game that comes in hears all of it: {first}")
+    check(cb.reply_text([cb.MARKER, 34, 1], "123").endswith('"123"'), "a name of digits stays a name")
+    start = {"op": 1, "bid": 0, "sid": -1, "slot": -1, "center": -1, "defend": False, "compn": None, "comp": None,
+             "terrain": 0, "event": None, "kind": cb.KIND_BANDITS, "troops": [(77, 12)], "ally": 40,
+             "ally_troops": [(9, 6)], "hero": [1] * cb.HERO_NUMBERS}
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.1)
+    req(w, "a", now=1.2, mp=start)
+    bid = w.battle.bid
+    w.battle.until = 0.0  # nobody else is coming
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.3) == [10, bid, 2, 2, 10, 20], "the battle server gets the gear first")
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.4)[0] == 2, "then the stacks, no second word")
+    w.army_told = {2: [10]}
+    w.battle.state = "loading"
+    w.battle.sent = 0
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.5)[0] == 10, "what changed goes again")
+    w.army_told = {2: [10, 20]}
+    check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 20.0)[0] == 10, "a battle server started anew hears all")
 
 
 def test_treasury():
@@ -1700,6 +1739,7 @@ if __name__ == "__main__":
     test_follow()
     test_no_marks()
     test_bandits()
+    test_army()
     test_treasury()
     test_party_store()
     test_ping()

@@ -7,7 +7,7 @@ def _build_id():
   import os, zlib
   src = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   crc = 0
-  for part in ("coop", "dplmc_fix", "freelancer"):  # CoopWorld's own layers over Diplomacy
+  for part in ("coop", "dplmc_fix", "freelancer", "custom_troops"):  # CoopWorld's own layers over Diplomacy
     folder = os.path.join(src, part)
     for name in sorted(os.listdir(folder)):
       if name.endswith(".py"):

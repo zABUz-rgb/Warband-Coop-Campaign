@@ -145,7 +145,7 @@ def main():
 
     own_scripts = set()
     sys.path.insert(0, str(SRC))
-    for pkg in ("coop", "dplmc_fix", "freelancer"):
+    for pkg in ("coop", "dplmc_fix", "freelancer", "custom_troops"):
         for f in (SRC / pkg).glob("*.py"):
             text = f.read_text("utf-8", "replace")
             for s in scripts:

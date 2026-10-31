@@ -148,8 +148,6 @@ item as it happens):
 - ride after a friend: the party really goes by the march order (party_set_ai_behavior on the main
   party is the unverified step); no "the march order did not take" message; a click ends the ride;
   the follower stops close to the friend, rests there, rides on when the friend moves;
-- marks: seen on every map, none in the world report, a click on one opens "Mark of ...", no fights,
-  no mirror of it at a client; a ride to a mark survives another player's new mark;
 - treasury: a deposit, a withdrawal, both at once from two players; survives a bridge restart;
 - store: food and ammunition keep their amounts, modified items their modifier; a second player is
   refused; survives a bridge restart;
@@ -169,11 +167,30 @@ item as it happens):
 - sneaking into a town in Russian: the disguise menu shows items, money and "Попытаться проникнуть...",
   not three "Продолжить..."; the next screen names the chosen disguise;
 - a joint battle invites a player 30 map units away; none past 40;
-- troop tree: portraits and names fit their cells, lines meet the portraits, In development shows its
-  text, a click opens the card, Back and Esc return to the tree, Close leaves it;
+- troop tree: portraits and names fit their cells, lines meet the portraits, the army's branch shows its
+  text until there is an army, a click opens the card, Back and Esc return to the tree, Close leaves it;
 - sync: on a lord's service the client's map keeps up with the host; no crash when armies gather;
 - arena: bots fight each other (team 1 hostile to itself), the fight does not end while fighters are to come;
 - tournament: 2-4 teams in their colours from different sides (bots on teams 3 and 4 appear and fight),
   a round ends only with one team left; a new gear set each round;
 - camp: build, seen by both, reopens after a restart, treasury and store inside, John Blackborn's dialog
-  in Russian, take down; a mark set meanwhile does not break the open camp menu.
+  in Russian, take down.
+
+Open (1.0.1, third part, nothing of this was played either; a new campaign is needed: 40 new troops):
+- John Blackborn: "Talk" opens his talk at once, in the camp and in a town and a castle of the player's;
+  a client with no army hears "nothing I can do"; the talk ends back in the menu it started from;
+- army: raised with the usual names and with typed ones (Russian too); the tree's last button bears its name, a
+  soldier shows once, at the highest level the party has;
+- recruits: 5, 10 and 20 at 20 dinars, an option goes when dinars or room are short;
+- gear screen: opens from the talk (the menu's load starting a presentation is the unverified step), a click
+  buys and the list stays on the same soldier and sort; item windows open and close with the mouse; a soldier in
+  battle really wears what was bought (non-hero troops take it from their inventory); a higher tier follows until
+  it gets gear of its own; what came from below sells for nothing;
+- training: the men stay, the wounded stay wounded, the stack goes last; level names and prices in the menu;
+  recruits to riders for 100 a man;
+- co-op: a client sees the host's names and gear within seconds of joining; a client's purchase reaches the host and
+  stays in the host's save; bots on the battle server wear the bought gear (their names stay the usual ones);
+- removed: marks are gone from the menus; no chat line for lords raiding villages;
+- bandits in a village: the message when entering, the joint fight, the village free for all afterwards;
+- host: round messages of the tournament and arena, village news, as on a client;
+- store: opens at once from the camp; tournament: round 2 starts with its bots.

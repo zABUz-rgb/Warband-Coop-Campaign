@@ -172,7 +172,7 @@ def merge(menus):
   stop = find_by_id(coop_camp, "coop_role_stop")
   coop_camp[stop:stop] = camp_options()
   coop_camp.append(("coop_camp_back", [], "Back.", [(jump_to_menu, "mnu_camp")]))
-  # together without meeting: the ride after a friend, marks, the treasury and the store, duels; lairs,
+  # together without meeting: the ride after a friend, the treasury and the store, duels; lairs,
   # caravans and villages defended on the battle server
   from coop.mp_campaign import coop_mp_event_ready
   from coop import together

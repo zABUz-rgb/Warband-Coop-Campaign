@@ -285,3 +285,5 @@ menu_coop_store_wait = 283
 menu_coop_store = 284
 menu_coop_map_fight = 285
 menu_coop_duel_stake = 286
+menu_custom_screen = 287
+menu_custom_train = 288

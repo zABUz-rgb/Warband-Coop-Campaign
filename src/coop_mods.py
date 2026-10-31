@@ -6,7 +6,7 @@ Each mod package exposes <kind>.merge(list, **extra); they run in the order of M
 """
 import importlib
 
-MODS = ["dplmc_fix", "freelancer", "coop"]
+MODS = ["dplmc_fix", "freelancer", "coop", "custom_troops"]
 
 
 def merge(kind, records, **extra):
