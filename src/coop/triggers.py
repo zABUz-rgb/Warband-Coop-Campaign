@@ -280,7 +280,15 @@ def net_triggers(first_dynamic):
        (try_end),
        (val_max, reg19, -1),
        (val_add, reg19, 1), #+ 1: 0 when nobody besieges it
-       (str_store_string, s13, "@{s13}&cf={reg16},{reg17},{reg18},{reg19}"),
+       (assign, reg20, 0),
+       (try_begin),
+         (is_between, "$coop_center_cursor", villages_begin, villages_end),
+         (party_get_slot, reg20, "$coop_center_cursor", slot_village_infested_by_bandits),
+         (eq, reg20, "trp_peasant_woman"), #Diplomacy's own trouble of a village: no bandits
+         (assign, reg20, 0),
+       (try_end),
+       (call_script, "script_coop_center_news", "$coop_center_cursor", reg19, reg20, reg17),
+       (str_store_string, s13, "@{s13}&cf={reg16},{reg17},{reg18},{reg19},{reg20}"),
        (try_begin),
          (ge, ":lb_party", 0),
          (assign, reg16, ":lb_party"),

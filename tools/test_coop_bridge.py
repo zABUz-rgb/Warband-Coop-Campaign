@@ -512,10 +512,6 @@ def test_base():
     check(w.shared["base"] == [-1500, 200], "it is kept with the treasury")
     req(w, "b", now=2.0, together={"base": (1, 2)})
     check(w.shared["base"] == [-1500, 200], "the first camp stands")
-    req(w, "a", now=2.1, together={"mark": (5, 6)})
-    nums = replies(w, "b", 2.2, 28)[0]
-    check(nums[1] == 2 and camp == nums[-4:], f"the marks do not take it away: {nums}")
-    req(w, "a", now=3.0, together={"mark": ()})
     req(w, "b", now=3.1, together={"base": ()})
     check(not w.shared["base"] and replies(w, "a", 3.2, 28)[0] == [28, 0], "any player takes it down")
     w2 = cb.World()
@@ -524,23 +520,30 @@ def test_base():
     check(first == [28, 1, cb.BASE_SLOT, 7 + OFF, 8 + OFF, 0], f"a game coming in hears of the camp: {first}")
 
 
-def test_marks():
+def test_no_marks():
     w, lines = two_players()
-    check(cb.parse_together({"mk": "-1500,200"}) == {"mark": (-1500, 200)}, "a mark is read, west of 0 too")
-    check(cb.parse_together({"mk": "-"}) == {"mark": ()}, "and taken away")
-    mine, theirs = replies(w, "a", 1.0, 28, together={"mark": (-1500, 200)})[0], replies(w, "b", 1.0, 28)[0]
-    check(mine == [28, 1, 0, -1500 + OFF, 200 + OFF, 1], f"my own mark: {mine}")
-    check(theirs == [28, 1, 0, -1500 + OFF, 200 + OFF, 0], f"and everybody else's: {theirs}")
-    late = cb.World()
-    late.marks = {3: (5, 6)}
-    first = [req(late, "c", now=float(k), hello=k == 0)[0] for k in range(10)]
-    check([28, 1, 3, 5 + OFF, 6 + OFF, 0] in first, f"a player who joins later sees it: {first}")
-    req(w, "a", now=2.0, together={"mark": ()})
-    check(replies(w, "b", 2.0, 28)[0] == [28, 0] and "together 0:ivan: mark_off" in lines, "gone for everybody")
-    req(w, "b", now=3.0, together={"mark": (1, 2)})
-    replies(w, "a", 3.0, 28)
-    req(w, "b", now=3.0, bye=True)
-    check(replies(w, "a", 3.0, 28)[0] == [28, 0], "the mark of a player who left goes")
+    check(cb.parse_together({"mk": "-1500,200"}) == {}, "a player's mark is no word of the bridge's any more")
+    check(replies(w, "a", 1.0, 28, name="Ivan") in ([], [[28, 0]]), "and with no camp nothing stands on the map")
+
+
+def test_bandits():
+    w, lines = two_players()
+    check(cb.parse_center("40,5,300,0,77") == (40, 5, 300, 0, 77), "a center says who holds it")
+    check(cb.parse_center("40,5,300") == (40, 5, 300, 0, 0), "and the short form still reads")
+    w.server_report([], None, 0.5, center=cb.parse_center("40,5,300,0,77"))
+    seen = [req(w, "a", now=0.6)[0] for _ in range(6)]
+    check([12, 1, 40, 5, 300, 0, 77] in seen, f"a client hears of the bandits: {seen}")
+    start = {"op": 1, "bid": 0, "sid": -1, "slot": -1, "center": -1, "defend": False, "compn": None, "comp": None,
+             "terrain": 0, "event": None, "kind": cb.KIND_BANDITS, "troops": [(77, 12)], "ally": 40,
+             "ally_troops": [(9, 6)], "hero": [1] * cb.HERO_NUMBERS}
+    req(w, "a", now=1.0, mp=start)
+    b = w.battle
+    check(b is not None and b.enemy_stacks == [(77, 12)], "the bandits of a village are the enemy, no party needed")
+    check(b.npc_stacks == [(b.player_team, 40, 9, 6)], "and its men stand with the players")
+    check(b.enemy_sid is None, "no world party is hurt")
+    req(w, "a", now=1.1, together={"note": [cb.NOTE_BANDITS, 40, 1, 3]})
+    told = [req(w, "b", now=1.2)[0] for _ in range(6)]
+    check(any(n[:1] == [27] and n[1] == cb.TELL_BANDITS and n[3] == 40 for n in told), f"the others hear: {told}")
 
 
 def test_treasury():
@@ -1367,13 +1370,13 @@ def test_centers_reach_players():
     w.server_report([], None, 0.0, center=cb.parse_center("40,5,300,0"))
     w.server_report([], None, 0.1, center=cb.parse_center("41,6,301,0"))
     seen = [req(w, "a", now=0.2)[0] for _ in range(6)]
-    check([12, 2, 40, 5, 300, 0, 41, 6, 301, 0] in seen, f"players learn whom centers belong to: {seen}")
+    check([12, 2, 40, 5, 300, 0, 0, 41, 6, 301, 0, 0] in seen, f"players learn whom centers belong to: {seen}")
     w.server_report([], None, 1.0, center=cb.parse_center("40,7,302,0"))
     seen = [req(w, "a", now=1.1)[0] for _ in range(6)]
-    check([12, 1, 40, 7, 302, 0] in seen, "and when one changes hands")
+    check([12, 1, 40, 7, 302, 0, 0] in seen, "and when one changes hands")
     w.server_report([], None, 2.0, center=cb.parse_center("40,7,302,651"))
     seen = [req(w, "a", now=2.1)[0] for _ in range(6)]
-    check([12, 1, 40, 7, 302, 651] in seen, "and when one is besieged (by party 650)")
+    check([12, 1, 40, 7, 302, 651, 0] in seen, "and when one is besieged (by party 650)")
     check(not any(r[0] == 12 for r in (req(w, "h", now=1.2, on_server=True)[0] for _ in range(6))),
           "the host is not told: its game is the world")
 
@@ -1695,7 +1698,8 @@ if __name__ == "__main__":
     test_invite_distance()
     test_game_notes()
     test_follow()
-    test_marks()
+    test_no_marks()
+    test_bandits()
     test_treasury()
     test_party_store()
     test_ping()

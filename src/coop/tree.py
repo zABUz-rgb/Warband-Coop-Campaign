@@ -458,7 +458,6 @@ tree_presentations = [
           (is_between, ":object", 0, MAP_SLOTS),
           (troop_get_slot, ":what", MAP, ":object"),
           (neq, ":what", 0),
-          (presentation_set_duration, 0),
           (try_begin),
             (gt, ":what", 0),
             (assign, "$coop_tree_troop", ":what"),
@@ -489,7 +488,6 @@ tree_presentations = [
         (try_begin),
           (gt, ":now", 200),
           (key_clicked, key_escape),
-          (presentation_set_duration, 0),
           (start_presentation, "prsnt_coop_troop_tree"),
         (try_end),
       ]),
@@ -497,7 +495,6 @@ tree_presentations = [
       [
         (store_trigger_param_1, ":object"),
         (eq, ":object", "$coop_tree_close"),
-        (presentation_set_duration, 0),
         (start_presentation, "prsnt_coop_troop_tree"),
       ]),
    ]),

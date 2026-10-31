@@ -191,5 +191,12 @@ def merge(menus):
   pre_join = menu_options(menus, "pre_join")
   pre_join.insert(find_by_id(pre_join, "pre_join_leave"), together.pre_join_option(coop_mp_event_ready))
   menu_options(menus, "village").insert(0, together.village_option(coop_mp_event_ready))
+  village_options = menu_options(menus, "village")
+  village_options.insert(find_by_id(village_options, "village_attack_bandits"),
+                         together.bandits_option(coop_mp_event_ready))
+  # a client's fight of its own: the host's world and the others hear of it
+  menu_block(menus, "village_infestation_removed")[0:0] = [
+    (call_script, "script_coop_note", coop_note_bandits, "$g_encountered_party", 1, 0),
+  ]
   # the camp stops the map's requests: a call to battle must still get through
   menu_block(menus, "camp")[0:0] = [(call_script, "script_coop_ping_kick")]

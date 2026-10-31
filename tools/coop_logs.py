@@ -12,7 +12,7 @@ results. The report goes through the last session (--all: every session in bridg
   - every joint battle: who started it, who was invited and answered, the sides, the outcome from
     the battle server, and when each player got the result and the spoils, in which state;
   - what the players did together, item by item: prisoners, troops' experience, arena, tournament,
-    training, the troop tree, the ride after a friend, marks, the treasury, the store, the call to
+    training, the troop tree, the ride after a friend, the camp, the treasury, the store, the call to
     battle, lairs, caravans, villages, duels;
   - silences: a player's game that stopped asking (a menu, a screen, a hang), with the state it was
     last seen in and the replies it got last, and whether it came back. A game in a menu goes on
@@ -61,9 +61,9 @@ def together_text(what, f):
     if what == "troops_xp":
         return f"опыт отряду за бой: {n('xp')} ({won()})"
     if what == "arena":
-        return f"арена: побеждено {n('kills')}, награда {n('prize')} денаров" + (", устоял до конца" if n("won") else "")
+        return f"арена: побеждено {n('kills')}, награда {n('prize')} динаров" + (", устоял до конца" if n("won") else "")
     if what == "tournament":
-        return (f"турнир выигран: раундов {n('rounds')}, получено {n('gold')} денаров" if n("gold")
+        return (f"турнир выигран: раундов {n('rounds')}, получено {n('gold')} динаров" if n("gold")
                 else f"турнир проигран: раундов выиграно {n('rounds')}, ставка потеряна {n('stake_lost')}")
     if what == "training":
         return f"тренировка: побеждено {n('ratio')}% противников, отряд получил {n('earned')} опыта"
@@ -76,10 +76,6 @@ def together_text(what, f):
         return f"поход: приказ двигаться не сработал, отряд перенесён к цели (было {n('distance')} км)"
     if what == "follow_end":
         return "поход окончен: " + FOLLOW_END.get(n("why"), "?")
-    if what == "mark":
-        return f"поставил метку ({n('x') // 100}, {n('y') // 100})"
-    if what == "mark_off":
-        return "убрал метку"
     if what == "base":
         return f"поставил лагерь отряда ({n('x') // 100}, {n('y') // 100})"
     if what == "base_off":

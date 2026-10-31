@@ -129,6 +129,7 @@ mp_scripts = [
          (try_end),
          (get_max_players, ":num_players"),
          (try_for_range, ":player_no", 0, ":num_players"),
+           (player_is_active, ":player_no"),
            (player_set_slot, ":player_no", slot_player_coop_hero, 0),
            (player_set_slot, ":player_no", slot_player_coop_health, 0),
            (player_set_slot, ":player_no", slot_player_coop_fallen, 0),
@@ -315,28 +316,6 @@ mp_scripts = [
          (assign, "$g_round_finish_time", -100000), #the next round starts at once
          (assign, "$coop_mp_phase", 1),
        (try_end),
-       (try_begin),
-         (eq, "$coop_mp_mode", 1),
-         (str_store_string, s0, "@CoopWorld: a siege of the campaign begins! Team 1 holds the walls, team 2 storms them."),
-       (else_try),
-         (eq, "$coop_mp_mode", coop_mp_mode_arena),
-         (str_store_string, s0, "@CoopWorld: the arena fight begins! All players stand together, every fighter is against all."),
-       (else_try),
-         (eq, "$coop_mp_mode", coop_mp_mode_tournament),
-         (store_mod, reg20, ":hint", 10), #round + 10 * teams
-         (assign, reg21, coop_mp_tournament_rounds),
-         (store_div, reg22, ":hint", 10),
-         (str_store_string, s0, "@CoopWorld: the tournament, round {reg20} of {reg21}, {reg22} teams! All players stand together."),
-       (else_try),
-         (eq, "$coop_mp_mode", coop_mp_mode_training),
-         (str_store_string, s0, "@CoopWorld: the training begins! All players stand together."),
-       (else_try),
-         (eq, "$coop_mp_mode", coop_mp_mode_duel),
-         (str_store_string, s0, "@CoopWorld: the duel begins! One against the other, in your own gear."),
-       (else_try),
-         (str_store_string, s0, "@CoopWorld: a battle of the campaign begins!"),
-       (try_end),
-       (call_script, "script_coop_mp_tell_all"),
      (else_try),
        # a late hero's side: kept with the others, the player is put there before it spawns
        (eq, ":kind", 9),
@@ -684,6 +663,48 @@ mp_scripts = [
      (try_end),
     ]),
 
+  # script_coop_mp_go: the sides stand and the round is up (a new map, or the next round on this one): the
+  # bots may come. A joint event's rules and the word of what begins go out only now: what is said while
+  # a map loads or a round restarts reaches nobody, the player of this very game included
+  ("coop_mp_go",
+   [
+     (assign, "$g_multiplayer_num_bots_required_team_1", 0), #only the campaign's armies
+     (assign, "$g_multiplayer_num_bots_required_team_2", 0),
+     (assign, "$coop_mp_spawn_i", 0),
+     (assign, "$g_multiplayer_ready_for_spawning_agent", 1), #a bot of the last fight that never came
+     (assign, "$coop_mp_spawn_wait", 0),
+     (assign, "$coop_mp_phase", 2),
+     (assign, ":event", 0),
+     (try_begin),
+       (this_or_next|eq, "$coop_mp_mode", coop_mp_mode_arena),
+       (eq, "$coop_mp_mode", coop_mp_mode_tournament),
+       (assign, ":event", "$coop_mp_mode"),
+     (try_end),
+     (call_script, "script_coop_mp_team_event_tell", ":event"),
+     (try_begin),
+       (eq, "$coop_mp_mode", 1),
+       (str_store_string, s0, "@CoopWorld: a siege of the campaign begins! Team 1 holds the walls, team 2 storms them."),
+     (else_try),
+       (eq, "$coop_mp_mode", coop_mp_mode_arena),
+       (str_store_string, s0, "@CoopWorld: the arena fight begins! All players stand together, every fighter is against all."),
+     (else_try),
+       (eq, "$coop_mp_mode", coop_mp_mode_tournament),
+       (store_mod, reg20, "$coop_mp_hint", 10), #round + 10 * teams
+       (assign, reg21, coop_mp_tournament_rounds),
+       (store_div, reg22, "$coop_mp_hint", 10),
+       (str_store_string, s0, "@CoopWorld: the tournament, round {reg20} of {reg21}, {reg22} teams! All players stand together."),
+     (else_try),
+       (eq, "$coop_mp_mode", coop_mp_mode_training),
+       (str_store_string, s0, "@CoopWorld: the training begins! All players stand together."),
+     (else_try),
+       (eq, "$coop_mp_mode", coop_mp_mode_duel),
+       (str_store_string, s0, "@CoopWorld: the duel begins! One against the other, in your own gear."),
+     (else_try),
+       (str_store_string, s0, "@CoopWorld: a battle of the campaign begins!"),
+     (try_end),
+     (call_script, "script_coop_mp_tell_all"),
+    ]),
+
   # script_coop_mp_tell_all: s0 to every player and the host
   ("coop_mp_tell_all",
    [
@@ -1017,10 +1038,7 @@ mp_battle_triggers = [
    [
      (call_script, "script_coop_mp_assign_teams"),
      (assign, "$g_multiplayer_round_max_seconds", coop_mp_round_seconds),
-     (assign, "$g_multiplayer_num_bots_required_team_1", 0),
-     (assign, "$g_multiplayer_num_bots_required_team_2", 0),
-     (assign, "$coop_mp_spawn_i", 0),
-     (assign, "$coop_mp_phase", 2),
+     (call_script, "script_coop_mp_go"),
     ]),
 
   # a siege ends when one side has nobody standing, bots and heroes (Siege brings players back, but a
@@ -1095,17 +1113,7 @@ mp_battle_triggers = [
   # phase 1 -> 2: the new round has started
   (0.5, 0, 0, [(multiplayer_is_server), (eq, "$coop_mp_phase", 1), (eq, "$g_round_ended", 0)],
    [
-     (assign, "$g_multiplayer_num_bots_required_team_1", 0), #only the campaign's armies
-     (assign, "$g_multiplayer_num_bots_required_team_2", 0),
-     (assign, "$coop_mp_spawn_i", 0),
-     (assign, "$coop_mp_phase", 2),
-     (assign, ":event", 0),
-     (try_begin),
-       (this_or_next|eq, "$coop_mp_mode", coop_mp_mode_arena),
-       (eq, "$coop_mp_mode", coop_mp_mode_tournament),
-       (assign, ":event", "$coop_mp_mode"),
-     (try_end),
-     (call_script, "script_coop_mp_team_event_tell", ":event"),
+     (call_script, "script_coop_mp_go"),
     ]),
 
   # an arena or a tournament ends here: Native counts teams 0 and 1 only, it would end one with a third
@@ -1253,6 +1261,24 @@ mp_battle_triggers = [
      (try_end),
     ]),
 
+  # a joint event's rules again, for a player who was still loading the map when they went out
+  (5, 0, 0, [(multiplayer_is_server), (is_between, "$coop_mp_phase", 2, 4), (gt, "$coop_mp_team_event", 0)],
+   [
+     (call_script, "script_coop_mp_team_event_tell", "$coop_mp_team_event"),
+    ]),
+
+  # a bot asked for never came and the game does not say so: the ones after it, and the next round's,
+  # would wait for it for good
+  (1, 0, 0,
+   [(multiplayer_is_server), (eq, "$coop_mp_phase", 2), (eq, "$g_multiplayer_ready_for_spawning_agent", 0)],
+   [
+     (val_add, "$coop_mp_spawn_wait", 1),
+     (ge, "$coop_mp_spawn_wait", coop_mp_spawn_wait_s),
+     (assign, "$coop_mp_spawn_wait", 0),
+     (assign, "$g_multiplayer_ready_for_spawning_agent", 1),
+     (display_message, "@CoopWorld: a fighter did not come, the next one goes on.", 0xFFDD66),
+    ]),
+
   # phase 2: one bot a frame, as Native spawns bots
   (0, 0, 0,
    [
@@ -1340,7 +1366,9 @@ mp_battle_triggers = [
        (assign, "$coop_mp_spawning_stack", ":i"),
        (store_current_scene, ":cur_scene"),
        (modify_visitors_at_site, ":cur_scene"),
-       (add_visitors_to_current_scene, ":entry", ":troop", 1, ":team", ":group"),
+       (store_mod, ":visitor_team", ":team", 2), #no bot ever comes for a team above 1: ti_on_agent_spawn sets it
+       (val_min, ":visitor_team", ":team"),
+       (add_visitors_to_current_scene, ":entry", ":troop", 1, ":visitor_team", ":group"),
        (assign, "$g_multiplayer_ready_for_spawning_agent", 0),
      (try_end),
     ]),
@@ -1407,6 +1435,7 @@ mp_battle_triggers = [
      (store_trigger_param_1, ":agent_no"),
      (agent_is_human, ":agent_no"),
      (agent_is_non_player, ":agent_no"),
+     (assign, "$coop_mp_spawn_wait", 0),
      (store_add, ":tag", "$coop_mp_spawning_stack", 1),
      (agent_set_slot, ":agent_no", slot_agent_coop_stack, ":tag"),
      (assign, ":i", "$coop_mp_spawning_stack"),

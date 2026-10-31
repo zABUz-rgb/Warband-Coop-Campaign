@@ -229,6 +229,11 @@ def match_by_text(texts, native, diplomacy, ours, ours_en):
     return out
 
 
+def dinars(text):
+    """The money of this game is "динары" in every text, the bought translations' included."""
+    return text.replace("денар", "динар").replace("Денар", "Динар").replace("ДЕНАР", "ДИНАР")
+
+
 def main():
     ours = {}
     over = {}
@@ -267,7 +272,7 @@ def main():
     for name in names:
         f = name[:-4]
         if f in BY_TEXT:
-            lines = "".join(f"\r\n{k}|{v}" for k, v in matched[f].items())
+            lines = "".join(f"\r\n{k}|{dinars(v)}" for k, v in matched[f].items())
             (target / name).write_text("\ufeff" + lines.lstrip("\r\n") + "\r\n", "utf-8", newline="")
             (ADDITIONS / name).write_text(lines.lstrip("\r\n") + "\r\n", "utf-8", newline="")
             continue
@@ -280,7 +285,9 @@ def main():
         add += [(k, v) for (ff, k), v in sorted(ours.items())
                 if ff == f and k in texts.get(f, {}) and k not in known]
         replaced = {k: v for (ff, k), v in over.items() if ff == f and k in texts.get(f, {})}
-        add = [(k, v) for k, v in add if k not in replaced] + sorted(replaced.items())
+        replaced.update({k: v for k, v in base_ids.items() if k not in replaced and dinars(v) != v})
+        replaced = {k: dinars(v) for k, v in replaced.items()}
+        add = [(k, dinars(v)) for k, v in add if k not in replaced] + sorted(replaced.items())
         base = path.read_text("utf-8-sig").rstrip("\r\n") if path.exists() else ""
         base = "\n".join(line for line in base.split("\n") if line.split("|", 1)[0] not in replaced)
         lines = "".join(f"\r\n{k}|{v}" for k, v in add)

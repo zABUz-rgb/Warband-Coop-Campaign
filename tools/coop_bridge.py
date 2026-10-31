@@ -30,7 +30,7 @@ virtual network (Radmin's 26.x) was turned away: "invalid authorization number".
 the player there by it, so each player's soldiers obey that player; without it, by the hero's name
 (which friends who loaded the host's save share with the host).
 
-World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...][&cf=center,faction,lord,besieger+1]
+World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...][&cf=center,faction,lord,besieger+1,bandits]
                   or  /srv?seq=S&hold=1
     d: spawned parties: position, where the party is heading (tx,ty), and the party it is inside
        (a town) + 1, or 0 on the open map; c: troops of one party (or a town's or castle's garrison)
@@ -47,7 +47,7 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
                     [&pf=seq,offset,total,v1,v2,...][&pfq=1][&join=slot][&joinans=slot,yes][&leave=1][&release=1]
                     [&give=slot,t1,n1,...][&giveans=id,yes]
-                    [&lg=code,a,b,c][&fl=slot+1][&mk=x,y|-][&tg=token,amount][&st=1][&sti=token,offset,total,pairs...]
+                    [&lg=code,a,b,c][&fl=slot+1][&bs=x,y|-][&tg=token,amount][&st=1][&sti=token,offset,total,pairs...]
                     [&me=t1,n1,...][&name=player name]
     fac: the kingdom the player serves (0: none); lord: the world party of the lord the player serves
     as a soldier (Freelancer), -1 or absent: none; pf: part of the player's hero (the profile, see
@@ -56,8 +56,8 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     party; joinans: the answer to the player in slot asking; leave: leave the leader's party;
     release: let all followers go; give: offer troops to the player in slot; giveans: the answer
     to offer id (see coop/players.py);
-    lg: a note for the log (GAME_NOTES below); fl: ride after the player in slot (0: stop); mk: this
-    player's mark on everybody's map (-: take it away); bs: the company's camp, the same way; tg: put amount denars into the shared treasury,
+    lg: a note for the log (GAME_NOTES below); fl: ride after the player in slot (0: stop); bs: the
+    company's camp on everybody's map (-: take it down); tg: put amount denars into the shared treasury,
     or take them (negative), repeated until kind 29 answers that token; st: open the party store;
     sti: part of the party store coming back, pairs (item, modifier + 100 * amount), repeated until kind 31;
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
@@ -137,7 +137,7 @@ player's bet wins, a duel's stake]
                                                the pairs: the opponents); a duel's won: 1 won, 0 lost, 2 a draw,
                                                its value the stake
           7777|27|code|slot|a|b                news about the player in slot (TELL_... below)
-          7777|28|n|(slot,x,y,mine)*n          the players' marks on the map
+          7777|28|n|(slot,x,y,mine)*n          the company's camp on the map
           7777|29|token|delta|balance          the shared treasury: what the transfer token did to it (token 0: news)
           7777|30|offset|total|n|(item,value)*n  the party store (offset 0: from the start)
           7777|31|state|slot                   the party store: 0 in use by the player in slot, 1 saved
@@ -185,7 +185,7 @@ RECENT_KEPT = 12        # a player's last requests kept, to log when it goes qui
 RECENT_SHOWN = 6
 QUIET_NOTE_S = 5.0      # a player game silent this long: its last requests go to the log
 MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
-CENTERS_PER_REPLY = 30  # 2 + 4 * 30 numbers
+CENTERS_PER_REPLY = 25  # 2 + 5 * 25 numbers
 RENAME_EVERY = 40      # requests between asking a game to rename its hero
 PROFILE_PER_REPLY = 120 # 5 + 120 numbers
 STALE_S = 15.0          # a party not reported for this long is gone, unless a sweep of the world takes longer
@@ -247,8 +247,8 @@ TOURNAMENT_MEN = (2, 5)    # of this many men each (more if more players stand t
 TOURNAMENT_SIDES = (0, 1, 3, 4)  # those teams on the battle server: 0 the players', 2 is Native's spectators
 EVENT_WAIT_S = 60.0     # a joint event waits this long for its players on the battle server
 EVENT_DUEL = 4          # two heroes against each other: no bots, nobody hurt in earnest, a stake
-KIND_LAIR, KIND_CARAVAN, KIND_VILLAGE = 1, 2, 3  # what a joint battle is about (coop_kind_... in coop/constants.py)
-KIND_NAMES = {KIND_LAIR: "lair", KIND_CARAVAN: "caravan", KIND_VILLAGE: "village"}
+KIND_LAIR, KIND_CARAVAN, KIND_VILLAGE, KIND_BANDITS = 1, 2, 3, 4  # what a joint battle is about (coop_kind_... in coop/constants.py)
+KIND_NAMES = {KIND_LAIR: "lair", KIND_CARAVAN: "caravan", KIND_VILLAGE: "village", KIND_BANDITS: "bandits"}
 PLAIN_TERRAINS = (2, 3) # steppe and plain: a hideout there is fought on a map with cover
 LAIR_TERRAIN = 11       # the forest's: Forest Hideout
 MAP_BATTLE_DIST = 1500  # map units * 100: a map battle this close to a player is told to that player
@@ -258,10 +258,11 @@ STORE_LOCK_S = 600.0    # a player with the store open this long without giving 
 TREASURY_TOKENS = 200   # transfers remembered, so that a repeated request changes nothing
 PING_HOLD_S = 0.7       # a game off the map asks this often whether it is called to a battle
 ALIVE_S = 3.0           # a game that pinged this recently answers, though its map does not run
-TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_MARK, TELL_GOLD, TELL_STORE, TELL_LEFT, TELL_BASE = 1, 2, 3, 4, 5, 6, 7  # kind 27
-BASE_SLOT = MAX_PLAYERS  # the company's camp goes out with the marks, in the slot after the players' (coop_base_slot)
+TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_GOLD, TELL_STORE, TELL_LEFT, TELL_BASE, TELL_BANDITS = 1, 2, 4, 5, 6, 7, 8  # kind 27
+BASE_SLOT = MAX_PLAYERS  # the company's camp goes out in the slot after the players' (coop_base_slot)
 # what a game tells the log with &lg=code,a,b,c (coop_note_... in coop/constants.py): the name in the
 # log's "together" line, and what a, b and c are
+NOTE_BANDITS = 14
 GAME_NOTES = {
     1: ("prisoners", ("taken", "chance", "no_room")),
     2: ("troops_xp", ("xp", "won")),
@@ -276,6 +277,7 @@ GAME_NOTES = {
     11: ("caravan", ("won",)),
     12: ("duel", ("result", "stake", "gold")),
     13: ("follow_end", ("why",)),
+    14: ("bandits", ("village", "won", "relation")),
 }
 
 
@@ -331,7 +333,7 @@ class Player:
         self.companions = {}    # troop -> equipment and stats, of the companions fit for this battle
         self.companions_expected = 0
         self.faction = 0        # the kingdom the player serves, 0 none
-        self.centers_sent = {}  # center -> (faction, lord, besieger + 1) this player was told
+        self.centers_sent = {}  # center -> (faction, lord, besieger + 1, bandits) this player was told
         self.sent_at = {}       # sid -> this player's request that last carried its position
         self.profile_out = []   # the kept hero, in replies, after joining
         self.profile_in = None  # [seq, total, {offset: values}] the hero coming in
@@ -416,7 +418,7 @@ class World:
         self.battle_seq = 0
         self.mp_last = None     # real time the battle server last asked
         self.mp_players = {}    # player number on the battle server -> name
-        self.centers = {}       # center -> (faction, lord, besieger + 1), as the world server reports them
+        self.centers = {}       # center -> (faction, lord, besieger + 1, bandits), as the world server reports them
         self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
         self.saves = 0          # the host's saves sent to the players since the bridge started
         self.last_srv = None    # when the world server last reported
@@ -439,7 +441,6 @@ class World:
                       "new": 0, "gone": 0, "back": 0}  # parties learnt, gone stale, back after going stale
         self.gone_at = {}       # sid -> when it went stale: one reported again soon after was alive all along
         self.captors = {}       # sid of a world party -> the players it took prisoner in a joint battle
-        self.marks = {}         # slot -> (x, y): the players' marks on the map
         self.treasury_done = {} # transfer token -> what it did to the treasury
         self.store_lock = None  # (cid, since): who has the party store open
         self.shared_path = Path(shared_path) if shared_path else (
@@ -495,8 +496,6 @@ class World:
                 if q.follows == p.slot and q is not p:
                     q.follows = None
                     q.mp_out.append([27, TELL_LEFT, p.slot, 0, 0])
-            if self.marks.pop(p.slot, None) is not None:
-                self._marks_out(but=p)
 
     def _player_in_slot(self, slot, but=None):
         return next((q for q in self.players.values() if q.slot == slot and q is not but), None)
@@ -530,33 +529,16 @@ class World:
                 after.mp_out.append([27, TELL_FOLLOWED, p.slot, 0, 0])
 
     def _marks_reply(self, p):
-        marks = dict(self.marks)
-        if self.shared.get("base"):
-            marks[BASE_SLOT] = tuple(self.shared["base"])
-        nums = [28, len(marks)]
-        for slot, (x, y) in sorted(marks.items()):
-            nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, 1 if slot == p.slot else 0]
-        return nums
+        """The company's camp, the only thing on the map all games add by themselves; none takes away
+        what a save still holds."""
+        if not self.shared.get("base"):
+            return [28, 0]
+        x, y = self.shared["base"]
+        return [28, 1, BASE_SLOT, x + COORD_OFFSET, y + COORD_OFFSET, 0]
 
-    def _marks_out(self, but=None):
+    def _marks_out(self):
         for q in self.players.values():
-            if q is not but:
-                q.mp_out.append(self._marks_reply(q))
-
-    def _mark(self, p, where):
-        """p's mark on everybody's map, one for each player; where () takes it away."""
-        if p.slot is None:
-            return
-        if where:
-            self.marks[p.slot] = where
-            self._act(p, "mark", x=where[0], y=where[1])
-        else:
-            self.marks.pop(p.slot, None)
-            self._act(p, "mark_off")
-        self._marks_out()
-        for q in self.players.values():
-            if q is not p:
-                q.mp_out.append([27, TELL_MARK, p.slot, 1 if where else 0, 0])
+            q.mp_out.append(self._marks_reply(q))
 
     def _base(self, p, where):
         """The company's camp on everybody's map, one for all, kept with the treasury; where () takes it
@@ -746,10 +728,13 @@ class World:
             code, *values = together["note"]
             name, fields = GAME_NOTES.get(code, (f"note{code}", ("a", "b", "c")))
             self._act(p, name, **dict(zip(fields, values)))
+            if code == NOTE_BANDITS and values[1] == 1 and p.slot is not None:
+                # a village is free: the host's game holds the world, the others hear of it
+                for q in self.players.values():
+                    if q is not p:
+                        q.mp_out.append([27, TELL_BANDITS, p.slot, values[0], 0])
         if together.get("follow") is not None:
             self._follow(p, together["follow"])
-        if together.get("mark") is not None:
-            self._mark(p, together["mark"])
         if together.get("base") is not None:
             self._base(p, together["base"])
         if together.get("treasury") is not None:
@@ -982,7 +967,7 @@ class World:
                 self._together(p, together, now)
             if not p.together_told:
                 p.together_told = True
-                if self.marks or self.shared["gold"] or self.shared.get("base") or on_server:  # a host's save may hold old marks
+                if self.shared["gold"] or self.shared.get("base") or on_server:  # a host's save may hold an old camp
                     p.shared_out = [self._marks_reply(p), [29, 0, 0, self.shared["gold"]]]
             back = self.returns.pop(self._profile_key(cid) or "", None)
             if back:
@@ -1219,6 +1204,11 @@ class World:
                 b.sides[defender.cid] = 1
                 b.invited.add(defender.cid)
                 defender.mp_out.append([6, b.bid, 2, p.slot, -1])
+            elif b.kind == KIND_BANDITS and mp["troops"]:
+                # the bandits who took a village are no party of the world: its game names them, and
+                # the village's men, who stand with the players
+                b.enemy_stacks = mp["troops"]
+                b.npc_stacks = [(b.player_team, mp.get("ally", -1), t, n) for t, n in mp.get("ally_troops") or []]
             elif mp["sid"] >= 0:
                 b.enemy_sid = mp["sid"]
                 b.enemy_stacks = mp["troops"] or (self.troops.get(mp["sid"], (0, None))[1] or [])
@@ -1624,6 +1614,10 @@ class World:
             if b.kind in KIND_NAMES and b.starter in self.players:
                 self._act(self.players[b.starter], "battle_end", kind=KIND_NAMES[b.kind], battle=b.bid,
                           won=1 if winner == b.player_team else 0)
+        elif b.kind == KIND_BANDITS:
+            if b.starter in self.players:
+                self._act(self.players[b.starter], "battle_end", kind=KIND_NAMES[b.kind], battle=b.bid,
+                          won=1 if winner == b.player_team else 0)
         elif captives:
             # a battle between players: the winner's side takes the prisoners
             taker = next((cid for cid, team in sorted(b.sides.items(), key=lambda kv: kv[0] != b.starter)
@@ -1803,10 +1797,6 @@ def parse_together(q):
         out["note"] = v
     if "fl" in q:
         out["follow"] = query_int(q, "fl", 0)
-    if "mk" in q:
-        v = [] if q["mk"] == "-" else parse_ints(q["mk"])
-        if v is not None and len(v) in (0, 2):
-            out["mark"] = tuple(v)
     if "bs" in q:
         v = [] if q["bs"] == "-" else parse_ints(q["bs"])
         if v is not None and len(v) in (0, 2):
@@ -1829,11 +1819,12 @@ def parse_profile(text):
 
 
 def parse_center(text):
-    """'center,faction,lord[,besieger+1]' -> (center, faction, lord, besieger+1) or None"""
+    """'center,faction,lord[,besieger+1[,bandits]]' -> (center, faction, lord, besieger+1, bandits) or None"""
     v = parse_ints(text) if text else None
-    if v and len(v) == 3:
-        v.append(0)
-    return tuple(v) if v and len(v) == 4 else None
+    if v and 3 <= len(v) <= 5:
+        v += [0] * (5 - len(v))
+        return tuple(v)
+    return None
 
 
 def parse_battles(text):
@@ -1955,7 +1946,7 @@ def reply_text(numbers, string=None):
 
 
 TRACE_KEYS = ("mp=", "join=", "joinans=", "leave=", "release=", "give=", "giveans=", "hello=", "bye=",
-              "res=", "pfq=", "&lg=", "&fl=", "&mk=", "&tg=", "&st=", "&sti=", "&mpk=")
+              "res=", "pfq=", "&lg=", "&fl=", "&bs=", "&tg=", "&st=", "&sti=", "&mpk=")
 QUIET_KINDS = {0, 2, 3, 4, 5, 12, 33}  # replies that come round all the time (positions, troops, pause...)
 
 

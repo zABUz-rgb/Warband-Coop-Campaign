@@ -681,6 +681,19 @@ mp_campaign_scripts = [
        (assign, reg16, coop_village_militia),
        (str_store_string, s16, "@{s16}&mpa={reg14}&mpat=,{reg15},{reg16}"),
      (try_end),
+     # a village's bandits and its men, as its menu counted them
+     (try_begin),
+       (eq, reg6, 1),
+       (eq, "$coop_mp_kind", coop_kind_bandits),
+       (party_get_slot, reg14, "$coop_mp_village", slot_village_infested_by_bandits),
+       (assign, reg15, "$qst_eliminate_bandits_infesting_village_num_bandits"),
+       (val_max, reg15, 1),
+       (assign, reg16, "$coop_mp_village"),
+       (assign, reg17, "trp_farmer"),
+       (assign, reg18, "$qst_eliminate_bandits_infesting_village_num_villagers"),
+       (val_max, reg18, 1),
+       (str_store_string, s16, "@{s16}&mpt=,{reg14},{reg15}&mpa={reg16}&mpat=,{reg17},{reg18}"),
+     (try_end),
      # a joint event: which, its choice (a training's opponents for each player), the town, the first
      # arena fighter (the bridge knows no troop numbers), what the bet wins
      (try_begin),

@@ -438,12 +438,12 @@ def net_scripts(first_dynamic):
     ]),
 
   # script_coop_client_apply_centers: kind 12 reply, whom centers belong to now and who besieges them:
-  # n|(center, faction, lord, besieger + 1)*n
+  # n|(center, faction, lord, besieger + 1, bandits)*n
   ("coop_client_apply_centers",
    [
      (party_get_slot, ":n", "p_coop_buf", 2),
      (try_for_range, ":k", 0, ":n"),
-       (store_mul, ":at", ":k", 4),
+       (store_mul, ":at", ":k", 5),
        (val_add, ":at", 3),
        (party_get_slot, ":center", "p_coop_buf", ":at"),
        (val_add, ":at", 1),
@@ -452,28 +452,10 @@ def net_scripts(first_dynamic):
        (party_get_slot, ":lord", "p_coop_buf", ":at"),
        (val_add, ":at", 1),
        (party_get_slot, ":besieger", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":bandits", "p_coop_buf", ":at"),
        (is_between, ":center", centers_begin, centers_end),
-       (try_begin),
-         # a siege begins at a center on the player's side: say so, the player may help defend it
-         (gt, ":besieger", 0),
-         (party_slot_eq, ":center", slot_center_coop_besieger, 0),
-         (is_between, ":center", walled_centers_begin, walled_centers_end),
-         (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
-         (ge, ":relation", 0),
-         (str_store_party_name, s1, ":center"),
-         (display_message, "@CoopWorld: {s1} is under siege! Ride there to defend its walls together.", 0xFF6666),
-       (try_end),
-       (try_begin),
-         # raiders at a village on the player's side (for a village the server reports its raider)
-         (gt, ":besieger", 0),
-         (party_slot_eq, ":center", slot_center_coop_besieger, 0),
-         (neg|is_between, ":center", walled_centers_begin, walled_centers_end),
-         (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
-         (ge, ":relation", 0),
-         (str_store_party_name, s1, ":center"),
-         (display_message, "@CoopWorld: {s1} is being raided! Ride there to drive the raiders off together.", 0xFF6666),
-       (try_end),
-       (party_set_slot, ":center", slot_center_coop_besieger, ":besieger"),
+       (call_script, "script_coop_center_news", ":center", ":besieger", ":bandits", ":faction"),
        (store_faction_of_party, ":had", ":center"),
        (try_begin),
          (neq, ":had", ":faction"),

@@ -6,17 +6,18 @@ from module_constants import *
 from coop.constants import *
 from coop.players import player_name_to_s1, plays
 
-# What players do together without meeting on the map: riding after a friend, marks on everybody's
-# map, the shared treasury and party store (kept by the bridge, tools/coop_bridge.py), the call to a
+# What players do together without meeting on the map: riding after a friend, the company's camp on
+# everybody's map, the shared treasury and party store (kept by the bridge, tools/coop_bridge.py), the call to a
 # battle that reaches a player in a town's menu, and the notes each game sends the bridge's log.
-#   27 news about a player code|slot|a|b   28 the marks n|(slot, x, y, mine)*n
+#   27 news about a player code|slot|a|b   28 the camp n|(slot, x, y, mine)*n
 #   29 the treasury token|delta|balance    30 the store offset|total|n|(item, value)*n
 #   31 the store state|slot                32 a world party near this player fights sid|enemy|on
 # A store value is the item's modifier + 100 * its amount (food, ammunition).
 #
 # $coop_follow: the player ridden after, slot + 1. $coop_follow_party: the party ridden to (that
-# player's, or a mark); $coop_follow_mark: whose mark it is, slot + 1.
+# player's, or the camp); $coop_follow_mark: coop_base_tag on the way to the camp.
 # $coop_store_state: 0 idle, 1 asked, 2 arriving, 3 here, 4 open, 5 going back.
+# $coop_store_camp: the store was asked for from the camp's menu, which waits for it and comes back.
 # $coop_ping_on: a menu is open and the game asks the bridge for invitations (see script_coop_ping_next).
 # $coop_enc_center: the party of the encounter under way, for a call to a battle to come back to.
 
@@ -92,10 +93,10 @@ together_scripts = [
      (assign, "$coop_follow_mark", 0),
      (assign, "$coop_follow_set", 0),
      (assign, "$coop_follow_send", 0),
-     (assign, "$coop_mark_send", 0),
      (assign, "$coop_base_send", 0),
      (assign, "$coop_store_state", 0),
      (assign, "$coop_store_step", 0),
+     (assign, "$coop_store_camp", 0),
      (assign, "$coop_ping_on", 0),
      (assign, "$coop_enc_center", 0),
      (assign, "$coop_signal_bid", 0),
@@ -132,9 +133,6 @@ together_scripts = [
        (gt, ":base", 0),
        (party_is_active, ":base"),
        (start_encounter, ":base"), #the camp opens by itself
-     (else_try),
-       (eq, ":why", coop_follow_end_arrived),
-       (display_message, "@CoopWorld: you reached the mark.", 0x66FF66),
      (try_end),
     ]),
 
@@ -262,7 +260,7 @@ together_scripts = [
      (try_end),
     ]),
 
-  # script_coop_marks_apply: kind 28 reply. A mark is a party of this game alone, which nobody fights:
+  # script_coop_marks_apply: kind 28 reply. The camp is a party of this game alone, which nobody fights:
   # neutral, standing still, left out of what the host reports (coop/triggers.py)
   ("coop_marks_apply",
    [
@@ -277,8 +275,6 @@ together_scripts = [
        (party_get_slot, ":x", "p_coop_buf", ":at"),
        (val_add, ":at", 1),
        (party_get_slot, ":y", "p_coop_buf", ":at"),
-       (val_add, ":at", 1),
-       (party_get_slot, ":mine", "p_coop_buf", ":at"),
        (val_sub, ":x", coop_net_offset),
        (val_sub, ":y", coop_net_offset),
        (set_spawn_radius, 0),
@@ -294,24 +290,10 @@ together_scripts = [
        (position_set_x, pos2, ":x"),
        (position_set_y, pos2, ":y"),
        (party_set_position, ":mark", pos2),
-       (try_begin),
-         (eq, ":slot", coop_base_slot),
-         (party_set_icon, ":mark", "icon_camp"),
-         (str_store_string, s5, "@The company's camp"),
-       (else_try),
-         (party_set_icon, ":mark", "icon_flagbearer_a"),
-         (try_begin),
-           (eq, ":mine", 1),
-           (str_store_troop_name, s1, "trp_player"),
-         (else_try),
-           (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
-           (str_store_party_name, s1, ":puppet"),
-         (try_end),
-         (str_store_string, s5, "@Mark of {s1}"),
-       (try_end),
-       (party_set_name, ":mark", s5),
+       (party_set_icon, ":mark", "icon_camp"),
+       (party_set_name, ":mark", "@The company's camp"),
      (try_end),
-     (try_begin), #a mark ridden to was spawned anew, or went
+     (try_begin), #the camp ridden to was spawned anew, or went
        (gt, "$coop_follow_mark", 0),
        (call_script, "script_coop_mark_of", "$coop_follow_mark"),
        (assign, "$coop_follow_party", reg0),
@@ -328,6 +310,55 @@ together_scripts = [
      (try_for_parties, ":party_no"),
        (party_slot_eq, ":party_no", slot_party_coop_mark, ":tag"),
        (assign, reg0, ":party_no"),
+     (try_end),
+    ]),
+
+  # script_coop_blackborn_talk: a word with him from a menu, in Native's meeting scene as with a siege's
+  # commander. start_map_conversation would wait for the menu to close and open event_triggered, not start.
+  ("coop_blackborn_talk",
+   [
+     (call_script, "script_coop_blackborn_ready"),
+     (call_script, "script_get_meeting_scene"),
+     (assign, ":scene", reg0),
+     (modify_visitors_at_site, ":scene"),
+     (reset_visitors),
+     (set_visitor, 0, "trp_player"),
+     (set_visitor, 17, coop_blackborn),
+     (set_jump_mission, "mt_conversation_encounter"),
+     (jump_to_scene, ":scene"),
+     (change_screen_map_conversation, coop_blackborn),
+    ]),
+
+  # script_coop_center_news: arg1 = a center, arg2 = its besieger + 1 now, arg3 = the bandits holding it
+  # (troop, 0 none), arg4 = its faction: what a player hears of it, in the host's game as in a client's
+  ("coop_center_news",
+   [
+     (store_script_param, ":center", 1),
+     (store_script_param, ":besieger", 2),
+     (store_script_param, ":bandits", 3),
+     (store_script_param, ":faction", 4),
+     (try_begin),
+       (gt, ":besieger", 0),
+       (party_slot_eq, ":center", slot_center_coop_besieger, 0),
+       (is_between, ":center", walled_centers_begin, walled_centers_end),
+       (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
+       (ge, ":relation", 0),
+       (str_store_party_name, s1, ":center"),
+       (display_message, "@CoopWorld: {s1} is under siege! Ride there to defend its walls together.", 0xFF6666),
+     (try_end),
+     (party_set_slot, ":center", slot_center_coop_besieger, ":besieger"),
+     (try_begin),
+       (is_between, ":center", villages_begin, villages_end),
+       (try_begin),
+         (gt, ":bandits", 0),
+         (party_slot_eq, ":center", slot_center_coop_bandits, 0),
+         (str_store_party_name, s1, ":center"),
+         (display_message, "@CoopWorld: bandits have taken {s1}! Ride there to drive them out together.", 0xFF6666),
+       (try_end),
+       (party_set_slot, ":center", slot_center_coop_bandits, ":bandits"),
+       (eq, "$coop_role", coop_role_client),
+       (neg|party_slot_eq, ":center", slot_village_infested_by_bandits, "trp_peasant_woman"),
+       (party_set_slot, ":center", slot_village_infested_by_bandits, ":bandits"),
      (try_end),
     ]),
 
@@ -386,6 +417,9 @@ together_scripts = [
        (ge, ":end", ":total"),
        (assign, "$coop_store_n", ":total"),
        (assign, "$coop_store_state", 3),
+       (eq, "$coop_store_camp", 1),
+       (assign, "$coop_store_step", 1),
+       (jump_to_menu, "mnu_coop_store"),
      (try_end),
     ]),
 
@@ -436,6 +470,40 @@ together_scripts = [
      (assign, "$coop_store_wait", 0),
      ] + request_token("$coop_store_token") + [
      (assign, "$coop_store_state", 5),
+    ]),
+
+  # script_coop_store_send: the store's next word from a menu, where no request of the map's runs:
+  # the chain of script_coop_ping_next carries it. A bridge that does not answer ends the wait.
+  ("coop_store_send",
+   [
+     (str_clear, s17),
+     (try_begin),
+       (is_between, "$coop_store_state", 1, 3),
+       (val_add, "$coop_store_asks", 1),
+       (gt, "$coop_store_asks", coop_store_asks_max),
+       (assign, "$coop_store_state", 0),
+       (assign, "$coop_store_camp", 0),
+       (display_message, "@CoopWorld: the party store does not answer.", 0xFF6666),
+       (jump_to_menu, "mnu_coop_shared"),
+     (else_try),
+       (eq, "$coop_store_state", 1),
+       (val_sub, "$coop_store_wait", 1),
+       (le, "$coop_store_wait", 0),
+       (assign, "$coop_store_wait", coop_resend_requests),
+       (str_store_string, s17, "@&st=1"),
+     (try_end),
+     (call_script, "script_coop_store_part_to_s17"),
+     (val_add, "$coop_net_seq", 1),
+     (assign, reg1, "$coop_net_seq"),
+     (set_fixed_point_multiplier, 100),
+     (party_get_position, pos1, "p_main_party"),
+     (position_get_x, reg2, pos1),
+     (position_get_y, reg3, pos1),
+     (store_current_hours, reg5),
+     (assign, reg8, "$coop_srv_player"),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free=0&x={reg2}&y={reg3}&busy=1&srvp={reg8}{s17}"),
+     (assign, "$coop_net_pending", 1),
+     (send_message_to_url, s10, 0),
     ]),
 
   # script_coop_store_part_to_s17: the next part of the party store onto s17; when all went, again
@@ -523,13 +591,12 @@ together_scripts = [
          (display_message, "@CoopWorld: {s1} rides after you.", 0x66CCFF),
        ] + tell(coop_tell_unfollowed, "@CoopWorld: {s1} rides on alone.", 0xFFDD66) + [
        (else_try),
-         (eq, ":code", coop_tell_mark),
-         (try_begin),
-           (eq, reg1, 1),
-           (display_message, "@CoopWorld: {s1} set a mark on the map (Camp - CoopWorld - marks).", 0x66CCFF),
-         (else_try),
-           (display_message, "@CoopWorld: {s1} took the mark away.", 0xFFDD66),
-         (try_end),
+         (eq, ":code", coop_tell_bandits),
+         (is_between, reg1, villages_begin, villages_end),
+         (party_set_slot, reg1, slot_village_infested_by_bandits, 0),
+         (party_set_slot, reg1, slot_center_coop_bandits, 0),
+         (str_store_party_name, s2, reg1),
+         (display_message, "@CoopWorld: {s1} drove the bandits out of {s2}.", 0x66FF66),
        (else_try),
          (eq, ":code", coop_tell_base),
          (try_begin),
@@ -597,6 +664,9 @@ together_scripts = [
          (store_add, ":tag", ":slot", 1),
          ] + player_name_to_s1(":tag") + [
          (display_message, "@CoopWorld: {s1} has the party store open: wait for it to close.", 0xFFDD66),
+         (eq, "$coop_store_camp", 1),
+         (assign, "$coop_store_camp", 0),
+         (jump_to_menu, "mnu_coop_shared"),
        (try_end),
      (else_try),
        (eq, ":kind", 32), #a world party near this player fights
@@ -636,6 +706,19 @@ together_scripts = [
      (else_try),
        (eq, "$coop_mp_kind", coop_kind_caravan),
        (call_script, "script_coop_note", coop_note_caravan, ":won", 0, 0),
+     (else_try),
+       (eq, "$coop_mp_kind", coop_kind_bandits),
+       (assign, ":relation", 0),
+       (try_begin),
+         (eq, ":won", 1),
+         (assign, ":relation", coop_village_relation),
+         (party_set_slot, "$coop_mp_village", slot_village_infested_by_bandits, 0),
+         (party_set_slot, "$coop_mp_village", slot_center_coop_bandits, 0),
+         (call_script, "script_change_player_relation_with_center", "$coop_mp_village", ":relation"),
+         (str_store_party_name, s1, "$coop_mp_village"),
+         (display_message, "@CoopWorld: the bandits are driven out of {s1}.", 0x66FF66),
+       (try_end),
+       (call_script, "script_coop_note", coop_note_bandits, "$coop_mp_village", ":won", ":relation"),
      (else_try),
        (eq, "$coop_mp_kind", coop_kind_village),
        (assign, ":relation", 0),
@@ -733,11 +816,17 @@ together_scripts = [
   # script_coop_ping_send: one question to the bridge: is this player called to a battle?
   ("coop_ping_send",
    [
-     (val_add, "$coop_net_seq", 1),
-     (assign, reg20, "$coop_net_seq"),
-     (str_store_string, s10, "@" + coop_client_url + "/pg?seq={reg20}&hold=1"),
-     (assign, "$coop_net_pending", 1),
-     (send_message_to_url, s10, 0),
+     (try_begin),
+       (this_or_next|is_between, "$coop_store_state", 1, 3),
+       (eq, "$coop_store_state", 5),
+       (call_script, "script_coop_store_send"),
+     (else_try),
+       (val_add, "$coop_net_seq", 1),
+       (assign, reg20, "$coop_net_seq"),
+       (str_store_string, s10, "@" + coop_client_url + "/pg?seq={reg20}&hold=1"),
+       (assign, "$coop_net_pending", 1),
+       (send_message_to_url, s10, 0),
+     (try_end),
     ]),
 
   # script_coop_ping_kick: a menu of the camp, a town or a village opens, the map's triggers stop: from
@@ -791,6 +880,16 @@ together_scripts = [
      (send_message_to_url, s10, 0),
     ]),
 
+  # script_coop_client_mp_begin_bandits: arg1 = a village bandits took: a joint battle against them,
+  # beside its men. They are no party of the world: this game names them to the bridge.
+  ("coop_client_mp_begin_bandits",
+   [
+     (store_script_param, ":village", 1),
+     (assign, "$coop_mp_next_kind", coop_kind_bandits),
+     (assign, "$coop_mp_village", ":village"),
+     (call_script, "script_coop_client_mp_begin", -1),
+    ]),
+
   # script_coop_client_mp_begin_village: arg1 = a raided village: a joint battle against its raiders,
   # beside its villagers (the battle's kind tells the bridge)
   ("coop_client_mp_begin_village",
@@ -842,17 +941,6 @@ def request_suffix():
       (store_mod, reg7, "$coop_follow_send", coop_follow_word_stop), #the stop word: fl=0
       (str_store_string, s17, "@{s17}&fl={reg7}"),
       (assign, "$coop_follow_send", 0),
-    (try_end),
-    (try_begin),
-      (eq, "$coop_mark_send", 1),
-      (assign, "$coop_mark_send", 0),
-      (assign, reg7, "$coop_mark_x"),
-      (assign, reg8, "$coop_mark_y"),
-      (str_store_string, s17, "@{s17}&mk={reg7},{reg8}"),
-    (else_try),
-      (eq, "$coop_mark_send", 2),
-      (assign, "$coop_mark_send", 0),
-      (str_store_string, s17, "@{s17}&mk=-"),
     (try_end),
     (try_begin),
       (eq, "$coop_base_send", 1),
@@ -916,7 +1004,7 @@ def map_tick():
 
 
 def encounter_end():
-  """Ops at the end of script_game_event_party_encounter: the company's camp, a mark, or a battle a
+  """Ops at the end of script_game_event_party_encounter: the company's camp, or a battle a
   client's mirrors cannot show, take the place of the menu Native chose; the party met is noted for a
   call to a battle."""
   return [
@@ -924,10 +1012,6 @@ def encounter_end():
       (ge, "$g_encountered_party", first_dynamic()),
       (party_slot_eq, "$g_encountered_party", slot_party_coop_mark, coop_base_tag),
       (jump_to_menu, "mnu_coop_shared"),
-    (else_try),
-      (ge, "$g_encountered_party", first_dynamic()),
-      (party_slot_ge, "$g_encountered_party", slot_party_coop_mark, 1),
-      (jump_to_menu, "mnu_coop_mark"),
     (else_try),
       (eq, "$coop_role", coop_role_client),
       (ge, "$g_encountered_party", first_dynamic()),
@@ -982,7 +1066,6 @@ def camp_options():
        (assign, "$coop_follow_set", 0),
        (change_screen_return),
      ]),
-    ("coop_marks", plays(), "CoopWorld: marks on the map...", [(jump_to_menu, "mnu_coop_marks")]),
     ("coop_tree", [], "CoopWorld: the troop tree.",
      [(start_presentation, "prsnt_coop_troop_tree")]),
   ]
@@ -1054,6 +1137,20 @@ def pre_join_option(ready):
     ])
 
 
+# a village's menu with bandits in it: the fight of Native's next option, together. The village's own
+# trouble of Diplomacy (a peasant woman in that slot) is no fight.
+def bandits_option(ready):
+  return (
+    "coop_mp_bandits",
+    ready + [
+      (party_get_slot, ":bandits", "$current_town", slot_village_infested_by_bandits),
+      (gt, ":bandits", 0),
+      (neq, ":bandits", "trp_peasant_woman"),
+    ],
+    "CoopWorld: attack the bandits together (joint battle on the multiplayer server).",
+    [(call_script, "script_coop_client_mp_begin_bandits", "$current_town")])
+
+
 # a raided village's menu, for a client (as the server reports it, + 1) and for the host
 def village_option(ready):
   return (
@@ -1099,27 +1196,6 @@ def treasury_options():
   return options
 
 
-def mark_ride_options():
-  """Ride to another player's mark, one option for each."""
-  options = []
-  for k in range(coop_max_players):
-    puppet = f"p_coop_puppet_{k + 1}"
-    options.append(("coop_mark_ride_%d" % k,
-                    plays() + [(party_is_active, puppet), (str_store_party_name, s1, puppet),
-                               (call_script, "script_coop_mark_of", k + 1), (gt, reg0, 0),
-                               (eq, "$coop_leader", 0)],
-                    "Ride to {s1}'s mark.",
-                    [
-                      (call_script, "script_coop_mark_of", k + 1),
-                      (assign, "$coop_follow_party", reg0),
-                      (assign, "$coop_follow_mark", k + 1),
-                      (assign, "$coop_follow", 0),
-                      (assign, "$coop_follow_set", 0),
-                      (change_screen_return),
-                    ]))
-  return options
-
-
 together_menus = [
   # the company's camp, met on the map: the treasury, the store and its people
   ("coop_shared", 0,
@@ -1132,12 +1208,12 @@ together_menus = [
       [
         (assign, "$coop_store_state", 1),
         (assign, "$coop_store_wait", 0),
-        (display_message, "@CoopWorld: the party store is on its way...", 0x66CCFF),
-        (leave_encounter),
-        (change_screen_return),
+        (assign, "$coop_store_asks", 0),
+        (assign, "$coop_store_camp", 1),
+        (call_script, "script_coop_ping_kick"),
+        (jump_to_menu, "mnu_coop_store_wait"),
       ]),
-     ("coop_blackborn", [], "Talk to John Blackborn.",
-      [(call_script, "script_coop_blackborn_ready"), (start_map_conversation, coop_blackborn)]),
+     ("coop_blackborn", [], "Talk to John Blackborn.", [(call_script, "script_coop_blackborn_talk")]),
      ("coop_base_down", [],
       "Take the camp down (the treasury and the store stay with the company, the denars do not come back).",
       [
@@ -1147,6 +1223,20 @@ together_menus = [
         (change_screen_return),
       ]),
      ("coop_shared_back", [], "Back to the map.", [(leave_encounter), (change_screen_return)]),
+   ]),
+
+  # the store is asked for from here: a menu stops the map's requests, so the answers come to this one
+  ("coop_store_wait", 0,
+   "CoopWorld: the party store is on its way...",
+   "none",
+   [(set_background_mesh, "mesh_pic_camp")],
+   [
+     ("coop_store_wait_back", [], "Back to the camp.",
+      [
+        (assign, "$coop_store_state", 0),
+        (assign, "$coop_store_camp", 0),
+        (jump_to_menu, "mnu_coop_shared"),
+      ]),
    ]),
 
   # the store as Native's victory menu shows the loot (see coop_loot): the screen from the menu's own
@@ -1164,7 +1254,14 @@ together_menus = [
        (eq, "$coop_store_step", 2),
        (assign, "$coop_store_step", 0),
        (call_script, "script_coop_store_read"),
-       (change_screen_return),
+       (try_begin),
+         (eq, "$coop_store_camp", 1),
+         (assign, "$coop_store_camp", 0),
+         (call_script, "script_coop_ping_kick"), #it goes back from the camp's menu too
+         (jump_to_menu, "mnu_coop_shared"),
+       (else_try),
+         (change_screen_return),
+       (try_end),
      (try_end),
    ],
    [
@@ -1175,42 +1272,9 @@ together_menus = [
           (assign, "$coop_store_step", 0),
           (call_script, "script_coop_store_read"),
         (try_end),
+        (assign, "$coop_store_camp", 0),
         (change_screen_map),
       ]),
-   ]),
-
-  ("coop_marks", 0,
-   "CoopWorld: marks on the map.^^Each player has one mark, seen on everybody's map: where to meet, a town to take, a lair found. Ride to a friend's mark from here, or click it on the map.",
-   "none",
-   [],
-   [
-     ("coop_mark_set", plays(), "Set my mark where I stand.",
-      [
-        (set_fixed_point_multiplier, 100),
-        (party_get_position, pos1, "p_main_party"),
-        (position_get_x, "$coop_mark_x", pos1),
-        (position_get_y, "$coop_mark_y", pos1),
-        (assign, "$coop_mark_send", 1),
-        (call_script, "script_get_closest_center", "p_main_party"),
-        (str_store_party_name, s1, reg0),
-        (display_message, "@CoopWorld: your mark stands near {s1}.", 0x66CCFF),
-        (change_screen_return),
-      ]),
-     ("coop_mark_off", plays(), "Take my mark away.",
-      [(assign, "$coop_mark_send", 2), (change_screen_return)]),
-   ] + mark_ride_options() + [
-     ("coop_mark_stop", plays() + [(gt, "$coop_follow_mark", 0)],
-      "Stop riding to the mark.",
-      [(call_script, "script_coop_follow_end", coop_follow_end_asked), (change_screen_return)]),
-     ("coop_marks_back", [], "Back.", [(jump_to_menu, "mnu_coop_camp")]),
-   ]),
-
-  ("coop_mark", 0,
-   "CoopWorld: {s1}.",
-   "none",
-   [(str_store_party_name, s1, "$g_encountered_party")],
-   [
-     ("coop_mark_met_leave", [], "Ride on.", [(leave_encounter), (change_screen_return)]),
    ]),
 
   ("coop_map_fight", 0,
