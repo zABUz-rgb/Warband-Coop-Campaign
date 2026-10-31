@@ -1,6 +1,8 @@
 from coop.constants import coop_blackborn
 
 # The kinds of soldier, each in three levels of stats: kind 0 the recruit, then each branch's tiers.
+# A tier (recruit to champion) rises by experience: battles and the training field. A level (1 to 3) is stats
+# bought from John, and it leaves the tier as it was.
 # custom_first + 3 * kind + level - 1 is a soldier's troop; tools/test_custom_troops.py keeps it true.
 BRANCH_NAMES = ("inf", "arc", "cav")
 TIERS = (2, 3, 4, 5)
@@ -32,7 +34,6 @@ slot_item_custom_paid = 201         # copies this game paid for: only those sell
 
 custom_recruit_cost = 20            # dinars a man
 custom_recruits = (5, 10, 20)
-custom_mount_cost = 100             # dinars a man: the engine has two upgrades a troop, the riders' branch comes from John
 custom_gear_factor = 4              # what soldiers' gear costs, times the item's value
 custom_sell_percent = 50
 custom_gear_max = 24                # items a kind may carry

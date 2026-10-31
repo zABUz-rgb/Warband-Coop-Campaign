@@ -8,8 +8,8 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC))
 from header_items import *  # noqa: E402,F403
-from header_troops import tf_mounted  # noqa: E402
-from custom_troops import constants as c, dialogs, item_tiers, presentations, stats  # noqa: E402
+from header_troops import tf_guarantee_horse, tf_guarantee_ranged, tf_mounted  # noqa: E402
+from custom_troops import constants as c, dialogs, game_menus, item_tiers, presentations, scripts, stats  # noqa: E402
 from custom_troops.constants import BRANCH_NAMES, KINDS, LEVELS, TIERS, kind_of, troop_id  # noqa: E402
 
 
@@ -57,9 +57,34 @@ def test_upgrades():
         for tier in TIERS:
             for level in LEVELS:
                 wanted = [] if tier == 5 else [troop_id(kind_of(branch, tier + 1), 1)]
+                if tier == 2 and branch != "cav":
+                    wanted.append(troop_id(kind_of("cav", 2), 1))
                 check(path(troop_id(kind_of(branch, tier), level)) == wanted, "")
+    print("ok   a tier's three levels share one way up, and militia on foot may rise to the riders")
     check(all(by_id[troop_id(kind_of("cav", t), 1)][3] & tf_mounted for t in TIERS), "riders ride")
     check(not by_id[troop_id(0, 1)][3] & tf_mounted, "recruits walk")
+
+
+def test_training_field():
+    troops, _ = built()
+    by_id = {t[0]: t for t in troops}
+    for kind, (_, tier, branch) in enumerate(KINDS):
+        for level in LEVELS:
+            flags = by_id[troop_id(kind, level)][3]
+            check(bool(flags & tf_guarantee_horse) == (branch == "cav"), "")
+            check(bool(flags & tf_guarantee_ranged) == (branch == "arc"), "")
+    print("ok   the training field takes a footman for a footman: only riders and archers get a quarter in melee")
+
+
+def test_levels_leave_tiers():
+    options = game_menus.train_options()
+    check(len(options) == len(KINDS) * (len(LEVELS) - 1), "John's menu holds levels 2 and 3 of each kind and nothing else")
+    check(all(o[0].startswith("custom_train_") for o in options), "no way to another kind in it")
+    calls = [(name, op) for name, ops in scripts.scripts for op in ops if isinstance(op, tuple) and "script_custom_swap" in op]
+    check([name for name, _ in calls] == ["custom_train"], "only training changes a soldier's troop by script")
+    train = dict(scripts.scripts)["custom_train"]
+    made = [op for op in train if isinstance(op, tuple) and "script_custom_troop" in op]
+    check([op[2] for op in made] == [":kind", ":kind"], "and it stays within the kind, so within the tier")
 
 
 def test_stats():
@@ -159,6 +184,8 @@ def test_dialogs():
 if __name__ == "__main__":
     test_troops()
     test_upgrades()
+    test_training_field()
+    test_levels_leave_tiers()
     test_stats()
     test_gear()
     test_items()

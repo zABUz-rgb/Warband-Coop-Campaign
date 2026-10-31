@@ -5,7 +5,7 @@ from header_triggers import *
 from header_troops import *
 from module_constants import *
 from coop.constants import *
-from custom_troops.constants import BRANCH_NAMES, TIERS, custom_holder, kind_of, troop_id
+from custom_troops.constants import BRANCH_NAMES, LEVELS, TIERS, custom_first, custom_holder, kind_of, troop_id
 
 # The troop tree (Camp - CoopWorld): the branches on the left and the branch shown as a tree of portraits,
 # growing to the right, each troop halfway between those it grows into. A click on a portrait opens the
@@ -298,8 +298,19 @@ tree_scripts = [
      (overlay_set_size, reg0, pos1),
      # the numbers under the portrait
      (assign, ":y", 370),
-     (store_character_level, reg1, ":troop"),
-     (str_store_string, s0, "@Level: {reg1}"),
+     (try_begin),
+       (is_between, ":troop", custom_first, custom_holder), #the army: a level there is the stats John sells
+       (store_sub, ":index", ":troop", custom_first),
+       (store_div, ":kind", ":index", len(LEVELS)),
+       (store_mod, reg2, ":index", len(LEVELS)),
+       (val_add, reg2, 1),
+       (call_script, "script_custom_tier", ":kind"),
+       (assign, reg1, reg0),
+       (str_store_string, s0, "@Tier {reg1}, level {reg2} of 3"),
+     (else_try),
+       (store_character_level, reg1, ":troop"),
+       (str_store_string, s0, "@Level: {reg1}"),
+     (try_end),
      ] + text_line(":y", CARD_X) + [
      (store_attribute_level, ":strength", ":troop", ca_strength),
      (store_skill_level, ":ironflesh", "skl_ironflesh", ":troop"),

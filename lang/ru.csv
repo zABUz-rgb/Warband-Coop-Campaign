@@ -1886,6 +1886,7 @@ quick_strings_en|CoopWorld: the raiders are not here any more.|CoopWorld: нал
 quick_strings_en|CoopWorld: the raid on {s1} is beaten off.|CoopWorld: налёт отбит: {s1}.
 quick_strings_en|Click a troop to see what it can do and what it carries.|Щёлкните по бойцу, чтобы увидеть его умения и снаряжение.
 quick_strings_en|Level: {reg1}|Уровень: {reg1}
+quick_strings_en|Tier {reg1}, level {reg2} of 3|Тир {reg1}, уровень {reg2} из 3
 quick_strings_en|Hit points: {reg1}|Здоровье: {reg1}
 quick_strings_en|Strength: {reg1}|Сила: {reg1}
 quick_strings_en|Agility: {reg1}|Ловкость: {reg1}
@@ -1954,7 +1955,7 @@ game_menus|mno_custom_blackborn|Поговорить с Джоном Блэкб�
 game_menus|menu_custom_screen|Джон Блэкборн ждёт вашего слова.
 game_menus|mno_custom_screen_talk|Поговорить с Джоном Блэкборном.
 game_menus|mno_custom_screen_back|Назад.
-game_menus|menu_custom_train|Джон Блэкборн осматривает ваших людей. Обучение стоит одну цену за всех людей одного рода на одном уровне, а опыт, накопленный к следующему тиру, теряется. Рекруты, получив коней, становятся всадниками.^^У вас {reg10} динаров.
+game_menus|menu_custom_train|Джон Блэкборн осматривает ваших людей. Обучение повышает только уровень характеристик. Тир остаётся прежним: он растёт в боях и на тренировочном поле. Цена одна за всех людей одного рода на одном уровне. Игра не может перенести их опыт, поэтому накопленное к следующему тиру пропадёт: сначала повысьте тех, кто уже готов.^^У вас {reg10} динаров.
 game_menus|mno_custom_train_back|На этом всё.
 game_menus|mno_custom_train_0_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
 game_menus|mno_custom_train_0_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
@@ -1982,9 +1983,6 @@ game_menus|mno_custom_train_11_1|{s1}: до уровня {reg2} ({reg3} чел.)
 game_menus|mno_custom_train_11_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
 game_menus|mno_custom_train_12_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
 game_menus|mno_custom_train_12_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_mount_1|{s1}: дать коней и сделать всадниками ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_mount_2|{s1}: дать коней и сделать всадниками ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_mount_3|{s1}: дать коней и сделать всадниками ({reg3} чел.): {reg4} динаров.
 dialogs_en|Sorry, there is nothing I can do for you.|Извини, мне нечем тебе помочь.
 dialogs_en|Good day. What brings you to me?|Добрый день. С чем пожаловали?
 dialogs_en|Good to see you, my lord.|Рад вас видеть, мой лорд.

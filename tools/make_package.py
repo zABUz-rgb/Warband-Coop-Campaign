@@ -729,15 +729,19 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   всех: клиенты тоже нанимают, обучают и одевают, а если хост войска не создал, Джону им сказать нечего.
   ДЖОН БЛЭКБОРН: в лагере отряда и в любом вашем городе или замке. Он спросит название отряда и воинов,
   дальше нанимает рекрутов (5, 10 или 20, по 20 динаров), обучает, одевает, переименовывает (только хост).
-  РОСТ: рекрут и воины растут в бою как обычно, в пехоту или лучников. Движок даёт войску только два пути,
-  поэтому всадниками рекруты становятся у Джона, за 100 динаров с человека.
+  ТИР И УРОВЕНЬ: это разные вещи. Тир (рекрут, ополченец и дальше до чемпиона) растёт только опытом: в боях и на
+  тренировочном поле, повышение как обычно на экране отряда. Уровень (1, 2, 3) - это характеристики, его продаёт
+  Джон, и тир от этого не меняется. Новый тир начинается с 1 уровня.
+  ВЕТВИ: рекрут растёт в пехоту или лучников. Движок даёт войску только два пути, поэтому всадники начинаются
+  на шаг позже: ополченец-пехотинец и ополченец-лучник могут вырасти во всадника 2 тира, тоже опытом.
   СНАРЯЖЕНИЕ: слева что можно купить, справа что есть; щелчок покупает или продаёт. Тир воина ограничивает выбор,
   коней получают только всадники. Цена - стоимость предмета, умноженная на 4, Торговля её снижает; продажа - половина
   стоимости, Торговля её повышает. Снаряжение общее на всех воинов одного рода и одного тира (так устроен движок),
   и у всех игроков; пока для старшего тира ничего не покупали, он носит то же, что младший. За то, что досталось
   от младшего тира, при продаже денег нет.
   ОБУЧЕНИЕ: уровень 2 и 3 за всех воинов одного рода на этом уровне, цена зависит от тира, Торговля на неё не влияет.
-  Игра не даёт скрипту прочитать опыт отряда, поэтому накопленный к следующему тиру опыт обучение обнуляет.
+  Обучение меняет только уровень. Но игра не даёт скрипту прочитать опыт отряда, поэтому накопленное к следующему
+  тиру пропадает: сначала повысьте тех, кто уже готов.
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
@@ -936,15 +940,19 @@ YOUR OWN ARMY: a branch of troops of no faction: a recruit and three branches (i
   for everyone: clients hire, train and equip too; if the host has not raised it, John has nothing to say to them.
   JOHN BLACKBORN: at the company's camp and in any town or castle of yours. He asks for the names, then hires
   recruits (5, 10 or 20 at 20 denars), trains, equips, renames (the host only).
-  GROWTH: recruits and soldiers rise by battle as usual, into infantry or archers. The engine gives a troop two
-  paths, so recruits become riders at John's, for 100 denars a man.
+  TIER AND LEVEL are two different things. A tier (recruit, militia and on to champion) grows only by experience:
+  battles and the training field, promoted as usual on the party screen. A level (1, 2, 3) is stats, John sells it,
+  and it leaves the tier as it was. A new tier starts at level 1.
+  BRANCHES: a recruit grows into infantry or archers. The engine gives a troop two paths, so the riders start one
+  step later: militia of either foot branch may grow into tier 2 riders, by experience too.
   GEAR: what can be bought on the left, what the soldier has on the right; a click buys or sells. The tier limits the
   choice, only riders get horses. An item costs 4 times its value, less with Trade; it sells for half its value,
   more with Trade. Gear is shared by all soldiers of a kind and tier (the engine works so) and by all players; a
   higher tier wears what the lower one wears until something is bought for it. What came from a lower tier sells
   for nothing.
   TRAINING: levels 2 and 3, for all the men of a kind at that level, at a price set by the tier, Trade does not
-  change it. No script can read a party's experience, so training clears what was gathered towards the next tier.
+  change it. Training changes the level only, but no script can read a party's experience, so what was gathered
+  towards the next tier is lost: promote those who are ready first.
 
 FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its
   enemies hunt the player. Fiefs and Diplomacy's diplomacy go only to the host for now.

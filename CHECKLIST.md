@@ -194,8 +194,10 @@ Open (1.0.1, third part, nothing of this was played either; a new campaign is ne
   buys and the list stays on the same soldier and sort; item windows open and close with the mouse; a soldier in
   battle really wears what was bought (non-hero troops take it from their inventory); a higher tier follows until
   it gets gear of its own; what came from below sells for nothing;
-- training: the men stay, the wounded stay wounded, the stack goes last; level names and prices in the menu;
-  recruits to riders for 100 a man;
+- training at John's: the men stay, the wounded stay wounded, the stack goes last; level names and prices in the
+  menu; the tier never changes there; a training field gives footmen their full share in melee and raises tiers;
+- riders: militia footmen and archers offer a horse on the party screen once they have the experience; the tree's
+  card of an army soldier says tier and level of stats;
 - co-op: a client sees the host's names and gear within seconds of joining; a client's purchase reaches the host and
   stays in the host's save; bots on the battle server wear the bought gear (their names stay the usual ones);
 - removed: marks are gone from the menus; no chat line for lords raiding villages;

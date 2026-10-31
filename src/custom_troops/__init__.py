@@ -3,5 +3,5 @@
 #    (39 troops), counted from the kingdoms' own soldiers by stats.py
 #  - item_tiers.py: which items a soldier of each tier may be given
 #  - scripts.py, presentations.py, game_menus.py, dialogs.py: John Blackborn's service: the gear screen, the
-#    training, the names, recruits
+#    training (levels of stats, never tiers), the names, recruits
 # Co-op: the host makes the army, everybody shares it: tools/coop_bridge.py carries names and gear.

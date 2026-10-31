@@ -28,21 +28,6 @@ def train_options():
           (call_script, "script_custom_train", kind, level),
           (jump_to_menu, "mnu_custom_train"),
         ]))
-  for level in LEVELS:
-    options.append(("custom_mount_%d" % level,
-      [
-        (call_script, "script_cf_custom_mount_text", level),
-        (try_begin),
-          (store_troop_gold, ":gold", "trp_player"),
-          (lt, ":gold", reg4),
-          (disable_menu_option),
-        (try_end),
-      ],
-      "{s1}: horses, to the riders ({reg3} men): {reg4} dinars.",
-      [
-        (call_script, "script_custom_mount", level),
-        (jump_to_menu, "mnu_custom_train"),
-      ]))
   return options
 
 
@@ -72,9 +57,10 @@ game_menus = [
    ]),
 
   ("custom_train", 0,
-   "John Blackborn looks your men over. Training comes at a fixed price for all the men of a kind who stand at a level,\
- and the experience they have gathered towards the next tier is lost. Recruits who get horses become riders.\
-^^You have {reg10} dinars.", "none",
+   "John Blackborn looks your men over. Training raises only their level of stats. Their tier stays as it is: it grows\
+ in battles and at the training field. The price is one for all the men of a kind who stand at a level. The game cannot\
+ carry their experience across, so what they have gathered towards the next tier is lost: promote those who are ready\
+ first.^^You have {reg10} dinars.", "none",
    [
      (call_script, "script_coop_ping_kick"),
      (store_troop_gold, reg10, "trp_player"),

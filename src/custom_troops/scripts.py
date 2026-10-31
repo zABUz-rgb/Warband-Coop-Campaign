@@ -359,7 +359,8 @@ scripts = [
      (store_add, reg2, ":level", 1),
     ]),
 
-  # script_custom_train: arg1 = kind, arg2 = level: all the men at that level go up one
+  # script_custom_train: arg1 = kind, arg2 = level: all the men at that level go up one. Their kind, and so their
+  # tier, stays
   ("custom_train",
    [
      (store_script_param, ":kind", 1),
@@ -373,38 +374,6 @@ scripts = [
        (assign, ":from", reg0),
        (store_add, ":next", ":level", 1),
        (call_script, "script_custom_troop", ":kind", ":next"),
-       (assign, ":to", reg0),
-       (troop_remove_gold, "trp_player", ":cost"),
-       (call_script, "script_custom_swap", ":from", ":to"),
-     (try_end),
-    ]),
-
-  # script_cf_custom_mount_text: arg1 = level of a recruit: an option of the training menu.
-  # s1 = the recruit, reg3 = men, reg4 = dinars
-  ("cf_custom_mount_text",
-   [
-     (store_script_param, ":level", 1),
-     (call_script, "script_custom_troop", 0, ":level"),
-     (assign, ":troop", reg0),
-     (call_script, "script_custom_men", ":troop"),
-     (assign, reg3, reg0),
-     (gt, reg3, 0),
-     (str_store_troop_name, s1, ":troop"),
-     (store_mul, reg4, reg3, custom_mount_cost),
-    ]),
-
-  # script_custom_mount: arg1 = level of a recruit: the men get horses: they stand at the riders' first tier
-  ("custom_mount",
-   [
-     (store_script_param, ":level", 1),
-     (call_script, "script_custom_troop", 0, ":level"),
-     (assign, ":from", reg0),
-     (call_script, "script_custom_men", ":from"),
-     (store_mul, ":cost", reg0, custom_mount_cost),
-     (store_troop_gold, ":gold", "trp_player"),
-     (try_begin),
-       (ge, ":gold", ":cost"),
-       (call_script, "script_custom_troop", kind_of("cav", TIERS[0]), 1),
        (assign, ":to", reg0),
        (troop_remove_gold, "trp_player", ":cost"),
        (call_script, "script_custom_swap", ":from", ":to"),
