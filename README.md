@@ -1,4 +1,4 @@
-# Warband Coop Campaign 1.0.1
+# Warband Coop Campaign 1.1
 
 Кооперативная кампания для **Mount & Blade: Warband 1.174** на 2–4 игроков: один общий мир,
 у каждого свой отряд на глобальной карте, совместные полевые бои, штурмы и обороны замков на
@@ -11,6 +11,7 @@ Mount & Blade и Mount & Blade: Warband — товарные знаки TaleWorl
 - Поддержать разработку (по желанию, ничего не даёт сверх бесплатной версии): https://boosty.to/zabuz_0
 
 Статус: **открытое бета-тестирование.** Основное проверено на двух ПК; ждём отчётов об ошибках.
+Что изменилось в версии 1.1 — в [CHANGELOG.md](CHANGELOG.md).
 
 ## Что умеет
 - Мир (лорды, бандиты, торговля, войны, время) живёт у хоста; игроки видят тот же мир и друг друга.
@@ -44,13 +45,14 @@ Mount & Blade и Mount & Blade: Warband — товарные знаки TaleWorl
 (бандиты и т. п.) вдвое меньше.
 
 ## Установка (игрокам)
-1. Скачайте `Warband-Coop-Campaign-1.0-ru.zip` (или английский `Warband-Coop-Campaign-1.0.zip`):
-   [Releases на GitHub](https://github.com/zABUz-rgb/Warband-Coop-Campaign/releases/tag/v1.0) или Яндекс Диск — [русская](https://disk.yandex.ru/d/xfwbftA4KaWosg), [английская](https://disk.yandex.ru/d/xCwTJxhNB3HDxg).
-   Всем игрокам нужен один и тот же пакет.
+1. Скачайте `Warband-Coop-Campaign-1.1-ru.zip` (или английский `Warband-Coop-Campaign-1.1.zip`) из
+   [Releases на GitHub](https://github.com/zABUz-rgb/Warband-Coop-Campaign/releases/tag/v1.1).
+   Всем игрокам нужен один и тот же пакет. Сохранения версии 1.0 не подходят: нужна новая кампания.
 2. Распакуйте весь архив, лучше всего — в папку с игрой, и запустите `install.bat`. Он предложит
    установить недостающие программы из папки `Programs` (Python 3, Radmin VPN), найдёт
    игру и поставит модуль `Warband Coop Campaign` (копия вашего Native с файлами мода; Native не меняется).
-3. Дальше — `README.txt` и `НАЧНИТЕ ЗДЕСЬ.txt` внутри пакета: хост запускает `host.bat`,
+3. В лаунчере выберите модуль и включите **Start windowed** (Configure): два полноэкранных окна могут зависать.
+4. Дальше — `README.txt` и `НАЧНИТЕ ЗДЕСЬ.txt` внутри пакета: хост запускает `host.bat`,
    друзья — `join.bat`.
 
 **Сохранения.** Мост отдаёт друзьям самое свежее по времени сохранение хоста из

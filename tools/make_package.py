@@ -29,7 +29,7 @@ MODULE = ROOT / "game" / "Modules" / PROJECT
 RUSSIFIER_UI = ROOT / "vendor" / "l10n_ru" / "languages" / "ru"  # the russifier's engine interface
 BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler state; quick_strings.txt is read by the game
 PREREQS = ROOT / "vendor" / "prereqs"  # installers of the programs the mod needs (not in git)
-VERSION = "1.0.1"
+VERSION = "1.1"
 DIST = ROOT / "dist" / VERSION  # every version keeps its own folder
 DEBUG = ROOT / "dist" / f"{VERSION}-debug"  # python tools/make_package.py --trail
 DISCORD = "https://discord.gg/nfmWC5SWfp"
@@ -487,6 +487,21 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   Discord (вопросы, ошибки, поиск напарников): {DISCORD}
   Поддержать разработку (по желанию, ничего не даёт сверх бесплатной версии): {BOOSTY}
 
+ЧТО НОВОГО В 1.1
+  - Собственное войско: рекрут и три ветви до 5 тира. Джон Блэкборн нанимает, одевает, обучает и
+    переименовывает его (раздел СОБСТВЕННОЕ ВОЙСКО).
+  - Вместе на арене, турнире и тренировке, зачистка логов бандитов, защита караванов, крестьян и
+    деревень, дуэли на ставку.
+  - Вместе без встречи на карте: следовать за другом, полевой лагерь у каждого игрока, общая казна
+    и общий склад.
+  - Приглашение в бой приходит со звуком и открывается даже в меню города, деревни и лагеря.
+  - Древо войск с портретами и карточками бойцов.
+  - После совместных боёв есть пленные по навыку и опыт войскам.
+  - Войско, герои, казна, склад и лагеря теперь сохраняются вместе с сохранениями хоста.
+  - Убрано: вступление в отряд другого игрока.
+  Сохранения версии 1.0 не подходят: нужна новая кампания. Для неё удалите profiles.json, shared.json,
+  sync.json и army.json из папки "Документы\\Warband Coop Campaign".
+
 ЧТО НУЖНО
   - У каждого игрока своя лицензионная Warband 1.174 (Steam или GOG) с серийным ключом: без ключа
     мультиплеер не пускает, а с одним ключом вдвоём на сервер боя не зайти. Ключ Steam-версии:
@@ -668,7 +683,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   и сам выбрать тот же пункт, пока событие собирается, и попадёт в него.
   Событие начинается, когда все согласившиеся стоят на сервере боя; кого нет через 1 мин 45 с,
   оно оставляет без него. Войдите на сервер боя заранее.
-  АРЕНА: меню города - "CoopWorld: сразиться на арене вместе" (днём, не тайком). По 20 соперников на
+  АРЕНА: меню города - "CoopWorld: сразиться на арене вместе" (днём, не тайком), затем подтвердите
+  приглашение: случайный клик никого не позовёт. По 20 соперников на
   игрока, от слабых к сильным, одновременно не больше 3 на игрока. Кто устоял до конца - главный
   приз арены (250 динаров), павший - награда за своих побеждённых, как в одиночной игре. Карта
   The Arena.
@@ -787,6 +803,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   - Сообщая об ошибке в Discord ({DISCORD}), приложите report.txt, rgl_log.txt из папки Warband
     (скопируйте его до перезапуска игры) и опишите, что делали и у кого (хост или друг) случилось.
     При зависании напишите, нагружает ли игра процессор (Диспетчер задач).
+  - Картинка застыла, ничего не нажимается, особенно после переключения между окнами: включите
+    Start windowed в лаунчере (Configure) у всех игроков. Два полноэкранных окна могут зависать.
   - Окно моста пишет, что Python не найден: запустите install.bat ещё раз и согласитесь
     установить программы (или Programs\\python-...exe, отметив "Add python.exe to PATH");
     если не помогло - перезагрузите компьютер.
@@ -801,6 +819,21 @@ It needs a new campaign.
 
   Discord (questions, bugs, finding players): {DISCORD}
   Support the development (optional, gives nothing beyond the free mod): {BOOSTY}
+
+NEW IN 1.1
+  - Your own army: a recruit and three branches to tier 5. John Blackborn hires, equips, trains and
+    renames it (see YOUR OWN ARMY).
+  - Arena, tournament and training together, bandit lairs, caravans, farmers and villages to defend,
+    duels on a stake.
+  - Together without meeting on the map: ride after a friend, a field camp for every player, a shared
+    treasury and store.
+  - The call to battle comes with a sound and opens even over a town's, a village's or a camp's menu.
+  - A troop tree with portraits and soldiers' cards.
+  - Joint battles give prisoners by skill and experience to the troops.
+  - The army, heroes, treasury, store and camps now follow the host's saves.
+  - Removed: joining another player's party.
+  Saves of version 1.0 do not work: start a new campaign. For it delete profiles.json, shared.json,
+  sync.json and army.json from "Documents\\Warband Coop Campaign".
 
 NEEDS: every player's own Warband 1.174 (Steam or GOG) with its serial key (multiplayer needs it,
   and two players cannot join with one key); Python 3 and Radmin VPN - their installers are in the
@@ -996,6 +1029,8 @@ Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op", then close the
 Something went wrong: after the session the host double-clicks check_logs.bat - a report in
 Documents\\Warband Coop Campaign\\report.txt (in Russian). Post it on Discord ({DISCORD}) with rgl_log.txt from
 the Warband folder (copied before the game restarts) and what happened, and to whom.
+The picture froze and nothing can be pressed, above all after switching windows: turn on Start windowed in the
+launcher (Configure) for every player. Two full-screen windows can hang.
 '''
 
 BOM = "\ufeff"
