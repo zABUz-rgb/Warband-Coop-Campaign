@@ -736,10 +736,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   на шаг позже: ополченец-пехотинец и ополченец-лучник могут вырасти во всадника 2 тира, тоже опытом.
   СНАРЯЖЕНИЕ: слева что можно купить, справа что есть; щелчок покупает или продаёт. Тир воина ограничивает выбор,
   коней получают только всадники. Цена - стоимость предмета, умноженная на 4, Торговля её снижает; продажа - половина
-  стоимости, Торговля её повышает. Снаряжение общее на всех воинов одного рода и одного тира (так устроен движок),
-  и у всех игроков; пока для старшего тира ничего не покупали, он носит то же, что младший. За то, что досталось
-  от младшего тира, при продаже денег нет.
-  ОБУЧЕНИЕ: уровень 2 и 3 за всех воинов одного рода на этом уровне, цена зависит от тира, Торговля на неё не влияет.
+  стоимости, Торговля её повышает. У каждого тира своё снаряжение: купленное рекруту
+  есть только у рекрута. Уровни одного тира носят одно и то же. Снаряжение общее у всех игроков. Кого одеть,
+  Джон спросит сам: рекрут, пехота, лучники или всадники, а затем тир.
+  ОБУЧЕНИЕ: Джон так же спрашивает, кого учить. Уровень 2 и 3 за всех воинов этого рода и тира на одном уровне, цена зависит от тира, Торговля на неё не влияет.
   Обучение меняет только уровень. Но игра не даёт скрипту прочитать опыт отряда, поэтому накопленное к следующему
   тиру пропадает: сначала повысьте тех, кто уже готов.
 
@@ -947,10 +947,10 @@ YOUR OWN ARMY: a branch of troops of no faction: a recruit and three branches (i
   step later: militia of either foot branch may grow into tier 2 riders, by experience too.
   GEAR: what can be bought on the left, what the soldier has on the right; a click buys or sells. The tier limits the
   choice, only riders get horses. An item costs 4 times its value, less with Trade; it sells for half its value,
-  more with Trade. Gear is shared by all soldiers of a kind and tier (the engine works so) and by all players; a
-  higher tier wears what the lower one wears until something is bought for it. What came from a lower tier sells
-  for nothing.
-  TRAINING: levels 2 and 3, for all the men of a kind at that level, at a price set by the tier, Trade does not
+  more with Trade. Each tier has gear of its own: what a recruit got only recruits have.
+  The levels of one tier wear the same, and all players share the gear. John asks whom to equip: recruits,
+  infantry, archers or riders, then the tier.
+  TRAINING: John asks whom in the same way. Levels 2 and 3, for all the men of a kind at that level, at a price set by the tier, Trade does not
   change it. Training changes the level only, but no script can read a party's experience, so what was gathered
   towards the next tier is lost: promote those who are ready first.
 

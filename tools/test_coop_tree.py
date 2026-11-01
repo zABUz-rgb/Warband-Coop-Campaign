@@ -23,8 +23,8 @@ def test_branches():
     check(len(rows) == len(tree.BRANCHES) + 1, "a branch for each name, and the player's army last")
     check(len(rows[-1]) == 13 and tree.ARMY_TEXT, "the army shows each kind of soldier once, and says how to raise it")
     army = rows.pop()
-    check([row[1] for row in army] == [0] + [1, 2, 3, 4] * 3 and [row[2] for row in army[:6]] == [-1, 0, 1, 2, 3, 0],
-          "a recruit, and three branches growing from it")
+    check([row[1] for row in army] == [0] + [1, 2, 3, 4] * 2 + [2, 3, 4, 5] and [row[2] for row in army[:6]] == [-1, 0, 1, 2, 3, 0],
+          "a recruit with two branches, the riders one step on, from the militia")
     for (name, _), branch in zip(tree.BRANCHES, rows):
         check(len(branch) >= 3, f"{name}: {len(branch)} troops")
     shown = [row[0] for branch in rows for row in branch]
@@ -43,6 +43,19 @@ def test_branches():
                 check(troop_id in tree.upgrades_of(ids[branch[parent][0]], troops),
                       f"{branch[parent][0]} does grow into {troop_id}")
             check(troop_id in here, "")
+
+
+def test_army():
+    from module_troops import troops
+    by_id = {t[0]: t for t in troops}
+    rows = tree.army_rows()
+    lines = {(rows[row[2]][0], row[0]) for row in rows if row[2] >= 0}
+    lines |= {(rows[parent][0], rows[child][0]) for parent, child in tree.ARMY_ALSO}
+    grown = {(row[0], up) for row in rows for up in tree.upgrades_of(by_id[row[0]], troops)}
+    check(lines == grown, f"the army's lines are its real ways up: {lines ^ grown}")
+    at = tree.place(rows)
+    check(max(x for x, _ in at) + tree.PORTRAIT // 2 <= tree.TREE_WIDTH, "the riders' last tier fits the box")
+    check(len(set(at)) == len(at), "no two soldiers stand on one spot")
 
 
 def test_fits():
@@ -76,5 +89,6 @@ def test_fits():
 
 if __name__ == "__main__":
     test_branches()
+    test_army()
     test_fits()
     print("ALL OK")

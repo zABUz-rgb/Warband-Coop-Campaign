@@ -26,11 +26,9 @@ custom_npc = coop_blackborn
 # the slots of custom_holder
 custom_slot_name = 0                # 0 the army's name, 1 + kind a soldier's: that it has to go out
 custom_slot_gear = 20               # + kind: that this kind's gear has to go out
-custom_slot_bought = 40             # + kind: the player chose this kind's gear; else it follows the tier below
-custom_slot_shown = 60              # + a line of the gear screen's list of soldiers: its kind
 slot_item_custom_tier = 200         # the lowest tier of soldier an item may go to, 0 none
-slot_item_custom_paid = 201         # copies this game paid for: only those sell for money (a kind that follows the
-                                    # tier below gets its copy for nothing)
+slot_item_custom_paid = 201         # copies this game paid for: only those sell for money (what a soldier starts
+                                    # with, or another player bought, brings nothing)
 
 custom_recruit_cost = 20            # dinars a man
 custom_recruits = (5, 10, 20)
@@ -43,6 +41,8 @@ custom_train_cost = {1: (3000, 5000), 2: (7500, 10000), 3: (12500, 15000), 4: (1
 custom_screen_shop = 1              # $custom_screen: what opens once John's conversation is over
 custom_screen_names = 2
 custom_screen_train = 3
+custom_screen_company = 4           # the names screen with the company's name alone
+custom_screen_soldiers = 5          # and with the soldiers' alone (custom_screen_names has both)
 
 custom_word_gap = 2                 # a word to the others goes out, then this many ordinary requests' turns
 custom_kind_labels = ["Recruit"] + ["%s, tier %d" % (name, tier) for name in ("Infantry", "Archers", "Riders") for tier in TIERS]

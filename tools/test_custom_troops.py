@@ -78,8 +78,8 @@ def test_training_field():
 
 def test_levels_leave_tiers():
     options = game_menus.train_options()
-    check(len(options) == len(KINDS) * (len(LEVELS) - 1), "John's menu holds levels 2 and 3 of each kind and nothing else")
-    check(all(o[0].startswith("custom_train_") for o in options), "no way to another kind in it")
+    check([o[0] for o in options] == ["custom_train_1", "custom_train_2", "custom_train_none"],
+          "John's menu holds the picked soldier's levels 2 and 3 and nothing else")
     calls = [(name, op) for name, ops in scripts.scripts for op in ops if isinstance(op, tuple) and "script_custom_swap" in op]
     check([name for name, _ in calls] == ["custom_train"], "only training changes a soldier's troop by script")
     train = dict(scripts.scripts)["custom_train"]
@@ -159,6 +159,14 @@ def test_items():
     check(presentations.RIDERS_FROM == kind_of("cav", 2), "the screen knows riders by their kind")
 
 
+def test_own_gear():
+    names = [s[0] for s in scripts.scripts]
+    check("custom_gear_spread" not in names and "custom_gear_climb" not in names, "a purchase stays with its tier")
+    buy = dict(scripts.scripts)["custom_buy"]
+    changes = [op for op in buy if isinstance(op, tuple) and "script_custom_item_change" in op]
+    check(len(changes) == 1 and changes[0][2] == ":kind", "it goes on the kind that was picked, on nobody else")
+
+
 def test_prices():
     check(c.custom_recruits == (5, 10, 20) and c.custom_recruit_cost == 20, "5, 10 or 20 men at 20 dinars")
     check(c.custom_train_cost[1] == (3000, 5000) and c.custom_train_cost[5] == (30000, 40000), "training as ordered")
@@ -177,7 +185,18 @@ def test_dialogs():
     starts = [d for d in lines if d[1] == "start"]
     check(len(starts) == 3 and all(d[2][:2] == dialogs.JOHN for d in starts), "John's lines are his alone")
     check(starts[-1][2] == dialogs.JOHN, "and the one with no other condition comes last")
-    check(sum(1 for d in main if "rename" in d[3] and d[2] == dialogs.NOT_CLIENT) == 2, "only the host renames")
+    renames = [d for d in main if "rename" in d[3]]
+    check(len(renames) == 1 and renames[0][2] == dialogs.NOT_CLIENT, "one line to rename, for the host only")
+    what = [d for d in lines if d[1] == "custom_rename_what"]
+    check([d[5][0][2] for d in what[:2]] == [c.custom_screen_soldiers, c.custom_screen_company], "the army and the company apart")
+    pick = [d for d in lines if d[1] == "custom_pick"]
+    check([d[4] for d in pick] == ["close_window", "custom_tiers", "custom_tiers", "custom_tiers", "custom_what"],
+          "the recruit is picked at once, a branch asks for its tier")
+    check(len([d for d in lines if d[1] == "custom_pick_tier"]) == len(TIERS) + 1, "all four tiers, or someone else")
+    for branch, name in enumerate(BRANCH_NAMES):
+        check(1 + branch * len(TIERS) == kind_of(name, 2), "")  # as script_custom_tier_kind counts it
+    check(all(d[4] == "custom_who" for d in main if "gear" in d[3] or "stats" in d[3] if d[2] == dialogs.HAS_MEN),
+          "gear and training both ask whom")
     check(len([d for d in lines if d[1] == "custom_buy_many"]) == 4, "5, 10, 20, or nothing")
 
 
@@ -189,6 +208,7 @@ if __name__ == "__main__":
     test_stats()
     test_gear()
     test_items()
+    test_own_gear()
     test_prices()
     test_dialogs()
     print("all tests passed")

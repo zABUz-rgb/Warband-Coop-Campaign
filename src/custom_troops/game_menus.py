@@ -11,23 +11,30 @@ from custom_troops.constants import *
 
 
 def train_options():
+  """The menu's lines for the soldier picked in John's conversation ($custom_kind)."""
   options = []
-  for kind in range(custom_kinds):
-    for level in LEVELS[:-1]:
-      options.append(("custom_train_%d_%d" % (kind, level),
-        [
-          (call_script, "script_cf_custom_train_text", kind, level),
-          (try_begin),
-            (store_troop_gold, ":gold", "trp_player"),
-            (lt, ":gold", reg4),
-            (disable_menu_option),
-          (try_end),
-        ],
-        "{s1}: to level {reg2} ({reg3} men): {reg4} dinars.",
-        [
-          (call_script, "script_custom_train", kind, level),
-          (jump_to_menu, "mnu_custom_train"),
-        ]))
+  for level in LEVELS[:-1]:
+    options.append(("custom_train_%d" % level,
+      [
+        (call_script, "script_cf_custom_train_text", "$custom_kind", level),
+        (try_begin),
+          (store_troop_gold, ":gold", "trp_player"),
+          (lt, ":gold", reg4),
+          (disable_menu_option),
+        (try_end),
+      ],
+      "{s1}: to level {reg2} ({reg3} men): {reg4} dinars.",
+      [
+        (call_script, "script_custom_train", "$custom_kind", level),
+        (jump_to_menu, "mnu_custom_train"),
+      ]))
+  below_top = [op for level in LEVELS[:-1] for op in [
+    (call_script, "script_custom_troop", "$custom_kind", level),
+    (call_script, "script_custom_men", reg0),
+    (val_add, ":men", reg0),
+  ]]
+  options.append(("custom_train_none", [(assign, ":men", 0)] + below_top + [(eq, ":men", 0), (disable_menu_option)],
+                  "There is no one here to train.", []))
   return options
 
 
@@ -41,10 +48,12 @@ game_menus = [
      (try_begin),
        (eq, ":screen", custom_screen_shop),
        (call_script, "script_custom_items_init"),
-       (assign, "$custom_kind", -1),
        (start_presentation, "prsnt_custom_shop"),
      (else_try),
-       (eq, ":screen", custom_screen_names),
+       (this_or_next|eq, ":screen", custom_screen_names),
+       (this_or_next|eq, ":screen", custom_screen_company),
+       (eq, ":screen", custom_screen_soldiers),
+       (assign, "$custom_names_shown", ":screen"),
        (start_presentation, "prsnt_custom_names"),
      (else_try),
        (eq, ":screen", custom_screen_train),
@@ -57,13 +66,17 @@ game_menus = [
    ]),
 
   ("custom_train", 0,
-   "John Blackborn looks your men over. Training raises only their level of stats. Their tier stays as it is: it grows\
+   "{s11}, tier {reg11}.^^John Blackborn looks them over. Training raises only their level of stats. Their tier stays as it is: it grows\
  in battles and at the training field. The price is one for all the men of a kind who stand at a level. The game cannot\
  carry their experience across, so what they have gathered towards the next tier is lost: promote those who are ready\
  first.^^You have {reg10} dinars.", "none",
    [
      (call_script, "script_coop_ping_kick"),
      (store_troop_gold, reg10, "trp_player"),
+     (call_script, "script_custom_tier", "$custom_kind"),
+     (assign, reg11, reg0),
+     (call_script, "script_custom_troop", "$custom_kind", 1),
+     (str_store_troop_name, s11, reg0),
    ],
    train_options() + [
      ("custom_train_back", [], "That is all.", [(jump_to_menu, "mnu_custom_screen")]),

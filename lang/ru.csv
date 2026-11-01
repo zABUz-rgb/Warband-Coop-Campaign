@@ -1955,34 +1955,11 @@ game_menus|mno_custom_blackborn|Поговорить с Джоном Блэкб�
 game_menus|menu_custom_screen|Джон Блэкборн ждёт вашего слова.
 game_menus|mno_custom_screen_talk|Поговорить с Джоном Блэкборном.
 game_menus|mno_custom_screen_back|Назад.
-game_menus|menu_custom_train|Джон Блэкборн осматривает ваших людей. Обучение повышает только уровень характеристик. Тир остаётся прежним: он растёт в боях и на тренировочном поле. Цена одна за всех людей одного рода на одном уровне. Игра не может перенести их опыт, поэтому накопленное к следующему тиру пропадёт: сначала повысьте тех, кто уже готов.^^У вас {reg10} динаров.
+game_menus|menu_custom_train|{s11}, тир {reg11}.^^Джон Блэкборн осматривает их. Обучение повышает только уровень характеристик. Тир остаётся прежним: он растёт в боях и на тренировочном поле. Цена одна за всех людей одного рода на одном уровне. Игра не может перенести их опыт, поэтому накопленное к следующему тиру пропадёт: сначала повысьте тех, кто уже готов.^^У вас {reg10} динаров.
 game_menus|mno_custom_train_back|На этом всё.
-game_menus|mno_custom_train_0_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_0_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_1_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_1_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_2_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_2_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_3_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_3_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_4_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_4_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_5_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_5_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_6_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_6_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_7_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_7_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_8_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_8_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_9_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_9_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_10_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_10_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_11_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_11_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_12_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_12_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
+game_menus|mno_custom_train_none|Обучать здесь некого.
 dialogs_en|Sorry, there is nothing I can do for you.|Извини, мне нечем тебе помочь.
 dialogs_en|Good day. What brings you to me?|Добрый день. С чем пожаловали?
 dialogs_en|Good to see you, my lord.|Рад вас видеть, мой лорд.
@@ -1997,8 +1974,18 @@ dialogs_en|Of course, my lord. What exactly do you wish to do?|Конечно, �
 dialogs_en|Change my men's gear. Show me the equipment.|Переодеть моих людей. Покажи снаряжение.
 dialogs_en|Teach them new skills. Improve their stats.|Обучить их новым навыкам. Улучшить характеристики.
 dialogs_en|I want to buy soldiers for the company.|Я хочу купить войска в отряд.
-dialogs_en|I want to rename the company.|Я хочу переименовать отряд.
-dialogs_en|I want to rename my soldiers.|Я хочу переименовать воинов.
+dialogs_en|I want to rename something.|Я хочу кое-что переименовать.
+dialogs_en|What is to have a new name?|Что именно переименовать, мой лорд?
+dialogs_en|The army: its soldiers' names in the troop tree.|Войско: названия воинов в древе войск.
+dialogs_en|The company.|Отряд.
+dialogs_en|Which of them, my lord?|Кого именно, мой лорд?
+dialogs_en|Recruits.|Рекрутов.
+dialogs_en|Infantry.|Пехоту.
+dialogs_en|Archers.|Лучников.
+dialogs_en|Riders.|Всадников.
+dialogs_en|Which tier?|Какой тир?
+dialogs_en|{s1}, tier {reg1}.|{s1}, тир {reg1}.
+dialogs_en|Someone else.|Других.
 dialogs_en|Nothing, let us go on.|Ничего, продолжим.
 dialogs_en|You have none of my men.|У вас нет моих людей.
 dialogs_en|How many men do you want? Each one costs {reg1} dinars.|Сколько вы хотите купить воинов? Каждый стоит {reg1} динаров.
@@ -2007,7 +1994,7 @@ dialogs_en|They are yours, my lord. Anything else?|Они ваши, мой ло�
 quick_strings_en|You have no company of your own yet.|Своего отряда у вас пока нет.
 quick_strings_en|John Blackborn raises it, at the company's camp or in a town or castle of yours.|Его создаёт Джон Блэкборн: в лагере отряда, в вашем городе или замке.
 quick_strings_en|In a co-op game the host raises it, and it is the same for all the players.|В совместной игре его создаёт хост, и он один на всех игроков.
-quick_strings_en|Soldier:|Воин:
+quick_strings_en|Soldier: {s1}|Воин: {s1}
 quick_strings_en|Items:|Предметы:
 quick_strings_en|One-handed weapons|Одноручное оружие
 quick_strings_en|Two-handed weapons|Двуручное оружие

@@ -938,18 +938,17 @@ class World:
                 if q is not p:
                     q.army_out.append(([34, index], text))
 
-    def _army_gear(self, p, kind, bought, items):
+    def _army_gear(self, p, kind, items):
         """What a soldier carries, whoever chose it: the other games hear it, the battle server when it asks."""
-        self.army["gear"][kind] = (bought, items)
+        self.army["gear"][kind] = items
         for q in self.players.values():
             if q is not p:
-                q.army_out.append(([35, kind, bought, len(items)] + items, None))
+                q.army_out.append(([35, kind, len(items)] + items, None))
 
     def _army_replies(self):
         """All of the army, for a game that comes in."""
         names = [([34, index], text) for index, text in sorted(self.army["names"].items())]
-        return names + [([35, kind, bought, len(items)] + items, None)
-                        for kind, (bought, items) in sorted(self.army["gear"].items())]
+        return names + [([35, kind, len(items)] + items, None) for kind, items in sorted(self.army["gear"].items())]
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
                        on_server=False, faction=None, profile=None, together=None, profile_ask=False,
@@ -1685,7 +1684,7 @@ class World:
                 return [0]
             if b.state == "loading" and phase == 0:
                 # the player's army goes into the battle as it is equipped: first what changed of that
-                for kind, (_, items) in sorted(self.army["gear"].items()):
+                for kind, items in sorted(self.army["gear"].items()):
                     if self.army_told.get(kind) != items:
                         self.army_told[kind] = items
                         return [10, b.bid, kind, len(items)] + items
@@ -1855,8 +1854,8 @@ def parse_together(q):
     if v and len(v) >= 3 and len(v) % 2 == 1:
         out["store_put"] = v
     v = parse_ints(q.get("ag", "")) if "ag" in q else None
-    if v and len(v) >= 2 and 0 <= v[0] < ARMY_KINDS and len(v) - 2 <= ARMY_GEAR_MAX and all(item > 0 for item in v[2:]):
-        out["army_gear"] = (v[0], v[1], v[2:])
+    if v and 0 <= v[0] < ARMY_KINDS and len(v) - 1 <= ARMY_GEAR_MAX and all(item > 0 for item in v[1:]):
+        out["army_gear"] = (v[0], v[1:])
     index, _, text = q.get("an", "").partition(",")
     if index.isdigit() and int(index) <= ARMY_KINDS:
         out["army_name"] = (int(index), game_text_in(text).replace("|", " ").strip()[:ARMY_NAME_MAX])

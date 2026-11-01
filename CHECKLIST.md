@@ -190,14 +190,16 @@ Open (1.0.1, third part, nothing of this was played either; a new campaign is ne
 - army: raised with the usual names and with typed ones (Russian too); the tree's last button bears its name, a
   soldier shows once, at the highest level the party has;
 - recruits: 5, 10 and 20 at 20 dinars, an option goes when dinars or room are short;
+- John asks whom to equip or train: recruits at once; infantry, archers, riders then the tier; a renamed soldier
+  shows under its name there; one line to rename, then the army's soldiers and the company apart;
 - gear screen: opens from the talk (the menu's load starting a presentation is the unverified step), a click
   buys and the list stays on the same soldier and sort; item windows open and close with the mouse; a soldier in
-  battle really wears what was bought (non-hero troops take it from their inventory); a higher tier follows until
-  it gets gear of its own; what came from below sells for nothing;
+  battle really wears what was bought (non-hero troops take it from their inventory); each tier keeps its own: what
+  a recruit got, no other tier has; what a soldier started with sells for nothing;
 - training at John's: the men stay, the wounded stay wounded, the stack goes last; level names and prices in the
   menu; the tier never changes there; a training field gives footmen their full share in melee and raises tiers;
-- riders: militia footmen and archers offer a horse on the party screen once they have the experience; the tree's
-  card of an army soldier says tier and level of stats;
+- riders: militia footmen and archers offer a horse on the party screen once they have the experience, and the
+  tree's lines show it; the tree's card of an army soldier says tier and level of stats;
 - co-op: a client sees the host's names and gear within seconds of joining; a client's purchase reaches the host and
   stays in the host's save; bots on the battle server wear the bought gear (their names stay the usual ones);
 - removed: marks are gone from the menus; no chat line for lords raiding villages;

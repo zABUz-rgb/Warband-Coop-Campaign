@@ -19,6 +19,31 @@ def hire_lines():
            [(call_script, "script_custom_hire", men)]] for men in custom_recruits]
 
 
+def branch_lines():
+  """Whom the player means: the recruit is one soldier, a branch asks for its tier next."""
+  lines = [[anyone|plyr, "custom_pick", [], "Recruits.", "close_window",
+            [(assign, "$custom_kind", 0), (call_script, "script_custom_open", "$custom_for")]]]
+  for branch, name in enumerate(("Infantry.", "Archers.", "Riders.")):
+    lines.append([anyone|plyr, "custom_pick", [], name, "custom_tiers", [(assign, "$custom_branch", branch)]])
+  return lines
+
+
+def tier_lines():
+  return [[anyone|plyr, "custom_pick_tier",
+           [
+             (call_script, "script_custom_tier_kind", tier),
+             (call_script, "script_custom_troop", reg0, 1),
+             (str_store_troop_name, s1, reg0),
+             (assign, reg1, tier),
+           ],
+           "{s1}, tier {reg1}.", "close_window",
+           [
+             (call_script, "script_custom_tier_kind", tier),
+             (assign, "$custom_kind", reg0),
+             (call_script, "script_custom_open", "$custom_for"),
+           ]] for tier in TIERS]
+
+
 dialogs = [
   [anyone, "start", JOHN + [(eq, "$custom_army_made", 0), (eq, "$coop_role", coop_role_client)],
    "Sorry, there is nothing I can do for you.", "close_window", []],
@@ -39,19 +64,32 @@ dialogs = [
   [anyone|plyr, "custom_hello", [], "I need to see to my own troops.", "custom_what", []],
   [anyone|plyr, "custom_hello", [], "Nothing. Farewell.", "close_window", []],
   [anyone, "custom_what", [], "Of course, my lord. What exactly do you wish to do?", "custom_main", []],
-  [anyone|plyr, "custom_main", HAS_MEN, "Change my men's gear. Show me the equipment.", "close_window",
-   [(call_script, "script_custom_open", custom_screen_shop)]],
+  [anyone|plyr, "custom_main", HAS_MEN, "Change my men's gear. Show me the equipment.", "custom_who",
+   [(assign, "$custom_for", custom_screen_shop)]],
   [anyone|plyr, "custom_main", NO_MEN, "Change my men's gear. Show me the equipment.", "custom_no_men", []],
-  [anyone|plyr, "custom_main", HAS_MEN, "Teach them new skills. Improve their stats.", "close_window",
-   [(call_script, "script_custom_open", custom_screen_train)]],
+  [anyone|plyr, "custom_main", HAS_MEN, "Teach them new skills. Improve their stats.", "custom_who",
+   [(assign, "$custom_for", custom_screen_train)]],
   [anyone|plyr, "custom_main", NO_MEN, "Teach them new skills. Improve their stats.", "custom_no_men", []],
   [anyone|plyr, "custom_main", [], "I want to buy soldiers for the company.", "custom_buy", []],
-  [anyone|plyr, "custom_main", NOT_CLIENT, "I want to rename the company.", "close_window",
-   [(call_script, "script_custom_open", custom_screen_names)]],
-  [anyone|plyr, "custom_main", NOT_CLIENT, "I want to rename my soldiers.", "close_window",
-   [(call_script, "script_custom_open", custom_screen_names)]],
+  [anyone|plyr, "custom_main", NOT_CLIENT, "I want to rename something.", "custom_rename", []],
   [anyone|plyr, "custom_main", [], "Nothing, let us go on.", "close_window", []],
   [anyone, "custom_no_men", [], "You have none of my men.", "custom_main", []],
+
+  # whose gear, or whose training
+  [anyone, "custom_who", [], "Which of them, my lord?", "custom_pick", []],
+  ] + branch_lines() + [
+  [anyone|plyr, "custom_pick", [], "Nothing, let us go on.", "custom_what", []],
+  [anyone, "custom_tiers", [], "Which tier?", "custom_pick_tier", []],
+  ] + tier_lines() + [
+  [anyone|plyr, "custom_pick_tier", [], "Someone else.", "custom_who", []],
+
+  # names
+  [anyone, "custom_rename", [], "What is to have a new name?", "custom_rename_what", []],
+  [anyone|plyr, "custom_rename_what", [], "The army: its soldiers' names in the troop tree.", "close_window",
+   [(call_script, "script_custom_open", custom_screen_soldiers)]],
+  [anyone|plyr, "custom_rename_what", [], "The company.", "close_window",
+   [(call_script, "script_custom_open", custom_screen_company)]],
+  [anyone|plyr, "custom_rename_what", [], "Nothing, let us go on.", "custom_what", []],
 
   # recruits
   [anyone, "custom_buy", [(assign, reg1, custom_recruit_cost)], "How many men do you want? Each one costs {reg1} dinars.", "custom_buy_many", []],

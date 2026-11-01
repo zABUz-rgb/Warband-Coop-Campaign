@@ -10,8 +10,9 @@ from custom_troops.constants import *
 from custom_troops import item_tiers
 from custom_troops.presentations import scripts as screen_scripts
 
-# What John Blackborn does for the player's soldiers. Three levels of a kind wear the same; a kind's gear is
-# read from its first level. A soldier's kind and level give its troop: custom_first + 3 * kind + level - 1.
+# What John Blackborn does for the player's soldiers. Three levels of a kind wear the same, and each kind, so each
+# tier of a branch, has gear of its own; it is read from the first level.
+# A soldier's kind and level give its troop: custom_first + 3 * kind + level - 1.
 # In a co-op session what changes goes to the other games as a word (script_cf_custom_word_send): the host
 # makes the army, the bridge remembers it, a game that joins hears all of it (tools/coop_bridge.py).
 
@@ -68,6 +69,15 @@ scripts = [
        (val_mod, reg0, len(TIERS)),
        (val_add, reg0, 2),
      (try_end),
+    ]),
+
+  # script_custom_tier_kind: arg1 = tier; reg0 = that tier's kind in the branch $custom_branch
+  ("custom_tier_kind",
+   [
+     (store_script_param, ":tier", 1),
+     (store_mul, reg0, "$custom_branch", len(TIERS)),
+     (val_add, reg0, ":tier"),
+     (val_sub, reg0, 1),
     ]),
 
   # script_custom_men: arg1 = troop; reg0 = how many of it stand in the player's party
@@ -175,56 +185,6 @@ scripts = [
      (troop_set_slot, custom_holder, ":slot", 1),
     ]),
 
-  # script_custom_gear_spread: arg1 = kind, arg2 = item, arg3 = 1 add, 0 take away: the same for the tiers
-  # above, in each branch up to the first the player chose gear for: what a man wore stays his as he rises
-  ("custom_gear_spread",
-   [
-     (store_script_param, ":kind", 1),
-     (store_script_param, ":item", 2),
-     (store_script_param, ":add", 3),
-     (try_begin),
-       (eq, ":kind", 0),
-       (try_for_range, ":branch", 0, len(BRANCH_NAMES)),
-         (store_mul, ":from", ":branch", len(TIERS)),
-         (val_add, ":from", 1),
-         (call_script, "script_custom_gear_climb", ":from", ":item", ":add"),
-       (try_end),
-     (else_try),
-       (store_mod, ":top", ":kind", len(TIERS)),
-       (neq, ":top", 0), #tier 5 is the last
-       (store_add, ":from", ":kind", 1),
-       (call_script, "script_custom_gear_climb", ":from", ":item", ":add"),
-     (try_end),
-    ]),
-
-  # script_custom_gear_climb: arg1 = the first kind up the branch, arg2, arg3 as above
-  ("custom_gear_climb",
-   [
-     (store_script_param, ":from", 1),
-     (store_script_param, ":item", 2),
-     (store_script_param, ":add", 3),
-     (store_sub, ":to", ":from", 1),
-     (val_div, ":to", len(TIERS)),
-     (val_add, ":to", 1),
-     (val_mul, ":to", len(TIERS)),
-     (val_add, ":to", 1), #past the branch's tier 5
-     (assign, ":go", 1),
-     (try_for_range, ":kind", ":from", ":to"),
-       (eq, ":go", 1),
-       (store_add, ":slot", custom_slot_bought, ":kind"),
-       (troop_get_slot, ":bought", custom_holder, ":slot"),
-       (try_begin),
-         (eq, ":bought", 1),
-         (assign, ":go", 0),
-       (else_try),
-         (call_script, "script_custom_gear_count", ":kind"),
-         (this_or_next|eq, ":add", 0),
-         (lt, reg0, custom_gear_max),
-         (call_script, "script_custom_item_change", ":kind", ":item", ":add"),
-       (try_end),
-     (try_end),
-    ]),
-
   # script_custom_prices: arg1 = item; reg0 = what it costs for soldiers, reg1 = what it sells for. Native's
   # penalty for an item, 100 less 5 for each point of Trade, counts from the price with no Trade at all
   ("custom_prices",
@@ -276,10 +236,7 @@ scripts = [
        (item_get_slot, ":paid", ":item", slot_item_custom_paid),
        (val_add, ":paid", 1),
        (item_set_slot, ":item", slot_item_custom_paid, ":paid"),
-       (store_add, ":slot", custom_slot_bought, ":kind"),
-       (troop_set_slot, custom_holder, ":slot", 1),
        (call_script, "script_custom_item_change", ":kind", ":item", 1),
-       (call_script, "script_custom_gear_spread", ":kind", ":item", 1),
      (try_end),
     ]),
 
@@ -300,10 +257,7 @@ scripts = [
          (call_script, "script_custom_prices", ":item"),
          (troop_add_gold, "trp_player", reg1),
        (try_end),
-       (store_add, ":slot", custom_slot_bought, ":kind"),
-       (troop_set_slot, custom_holder, ":slot", 1),
        (call_script, "script_custom_item_change", ":kind", ":item", 0),
-       (call_script, "script_custom_gear_spread", ":kind", ":item", 0),
      (try_end),
     ]),
 
@@ -518,10 +472,8 @@ scripts = [
   ("custom_gear_word",
    [
      (store_script_param, ":kind", 1),
-     (store_add, ":slot", custom_slot_bought, ":kind"),
-     (troop_get_slot, reg8, custom_holder, ":slot"),
      (assign, reg7, ":kind"),
-     (str_store_string, s17, "@&ag={reg7},{reg8}"),
+     (str_store_string, s17, "@&ag={reg7}"),
      (call_script, "script_custom_troop", ":kind", 1),
      (assign, ":troop", reg0),
      (troop_get_inventory_capacity, ":capacity", ":troop"),
@@ -542,8 +494,7 @@ scripts = [
      (try_end),
     ]),
 
-  # script_custom_reply: arg1 = reply kind: 34 a name came (s0), 35 a kind's gear:
-  # kind, bought, n, items...
+  # script_custom_reply: arg1 = reply kind: 34 a name came (s0), 35 a kind's gear: kind, n, items...
   ("custom_reply",
    [
      (store_script_param, ":reply", 1),
@@ -559,12 +510,8 @@ scripts = [
        (eq, ":reply", 35),
        (party_get_slot, ":kind", BUF, BUF_FIRST),
        (store_add, ":at", BUF_FIRST, 1),
-       (party_get_slot, ":bought", BUF, ":at"),
-       (val_add, ":at", 1),
        (party_get_slot, ":n", BUF, ":at"),
        (val_add, ":at", 1),
-       (store_add, ":slot", custom_slot_bought, ":kind"),
-       (troop_set_slot, custom_holder, ":slot", ":bought"),
        (store_add, ":end", ":at", ":n"),
        ] + [op for level in LEVELS for op in [
        (call_script, "script_custom_troop", ":kind", level),

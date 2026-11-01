@@ -583,17 +583,17 @@ def test_trail():
 
 def test_army():
     w, lines = two_players()
-    check(cb.parse_together({"ag": "3,1,10,20,30"}) == {"army_gear": (3, 1, [10, 20, 30])}, "a soldier's gear is read")
-    check(cb.parse_together({"ag": "3,0"}) == {"army_gear": (3, 0, [])}, "a soldier may carry nothing")
-    check(cb.parse_together({"ag": "13,1,10"}) is None, "there is no such soldier")
-    check(cb.parse_together({"ag": "3,1," + ",".join(["5"] * 25)}) is None, "nor so much gear")
+    check(cb.parse_together({"ag": "3,10,20,30"}) == {"army_gear": (3, [10, 20, 30])}, "a soldier's gear is read")
+    check(cb.parse_together({"ag": "3"}) == {"army_gear": (3, [])}, "a soldier may carry nothing")
+    check(cb.parse_together({"ag": "13,10"}) is None, "there is no such soldier")
+    check(cb.parse_together({"ag": "3," + ",".join(["5"] * 25)}) is None, "nor so much gear")
     check(cb.parse_together({"an": "0,The Wolves"}) == {"army_name": (0, "The Wolves")}, "a name is read, spaces and all")
     check(cb.parse_together({"an": "14,x"}) is None, "and only of what has a name")
     req(w, "h", on_server=True, now=0.5, together={"army_name": (0, "The Wolves")})
     heard = [req(w, "a", now=0.6) for _ in range(3)]
     check(([34, 0], "The Wolves") in heard, f"the clients hear the army's name: {heard}")
-    req(w, "a", now=0.7, together={"army_gear": (2, 1, [10, 20])})
-    gear = ([35, 2, 1, 2, 10, 20], None)
+    req(w, "a", now=0.7, together={"army_gear": (2, [10, 20])})
+    gear = ([35, 2, 2, 10, 20], None)
     check(gear in [req(w, "h", on_server=True, now=0.8) for _ in range(3)], "a client's purchase reaches the host's save")
     check(gear in [req(w, "b", now=0.8) for _ in range(3)], "and the other client")
     check(gear not in [req(w, "a", now=0.8) for _ in range(3)], "not the one who bought it")

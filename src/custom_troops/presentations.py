@@ -9,8 +9,10 @@ from custom_troops.constants import *
 
 # John Blackborn's two screens, each drawn anew after every click, as the troop tree is.
 # custom_shop: what a soldier may be given on the left, what he has on the right. $custom_kind is the soldier,
-# $custom_category the sort of item. In MAP an overlay stands for item + 1 to buy, -(item + 1) to sell.
-# custom_names: the army's name and the soldiers'. In MAP a text box stands for 1 + what it names.
+# picked in John's conversation, $custom_category the sort of item. In MAP an overlay stands for item + 1 to buy,
+# -(item + 1) to sell.
+# custom_names: the company's name and the soldiers', as $custom_names_shown says. In MAP a text box stands for
+# 1 + what it names.
 
 # (what the list says, the sort of item); horses last: only riders get them
 CATEGORIES = [("One-handed weapons", itp_type_one_handed_wpn), ("Two-handed weapons", itp_type_two_handed_wpn),
@@ -61,6 +63,8 @@ def name_rows():
   for index, label in enumerate(labels):
     y = NAME_TOP - index * NAME_ROW
     ops += [
+      (try_begin),
+      (neq, "$custom_names_shown", custom_screen_company if index else custom_screen_soldiers),
       (str_store_string, s0, "@" + label),
       (call_script, "script_coop_tree_text", NAME_LABEL_X, y + 8),
       (create_simple_text_box_overlay, reg0),
@@ -70,6 +74,7 @@ def name_rows():
       (troop_set_slot, MAP, reg0, index + 1),
       (call_script, "script_custom_name_to_s0", index),
       (overlay_set_text, reg0, s0),
+      (try_end),
     ]
   return ops
 
@@ -211,25 +216,6 @@ presentations = [
         (try_for_range, ":k", 0, MAP_SLOTS),
           (troop_set_slot, MAP, ":k", 0),
         (try_end),
-        # the soldiers there are, the one shown among them
-        (assign, ":lines", 0),
-        (assign, ":line_shown", -1),
-        (try_for_range, ":kind", 0, custom_kinds),
-          (call_script, "script_custom_men_of_kind", ":kind"),
-          (gt, reg0, 0),
-          (store_add, ":slot", custom_slot_shown, ":lines"),
-          (troop_set_slot, custom_holder, ":slot", ":kind"),
-          (try_begin),
-            (eq, ":kind", "$custom_kind"),
-            (assign, ":line_shown", ":lines"),
-          (try_end),
-          (val_add, ":lines", 1),
-        (try_end),
-        (try_begin),
-          (eq, ":line_shown", -1),
-          (assign, ":line_shown", 0),
-          (troop_get_slot, "$custom_kind", custom_holder, custom_slot_shown),
-        (try_end),
         # riders alone get horses
         (assign, ":categories", FOOT_CATEGORIES),
         (try_begin),
@@ -240,23 +226,11 @@ presentations = [
           (ge, "$custom_category", ":categories"),
           (assign, "$custom_category", 0),
         (try_end),
-        (str_store_string, s0, "@Soldier:"),
+        (store_add, ":index", "$custom_kind", 1),
+        (call_script, "script_custom_name_to_s0", ":index"),
+        (str_store_string, s1, s0),
+        (str_store_string, s0, "@Soldier: {s1}"),
         (call_script, "script_coop_tree_text", LEFT_X, 700),
-        (create_combo_button_overlay, "$custom_combo_kind"),
-        (position_set_x, pos1, 800),
-        (position_set_y, pos1, 800),
-        (overlay_set_size, "$custom_combo_kind", pos1),
-        (position_set_x, pos1, 220),
-        (position_set_y, pos1, 695),
-        (overlay_set_position, "$custom_combo_kind", pos1),
-        (try_for_range, ":line", 0, ":lines"),
-          (store_add, ":slot", custom_slot_shown, ":line"),
-          (troop_get_slot, ":kind", custom_holder, ":slot"),
-          (store_add, ":index", ":kind", 1),
-          (call_script, "script_custom_name_to_s0", ":index"),
-          (overlay_add_item, "$custom_combo_kind", s0),
-        (try_end),
-        (overlay_set_val, "$custom_combo_kind", ":line_shown"),
         (str_store_string, s0, "@Items:"),
         (call_script, "script_coop_tree_text", LEFT_X, 655),
         (create_combo_button_overlay, "$custom_combo_category"),
@@ -324,11 +298,6 @@ presentations = [
           (eq, ":object", "$custom_close"),
           (close_item_details),
           (presentation_set_duration, 0),
-        (else_try),
-          (eq, ":object", "$custom_combo_kind"),
-          (store_add, ":slot", custom_slot_shown, ":value"),
-          (troop_get_slot, "$custom_kind", custom_holder, ":slot"),
-          (start_presentation, "prsnt_custom_shop"),
         (else_try),
           (eq, ":object", "$custom_combo_category"),
           (assign, "$custom_category", ":value"),

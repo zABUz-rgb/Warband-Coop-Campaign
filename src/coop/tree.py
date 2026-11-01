@@ -96,14 +96,18 @@ def branch_rows(roots, troops, taken):
 
 
 def army_rows():
-  """The army's rows: the recruit, then each branch's tiers (a row's number is its kind of soldier)."""
+  """The army's rows: the recruit, then each branch's tiers (a row's number is its kind of soldier). The riders
+  grow from the militia: a row has one parent, so ARMY_ALSO gives them the second."""
   rows = [(troop_id(0, 1), 0, -1)]
   for branch in BRANCH_NAMES:
-    parent = 0
+    parent = kind_of("inf", TIERS[0]) if branch == "cav" else 0
     for tier in TIERS:
-      rows.append((troop_id(kind_of(branch, tier), 1), tier - 1, parent))
+      rows.append((troop_id(kind_of(branch, tier), 1), rows[parent][1] + 1, parent))
       parent = len(rows) - 1
   return rows
+
+
+ARMY_ALSO = [(kind_of("arc", TIERS[0]), kind_of("cav", TIERS[0]))]  # (the row, the row it grows into as well)
 
 
 def layout():
@@ -138,11 +142,11 @@ def place(rows):
   return [(FIRST_X + row[1] * COLUMN, high - 10 - PORTRAIT // 2 - down[i]) for i, row in enumerate(rows)]
 
 
-def links(rows, at):
+def links(rows, at, also=()):
   """[(x, y, width, height)]: the lines from each troop to those it grows into."""
   lines = []
   for i, (x, y) in enumerate(at):
-    grown = [at[k] for k, row in enumerate(rows) if row[2] == i]
+    grown = [at[k] for k, row in enumerate(rows) if row[2] == i] + [at[k] for parent, k in also if parent == i]
     if not grown:
       continue
     if len(grown) == 1 and grown[0][1] == y:
@@ -179,7 +183,8 @@ def rows_ops():
     at = place(rows)
     if i == len(BRANCHES):
       ops += [(eq, "$custom_army_made", 1)]
-    ops += [(call_script, "script_coop_tree_plane", *line) for line in links(rows, at)]
+    also = ARMY_ALSO if i == len(BRANCHES) else ()
+    ops += [(call_script, "script_coop_tree_plane", *line) for line in links(rows, at, also)]
     if i == len(BRANCHES):
       for kind, (x, y) in enumerate(at):
         ops += [(call_script, "script_custom_shown", kind), (call_script, "script_coop_tree_node", reg0, x, y)]
