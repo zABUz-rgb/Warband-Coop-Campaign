@@ -33,7 +33,7 @@ BRANCHES = [
 ]
 # The last branch is the player's own army (src/custom_troops), under the name the player gave it: one
 # portrait for each kind of soldier, at the highest level of stats the player has.
-ARMY_TEXT = ["You have no company of your own yet.",
+ARMY_TEXT = ["You have no army of your own yet.",
              "John Blackborn raises it, at the company's camp or in a town or castle of yours.",
              "In a co-op game the host raises it, and it is the same for all the players."]
 

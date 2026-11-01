@@ -52,7 +52,7 @@ dialogs = [
   [anyone, "start", JOHN, "Good to see you, my lord.", "custom_hello", []],
 
   # the army is not there yet
-  [anyone|plyr, "custom_new", [], "I want to raise a company of my own.", "custom_name_ask", []],
+  [anyone|plyr, "custom_new", [], "I want to raise an army of my own.", "custom_name_ask", []],
   [anyone|plyr, "custom_new", [], "Nothing. Farewell.", "close_window", []],
   [anyone, "custom_name_ask", [], "What would you like to call it? And how shall the men of each tier be known?", "custom_name_how", []],
   [anyone|plyr, "custom_name_how", [], "I will write the names myself.", "close_window",
@@ -85,10 +85,10 @@ dialogs = [
 
   # names
   [anyone, "custom_rename", [], "What is to have a new name?", "custom_rename_what", []],
-  [anyone|plyr, "custom_rename_what", [], "The army: its soldiers' names in the troop tree.", "close_window",
+  [anyone|plyr, "custom_rename_what", [], "The army: its common name.", "close_window",
+   [(call_script, "script_custom_open", custom_screen_army)]],
+  [anyone|plyr, "custom_rename_what", [], "The units: their own names, such as archers.", "close_window",
    [(call_script, "script_custom_open", custom_screen_soldiers)]],
-  [anyone|plyr, "custom_rename_what", [], "The company.", "close_window",
-   [(call_script, "script_custom_open", custom_screen_company)]],
   [anyone|plyr, "custom_rename_what", [], "Nothing, let us go on.", "custom_what", []],
 
   # recruits

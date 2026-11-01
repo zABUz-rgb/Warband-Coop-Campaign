@@ -41,8 +41,8 @@ custom_train_cost = {1: (3000, 5000), 2: (7500, 10000), 3: (12500, 15000), 4: (1
 custom_screen_shop = 1              # $custom_screen: what opens once John's conversation is over
 custom_screen_names = 2
 custom_screen_train = 3
-custom_screen_company = 4           # the names screen with the company's name alone
-custom_screen_soldiers = 5          # and with the soldiers' alone (custom_screen_names has both)
+custom_screen_army = 4              # the names screen with the army's common name alone
+custom_screen_soldiers = 5          # and with the units' own names alone (custom_screen_names has both)
 
 custom_word_gap = 2                 # a word to the others goes out, then this many ordinary requests' turns
 custom_kind_labels = ["Recruit"] + ["%s, tier %d" % (name, tier) for name in ("Infantry", "Archers", "Riders") for tier in TIERS]

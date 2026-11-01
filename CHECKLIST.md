@@ -191,7 +191,7 @@ Open (1.0.1, third part, nothing of this was played either; a new campaign is ne
   soldier shows once, at the highest level the party has;
 - recruits: 5, 10 and 20 at 20 dinars, an option goes when dinars or room are short;
 - John asks whom to equip or train: recruits at once; infantry, archers, riders then the tier; a renamed soldier
-  shows under its name there; one line to rename, then the army's soldiers and the company apart;
+  shows under its name there; one line to rename, then the army's common name and the units' own apart;
 - gear screen: opens from the talk (the menu's load starting a presentation is the unverified step), a click
   buys and the list stays on the same soldier and sort; item windows open and close with the mouse; a soldier in
   battle really wears what was bought (non-hero troops take it from their inventory); each tier keeps its own: what

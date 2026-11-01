@@ -11,7 +11,7 @@ from custom_troops.constants import *
 # custom_shop: what a soldier may be given on the left, what he has on the right. $custom_kind is the soldier,
 # picked in John's conversation, $custom_category the sort of item. In MAP an overlay stands for item + 1 to buy,
 # -(item + 1) to sell.
-# custom_names: the company's name and the soldiers', as $custom_names_shown says. In MAP a text box stands for
+# custom_names: the army's common name and the units' own, as $custom_names_shown says. In MAP a text box stands for
 # 1 + what it names.
 
 # (what the list says, the sort of item); horses last: only riders get them
@@ -59,12 +59,12 @@ def category_type():
 
 def name_rows():
   ops = []
-  labels = ["The company"] + custom_kind_labels
+  labels = ["The army"] + custom_kind_labels
   for index, label in enumerate(labels):
     y = NAME_TOP - index * NAME_ROW
     ops += [
       (try_begin),
-      (neq, "$custom_names_shown", custom_screen_company if index else custom_screen_soldiers),
+      (neq, "$custom_names_shown", custom_screen_army if index else custom_screen_soldiers),
       (str_store_string, s0, "@" + label),
       (call_script, "script_coop_tree_text", NAME_LABEL_X, y + 8),
       (create_simple_text_box_overlay, reg0),

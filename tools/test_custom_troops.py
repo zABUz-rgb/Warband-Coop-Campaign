@@ -188,7 +188,7 @@ def test_dialogs():
     renames = [d for d in main if "rename" in d[3]]
     check(len(renames) == 1 and renames[0][2] == dialogs.NOT_CLIENT, "one line to rename, for the host only")
     what = [d for d in lines if d[1] == "custom_rename_what"]
-    check([d[5][0][2] for d in what[:2]] == [c.custom_screen_soldiers, c.custom_screen_company], "the army and the company apart")
+    check([d[5][0][2] for d in what[:2]] == [c.custom_screen_army, c.custom_screen_soldiers], "the army's name and the units' apart")
     pick = [d for d in lines if d[1] == "custom_pick"]
     check([d[4] for d in pick] == ["close_window", "custom_tiers", "custom_tiers", "custom_tiers", "custom_what"],
           "the recruit is picked at once, a branch asks for its tier")

@@ -51,7 +51,7 @@ game_menus = [
        (start_presentation, "prsnt_custom_shop"),
      (else_try),
        (this_or_next|eq, ":screen", custom_screen_names),
-       (this_or_next|eq, ":screen", custom_screen_company),
+       (this_or_next|eq, ":screen", custom_screen_army),
        (eq, ":screen", custom_screen_soldiers),
        (assign, "$custom_names_shown", ":screen"),
        (start_presentation, "prsnt_custom_names"),

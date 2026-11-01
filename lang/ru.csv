@@ -1963,12 +1963,12 @@ game_menus|mno_custom_train_none|Обучать здесь некого.
 dialogs_en|Sorry, there is nothing I can do for you.|Извини, мне нечем тебе помочь.
 dialogs_en|Good day. What brings you to me?|Добрый день. С чем пожаловали?
 dialogs_en|Good to see you, my lord.|Рад вас видеть, мой лорд.
-dialogs_en|I want to raise a company of my own.|Я хочу создать свой собственный отряд.
+dialogs_en|I want to raise an army of my own.|Я хочу создать своё собственное войско.
 dialogs_en|Nothing. Farewell.|Ничего. Прощай.
 dialogs_en|What would you like to call it? And how shall the men of each tier be known?|Как бы вы хотели его назвать? И как звать воинов каждого тира?
 dialogs_en|I will write the names myself.|Дай мне вписать названия.
 dialogs_en|Leave the usual names.|Оставь обычные названия.
-dialogs_en|It is done: {s1} stands ready, my lord. What now?|Готово: отряд «{s1}» создан, мой лорд. Что дальше?
+dialogs_en|It is done: {s1} stands ready, my lord. What now?|Готово: войско «{s1}» создано, мой лорд. Что дальше?
 dialogs_en|I need to see to my own troops.|Мне нужно заняться моими личными войсками.
 dialogs_en|Of course, my lord. What exactly do you wish to do?|Конечно, мой лорд. Что именно вы хотите сделать?
 dialogs_en|Change my men's gear. Show me the equipment.|Переодеть моих людей. Покажи снаряжение.
@@ -1976,8 +1976,8 @@ dialogs_en|Teach them new skills. Improve their stats.|Обучить их но�
 dialogs_en|I want to buy soldiers for the company.|Я хочу купить войска в отряд.
 dialogs_en|I want to rename something.|Я хочу кое-что переименовать.
 dialogs_en|What is to have a new name?|Что именно переименовать, мой лорд?
-dialogs_en|The army: its soldiers' names in the troop tree.|Войско: названия воинов в древе войск.
-dialogs_en|The company.|Отряд.
+dialogs_en|The army: its common name.|Войско: общее название.
+dialogs_en|The units: their own names, such as archers.|Отряды: отдельные названия, например «лучники».
 dialogs_en|Which of them, my lord?|Кого именно, мой лорд?
 dialogs_en|Recruits.|Рекрутов.
 dialogs_en|Infantry.|Пехоту.
@@ -1991,7 +1991,7 @@ dialogs_en|You have none of my men.|У вас нет моих людей.
 dialogs_en|How many men do you want? Each one costs {reg1} dinars.|Сколько вы хотите купить воинов? Каждый стоит {reg1} динаров.
 dialogs_en|Nothing, forget it.|Ничего, забудь.
 dialogs_en|They are yours, my lord. Anything else?|Они ваши, мой лорд. Что-нибудь ещё?
-quick_strings_en|You have no company of your own yet.|Своего отряда у вас пока нет.
+quick_strings_en|You have no army of your own yet.|Своего войска у вас пока нет.
 quick_strings_en|John Blackborn raises it, at the company's camp or in a town or castle of yours.|Его создаёт Джон Блэкборн: в лагере отряда, в вашем городе или замке.
 quick_strings_en|In a co-op game the host raises it, and it is the same for all the players.|В совместной игре его создаёт хост, и он один на всех игроков.
 quick_strings_en|Soldier: {s1}|Воин: {s1}
@@ -2011,7 +2011,7 @@ quick_strings_en|Horses|Лошади
 quick_strings_en|Tier {reg1}. You have {reg2} dinars.|Тир {reg1}. У вас {reg2} динаров.
 quick_strings_en|A click on the left buys, a click on the right sells.|Щелчок слева покупает, щелчок справа продаёт.
 quick_strings_en|Names: leave a box as it is to keep the name.|Названия: не меняйте строку, если название подходит.
-quick_strings_en|The company|Отряд
+quick_strings_en|The army|Войско
 quick_strings_en|Soldiers of this tier may not have that.|Воинам этого тира это не положено.
 quick_strings_en|A soldier carries no more than {reg1} things.|Воин несёт не больше {reg1} предметов.
 quick_strings_en|You have too few dinars.|Не хватает динаров.
