@@ -3120,6 +3120,7 @@ def run_host(args, log):
     serve_http(parse_addr(args.client, 80), answer_player, log, "cli")
     serve_http(parse_addr(args.mp, 80), lambda t: handle_request(world, "mp", t, time.time()), log, "mp")
     threading.Thread(target=watch_signal, daemon=True).start()
+    tell_full_screen(documents_dir() / "Mount&Blade Warband" / "rgl_config.txt", log)
     if args.key:
         serve_relays(parse_addr(args.listen, NET_PORT), world, args.key, args.save_dir, log)
         serve_battle_hub(parse_addr(args.listen, NET_PORT), args.key, args.battle_port, args.battle_from, log)

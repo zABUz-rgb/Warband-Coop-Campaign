@@ -1681,6 +1681,8 @@ def test_lan_search():
         config.write_text("start_windowed = 0\n", encoding="utf-8")
         cb.tell_full_screen(config, told.append)
         assert len(told) == 1 and "full screen" in told[0] and "Start windowed" in told[0], told
+        # 19:32, 1.11: the host's campaign window hung the same way and only join.bat had warned
+        assert cb.run_host.__code__.co_names.count("tell_full_screen") == 1
 
 
 def test_no_enemy_left():
