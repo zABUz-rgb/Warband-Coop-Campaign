@@ -524,6 +524,7 @@ together_scripts = [
        (troop_get_slot, ":value", STORE, ":at"),
        (store_mod, ":imod", ":value", 100),
        (store_div, ":amount", ":value", 100),
+       (is_between, ":item", 0, all_items_end),
        (troop_add_item, "trp_temp_troop", ":item", ":imod"),
        (gt, ":amount", 0),
        (store_add, ":slot", ":k", 10), #a cleared inventory fills from its first free slot

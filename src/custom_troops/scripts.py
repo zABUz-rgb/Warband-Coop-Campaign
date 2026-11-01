@@ -584,6 +584,7 @@ scripts = [
        (call_script, "script_custom_gear_clear", ":troop"),
        (try_for_range, ":item_at", ":at", ":end"),
          (party_get_slot, ":item", BUF, ":item_at"),
+         (is_between, ":item", 0, all_items_end),
          (troop_add_item, ":troop", ":item"),
        (try_end),
        ]] + [
@@ -609,6 +610,7 @@ scripts = [
      (call_script, "script_custom_gear_clear", ":troop"),
      (try_for_range, ":at", 5, ":end"),
        (troop_get_slot, ":item", MP_BUF, ":at"),
+       (is_between, ":item", 0, all_items_end),
        (troop_add_item, ":troop", ":item"),
      (try_end),
      ]] + [

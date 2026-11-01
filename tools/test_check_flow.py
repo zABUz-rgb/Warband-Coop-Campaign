@@ -175,6 +175,29 @@ def test_hero_reads_what_it_writes():
     check(len(written) == len(taken) == 35, f"a kept hero is read as it was written: {len(written)} and {len(taken)} kinds of number")
 
 
+def test_holders_apart():
+    from coop.players import OFFER
+    from coop.profile import PROFILE_IN, PROFILE_OUT
+    from coop.together import NOTES, STORE
+    from trail.marks import trail_holder, trail_slot_seq
+    holders = [PROFILE_IN, PROFILE_OUT, NOTES, STORE, OFFER]
+    check(len(set(holders)) == len(holders), f"no two buffers on one troop: {holders}")
+    check(trail_holder not in (PROFILE_IN, PROFILE_OUT, STORE, OFFER), "the debug trail writes over no buffer that is read as items")
+    check(trail_slot_seq >= 64, "the debug trail starts past the notes")
+
+
+def test_item_numbers_checked():
+    import module_scripts
+    from module_constants import all_items_end
+    block = {s[0]: s[1] for s in module_scripts.scripts}
+    for name in ("coop_profile_apply", "custom_reply", "custom_mp_gear", "coop_store_show", "coop_mp_reply"):
+        body = block[name]
+        for at, op in enumerate(body):
+            if isinstance(op, tuple) and op[0] in (troop_add_item, troop_set_inventory_slot) and op[-1 if op[0] == troop_set_inventory_slot else 2] == ":item":
+                near = [o for o in body[max(0, at - 5):at] if isinstance(o, tuple) and ":item" in o and all_items_end in o]
+                check(near, f"{name}: a number that comes from outside is looked at before the engine takes it as an item")
+
+
 def test_tournament_teams():
     import module_scripts
     kills = next(s[1] for s in module_scripts.scripts if s[0] == "add_kill_death_counts")
@@ -193,6 +216,8 @@ if __name__ == "__main__":
     test_data()
     test_john()
     test_hero_reads_what_it_writes()
+    test_holders_apart()
+    test_item_numbers_checked()
     test_tournament_teams()
     test_real()
     print("all tests passed")

@@ -16,12 +16,14 @@ from coop.constants import *
 #   members n, (troop, count, wounded) * n, prisoners n, (troop, count) * n,
 #   and from version 2: health, companions n, (troop, health, xp, HERO) * n
 # HERO: 4 attributes, NUM_SKILLS skills, 7 proficiencies, inventory capacity, (item, modifier, amount) * capacity
-# trp_tutorial_student_3 keeps the profile coming in, trp_tutorial_student_4 the one going out.
+# Each holder keeps this and nothing else: the notes and the debug trail sit on trp_tutorial_student_3, the party
+# store on trp_tutorial_student_4, and a number of theirs read as an item here takes the game down: the engine does
+# not check an item's number (tools/test_check_flow.py keeps the holders apart).
 
 PROFILE_VERSION = 2
 NUM_SKILLS = 42
-PROFILE_IN = "trp_tutorial_student_3"
-PROFILE_OUT = "trp_tutorial_student_4"
+PROFILE_IN = "trp_tutorial_master_archer"
+PROFILE_OUT = "trp_tutorial_master_horseman"
 
 
 def put(value):
@@ -84,6 +86,10 @@ def hero_in(hero):
     (try_for_range, ":i", 0, ":saved_capacity"),
       ] + take(":item") + take(":modifier") + take(":amount") + [
       (lt, ":i", ":capacity"),
+      (try_begin),
+        (ge, ":item", all_items_end), #a number that is no item stops the game, not the script: the slot stays empty
+        (assign, ":item", -1),
+      (try_end),
       (troop_set_inventory_slot, hero, ":i", ":item"),
       (ge, ":item", 0),
       (troop_set_inventory_slot_modifier, hero, ":i", ":modifier"),
