@@ -1478,9 +1478,6 @@ mp_campaign_menus = [
        (eq, "$coop_mp_inv_type", 6),
        (str_store_string, s2, "@{s1} calls you to train together.^^You fight side by side on the multiplayer server, in practice gear, against your own men, and your troops learn from it."),
      (else_try),
-       (eq, "$coop_mp_inv_type", 3),
-       (str_store_string, s2, "@{s1}, whose party you follow, goes into battle - you are called!^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side. Join it there; if you do not, your troops fight without you."),
-     (else_try),
        (eq, "$coop_mp_inv_type", 2),
        (str_store_string, s2, "@{s1} attacks you!^^The battle is fought on the multiplayer server. Join it there; if you do not, your troops fight without you."),
      (else_try),
@@ -1630,7 +1627,7 @@ def client_map_tick():
       (map_free),
       (neq, "$freelancer_state", 1),
       (neq, "$g_player_is_captive", 1),
-      (eq, "$coop_leader", 0),
+      (eq, "$coop_follow_party", 0), #a ride holds by itself, and tells a click from its own hold
       (party_get_attached_to, ":attached_to", "p_main_party"),
       (lt, ":attached_to", 0),
       (party_set_ai_behavior, "p_main_party", ai_bhvr_hold),

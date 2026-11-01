@@ -575,13 +575,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 
 ИГРОКИ ВМЕСТЕ
   Лагерь - "CoopWorld: кооператив..." - "CoopWorld: другие игроки": кто в мире и как далеко;
-  попроситься в отряд (откуда угодно), передать войска (если игрок рядом, до 3 км), записать
-  своего героя у хоста прямо сейчас.
+  следовать за игроком, передать войска (если игрок рядом, до 3 км), записать своего героя у хоста
+  прямо сейчас.
   Встретив на карте отряд другого игрока, сразу открывается меню (без разговора), где можно:
   - "сразиться с этим игроком" (совместный бой; второй игрок отказаться не может);
-  - "попроситься в отряд этого игрока": он примет или откажет. Принятый следует за лидером по карте
-    и вызывается во все его совместные бои. Покинуть отряд - Лагерь - "CoopWorld: кооператив..."
-    (или "другие игроки"); лидер может отпустить всех последователей там же.
   - "передать войска этому игроку": выберите бойцов в окне обмена и отправьте; получатель примет
     или откажется, отвергнутые бойцы вернутся (даже если вы успели выйти - при следующем входе).
 
@@ -690,11 +687,13 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 ВМЕСТЕ БЕЗ ВСТРЕЧИ НА КАРТЕ
   Всё это - в меню Лагерь - CoopWorld: кооператив.
   СЛЕДОВАТЬ ЗА ДРУГОМ: "другие игроки" - "Следовать за игроком ...". Отряд сам едет к другу и
-  держится рядом, друг получает сообщение. Свой щелчок по карте останавливает поход. Если отряд не
-  слушается приказа идти, игра сама переносит его к другу и пишет об этом.
-  ЛАГЕРЬ ОТРЯДА: один на всех, виден на карте у каждого. Лагерь - CoopWorld - "разбить здесь лагерь
-  отряда" (1000 динаров), потом "поехать в лагерь" или щелчок по нему на карте. Внутри казна, склад
-  и Джон Блэкборн; лагерь можно свернуть, казна и склад при этом сохраняются.
+  держится рядом, друг получает сообщение. Свой щелчок по карте останавливает поход. Пока мир стоит
+  (кто-то в меню или в бою), отряд идёт по карте шагами, часы при этом не идут.
+  ЛАГЕРЬ ОТРЯДА: у каждого игрока свой, все лагеря видны на карте у всех. Лагерь - CoopWorld -
+  "разбить здесь лагерь отряда" (1000 динаров). "Поехать к лагерю" ведёт к вашему лагерю, если его нет -
+  к лагерю хоста, затем к лагерю другого игрока; можно и щёлкнуть по лагерю на карте. Внутри казна,
+  склад и Джон Блэкборн. Свернуть можно только свой лагерь, казна и склад при этом сохраняются.
+  Кнопки казны не выбрасывают на карту: меню лагеря остаётся открытым.
   ОБЩАЯ КАЗНА И СКЛАД: теперь только в лагере отряда. Склад
   открыт только у одного игрока: взятое вдвоём существовало бы дважды. Вещей до 96 (сколько вмещает
   окно добычи). Всё хранится у хоста в файле shared.json в "Документы\\Warband Coop Campaign" и
@@ -728,20 +727,24 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   у каждого рода три уровня характеристик. Нужна новая кампания. В кооперативе войско создаёт хост, оно одно на
   всех: клиенты тоже нанимают, обучают и одевают, а если хост войска не создал, Джону им сказать нечего.
   ДЖОН БЛЭКБОРН: в лагере отряда и в любом вашем городе или замке. Он спросит название отряда и воинов,
-  дальше нанимает рекрутов (5, 10 или 20, по 20 динаров), обучает, одевает, переименовывает (только хост).
+  дальше нанимает рекрутов (1, 5, 10 или 20, по 20 динаров), обучает, одевает, переименовывает (только хост).
   ТИР И УРОВЕНЬ: это разные вещи. Тир (рекрут, ополченец и дальше до чемпиона) растёт только опытом: в боях и на
   тренировочном поле, повышение как обычно на экране отряда. Уровень (1, 2, 3) - это характеристики, его продаёт
-  Джон, и тир от этого не меняется. Новый тир начинается с 1 уровня.
+  Джон на весь отряд сразу, и тир от этого не меняется. Воин, выросший в новый тир, стоит на уровне своего отряда.
   ВЕТВИ: рекрут растёт в пехоту или лучников. Движок даёт войску только два пути, поэтому всадники начинаются
   на шаг позже: ополченец-пехотинец и ополченец-лучник могут вырасти во всадника 2 тира, тоже опытом.
   СНАРЯЖЕНИЕ: слева что можно купить, справа что есть; щелчок покупает или продаёт. Тир воина ограничивает выбор,
   коней получают только всадники. Цена - стоимость предмета, умноженная на 4, Торговля её снижает; продажа - половина
   стоимости, Торговля её повышает. У каждого тира своё снаряжение: купленное рекруту
-  есть только у рекрута. Уровни одного тира носят одно и то же. Снаряжение общее у всех игроков. Кого одеть,
-  Джон спросит сам: рекрут, пехота, лучники или всадники, а затем тир.
-  ОБУЧЕНИЕ: Джон так же спрашивает, кого учить. Уровень 2 и 3 за всех воинов этого рода и тира на одном уровне, цена зависит от тира, Торговля на неё не влияет.
-  Обучение меняет только уровень. Но игра не даёт скрипту прочитать опыт отряда, поэтому накопленное к следующему
-  тиру пропадает: сначала повысьте тех, кто уже готов.
+  есть только у рекрута. Уровни одного тира носят одно и то же. Снаряжение общее у всех игроков. Покупать его можно,
+  даже если таких воинов у вас сейчас нет. Кого одеть, Джон спросит сам: рекрут, пехота, лучники или всадники, а затем тир.
+  ОБУЧЕНИЕ: Джон так же спрашивает, кого учить. Уровень 2 и 3 покупается один раз на весь отряд, даже если таких воинов
+  у вас сейчас нет: нанятые и повышенные позже сразу стоят на этом уровне. Уровень общий у всех игроков, цена зависит от
+  тира, Торговля на неё не влияет.
+  Обучение меняет только уровень. Но игра не даёт скрипту прочитать опыт отряда, поэтому у воинов ниже купленного уровня
+  накопленное к следующему тиру пропадает: сначала повысьте тех, кто уже готов.
+  НАСТРОЙКИ ВОЙСКА: названия, снаряжение и уровни хранятся у хоста в файле army.json в "Документы\\Warband Coop Campaign"
+  и не зависят от сохранения: загрузка сохранения их не сбрасывает. Для новой кампании с чистым войском удалите этот файл.
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
@@ -754,12 +757,18 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 
 ВАШ ГЕРОЙ МЕЖДУ СЕССИЯМИ
   Друг каждый раз загружает свежее сохранение хоста, но играет своим героем: мост хоста хранит
-  героя каждого игрока (profiles.json рядом с host.bat) под его именем в мультиплеере из join.bat -
+  героя каждого игрока (profiles.json в "Документы\\Warband Coop Campaign") под его именем в мультиплеере из join.bat -
   деньги, опыт, известность, честь, присягу, атрибуты, навыки, владение оружием, весь инвентарь,
   войска (и раненых), пленных, место на карте. При подключении герой возвращается сам. Имя в
   join.bat должно оставаться тем же. Опыт можно только добавить: уровень не станет ниже, чем у
   героя хоста. Нераспределённые очки навыков и атрибутов не сохраняются - распределите их до
   выхода. Клиенты тоже получают недельный бюджет (жалованье войскам, доходы) и читают книги.
+  СОХРАНЕНИЯ: при каждом сохранении хоста мост запоминает героев всех игроков, казну, склад и лагеря (sync.json,
+  последние 24 сохранения); клиенты дописывают своего героя в ответ, в течение минуты. Если хост загрузил более раннее
+  сохранение, всё это возвращается к нему, а клиенты получают сообщение загрузить сохранение хоста снова: до этого их
+  герой не записывается. Сделанное после последнего сохранения хоста при этом теряется. Загрузка в пределах того же
+  игрового часа без перезапуска моста не распознаётся.
+  НОВАЯ КАМПАНИЯ: удалите из "Документы\\Warband Coop Campaign" файлы profiles.json, shared.json, sync.json и army.json.
 
 ОСТАНОВКА
   В своей игре: Лагерь - "CoopWorld: кооператив..." - "CoopWorld: остановить кооператив", затем закройте окно моста.
@@ -904,10 +913,12 @@ ARENA, TOURNAMENT AND TRAINING TOGETHER: on the same battle server, in the secon
 
 TOGETHER WITHOUT MEETING ON THE MAP: all in Camp - CoopWorld: co-op.
   RIDE AFTER A FRIEND: "the other players" - "Ride after ...". Your party rides to the friend and stays
-  close; a click of your own on the map stops it. If the party ignores the order, the game moves it
-  to the friend and says so.
-  THE COMPANY'S CAMP: one for all, on everybody's map. Camp - CoopWorld - "set up the company's camp here"
-  (1000 denars), then ride there or click it. It holds the treasury, the store and John Blackborn.
+  close; a click of your own on the map stops it. While the world stands (someone in a menu or a battle)
+  the party goes on over the map in steps, and the clock stays.
+  THE COMPANY'S CAMP: each player has one, on everybody's map. Camp - CoopWorld - "set up the company's camp here"
+  (1000 denars). "Ride to" takes you to your own camp, with none to the host's, then to another player's; or click
+  a camp on the map. It holds the treasury, the store and John Blackborn. Only your own camp can be taken down;
+  the treasury and the store stay. The treasury's buttons keep the camp's menu open.
   SHARED TREASURY AND PARTY STORE: in the company's camp only. The store is open for one
   player at a time; up to 96 things (what the loot window holds). They are kept at the host, in
   shared.json in "Documents\\Warband Coop Campaign", from session to session: no host, no treasury.
@@ -939,26 +950,35 @@ YOUR OWN ARMY: a branch of troops of no faction: a recruit and three branches (i
   tier 5, each kind in three levels of stats. It needs a new campaign. In co-op the host raises it and it is the same
   for everyone: clients hire, train and equip too; if the host has not raised it, John has nothing to say to them.
   JOHN BLACKBORN: at the company's camp and in any town or castle of yours. He asks for the names, then hires
-  recruits (5, 10 or 20 at 20 denars), trains, equips, renames (the host only).
+  recruits (1, 5, 10 or 20 at 20 denars), trains, equips, renames (the host only).
   TIER AND LEVEL are two different things. A tier (recruit, militia and on to champion) grows only by experience:
-  battles and the training field, promoted as usual on the party screen. A level (1, 2, 3) is stats, John sells it,
-  and it leaves the tier as it was. A new tier starts at level 1.
+  battles and the training field, promoted as usual on the party screen. A level (1, 2, 3) is stats, John sells it
+  for the whole kind, and it leaves the tier as it was. A man promoted to a new tier stands at his kind's level.
   BRANCHES: a recruit grows into infantry or archers. The engine gives a troop two paths, so the riders start one
   step later: militia of either foot branch may grow into tier 2 riders, by experience too.
   GEAR: what can be bought on the left, what the soldier has on the right; a click buys or sells. The tier limits the
   choice, only riders get horses. An item costs 4 times its value, less with Trade; it sells for half its value,
   more with Trade. Each tier has gear of its own: what a recruit got only recruits have.
-  The levels of one tier wear the same, and all players share the gear. John asks whom to equip: recruits,
-  infantry, archers or riders, then the tier.
-  TRAINING: John asks whom in the same way. Levels 2 and 3, for all the men of a kind at that level, at a price set by the tier, Trade does not
-  change it. Training changes the level only, but no script can read a party's experience, so what was gathered
-  towards the next tier is lost: promote those who are ready first.
+  The levels of one tier wear the same, and all players share the gear. It can be bought with no such men in your
+  party. John asks whom to equip: recruits, infantry, archers or riders, then the tier.
+  TRAINING: John asks whom in the same way. Levels 2 and 3 are paid once for the whole kind, even with none of them in
+  your party: men hired or promoted later stand at that level at once. All players share it; the price is set by the
+  tier, Trade does not change it. Training changes the level only, but no script can read a party's experience, so
+  what the men below that level gathered towards the next tier is lost: promote those who are ready first.
+  THE ARMY'S SETTINGS: names, gear and levels are kept at the host in army.json in "Documents\\Warband Coop Campaign",
+  apart from the save: loading a save does not reset them. For a new campaign with a clean army delete that file.
 
 FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its
   enemies hunt the player. Fiefs and Diplomacy's diplomacy go only to the host for now.
 
-YOUR HERO BETWEEN SESSIONS: the host's bridge keeps each player's hero (profiles.json next to
-  host.bat) under the multiplayer name given to join.bat and puts it back on joining. Keep the name.
+YOUR HERO BETWEEN SESSIONS: the host's bridge keeps each player's hero (profiles.json in
+  "Documents\\Warband Coop Campaign") under the multiplayer name given to join.bat and puts it back on joining. Keep the name.
+  SAVES: at each save of the host the bridge keeps every hero, the treasury, the store and the camps (sync.json, the
+  last 24 saves); clients write their heroes in answer, within a minute. When the host loads an earlier save all of
+  that goes back to it, and clients are told to load the host's save again: until then their heroes are not written.
+  What was done after the host's last save is lost. A load within the same hour of the game, with the bridge
+  running on, is not noticed.
+  A NEW CAMPAIGN: delete profiles.json, shared.json, sync.json and army.json from "Documents\\Warband Coop Campaign".
 
 Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op", then close the bridge window.
 

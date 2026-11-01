@@ -352,7 +352,7 @@ presentations = [
           (store_sub, ":index", ":what", 1),
           (call_script, "script_custom_name_set", ":index"), #the box's text is in s0
           (store_add, ":slot", custom_slot_name, ":index"),
-          (troop_set_slot, custom_holder, ":slot", 1),
+          (troop_set_slot, custom_holder, ":slot", custom_word_change),
         (try_end),
       ]),
    ]),

@@ -63,7 +63,6 @@ def net_triggers(first_dynamic):
        (map_free),
        (assign, ":still", 1),
        (eq, "$coop_srv_player", 1),
-       (eq, "$coop_leader", 0), #following another player: carried along, the host still rests
        (neq, "$freelancer_state", 1), #serving in a lord's party: the same
        (set_fixed_point_multiplier, 100),
        (party_get_position, pos2, "p_main_party"),

@@ -185,6 +185,11 @@ def merge(orig_scripts):
   orig_scripts.extend(tree_scripts)
   response[:0] = mp_reply_hook()
   script_block(orig_scripts, "game_receive_network_message")[:0] = mp_network_hook()
+  # a player between classes has troop -1 (a tournament's round, the team window of the arena) and
+  # Native reads that troop for the price of its picked items: no troop, no price
+  item_value = script_block(orig_scripts, "multiplayer_get_item_value_for_troop")
+  item_value[2:-1] = [(assign, ":item_value", 0), (try_begin), (ge, ":troop_no", 0)] + item_value[2:-1] + [(try_end)]
+  script_block(orig_scripts, "cf_multiplayer_is_item_default_for_troop")[2:2] = [(ge, ":troop_no", 0)]
   # Diplomacy's own acts on the world (treaties, envoys, gifts, patrols, recruiters, scouts) would
   # happen in a client's game only: on a client they are refused (the world server and the host
   # keep them, and the world's kingdoms still use them)

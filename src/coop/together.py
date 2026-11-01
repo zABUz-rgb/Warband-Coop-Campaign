@@ -15,9 +15,11 @@ from coop.players import player_name_to_s1, plays
 # A store value is the item's modifier + 100 * its amount (food, ammunition).
 #
 # $coop_follow: the player ridden after, slot + 1. $coop_follow_party: the party ridden to (that
-# player's, or the camp); $coop_follow_mark: coop_base_tag on the way to the camp.
+# player's, or a camp); $coop_follow_mark: the camp's slot_party_coop_mark on the way to a camp.
+# $coop_follow_set: 1 a march order of ours stands, 2 our hold while the world stands, 0 none.
 # $coop_store_state: 0 idle, 1 asked, 2 arriving, 3 here, 4 open, 5 going back.
 # $coop_store_camp: the store was asked for from the camp's menu, which waits for it and comes back.
+# $coop_tg_camp: money moved from the camp's menu, which stays open and is told when it is done.
 # $coop_ping_on: a menu is open and the game asks the bridge for invitations (see script_coop_ping_next).
 # $coop_enc_center: the party of the encounter under way, for a call to a battle to come back to.
 
@@ -35,6 +37,21 @@ def first_dynamic():
 def request_token(token):
   """Ops: a new random number for a transfer."""
   return [(store_random_in_range, token, 1, 1000000000)]
+
+
+def treasury_word():
+  """Ops: the transfer under way onto s17, until the bridge answers (kind 29)."""
+  return [
+    (try_begin),
+      (neq, "$coop_tg_token", 0),
+      (val_sub, "$coop_tg_wait", 1),
+      (le, "$coop_tg_wait", 0),
+      (assign, "$coop_tg_wait", coop_resend_requests),
+      (assign, reg7, "$coop_tg_token"),
+      (assign, reg8, "$coop_tg_amount"),
+      (str_store_string, s17, "@{s17}&tg={reg7},{reg8}"),
+    (try_end),
+  ]
 
 
 def tell(code, text, color):
@@ -110,7 +127,7 @@ together_scripts = [
      (store_script_param, ":why", 1),
      (assign, ":base", 0),
      (try_begin),
-       (eq, "$coop_follow_mark", coop_base_tag),
+       (ge, "$coop_follow_mark", coop_base_tag),
        (assign, ":base", "$coop_follow_party"),
      (try_end),
      (try_begin),
@@ -121,6 +138,7 @@ together_scripts = [
      (assign, "$coop_follow_party", 0),
      (assign, "$coop_follow_mark", 0),
      (assign, "$coop_follow_set", 0),
+     (assign, "$coop_follow_noted", 0),
      (call_script, "script_coop_note", coop_note_follow_end, ":why", 0, 0),
      (try_begin),
        (eq, ":why", coop_follow_end_click),
@@ -137,8 +155,10 @@ together_scripts = [
     ]),
 
   # script_coop_follow_tick: the map: on towards $coop_follow_party by a march order to a point (to a
-  # party, arriving would open an encounter). A click of the player's own ends the ride; a party that
-  # will not move by such an order (it is the player's own, the engine may refuse) jumps there.
+  # party, arriving would open an encounter). A click of the player's own ends the ride. While the world
+  # stands no order moves a party, and one on the move would run this game's clock on: the party holds
+  # and goes by steps of this script. So does a party that will not move by the order (it is the player's
+  # own, the engine may refuse).
   ("coop_follow_tick",
    [
      (assign, ":target", "$coop_follow_party"),
@@ -148,8 +168,6 @@ together_scripts = [
        (assign, ":can", -1),
      (else_try),
        (eq, "$coop_busy", 0),
-       (eq, "$coop_world_paused", 0),
-       (eq, "$coop_leader", 0),
        (neq, "$freelancer_state", 1),
        (neq, "$g_player_is_captive", 1),
        (party_get_attached_to, ":attached", "p_main_party"),
@@ -181,7 +199,7 @@ together_scripts = [
          (set_fixed_point_multiplier, 100),
          # the player's own click since our last order?
          (try_begin),
-           (eq, "$coop_follow_set", 1),
+           (gt, "$coop_follow_set", 0),
            (get_party_ai_behavior, ":behavior", "p_main_party"),
            (assign, ":own", 0),
            (try_begin),
@@ -209,38 +227,73 @@ together_scripts = [
          (party_get_position, pos5, ":target"),
          (position_get_x, ":tx", pos5),
          (position_get_y, ":ty", pos5),
-         (store_sub, ":dx", ":tx", "$coop_follow_x"),
-         (store_sub, ":dy", ":ty", "$coop_follow_y"),
-         (val_abs, ":dx"),
-         (val_abs, ":dy"),
-         (val_add, ":dx", ":dy"),
-         (try_begin),
-           (this_or_next|eq, "$coop_follow_set", 0),
-           (ge, ":dx", FOLLOW_ORDER),
-           (party_set_ai_behavior, "p_main_party", ai_bhvr_travel_to_point),
-           (party_set_ai_target_position, "p_main_party", pos5),
-           (assign, "$coop_follow_x", ":tx"),
-           (assign, "$coop_follow_y", ":ty"),
-           (assign, "$coop_follow_set", 1),
-         (try_end),
          (party_get_position, pos6, "p_main_party"),
          (position_get_x, ":px", pos6),
          (position_get_y, ":py", pos6),
+         (assign, ":stands", "$coop_world_paused"),
          (try_begin),
-           (this_or_next|neq, ":px", "$coop_follow_px"),
-           (neq, ":py", "$coop_follow_py"),
+           (eq, "$coop_role", coop_role_server),
+           (assign, ":stands", "$coop_srv_paused"),
+         (try_end),
+         (assign, ":step", ":stands"),
+         (try_begin),
+           (eq, ":stands", 1),
+           (party_set_ai_behavior, "p_main_party", ai_bhvr_hold),
+           (assign, "$coop_follow_set", 2),
            (assign, "$coop_follow_still", 0),
+           (assign, "$coop_follow_x", ":px"), #what a click is told from while the party holds
+           (assign, "$coop_follow_y", ":py"),
          (else_try),
-           (val_add, "$coop_follow_still", 1),
+           (store_sub, ":dx", ":tx", "$coop_follow_x"),
+           (store_sub, ":dy", ":ty", "$coop_follow_y"),
+           (val_abs, ":dx"),
+           (val_abs, ":dy"),
+           (val_add, ":dx", ":dy"),
+           (try_begin),
+             (this_or_next|neq, "$coop_follow_set", 1),
+             (ge, ":dx", FOLLOW_ORDER),
+             (party_set_ai_behavior, "p_main_party", ai_bhvr_travel_to_point),
+             (party_set_ai_target_position, "p_main_party", pos5),
+             (assign, "$coop_follow_x", ":tx"),
+             (assign, "$coop_follow_y", ":ty"),
+             (assign, "$coop_follow_set", 1),
+           (try_end),
+           # what the engine moved it since the last frame: a step of ours is not counted
+           (try_begin),
+             (this_or_next|neq, ":px", "$coop_follow_px"),
+             (neq, ":py", "$coop_follow_py"),
+             (assign, "$coop_follow_still", 0),
+           (else_try),
+             (val_add, "$coop_follow_still", 1),
+           (try_end),
+           (ge, "$coop_follow_still", coop_follow_stuck_frames),
+           (assign, ":step", 1),
+           (eq, "$coop_follow_noted", 0),
+           (assign, "$coop_follow_noted", 1),
+           (call_script, "script_coop_note", coop_note_follow_step, ":dist", 0, 0),
+         (try_end),
+         (try_begin),
+           (eq, ":step", 1),
+           (store_sub, ":dx", ":tx", ":px"),
+           (store_sub, ":dy", ":ty", ":py"),
+           (assign, ":ax", ":dx"),
+           (assign, ":ay", ":dy"),
+           (val_abs, ":ax"),
+           (val_abs, ":ay"),
+           (val_max, ":ax", ":ay"),
+           (val_max, ":ax", 1),
+           (val_mul, ":dx", coop_follow_step),
+           (val_div, ":dx", ":ax"),
+           (val_mul, ":dy", coop_follow_step),
+           (val_div, ":dy", ":ax"),
+           (val_add, ":px", ":dx"),
+           (val_add, ":py", ":dy"),
+           (position_set_x, pos6, ":px"),
+           (position_set_y, pos6, ":py"),
+           (party_set_position, "p_main_party", pos6),
          (try_end),
          (assign, "$coop_follow_px", ":px"),
          (assign, "$coop_follow_py", ":py"),
-         (ge, "$coop_follow_still", coop_follow_stuck_frames),
-         (assign, "$coop_follow_still", 0),
-         (assign, "$coop_follow_set", 0),
-         (call_script, "script_coop_note", coop_note_follow_jump, ":dist", 0, 0),
-         (party_relocate_near_party, "p_main_party", ":target", coop_follow_near),
-         (display_message, "@CoopWorld: the march order did not take; your party rides straight there.", 0xFFDD66),
        (try_end),
      (try_end),
     ]),
@@ -260,7 +313,7 @@ together_scripts = [
      (try_end),
     ]),
 
-  # script_coop_marks_apply: kind 28 reply. The camp is a party of this game alone, which nobody fights:
+  # script_coop_marks_apply: kind 28 reply. A camp is a party of this game alone, which nobody fights:
   # neutral, standing still, left out of what the host reports (coop/triggers.py)
   ("coop_marks_apply",
    [
@@ -275,6 +328,8 @@ together_scripts = [
        (party_get_slot, ":x", "p_coop_buf", ":at"),
        (val_add, ":at", 1),
        (party_get_slot, ":y", "p_coop_buf", ":at"),
+       (val_add, ":at", 1),
+       (party_get_slot, ":mine", "p_coop_buf", ":at"),
        (val_sub, ":x", coop_net_offset),
        (val_sub, ":y", coop_net_offset),
        (set_spawn_radius, 0),
@@ -286,12 +341,20 @@ together_scripts = [
        (party_set_ai_behavior, ":mark", ai_bhvr_hold),
        (store_add, ":tag", ":slot", 1),
        (party_set_slot, ":mark", slot_party_coop_mark, ":tag"),
+       (party_set_slot, ":mark", slot_party_coop_mine, ":mine"),
        (party_get_position, pos2, "p_main_party"),
        (position_set_x, pos2, ":x"),
        (position_set_y, pos2, ":y"),
        (party_set_position, ":mark", pos2),
        (party_set_icon, ":mark", "icon_camp"),
        (party_set_name, ":mark", "@The company's camp"),
+       (try_begin),
+         (eq, ":mine", 1),
+         (party_set_name, ":mark", "@Your camp"),
+       (else_try),
+         (eq, ":mine", 2),
+         (party_set_name, ":mark", "@The host's camp"),
+       (try_end),
      (try_end),
      (try_begin), #the camp ridden to was spawned anew, or went
        (gt, "$coop_follow_mark", 0),
@@ -302,13 +365,36 @@ together_scripts = [
      (try_end),
     ]),
 
-  # script_coop_mark_of: arg1 = a player's slot + 1: reg0 = that player's mark here, or 0
+  # script_coop_mark_of: arg1 = a camp's tag: reg0 = its party here, or 0
   ("coop_mark_of",
    [
      (store_script_param, ":tag", 1),
      (assign, reg0, 0),
      (try_for_parties, ":party_no"),
        (party_slot_eq, ":party_no", slot_party_coop_mark, ":tag"),
+       (assign, reg0, ":party_no"),
+     (try_end),
+    ]),
+
+  # script_coop_camp_best: reg0 = the camp to ride to, or 0: the player's own, then the host's, then another's.
+  # reg1 = 3 it is the player's own, 2 the host's, 1 another's, 0 none
+  ("coop_camp_best",
+   [
+     (assign, reg0, 0),
+     (assign, reg1, 0),
+     (try_for_parties, ":party_no"),
+       (party_slot_ge, ":party_no", slot_party_coop_mark, coop_base_tag),
+       (party_get_slot, ":mine", ":party_no", slot_party_coop_mine),
+       (assign, ":rank", 1),
+       (try_begin),
+         (eq, ":mine", 1),
+         (assign, ":rank", 3),
+       (else_try),
+         (eq, ":mine", 2),
+         (assign, ":rank", 2),
+       (try_end),
+       (gt, ":rank", reg1),
+       (assign, reg1, ":rank"),
        (assign, reg0, ":party_no"),
      (try_end),
     ]),
@@ -472,8 +558,8 @@ together_scripts = [
      (assign, "$coop_store_state", 5),
     ]),
 
-  # script_coop_store_send: the store's next word from a menu, where no request of the map's runs:
-  # the chain of script_coop_ping_next carries it. A bridge that does not answer ends the wait.
+  # script_coop_store_send: the store's or the treasury's next word from a menu, where no request of the
+  # map's runs: the chain of script_coop_ping_next carries it. A bridge that does not answer ends the wait.
   ("coop_store_send",
    [
      (str_clear, s17),
@@ -493,6 +579,7 @@ together_scripts = [
        (str_store_string, s17, "@&st=1"),
      (try_end),
      (call_script, "script_coop_store_part_to_s17"),
+     ] + treasury_word() + [
      (val_add, "$coop_net_seq", 1),
      (assign, reg1, "$coop_net_seq"),
      (set_fixed_point_multiplier, 100),
@@ -619,6 +706,9 @@ together_scripts = [
          (eq, ":code", coop_tell_left),
          (eq, "$coop_follow", ":tag"),
          (call_script, "script_coop_follow_end", coop_follow_end_gone),
+       (else_try),
+         (eq, ":code", coop_tell_save_loaded),
+         (display_message, "@CoopWorld: the host went back to an earlier save. Load the host's save again: your hero and the treasury went back with it.", 0xFFDD66),
        (try_end),
      (else_try),
        (eq, ":kind", 28),
@@ -644,6 +734,9 @@ together_scripts = [
        (else_try),
          (display_message, "@CoopWorld: the shared treasury is empty.", 0xFFDD66),
        (try_end),
+       (eq, "$coop_tg_camp", 1), #the camp's menu shows what came of it
+       (assign, "$coop_tg_camp", 0),
+       (jump_to_menu, "mnu_coop_shared"),
      (else_try),
        (eq, ":kind", 30),
        (call_script, "script_coop_store_cache"),
@@ -818,7 +911,8 @@ together_scripts = [
    [
      (try_begin),
        (this_or_next|is_between, "$coop_store_state", 1, 3),
-       (eq, "$coop_store_state", 5),
+       (this_or_next|eq, "$coop_store_state", 5),
+       (neq, "$coop_tg_token", 0),
        (call_script, "script_coop_store_send"),
      (else_try),
        (val_add, "$coop_net_seq", 1),
@@ -953,15 +1047,7 @@ def request_suffix():
       (assign, "$coop_base_send", 0),
       (str_store_string, s17, "@{s17}&bs=-"),
     (try_end),
-    (try_begin),
-      (neq, "$coop_tg_token", 0),
-      (val_sub, "$coop_tg_wait", 1),
-      (le, "$coop_tg_wait", 0),
-      (assign, "$coop_tg_wait", coop_resend_requests),
-      (assign, reg7, "$coop_tg_token"),
-      (assign, reg8, "$coop_tg_amount"),
-      (str_store_string, s17, "@{s17}&tg={reg7},{reg8}"),
-    (try_end),
+  ] + treasury_word() + [
     (try_begin),
       (eq, "$coop_store_state", 1),
       (val_sub, "$coop_store_wait", 1),
@@ -1010,7 +1096,7 @@ def encounter_end():
   return [
     (try_begin),
       (ge, "$g_encountered_party", first_dynamic()),
-      (party_slot_eq, "$g_encountered_party", slot_party_coop_mark, coop_base_tag),
+      (party_slot_ge, "$g_encountered_party", slot_party_coop_mark, coop_base_tag),
       (jump_to_menu, "mnu_coop_shared"),
     (else_try),
       (eq, "$coop_role", coop_role_client),
@@ -1037,7 +1123,7 @@ def reply_branches():
 
 def camp_options():
   return [
-    ("coop_base_build", plays() + [(call_script, "script_coop_mark_of", coop_base_tag), (eq, reg0, 0),
+    ("coop_base_build", plays() + [(call_script, "script_coop_camp_best"), (neq, reg1, 3),
                                    (eq, "$coop_base_send", 0),
                                    (try_begin),
                                      (store_troop_gold, ":gold", "trp_player"),
@@ -1055,13 +1141,12 @@ def camp_options():
        (display_message, "@CoopWorld: the tents go up. Ride into the camp for the treasury and the party store.", 0x66CCFF),
        (change_screen_return),
      ]),
-    ("coop_base_ride", plays() + [(call_script, "script_coop_mark_of", coop_base_tag), (gt, reg0, 0),
-                                  (eq, "$coop_leader", 0)],
-     "CoopWorld: ride to the company's camp (the treasury and the party store are there).",
+    ("coop_base_ride", plays() + [(call_script, "script_coop_camp_best"), (gt, reg0, 0), (str_store_party_name, s1, reg0)],
+     "CoopWorld: ride to {s1} (the treasury and the party store are there).",
      [
-       (call_script, "script_coop_mark_of", coop_base_tag),
+       (call_script, "script_coop_camp_best"),
        (assign, "$coop_follow_party", reg0),
-       (assign, "$coop_follow_mark", coop_base_tag),
+       (party_get_slot, "$coop_follow_mark", reg0, slot_party_coop_mark),
        (assign, "$coop_follow", 0),
        (assign, "$coop_follow_set", 0),
        (change_screen_return),
@@ -1075,7 +1160,7 @@ def players_menu_options(k, name):
   """What the camp's players menu offers for the player in slot k, whose puppet ops are name."""
   tag = k + 1
   return [
-    ("coop_pl_follow_%d" % k, plays() + name + [(eq, "$coop_leader", 0), (neq, "$coop_follow", tag)],
+    ("coop_pl_follow_%d" % k, plays() + name + [(neq, "$coop_follow", tag)],
      "Ride after {s1} (a click of your own on the map stops it).",
      [
        (assign, "$coop_follow", tag),
@@ -1096,7 +1181,7 @@ def players_menu_options(k, name):
 def players_stop_option():
   return ("coop_pl_stop_follow", plays() + [(gt, "$coop_follow", 0)] + player_name_to_s1("$coop_follow"),
           "Stop riding after {s1}.",
-          [(call_script, "script_coop_follow_end", coop_follow_end_asked), (change_screen_return)])
+          [(call_script, "script_coop_follow_end", coop_follow_end_asked), (jump_to_menu, "mnu_coop_players")])
 
 
 # the bandit lair's menu: storm it together, on the battle server (the party is a client's mirror, or
@@ -1174,25 +1259,27 @@ def village_option(ready):
 
 
 def treasury_options():
+  """The camp's menu stays open: the word goes by the chain of requests a menu runs, and the answer reloads it."""
+  stay = [(assign, "$coop_tg_camp", 1), (call_script, "script_coop_ping_kick"), (jump_to_menu, "mnu_coop_shared")]
   options = []
   for amount in (100, 1000):
     options.append(("coop_tg_in_%d" % amount,
                     [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (ge, ":gold", amount)],
                     "Put in %d denars." % amount,
-                    [(call_script, "script_coop_treasury_move", amount), (leave_encounter), (change_screen_return)]))
+                    [(call_script, "script_coop_treasury_move", amount)] + stay))
   options.append(("coop_tg_in_all",
                   [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (gt, ":gold", 0)],
                   "Put in everything you carry.",
-                  [(store_troop_gold, ":gold", "trp_player"), (call_script, "script_coop_treasury_move", ":gold"),
-                   (leave_encounter), (change_screen_return)]))
+                  [(store_troop_gold, ":gold", "trp_player"), (call_script, "script_coop_treasury_move", ":gold")] + stay))
   for amount in (100, 1000):
     options.append(("coop_tg_out_%d" % amount, [(eq, "$coop_tg_token", 0), (ge, "$coop_shared_gold", amount)],
                     "Take %d denars." % amount,
-                    [(call_script, "script_coop_treasury_move", -amount), (leave_encounter), (change_screen_return)]))
+                    [(call_script, "script_coop_treasury_move", -amount)] + stay))
   options.append(("coop_tg_out_all", [(eq, "$coop_tg_token", 0), (gt, "$coop_shared_gold", 0)],
                   "Take everything in it.",
-                  [(store_sub, ":amount", 0, "$coop_shared_gold"), (call_script, "script_coop_treasury_move", ":amount"),
-                   (leave_encounter), (change_screen_return)]))
+                  [(store_sub, ":amount", 0, "$coop_shared_gold"), (call_script, "script_coop_treasury_move", ":amount")] + stay))
+  options.append(("coop_tg_wait", [(neq, "$coop_tg_token", 0)], "The coins are being counted. Look again.",
+                  [(jump_to_menu, "mnu_coop_shared")]))
   return options
 
 
@@ -1206,6 +1293,7 @@ together_menus = [
      ("coop_store_open", [(eq, "$coop_store_state", 0)],
       "Open the party store (one player at a time).",
       [
+        (assign, "$coop_tg_camp", 0),
         (assign, "$coop_store_state", 1),
         (assign, "$coop_store_wait", 0),
         (assign, "$coop_store_asks", 0),
@@ -1213,16 +1301,18 @@ together_menus = [
         (call_script, "script_coop_ping_kick"),
         (jump_to_menu, "mnu_coop_store_wait"),
       ]),
-     ("coop_blackborn", [], "Talk to John Blackborn.", [(call_script, "script_coop_blackborn_talk")]),
-     ("coop_base_down", [],
+     ("coop_blackborn", [], "Talk to John Blackborn.",
+      [(assign, "$coop_tg_camp", 0), (call_script, "script_coop_blackborn_talk")]),
+     ("coop_base_down", [(party_slot_eq, "$g_encountered_party", slot_party_coop_mine, 1)],
       "Take the camp down (the treasury and the store stay with the company, the denars do not come back).",
       [
+        (assign, "$coop_tg_camp", 0),
         (assign, "$coop_base_send", 2),
         (display_message, "@CoopWorld: the tents come down.", 0xFFDD66),
         (leave_encounter),
         (change_screen_return),
       ]),
-     ("coop_shared_back", [], "Back to the map.", [(leave_encounter), (change_screen_return)]),
+     ("coop_shared_back", [], "Back to the map.", [(assign, "$coop_tg_camp", 0), (leave_encounter), (change_screen_return)]),
    ]),
 
   # the store is asked for from here: a menu stops the map's requests, so the answers come to this one

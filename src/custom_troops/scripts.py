@@ -1,11 +1,12 @@
 from header_common import *
 from header_operations import *
 from header_items import *
+from header_mission_templates import af_override_everything
 from header_troops import *
 from module_constants import *
 from coop.constants import *
 from coop.mp import MP_BUF
-from coop_merge import find_line, insert_before, script_block
+from coop_merge import find_line, insert_after, insert_before, script_block
 from custom_troops.constants import *
 from custom_troops import item_tiers
 from custom_troops.presentations import scripts as screen_scripts
@@ -14,7 +15,8 @@ from custom_troops.presentations import scripts as screen_scripts
 # tier of a branch, has gear of its own; it is read from the first level.
 # A soldier's kind and level give its troop: custom_first + 3 * kind + level - 1.
 # In a co-op session what changes goes to the other games as a word (script_cf_custom_word_send): the host
-# makes the army, the bridge remembers it, a game that joins hears all of it (tools/coop_bridge.py).
+# makes the army, the bridge keeps it in army.json, and every game that comes in hears all of it, the host's
+# too: a save loaded or the bridge started anew takes nothing back (tools/coop_bridge.py).
 
 BUF = "p_coop_buf"
 BUF_FIRST = 2     # the reply's first number there: its kind is at slot 1
@@ -80,53 +82,21 @@ scripts = [
      (val_sub, reg0, 1),
     ]),
 
-  # script_custom_men: arg1 = troop; reg0 = how many of it stand in the player's party
-  ("custom_men",
-   [
-     (store_script_param, ":troop", 1),
-     (party_count_companions_of_type, reg0, "p_main_party", ":troop"),
-    ]),
-
-  # script_custom_men_of_kind: arg1 = kind; reg0 = its men of all levels
-  ("custom_men_of_kind",
+  # script_custom_level: arg1 = kind; reg0 = the level bought for it
+  ("custom_level",
    [
      (store_script_param, ":kind", 1),
-     (assign, ":men", 0),
-     ] + [op for level in LEVELS for op in [
-     (call_script, "script_custom_troop", ":kind", level),
-     (call_script, "script_custom_men", reg0),
-     (val_add, ":men", reg0),
-     ]] + [
-     (assign, reg0, ":men"),
+     (store_add, ":slot", custom_slot_level, ":kind"),
+     (troop_get_slot, reg0, custom_holder, ":slot"),
+     (val_max, reg0, 1),
     ]),
 
-  # script_custom_men_total: reg0 = how many of the army's soldiers stand in the player's party
-  ("custom_men_total",
-   [
-     (assign, ":men", 0),
-     (try_for_range, ":kind", 0, custom_kinds),
-       (call_script, "script_custom_men_of_kind", ":kind"),
-       (val_add, ":men", reg0),
-     (try_end),
-     (assign, reg0, ":men"),
-    ]),
-
-  # script_custom_shown: arg1 = kind; reg0 = the troop the tree shows: the highest level the player has
+  # script_custom_shown: arg1 = kind; reg0 = the troop the tree shows: the kind at its level
   ("custom_shown",
    [
      (store_script_param, ":kind", 1),
-     (call_script, "script_custom_troop", ":kind", 1),
-     (assign, ":shown", reg0),
-     ] + [op for level in LEVELS[1:] for op in [
-     (try_begin),
-       (call_script, "script_custom_troop", ":kind", level),
-       (assign, ":troop", reg0),
-       (call_script, "script_custom_men", ":troop"),
-       (gt, reg0, 0),
-       (assign, ":shown", ":troop"),
-     (try_end),
-     ]] + [
-     (assign, reg0, ":shown"),
+     (call_script, "script_custom_level", ":kind"),
+     (call_script, "script_custom_troop", ":kind", reg0),
     ]),
 
   # script_custom_gear_count: arg1 = kind; reg0 = how many items its soldiers carry
@@ -182,7 +152,58 @@ scripts = [
      (try_end),
      ]] + [
      (store_add, ":slot", custom_slot_gear, ":kind"),
-     (troop_set_slot, custom_holder, ":slot", 1),
+     (troop_set_slot, custom_holder, ":slot", custom_word_change),
+    ]),
+
+  # script_custom_portrait: arg1 = troop, arg2 = 1 for no helmet and no weapons: what a soldier carries goes on its
+  # portrait as override items, the dearest of each armour and its first weapons (bought gear never shows by itself:
+  # the engine drew such soldiers naked). reg0 = the dearest horse, or -1
+  ("custom_portrait",
+   [
+     (store_script_param, ":troop", 1),
+     (store_script_param, ":hide", 2),
+     (cur_tableau_set_override_flags, af_override_everything),
+     (troop_get_inventory_capacity, ":capacity", ":troop"),
+     (try_for_range, ":type", itp_type_head_armor, itp_type_hand_armor + 1),
+       (this_or_next|eq, ":hide", 0),
+       (neq, ":type", itp_type_head_armor),
+       (assign, ":best", -1),
+       (assign, ":best_value", -1),
+       (try_for_range, ":slot", 0, ":capacity"),
+         (troop_get_inventory_slot, ":item", ":troop", ":slot"),
+         (ge, ":item", 0),
+         (item_get_type, ":item_type", ":item"),
+         (eq, ":item_type", ":type"),
+         (store_item_value, ":value", ":item"),
+         (gt, ":value", ":best_value"),
+         (assign, ":best", ":item"),
+         (assign, ":best_value", ":value"),
+       (try_end),
+       (ge, ":best", 0),
+       (cur_tableau_add_override_item, ":best"),
+     (try_end),
+     (assign, ":horse", -1),
+     (assign, ":horse_value", -1),
+     (assign, ":weapons", 0),
+     (try_for_range, ":slot", 0, ":capacity"),
+       (troop_get_inventory_slot, ":item", ":troop", ":slot"),
+       (ge, ":item", 0),
+       (item_get_type, ":item_type", ":item"),
+       (try_begin),
+         (eq, ":item_type", itp_type_horse),
+         (store_item_value, ":value", ":item"),
+         (gt, ":value", ":horse_value"),
+         (assign, ":horse", ":item"),
+         (assign, ":horse_value", ":value"),
+       (else_try),
+         (eq, ":hide", 0),
+         (is_between, ":item_type", itp_type_one_handed_wpn, itp_type_goods),
+         (lt, ":weapons", 4),
+         (val_add, ":weapons", 1),
+         (cur_tableau_add_override_item, ":item"),
+       (try_end),
+     (try_end),
+     (assign, reg0, ":horse"),
     ]),
 
   # script_custom_prices: arg1 = item; reg0 = what it costs for soldiers, reg1 = what it sells for. Native's
@@ -296,25 +317,23 @@ scripts = [
      (assign, reg0, ":cost"),
     ]),
 
-  # script_cf_custom_train_text: arg1 = kind, arg2 = level: an option of the training menu, or a failure for
-  # a soldier the party does not have. s1 = the soldier, reg2 = the next level, reg3 = men, reg4 = dinars
+  # script_cf_custom_train_text: arg1 = kind, arg2 = level: an option of the training menu, or a failure when the
+  # kind does not stand at that level. s1 = the soldier, reg2 = the next level, reg4 = dinars
   ("cf_custom_train_text",
    [
      (store_script_param, ":kind", 1),
      (store_script_param, ":level", 2),
+     (call_script, "script_custom_level", ":kind"),
+     (eq, reg0, ":level"),
      (call_script, "script_custom_troop", ":kind", ":level"),
-     (assign, ":troop", reg0),
-     (call_script, "script_custom_men", ":troop"),
-     (assign, reg3, reg0),
-     (gt, reg3, 0),
-     (str_store_troop_name, s1, ":troop"),
+     (str_store_troop_name, s1, reg0),
      (call_script, "script_custom_train_cost", ":kind", ":level"),
      (assign, reg4, reg0),
      (store_add, reg2, ":level", 1),
     ]),
 
-  # script_custom_train: arg1 = kind, arg2 = level: all the men at that level go up one. Their kind, and so their
-  # tier, stays
+  # script_custom_train: arg1 = kind, arg2 = the level it stands at: it goes up one, for the men there are and those
+  # to come. Their kind, and so their tier, stays
   ("custom_train",
    [
      (store_script_param, ":kind", 1),
@@ -322,15 +341,34 @@ scripts = [
      (call_script, "script_custom_train_cost", ":kind", ":level"),
      (assign, ":cost", reg0),
      (store_troop_gold, ":gold", "trp_player"),
+     (call_script, "script_custom_level", ":kind"),
      (try_begin),
+       (eq, reg0, ":level"),
        (ge, ":gold", ":cost"),
-       (call_script, "script_custom_troop", ":kind", ":level"),
-       (assign, ":from", reg0),
-       (store_add, ":next", ":level", 1),
-       (call_script, "script_custom_troop", ":kind", ":next"),
-       (assign, ":to", reg0),
        (troop_remove_gold, "trp_player", ":cost"),
-       (call_script, "script_custom_swap", ":from", ":to"),
+       (store_add, ":next", ":level", 1),
+       (store_add, ":slot", custom_slot_level, ":kind"),
+       (troop_set_slot, custom_holder, ":slot", ":next"),
+       (store_add, ":slot", custom_slot_level_word, ":kind"),
+       (troop_set_slot, custom_holder, ":slot", custom_word_change),
+       (call_script, "script_custom_levels_apply"),
+     (try_end),
+    ]),
+
+  # script_custom_levels_apply: men standing below their kind's level, promoted, hired or brought from elsewhere,
+  # rise to it. A promotion lands on level 1; no script reads a stack's experience, so only such men lose theirs
+  ("custom_levels_apply",
+   [
+     (try_for_range, ":kind", 0, custom_kinds),
+       (call_script, "script_custom_level", ":kind"),
+       (assign, ":level", reg0),
+       (gt, ":level", 1),
+       (call_script, "script_custom_troop", ":kind", ":level"),
+       (assign, ":to", reg0),
+       (try_for_range, ":low", 1, ":level"),
+         (call_script, "script_custom_troop", ":kind", ":low"),
+         (call_script, "script_custom_swap", reg0, ":to"),
+       (try_end),
      (try_end),
     ]),
 
@@ -351,14 +389,16 @@ scripts = [
      (store_script_param, ":men", 1),
      (store_mul, ":cost", ":men", custom_recruit_cost),
      (troop_remove_gold, "trp_player", ":cost"),
-     (party_add_members, "p_main_party", custom_first, ":men"),
+     (call_script, "script_custom_level", 0),
+     (call_script, "script_custom_troop", 0, reg0),
+     (party_add_members, "p_main_party", reg0, ":men"),
     ]),
 
   # script_custom_army_make: the army stands; the others' games hear it by its name
   ("custom_army_make",
    [
      (assign, "$custom_army_made", 1),
-     (troop_set_slot, custom_holder, custom_slot_name, 1),
+     (troop_set_slot, custom_holder, custom_slot_name, custom_word_change),
     ]),
 
   # script_custom_name_set: arg1 = 0 the army, 1 + kind a soldier: its name becomes s0. Three levels of a
@@ -390,8 +430,9 @@ scripts = [
      (jump_to_menu, "mnu_custom_screen"),
     ]),
 
-  # script_custom_session: a new session. The host's save holds the army: all of it goes to the bridge. A
-  # client's copy of the save may be older: the bridge's word stands
+  # script_custom_session: a new session. The bridge's army.json is the army: it tells all the games, the host's too.
+  # What the host's save holds goes to the bridge only for what it has no word of (an army older than the file).
+  # A client's copy of the save may be older: the bridge's word stands
   ("custom_session",
    [
      (assign, "$custom_word_wait", 0),
@@ -399,14 +440,20 @@ scripts = [
        (eq, "$coop_role", coop_role_client),
        (assign, "$custom_army_made", 0),
      (try_end),
+     (store_mul, ":mark", "$custom_army_made", custom_word_saved),
      (try_for_range, ":kind", 0, custom_kinds),
        (store_add, ":slot", custom_slot_gear, ":kind"),
-       (troop_set_slot, custom_holder, ":slot", "$custom_army_made"),
+       (troop_set_slot, custom_holder, ":slot", ":mark"),
+       (call_script, "script_custom_level", ":kind"),
+       (store_add, ":slot", custom_slot_level_word, ":kind"),
+       (troop_set_slot, custom_holder, ":slot", 0),
+       (gt, reg0, 1),
+       (troop_set_slot, custom_holder, ":slot", ":mark"),
      (try_end),
      (store_add, ":names", custom_kinds, 1),
      (try_for_range, ":index", 0, ":names"),
        (store_add, ":slot", custom_slot_name, ":index"),
-       (troop_set_slot, custom_holder, ":slot", "$custom_army_made"),
+       (troop_set_slot, custom_holder, ":slot", ":mark"),
      (try_end),
     ]),
 
@@ -414,17 +461,18 @@ scripts = [
   # own. Fails when there is nothing to say, or the ordinary requests' turn has come
   ("cf_custom_word_send",
    own_game() + [
+     (assign, ":found", -1),
+     (assign, ":mark", 0),
      (try_begin),
        (gt, "$custom_word_wait", 0),
        (val_sub, "$custom_word_wait", 1),
-       (assign, ":found", -1),
      (else_try),
-       (assign, ":found", -1),
        (store_add, ":names", custom_kinds, 1),
        (try_for_range, ":index", 0, ":names"),
          (eq, ":found", -1),
          (store_add, ":slot", custom_slot_name, ":index"),
-         (troop_slot_eq, custom_holder, ":slot", 1),
+         (troop_slot_ge, custom_holder, ":slot", custom_word_change),
+         (troop_get_slot, ":mark", custom_holder, ":slot"),
          (troop_set_slot, custom_holder, ":slot", 0),
          (assign, ":found", ":index"),
          (assign, reg7, ":index"),
@@ -438,17 +486,33 @@ scripts = [
          (try_end),
          (str_store_string, s17, "@&an={reg7},{s15}"), #name last: it may hold spaces
        (try_end),
-       (eq, ":found", -1),
        (try_for_range, ":kind", 0, custom_kinds),
          (eq, ":found", -1),
          (store_add, ":slot", custom_slot_gear, ":kind"),
-         (troop_slot_eq, custom_holder, ":slot", 1),
+         (troop_slot_ge, custom_holder, ":slot", custom_word_change),
+         (troop_get_slot, ":mark", custom_holder, ":slot"),
          (troop_set_slot, custom_holder, ":slot", 0),
          (assign, ":found", ":kind"),
          (call_script, "script_custom_gear_word", ":kind"),
        (try_end),
+       (try_for_range, ":kind", 0, custom_kinds),
+         (eq, ":found", -1),
+         (store_add, ":slot", custom_slot_level_word, ":kind"),
+         (troop_slot_ge, custom_holder, ":slot", custom_word_change),
+         (troop_get_slot, ":mark", custom_holder, ":slot"),
+         (troop_set_slot, custom_holder, ":slot", 0),
+         (assign, ":found", ":kind"),
+         (assign, reg7, ":kind"),
+         (call_script, "script_custom_level", ":kind"),
+         (assign, reg6, reg0),
+         (str_store_string, s17, "@&al={reg7},{reg6}"),
+       (try_end),
      (try_end),
      (ge, ":found", 0),
+     (try_begin),
+       (eq, ":mark", custom_word_saved),
+       (str_store_string, s17, "@&ao=1{s17}"),
+     (try_end),
      (assign, "$custom_word_wait", custom_word_gap),
      (val_add, "$coop_net_seq", 1),
      (assign, reg1, "$coop_net_seq"),
@@ -494,7 +558,8 @@ scripts = [
      (try_end),
     ]),
 
-  # script_custom_reply: arg1 = reply kind: 34 a name came (s0), 35 a kind's gear: kind, n, items...
+  # script_custom_reply: arg1 = reply kind: 34 a name came (s0), 35 a kind's gear: kind, n, items..., 36 a kind's
+  # level: kind, level
   ("custom_reply",
    [
      (store_script_param, ":reply", 1),
@@ -522,6 +587,13 @@ scripts = [
          (troop_add_item, ":troop", ":item"),
        (try_end),
        ]] + [
+     (else_try),
+       (eq, ":reply", 36),
+       (party_get_slot, ":kind", BUF, BUF_FIRST),
+       (store_add, ":at", BUF_FIRST, 1),
+       (party_get_slot, ":level", BUF, ":at"),
+       (store_add, ":slot", custom_slot_level, ":kind"),
+       (troop_set_slot, custom_holder, ":slot", ":level"),
      (try_end),
     ]),
 
@@ -556,11 +628,20 @@ def merge(orig_scripts, **extra):
   # (a name never comes without its text: the bridge sees to that)
   handler = script_block(orig_scripts, "game_receive_url_response")
   insert_before(handler, (is_between, ":kind", 27, 33), [
-    (is_between, ":kind", 34, 36),
+    (is_between, ":kind", 34, 37),
     (this_or_next|eq, "$coop_role", coop_role_client),
     (eq, "$coop_srv_player", 1),
     (call_script, "script_custom_reply", ":kind"),
     (else_try),
+  ])
+  # a soldier's portrait, in the party window and the troop tree
+  insert_after(script_block(orig_scripts, "add_troop_to_cur_tableau_for_party"),
+               (troop_get_inventory_slot, ":horse_item", ":troop_no", ek_horse), [
+    (try_begin),
+      (is_between, ":troop_no", custom_first, custom_holder),
+      (call_script, "script_custom_portrait", ":troop_no", ":hide_weapons"),
+      (assign, ":horse_item", reg0),
+    (try_end),
   ])
   reply = script_block(orig_scripts, "coop_mp_reply")
   insert_before(reply, (eq, ":kind", 2), [

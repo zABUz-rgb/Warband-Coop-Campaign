@@ -176,10 +176,11 @@ coop_village_relation = 3         # what a village beaten free of raiders thinks
 
 # Players together (coop/together.py)
 slot_center_coop_bandits = 306    # what this game last heard of a village's bandits: said once
-slot_party_coop_mark = 304        # on a mark on the map: its player's slot + 1
-coop_base_slot = coop_max_players # the company's camp goes to the games with the marks, as the slot after
-                                  # the players' (BASE_SLOT in tools/coop_bridge.py)
-coop_base_tag = coop_base_slot + 1 # and its party's slot_party_coop_mark
+slot_party_coop_mark = 304        # on a camp on the map: the slot it came in + 1
+slot_party_coop_mine = 307        # and whose: 1 this player's own, 2 the host's, 0 another player's
+coop_base_slot = coop_max_players # a player's camp goes to the games in the slots after the players'
+                                  # (BASE_SLOT in tools/coop_bridge.py): each camp keeps its own
+coop_base_tag = coop_base_slot + 1 # and the lowest slot_party_coop_mark
 coop_base_cost = 1000             # denars it takes to set the camp up
 coop_blackborn = "trp_tutorial_trainer" # John Blackborn: a new troop would change what a save holds, so he
                                   # is the spare hero of Native's old tutorial, named by script_coop_blackborn_ready
@@ -189,7 +190,9 @@ coop_store_chunk = 25             # items of the party store sent with one reque
 coop_store_asks_max = 300         # requests the party store may take to arrive in a menu
 coop_resend_requests = 20         # requests before a word nobody answered goes again
 coop_follow_near = 2              # map distance at which a player riding after another is there
-coop_follow_stuck_frames = 300    # map frames a party that should ride stands still: it jumps there instead
+coop_follow_stuck_frames = 30     # map frames a party that should ride stands still: it goes by steps instead
+coop_follow_step = 8              # map units * 100 such a step takes a frame, a loaded party's pace (the map's
+                                  # triggers run some 35 times a second)
 coop_follow_word_stop = 100       # $coop_follow_send: "I ride alone"; 1 to 4 the player ridden after + 1
 coop_follow_end_asked = 0         # why a ride ended (the log's note)
 coop_follow_end_click = 1
@@ -206,6 +209,7 @@ coop_tell_store = 5
 coop_tell_left = 6
 coop_tell_base = 7
 coop_tell_bandits = 8
+coop_tell_save_loaded = 9
 coop_note_cap = 16                # notes for the bridge's log kept while no request can carry them
 coop_note_prisoners = 1           # as GAME_NOTES in tools/coop_bridge.py
 coop_note_troops_xp = 2
@@ -213,7 +217,7 @@ coop_note_arena = 3
 coop_note_tournament = 4
 coop_note_training = 5
 coop_note_tree = 6
-coop_note_follow_jump = 7
+coop_note_follow_step = 7
 coop_note_signal = 8
 coop_note_lair = 9
 coop_note_village = 10

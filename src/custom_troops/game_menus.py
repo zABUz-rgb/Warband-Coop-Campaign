@@ -11,7 +11,7 @@ from custom_troops.constants import *
 
 
 def train_options():
-  """The menu's lines for the soldier picked in John's conversation ($custom_kind)."""
+  """The menu's lines for the soldier picked in John's conversation ($custom_kind): the level next for its kind."""
   options = []
   for level in LEVELS[:-1]:
     options.append(("custom_train_%d" % level,
@@ -23,18 +23,14 @@ def train_options():
           (disable_menu_option),
         (try_end),
       ],
-      "{s1}: to level {reg2} ({reg3} men): {reg4} dinars.",
+      "{s1}: to level {reg2}: {reg4} dinars.",
       [
         (call_script, "script_custom_train", "$custom_kind", level),
         (jump_to_menu, "mnu_custom_train"),
       ]))
-  below_top = [op for level in LEVELS[:-1] for op in [
-    (call_script, "script_custom_troop", "$custom_kind", level),
-    (call_script, "script_custom_men", reg0),
-    (val_add, ":men", reg0),
-  ]]
-  options.append(("custom_train_none", [(assign, ":men", 0)] + below_top + [(eq, ":men", 0), (disable_menu_option)],
-                  "There is no one here to train.", []))
+  options.append(("custom_train_none",
+                  [(call_script, "script_custom_level", "$custom_kind"), (ge, reg0, LEVELS[-1]), (disable_menu_option)],
+                  "There is nothing more to teach them.", []))
   return options
 
 
@@ -66,10 +62,11 @@ game_menus = [
    ]),
 
   ("custom_train", 0,
-   "{s11}, tier {reg11}.^^John Blackborn looks them over. Training raises only their level of stats. Their tier stays as it is: it grows\
- in battles and at the training field. The price is one for all the men of a kind who stand at a level. The game cannot\
- carry their experience across, so what they have gathered towards the next tier is lost: promote those who are ready\
- first.^^You have {reg10} dinars.", "none",
+   "{s11}, tier {reg11}, level {reg12} of 3.^^John Blackborn looks them over. Training raises only their level of stats. Their tier stays as it is: it grows\
+ in battles and at the training field. The price is paid once for the kind, even with none of them in your party:\
+ every man of it, hired or promoted later too, stands at that level. The game cannot carry experience across, so what\
+ those who stand lower have gathered towards the next tier is lost: promote those who are ready first.^^You have\
+ {reg10} dinars.", "none",
    [
      (call_script, "script_coop_ping_kick"),
      (store_troop_gold, reg10, "trp_player"),
@@ -77,6 +74,8 @@ game_menus = [
      (assign, reg11, reg0),
      (call_script, "script_custom_troop", "$custom_kind", 1),
      (str_store_troop_name, s11, reg0),
+     (call_script, "script_custom_level", "$custom_kind"),
+     (assign, reg12, reg0),
    ],
    train_options() + [
      ("custom_train_back", [], "That is all.", [(jump_to_menu, "mnu_custom_screen")]),

@@ -203,6 +203,7 @@ def rule_dialogs(flow):
         entered.setdefault(line[4], []).append(line)
     is_plyr = lambda l: bool(l[0] & PLYR)  # noqa: E731
     conditional = lambda l: l[0] & REPEATS or not flow.always_holds(l[2])  # noqa: E731
+    from dplmc_fix.dialogs import LEAVE_TEXT  # src is on the path by now; this line holds when no other does
 
     for state, lines in entered.items():
         # ours when we lead to it or wrote all of it: a line added to a state of the base game does not
@@ -223,7 +224,7 @@ def rule_dialogs(flow):
             nexts = npc if after_player else states[state]
             if not coming or not nexts:
                 continue
-            if any(l[0] & REPEATS == 0 and flow.always_holds(l[2]) for l in nexts):
+            if any(l[3] == LEAVE_TEXT or (l[0] & REPEATS == 0 and flow.always_holds(l[2])) for l in nexts):
                 continue
             if not flow.together_always_hold([l[2] for l in nexts if not l[0] & REPEATS]):
                 who = "nobody may answer" if after_player else "there may be nothing to say"

@@ -13,7 +13,7 @@ Confirmed in game at `stable-2026-10-28`:
 2. The friend loads the host's save: the game becomes a CLIENT by itself (kind 24); Camp - CoopWorld:
    co-op - CLIENT is there too.
 3. Heroes are named as in host.bat / join.bat.
-4. Meeting another player's party opens the co-op choices (joint battle, ask to join, give troops).
+4. Meeting another player's party opens the co-op choices (joint battle, give troops). Nothing offers to join a party.
 5. Battle server: Multiplayer - Host a game, Battle; host and friend pick a side.
 6. Joint battle started by either player: the other is invited (45 s to answer), the battle starts,
    heroes come with their gear, sides are set, proficiencies grow, wounds come back.
@@ -69,6 +69,20 @@ Open (build 590170735, not confirmed yet):
   joint battle - the players and the lord's men (bots, team of the players) against his enemy; a
   second soldier choosing it joins the same battle; the lord keeps the men who survived, the enemy is
   beaten as in any joint battle. Freelancer's own "Follow the commander" (single player) stays.
+Open (not played yet) - 1.0.1, the list of 11 fixes:
+- John: 1, 5, 10 or 20 recruits at a time. Gear and levels can be bought with none of that soldier in the party;
+  a level is one purchase for the kind, shared by all players, promoted men rise to it within a few seconds on the map.
+- Portraits in the troop tree: a dressed soldier wears the gear (the host's and a client's game alike).
+- Ride after a friend while the world stands (someone in a menu): the party keeps moving, a click stops it.
+- Ride to a camp: the party really goes there. Several camps: your own first, then the host's, then another's.
+- Arena and tournament: no script errors for opcode 1540 and 2173 in rgl_log.txt.
+- Load a save at the host and at a client: army names, gear and levels stay (army.json in Documents).
+- Host saves, plays on, loads that save: heroes, treasury, store and camps go back (sync.json); a client in the
+  session is told to load the save again and its hero is not written until it does.
+- The field camp's treasury buttons keep the menu open; while the bridge counts, "Look again" shows.
+- Giving troops and stopping a ride come back to the menu they started from.
+- A talk of the base game that has nothing left to say offers "Let us speak of this another time." instead of stopping.
+
 Open (build 157847662, not confirmed yet) - the joint siege on the battle server:
 - maps: only Siege maps whose AI mesh climbs the walls (3, 10, 13, 16); 8 and 15 have no AI mesh
   at all (read from their .sco), their bots could only walk at the walls and stand;

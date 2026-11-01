@@ -1654,9 +1654,6 @@ quick_strings_en|CoopWorld: {s1} is under siege! Ride there to defend its walls 
 quick_strings_en|CoopWorld: a new hero - from now on it is kept between sessions.|CoopWorld: новый герой — теперь он сохраняется между сессиями.
 quick_strings_en|CoopWorld: your own hero is back - gold, skills, gear, troops and prisoners as you left them.|CoopWorld: ваш собственный герой вернулся — деньги, навыки, снаряжение, войска и пленные, как вы их оставили.
 quick_strings_en|CoopWorld: the hero kept for you is from another version of CoopWorld and was not put back.|CoopWorld: сохранённый для вас герой из другой версии CoopWorld и не был восстановлен.
-game_menus|mno_coop_leave_party|CoopWorld: покинуть отряд {s1} и ехать самостоятельно.
-game_menus|mno_coop_release_followers|CoopWorld: отпустить игроков, которые следуют за вами.
-game_menus|mno_coop_join_ask|CoopWorld: попроситься в отряд этого игрока (следовать и сражаться вместе).
 game_menus|mno_coop_give_troops|CoopWorld: передать войска этому игроку.
 game_menus|menu_coop_give_troops|CoopWorld: войска для {s1}.^^Выбрано: {reg1}. Выберите бойцов в окне обмена (слева ваш отряд, справа подарок); {s1} примет их или откажется, а отвергнутые бойцы вернутся к вам. Компаньоны остаются с вами.
 game_menus|mno_coop_give_choose|Выбрать бойцов.
@@ -1665,19 +1662,9 @@ game_menus|mno_coop_give_cancel|Передумать.
 game_menus|menu_coop_troops_offered|CoopWorld: {s1} предлагает вам войска:^{s2}
 game_menus|mno_coop_offer_accept|Принять.
 game_menus|mno_coop_offer_decline|Отказаться.
-game_menus|menu_coop_join_request|CoopWorld: {s1} просится в ваш отряд.^^{s1} будет следовать за вами по карте и сражаться в ваших совместных боях, пока не покинет отряд или пока вы не отпустите последователей (меню лагеря).
-game_menus|mno_coop_join_accept|Принять {s1}.
-game_menus|mno_coop_join_decline|Отказать.
 quick_strings_en|CoopWorld: your troops were accepted.|CoopWorld: ваши войска приняты.
 quick_strings_en|CoopWorld: your troops were declined and came back to you.|CoopWorld: от ваших войск отказались, они вернулись к вам.
-quick_strings_en|CoopWorld: {s1} takes you into the party. You follow {s1} and fight in {s1}'s battles. Camp - CoopWorld - leave the party, to ride on your own again.|CoopWorld: {s1} принимает вас в отряд. Вы следуете за {s1} и сражаетесь в его боях. Чтобы снова ехать самостоятельно: Лагерь - CoopWorld: кооператив... - покинуть отряд.
-quick_strings_en|CoopWorld: {s1} does not take you into the party.|CoopWorld: {s1} не принимает вас в отряд.
-quick_strings_en|CoopWorld: {s1} follows you now.|CoopWorld: {s1} теперь следует за вами.
-quick_strings_en|CoopWorld: {s1} left your party.|CoopWorld: {s1} покинул ваш отряд.
-quick_strings_en|CoopWorld: {s1} released you from the party. You ride on your own again.|CoopWorld: {s1} отпустил вас из отряда. Вы снова едете самостоятельно.
 quick_strings_en|{s2}^{reg1} {s3}|{s2}^{reg1} {s3}
-quick_strings_en|CoopWorld: you ask {s1} to take you into the party...|CoopWorld: вы просите {s1} принять вас в отряд...
-quick_strings_en|{s1}, whose party you follow, goes into battle - you are called!^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side. Join it there; if you do not, your troops fight without you.|{s1}, за кем вы следуете, вступает в бой — вас зовут!^^Бой идёт на сервере мультиплеера: ваши войска сражаются на стороне {s1}. Зайдите туда; если не зайдёте, ваши войска будут сражаться без вас.
 quick_strings_en|CoopWorld: troops sent; waiting for the answer.|CoopWorld: войска отправлены, ждём ответа.
 game_menus|menu_coop_loot|CoopWorld: ваша доля добычи из совместного боя.
 game_menus|mno_coop_loot_leave|Вернуться на карту.
@@ -1685,12 +1672,8 @@ game_menus|mno_coop_mp_loot|Забрать свою долю добычи (за�
 quick_strings_en|CoopWorld: {s1} fell in the joint battle and is badly wounded.|CoopWorld: {s1} пал в совместном бою и тяжело ранен.
 quick_strings_en|CoopWorld: the host answers again.|CoopWorld: хост снова отвечает.
 quick_strings_en|CoopWorld: no answer from the host. Check the join.bat window and the network (Radmin); the game goes on and catches up once the host answers. Your hero is written down at the host every minute while the link works.|CoopWorld: хост не отвечает. Проверьте окно join.bat и сеть (Radmin); игра продолжается и догонит мир, когда хост ответит. Пока связь есть, ваш герой записывается у хоста каждую минуту.
-game_menus|mno_coop_players|CoopWorld: другие игроки (вступить в отряд, передать войска)...
-game_menus|menu_coop_players|CoopWorld: игроки в этом мире:^{s10}^^Войска можно передать игроку поблизости (до {reg2} км); вступить в отряд можно откуда угодно: потом вы едете к его командиру.
-game_menus|mno_coop_pl_join_0|Попросить {s1} принять вас в отряд.
-game_menus|mno_coop_pl_join_1|Попросить {s1} принять вас в отряд.
-game_menus|mno_coop_pl_join_2|Попросить {s1} принять вас в отряд.
-game_menus|mno_coop_pl_join_3|Попросить {s1} принять вас в отряд.
+game_menus|mno_coop_players|CoopWorld: другие игроки (ехать следом, передать войска)...
+game_menus|menu_coop_players|CoopWorld: игроки в этом мире:^{s10}^^Войска можно передать игроку поблизости (до {reg2} км).
 game_menus|mno_coop_pl_give_0|Передать войска игроку {s1}.
 game_menus|mno_coop_pl_give_1|Передать войска игроку {s1}.
 game_menus|mno_coop_pl_give_2|Передать войска игроку {s1}.
@@ -1699,15 +1682,11 @@ game_menus|mno_coop_pl_write_hero|Записать моего героя у хо
 game_menus|mno_coop_pl_back|Назад.
 quick_strings_en|CoopWorld: hero name - {s0}.|CoopWorld: имя героя - {s0}.
 quick_strings_en|CoopWorld: the host saved the game. Your copy of the world is updated: next time load it to start from there (your hero comes back from the host).|CoopWorld: хост сохранил игру. Ваша копия мира обновлена: в следующий раз загрузите её, чтобы начать оттуда (ваш герой вернётся от хоста).
-quick_strings_en|{s10}^{s1}: {reg1} km away|{s10}^{s1}: в {reg1} км
-quick_strings_en|{s10} - you ride in this party|{s10} - вы едете в этом отряде
 quick_strings_en|^Nobody else is in the world right now.|^Кроме вас, в мире сейчас никого нет.
-quick_strings_en|CoopWorld: writing your hero down at the host in a few seconds.|CoopWorld: через несколько секунд ваш герой будет записан у хоста.
 game_menus|mno_coop_camp|CoopWorld: кооператив...
 game_menus|menu_coop_camp|CoopWorld: кооператив.^^Эта игра - {s1}.
 game_menus|mno_coop_role_resume|CoopWorld: пустить мир дальше (перестать удерживать).
 game_menus|mno_coop_camp_back|Назад.
-game_menus|mno_coop_pl_leave|Покинуть отряд игрока {s1} и ехать самому.
 quick_strings_en|a CLIENT (your hero in the host's world)|КЛИЕНТ (ваш герой в мире хоста)
 quick_strings_en|the HOST (the world lives in this game, you play in it)|ХОСТ (мир живёт в этой игре, вы в ней играете)
 quick_strings_en|the WORLD SERVER only|только СЕРВЕР МИРА
@@ -1865,7 +1844,6 @@ quick_strings_en|The duel is on!^^Switch to the multiplayer window (the CoopWorl
 quick_strings_en|Waiting for the other player's answer...^^The duel starts as soon as you both stand on the battle server: switch to the multiplayer window now.{s2}|Ждём ответа соперника...^^Дуэль начнётся, как только вы оба будете на сервере боя: перейдите в окно мультиплеера.{s2}
 quick_strings_en|CoopWorld: you took the reins: you ride on your own again.|CoopWorld: вы взяли поводья: дальше едете сами.
 quick_strings_en|CoopWorld: whom you rode after is no longer on the map.|CoopWorld: того, за кем вы ехали, больше нет на карте.
-quick_strings_en|CoopWorld: the march order did not take; your party rides straight there.|CoopWorld: приказ идти не сработал, отряд перенесён прямо туда.
 quick_strings_en|CoopWorld: to the shared treasury...|CoopWorld: обращаемся к общей казне...
 quick_strings_en|CoopWorld: {s1} rides after you.|CoopWorld: {s1} едет за вами.
 quick_strings_en|CoopWorld: {s1} rides on alone.|CoopWorld: {s1} больше не едет за вами.
@@ -1931,7 +1909,7 @@ game_menus|mno_start_find_inn|Найти постоялый двор...
 game_menus|mno_establish_court_hold_off|Повременить...
 game_menus_over|menu_sneak_into_town_suceeded|Ваша маскировка: {reg1?обманщик:{s1}}. Вы проводите стражу и входите в город.
 game_menus|mno_coop_base_build|CoopWorld: разбить здесь лагерь отряда (1000 динаров).
-game_menus|mno_coop_base_ride|CoopWorld: поехать в лагерь отряда (там общая казна и склад).
+game_menus|mno_coop_base_ride|CoopWorld: поехать к лагерю: {s1} (там общая казна и склад).
 game_menus|mno_coop_blackborn|Поговорить с Джоном Блэкборном.
 game_menus|mno_coop_base_down|Свернуть лагерь (казна и склад останутся у отряда, динары не вернутся).
 dialogs_en|Go away, traveller.|Уходи, путник.
@@ -1955,11 +1933,11 @@ game_menus|mno_custom_blackborn|Поговорить с Джоном Блэкб�
 game_menus|menu_custom_screen|Джон Блэкборн ждёт вашего слова.
 game_menus|mno_custom_screen_talk|Поговорить с Джоном Блэкборном.
 game_menus|mno_custom_screen_back|Назад.
-game_menus|menu_custom_train|{s11}, тир {reg11}.^^Джон Блэкборн осматривает их. Обучение повышает только уровень характеристик. Тир остаётся прежним: он растёт в боях и на тренировочном поле. Цена одна за всех людей одного рода на одном уровне. Игра не может перенести их опыт, поэтому накопленное к следующему тиру пропадёт: сначала повысьте тех, кто уже готов.^^У вас {reg10} динаров.
+game_menus|menu_custom_train|{s11}, тир {reg11}, уровень {reg12} из 3.^^Джон Блэкборн осматривает их. Обучение повышает только уровень характеристик. Тир остаётся прежним: он растёт в боях и на тренировочном поле. Цена платится один раз за весь отряд, даже если сейчас таких воинов у вас нет: каждый его воин, нанятый или повышенный позже, тоже будет на этом уровне. Игра не может перенести опыт, поэтому у тех, кто стоит ниже, накопленное к следующему тиру пропадёт: сначала повысьте тех, кто уже готов.^^У вас {reg10} динаров.
 game_menus|mno_custom_train_back|На этом всё.
-game_menus|mno_custom_train_1|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_2|{s1}: до уровня {reg2} ({reg3} чел.): {reg4} динаров.
-game_menus|mno_custom_train_none|Обучать здесь некого.
+game_menus|mno_custom_train_1|{s1}: до уровня {reg2}: {reg4} динаров.
+game_menus|mno_custom_train_2|{s1}: до уровня {reg2}: {reg4} динаров.
+game_menus|mno_custom_train_none|Больше их учить нечему.
 dialogs_en|Sorry, there is nothing I can do for you.|Извини, мне нечем тебе помочь.
 dialogs_en|Good day. What brings you to me?|Добрый день. С чем пожаловали?
 dialogs_en|Good to see you, my lord.|Рад вас видеть, мой лорд.
@@ -1987,7 +1965,6 @@ dialogs_en|Which tier?|Какой тир?
 dialogs_en|{s1}, tier {reg1}.|{s1}, тир {reg1}.
 dialogs_en|Someone else.|Других.
 dialogs_en|Nothing, let us go on.|Ничего, продолжим.
-dialogs_en|You have none of my men.|У вас нет моих людей.
 dialogs_en|How many men do you want? Each one costs {reg1} dinars.|Сколько вы хотите купить воинов? Каждый стоит {reg1} динаров.
 dialogs_en|Nothing, forget it.|Ничего, забудь.
 dialogs_en|They are yours, my lord. Anything else?|Они ваши, мой лорд. Что-нибудь ещё?
@@ -2110,3 +2087,10 @@ troops|trp_custom_t5_cav_lvl3_pl|Чемпионы-всадники
 troops|trp_custom_army|Войско игрока
 troops|trp_custom_army_pl|Войско игрока
 dialogs_en|No, {playername}. You have not earned any leave from me.|Нет, {playername}. Отпуска вы у меня не заслужили.
+game_menus|mno_coop_tg_wait|Монеты ещё считают. Взглянуть снова.
+quick_strings_en|Your camp|Ваш лагерь
+quick_strings_en|The host's camp|Лагерь хоста
+quick_strings_en|CoopWorld: the host went back to an earlier save. Load the host's save again: your hero and the treasury went back with it.|CoopWorld: хост вернулся к более раннему сохранению. Загрузите сохранение хоста снова: ваш герой и казна вернулись вместе с ним.
+quick_strings_en|{s10}^{s1}: {reg1} km away.|{s10}^{s1}: в {reg1} км.
+quick_strings_en|CoopWorld: your hero is written down at the host a few seconds after you are back on the map.|CoopWorld: ваш герой будет записан у хоста через несколько секунд после возвращения на карту.
+dialogs_en|Let us speak of this another time.|Поговорим об этом в другой раз.

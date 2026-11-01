@@ -79,8 +79,8 @@ def together_text(what, f):
     if what == "follow":
         target = f.get("target", "-")
         return "едет один" if target == "-" else f"едет за игроком {target}"
-    if what == "follow_jump":
-        return f"поход: приказ двигаться не сработал, отряд перенесён к цели (было {n('distance')} км)"
+    if what == "follow_step":
+        return f"поход: приказ двигаться не сработал, отряд идёт шагами (осталось {n('distance')})"
     if what == "follow_end":
         return "поход окончен: " + FOLLOW_END.get(n("why"), "?")
     if what == "base":
@@ -707,8 +707,8 @@ def analyze(events, trace, silence=30, trail=()):
         name = m.group(2)
         together.append(f"  {stamp(t)} {name}: {said if said is not None else what + ' ' + (m.group(4) or '')}")
         known.add(what)
-        if what == "follow_jump":
-            s.note(t, "? ", f"игрок {name}: отряд не послушался приказа идти за другом и был перенесён к цели")
+        if what == "follow_step":
+            s.note(t, "? ", f"игрок {name}: отряд не послушался приказа идти, пошёл шагами скрипта")
         elif what == "store_refused":
             s.note(t, "  ", f"игрок {name}: склад занят другим игроком")
         elif what == "duel_off" and fields.get("why") != "declined":

@@ -115,8 +115,6 @@ def net_scripts(first_dynamic):
      (assign, "$coop_net_misses", 0),
      (assign, "$coop_busy", 0),
      (assign, "$coop_hello", 1), #the server holds the world until this client says hello
-     (assign, "$coop_leader", 0), #a new session: in nobody's party, nobody in mine
-     (assign, "$coop_followers", 0),
      (assign, "$coop_offer_pending", 0),
      # the hero of this session is the host's until the bridge says whether it keeps one for this player
      (assign, "$coop_profile_state", 0),

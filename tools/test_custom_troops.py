@@ -79,12 +79,14 @@ def test_training_field():
 def test_levels_leave_tiers():
     options = game_menus.train_options()
     check([o[0] for o in options] == ["custom_train_1", "custom_train_2", "custom_train_none"],
-          "John's menu holds the picked soldier's levels 2 and 3 and nothing else")
+          "John's menu holds the picked kind's next level and nothing else")
     calls = [(name, op) for name, ops in scripts.scripts for op in ops if isinstance(op, tuple) and "script_custom_swap" in op]
-    check([name for name, _ in calls] == ["custom_train"], "only training changes a soldier's troop by script")
-    train = dict(scripts.scripts)["custom_train"]
+    check([name for name, _ in calls] == ["custom_levels_apply"], "only a kind's level changes a soldier's troop by script")
+    train = dict(scripts.scripts)["custom_levels_apply"]
     made = [op for op in train if isinstance(op, tuple) and "script_custom_troop" in op]
     check([op[2] for op in made] == [":kind", ":kind"], "and it stays within the kind, so within the tier")
+    cost = dict(scripts.scripts)["custom_train"]
+    check(not any(isinstance(op, tuple) and "script_custom_men" in str(op) for op in cost), "and no men need to stand there")
 
 
 def test_stats():
@@ -168,7 +170,7 @@ def test_own_gear():
 
 
 def test_prices():
-    check(c.custom_recruits == (5, 10, 20) and c.custom_recruit_cost == 20, "5, 10 or 20 men at 20 dinars")
+    check(c.custom_recruits == (1, 5, 10, 20) and c.custom_recruit_cost == 20, "1, 5, 10 or 20 men at 20 dinars")
     check(c.custom_train_cost[1] == (3000, 5000) and c.custom_train_cost[5] == (30000, 40000), "training as ordered")
     check(all(a < b for a, b in c.custom_train_cost.values()), "level 3 costs more than level 2")
     check(all(c.custom_train_cost[t][1] <= c.custom_train_cost[t + 1][0] for t in range(1, 5)), "and a higher tier more")
@@ -195,9 +197,17 @@ def test_dialogs():
     check(len([d for d in lines if d[1] == "custom_pick_tier"]) == len(TIERS) + 1, "all four tiers, or someone else")
     for branch, name in enumerate(BRANCH_NAMES):
         check(1 + branch * len(TIERS) == kind_of(name, 2), "")  # as script_custom_tier_kind counts it
-    check(all(d[4] == "custom_who" for d in main if "gear" in d[3] or "stats" in d[3] if d[2] == dialogs.HAS_MEN),
-          "gear and training both ask whom")
-    check(len([d for d in lines if d[1] == "custom_buy_many"]) == 4, "5, 10, 20, or nothing")
+    asks = [d for d in main if "gear" in d[3] or "stats" in d[3]]
+    check(len(asks) == 2 and all(d[4] == "custom_who" and not d[2] for d in asks),
+          "gear and training both ask whom, men or no men")
+    check(len([d for d in lines if d[1] == "custom_buy_many"]) == 5, "1, 5, 10, 20, or nothing")
+
+
+def test_portrait():
+  import module_scripts
+  block = next(s[1] for s in module_scripts.scripts if s[0] == "add_troop_to_cur_tableau_for_party")
+  calls = [op for op in block if isinstance(op, tuple) and "script_custom_portrait" in op]
+  check(len(calls) == 1, "the tree's portrait goes through the army's own gear")
 
 
 if __name__ == "__main__":
@@ -211,4 +221,5 @@ if __name__ == "__main__":
     test_own_gear()
     test_prices()
     test_dialogs()
+    test_portrait()
     print("all tests passed")

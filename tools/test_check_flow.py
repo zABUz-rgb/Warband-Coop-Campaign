@@ -11,11 +11,12 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "src"))
 import header_operations as ops  # noqa: E402
 from header_common import reg1  # noqa: E402
-from header_dialogs import anyone, plyr  # noqa: E402
+from header_dialogs import anyone, plyr, repeat_for_parties  # noqa: E402
 from header_presentations import prsntf_read_only  # noqa: E402
 from header_operations import *  # noqa: E402,F403
 from header_triggers import ti_on_presentation_load  # noqa: E402
 
+from dplmc_fix.dialogs import LEAVE_TEXT, STUCK_STATES, leave_lines  # noqa: E402
 import check_flow  # noqa: E402
 from check_flow import Flow  # noqa: E402
 
@@ -54,6 +55,17 @@ def test_dialogs():
     either = [anyone | plyr, "ask", [(this_or_next | eq, "$x", 1), (eq, "$y", 1)], "Yes.", "close_window", []]
     both = [anyone | plyr, "ask", [(neq, "$x", 1), (neq, "$y", 1)], "No.", "close_window", []]
     check("D4" not in rules(flow([HELLO, either, both])), "or-chains count as well")
+    last = [anyone | plyr, "ask", [(eq, reg1, 2)], LEAVE_TEXT, "close_window", []]
+    check("D4" not in rules(flow([HELLO, maybe, last])), "the last-resort line counts as always there")
+    state = STUCK_STATES[0]
+    asked = [anyone | plyr, state, [(eq, reg1, 1)], "Yes.", "close_window", []]
+    made = leave_lines([asked])
+    check(len(made) == 1 and made[0][0] == anyone | plyr and made[0][2][-1] == (eq, ":any", 0)
+          and made[0][2].count((eq, reg1, 1)) == 1, "it is offered when the choices it copies all fail")
+    listed = [anyone | plyr | repeat_for_parties, state, [(eq, reg1, 1)], "{s1}", "close_window", []]
+    check(leave_lines([listed])[0][2] == [], "a repeating list always keeps it")
+    spoken = [anyone, state, [(eq, reg1, 1)], "Yes.", "close_window", []]
+    check(leave_lines([spoken])[0][:3] == [anyone, state, []], "an answer of the other side needs no test")
     check("D6" in rules(flow([HELLO, [anyone | plyr, "ask", [], "Hm.", "more", []], [anyone | plyr, "more", [], "Bye.", "close_window", []]])),
           "a player's line with no answer")
 

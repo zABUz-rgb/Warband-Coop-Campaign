@@ -220,7 +220,7 @@ def test_together():
         "together 1:D: training ratio=75 earned=900",
         "together 1:D: tree troop=120",
         "together 0:O: follow target=1:D the Great",
-        "together 0:O: follow_jump distance=12",
+        "together 0:O: follow_step distance=12",
         "together 0:O: follow_end why=1",
         "together 1:D: gold asked=100 moved=100 balance=600",
         "together 0:O: gold asked=-700 moved=-600 balance=0",

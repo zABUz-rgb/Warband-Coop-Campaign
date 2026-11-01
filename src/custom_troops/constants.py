@@ -2,7 +2,7 @@ from coop.constants import coop_blackborn
 
 # The kinds of soldier, each in three levels of stats: kind 0 the recruit, then each branch's tiers.
 # A tier (recruit to champion) rises by experience: battles and the training field. A level (1 to 3) is stats
-# bought from John, and it leaves the tier as it was.
+# bought from John for the whole kind, with or without men of it, and it leaves the tier as it was.
 # custom_first + 3 * kind + level - 1 is a soldier's troop; tools/test_custom_troops.py keeps it true.
 BRANCH_NAMES = ("inf", "arc", "cav")
 TIERS = (2, 3, 4, 5)
@@ -26,12 +26,16 @@ custom_npc = coop_blackborn
 # the slots of custom_holder
 custom_slot_name = 0                # 0 the army's name, 1 + kind a soldier's: that it has to go out
 custom_slot_gear = 20               # + kind: that this kind's gear has to go out
+custom_slot_level = 40              # + kind: the level bought for this kind, 0 none yet: all its men stand there
+custom_slot_level_word = 60         # + kind: that this kind's level has to go out
+custom_word_change = 1              # those slots: a change the bridge is to take
+custom_word_saved = 2               # what a save held when a session began: the bridge takes it if it has none
 slot_item_custom_tier = 200         # the lowest tier of soldier an item may go to, 0 none
 slot_item_custom_paid = 201         # copies this game paid for: only those sell for money (what a soldier starts
                                     # with, or another player bought, brings nothing)
 
 custom_recruit_cost = 20            # dinars a man
-custom_recruits = (5, 10, 20)
+custom_recruits = (1, 5, 10, 20)
 custom_gear_factor = 4              # what soldiers' gear costs, times the item's value
 custom_sell_percent = 50
 custom_gear_max = 24                # items a kind may carry
@@ -45,4 +49,5 @@ custom_screen_army = 4              # the names screen with the army's common na
 custom_screen_soldiers = 5          # and with the units' own names alone (custom_screen_names has both)
 
 custom_word_gap = 2                 # a word to the others goes out, then this many ordinary requests' turns
+custom_levels_period = 40           # map frames between looks for men below their kind's level
 custom_kind_labels = ["Recruit"] + ["%s, tier %d" % (name, tier) for name in ("Infantry", "Archers", "Riders") for tier in TIERS]

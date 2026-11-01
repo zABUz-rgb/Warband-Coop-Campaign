@@ -10,8 +10,6 @@ from custom_troops.constants import *
 
 JOHN = [(store_conversation_troop, ":troop"), (eq, ":troop", custom_npc)]
 NOT_CLIENT = [(neq, "$coop_role", coop_role_client)]
-HAS_MEN = [(call_script, "script_custom_men_total"), (gt, reg0, 0)]
-NO_MEN = [(call_script, "script_custom_men_total"), (eq, reg0, 0)]
 
 
 def hire_lines():
@@ -64,16 +62,13 @@ dialogs = [
   [anyone|plyr, "custom_hello", [], "I need to see to my own troops.", "custom_what", []],
   [anyone|plyr, "custom_hello", [], "Nothing. Farewell.", "close_window", []],
   [anyone, "custom_what", [], "Of course, my lord. What exactly do you wish to do?", "custom_main", []],
-  [anyone|plyr, "custom_main", HAS_MEN, "Change my men's gear. Show me the equipment.", "custom_who",
+  [anyone|plyr, "custom_main", [], "Change my men's gear. Show me the equipment.", "custom_who",
    [(assign, "$custom_for", custom_screen_shop)]],
-  [anyone|plyr, "custom_main", NO_MEN, "Change my men's gear. Show me the equipment.", "custom_no_men", []],
-  [anyone|plyr, "custom_main", HAS_MEN, "Teach them new skills. Improve their stats.", "custom_who",
+  [anyone|plyr, "custom_main", [], "Teach them new skills. Improve their stats.", "custom_who",
    [(assign, "$custom_for", custom_screen_train)]],
-  [anyone|plyr, "custom_main", NO_MEN, "Teach them new skills. Improve their stats.", "custom_no_men", []],
   [anyone|plyr, "custom_main", [], "I want to buy soldiers for the company.", "custom_buy", []],
   [anyone|plyr, "custom_main", NOT_CLIENT, "I want to rename something.", "custom_rename", []],
   [anyone|plyr, "custom_main", [], "Nothing, let us go on.", "close_window", []],
-  [anyone, "custom_no_men", [], "You have none of my men.", "custom_main", []],
 
   # whose gear, or whose training
   [anyone, "custom_who", [], "Which of them, my lord?", "custom_pick", []],

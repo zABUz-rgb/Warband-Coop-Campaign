@@ -45,21 +45,22 @@ World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
-                    [&pf=seq,offset,total,v1,v2,...][&pfq=1][&join=slot][&joinans=slot,yes][&leave=1][&release=1]
+                    [&pf=seq,offset,total,v1,v2,...][&pfq=1]
                     [&give=slot,t1,n1,...][&giveans=id,yes]
                     [&lg=code,a,b,c][&fl=slot+1][&bs=x,y|-][&tg=token,amount][&st=1][&sti=token,offset,total,pairs...]
+                    [&ag=kind,item,...][&an=index,name][&al=kind,level][&ao=1]
                     [&me=t1,n1,...][&name=player name]
     fac: the kingdom the player serves (0: none); lord: the world party of the lord the player serves
     as a soldier (Freelancer), -1 or absent: none; pf: part of the player's hero (the profile, see
     coop/profile.py), kept by the hub in profiles.json under the player's name and sent back
-    (kind 14) when that player joins again, or asks again with pfq (the answer got lost); join: ask the player in slot to take this one into the
-    party; joinans: the answer to the player in slot asking; leave: leave the leader's party;
-    release: let all followers go; give: offer troops to the player in slot; giveans: the answer
-    to offer id (see coop/players.py);
-    lg: a note for the log (GAME_NOTES below); fl: ride after the player in slot (0: stop); bs: the
-    company's camp on everybody's map (-: take it down); tg: put amount denars into the shared treasury,
+    (kind 14) when that player joins again, or asks again with pfq (the answer got lost); give: offer troops to the player in slot; giveans:
+    the answer to offer id (see coop/players.py);
+    lg: a note for the log (GAME_NOTES below); fl: ride after the player in slot (0: stop); bs: this
+    player's camp on everybody's map (-: take it down); tg: put amount denars into the shared treasury,
     or take them (negative), repeated until kind 29 answers that token; st: open the party store;
     sti: part of the party store coming back, pairs (item, modifier + 100 * amount), repeated until kind 31;
+    ag, an, al: the player's own army, a kind's gear, a name (0 the army's, 1 + kind a soldier's), a kind's
+    level, kept in army.json apart from any save; ao: these come from a save, and only fill what the file lacks;
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
     dbg: a client's state for the log when it goes quiet: parties, mirrors spawned, swept, Freelancer's
@@ -126,10 +127,6 @@ player's bet wins, a duel's stake]
                                                it is a copy and becomes a client
           7777|15|id|slot|n|(troop,count)*n    the player in slot offers these troops
           7777|16|id|accepted|n|(troop,count)*n   how this player's offer went (declined: they come back)
-          7777|17|slot                         the player in slot asks to join this player's party
-          7777|18|slot|accepted                the leader in slot took this player in, or not
-          7777|19|slot|joined                  to a leader: the player in slot joined (1) or left (0)
-          7777|20|slot                         the leader in slot let this player go
           7777|21|bid|n|(troop,count)*n        the player's share of the fallen enemies, to loot
           7777|26|bid|event|won|value|bonus|town|n|(troop,count)*n   a joint event ended: an arena's value is
                                                the opponents beaten; a tournament's the rounds won (bonus: what
@@ -138,13 +135,16 @@ player's bet wins, a duel's stake]
                                                the pairs: the opponents); a duel's won: 1 won, 0 lost, 2 a draw,
                                                its value the stake
           7777|27|code|slot|a|b                news about the player in slot (TELL_... below)
-          7777|28|n|(slot,x,y,mine)*n          the company's camp on the map
+          7777|28|n|(slot,x,y,mine)*n          the players' camps on the map (mine: 1 this player's own, 2 the
+                                               host's, 0 another's)
           7777|29|token|delta|balance          the shared treasury: what the transfer token did to it (token 0: news)
           7777|30|offset|total|n|(item,value)*n  the party store (offset 0: from the start)
           7777|31|state|slot                   the party store: 0 in use by the player in slot, 1 saved
           7777|32|sid|enemy|on                 a world party near this player fights the party enemy (on 0: no longer)
           7777|33                              nothing (the answer to a ping)
-    A follower is called into the leader's joint battles: invitation type 3, which cannot be declined.
+          7777|34|index|name                   the player's own army: a name (as for an)
+          7777|35|kind|n|items*n               its kind's gear
+          7777|36|kind|level                   its kind's level
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...
                   &kl=no,count;...]&pl=no~name;...
@@ -212,6 +212,7 @@ REMOVALS_PER_REPLY = 3
 RESULT_PAIRS = 53       # troop and prisoner pairs of one battle result: 5 + 3 * 4 + 4 + 1 + 2 * 53 <= 128  # 3 header numbers + 7 per entry must stay within 128 registers
 MAX_STACKS = 30         # troop stacks per party in one message
 ARMY_KINDS = 13         # the player's own army: kinds of soldier (src/custom_troops/constants.py)
+ARMY_LEVELS = 3         # and the levels of stats each
 ARMY_GEAR_MAX = 24      # items a kind may carry
 ARMY_NAME_MAX = 40
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
@@ -264,7 +265,10 @@ PING_HOLD_S = 0.7       # a game off the map asks this often whether it is calle
 TRAIL_ACK = 7779        # the whole reply to a debug build's /tr (trail_ack in src/trail/marks.py)
 ALIVE_S = 3.0           # a game that pinged this recently answers, though its map does not run
 TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_GOLD, TELL_STORE, TELL_LEFT, TELL_BASE, TELL_BANDITS = 1, 2, 4, 5, 6, 7, 8  # kind 27
-BASE_SLOT = MAX_PLAYERS  # the company's camp goes out in the slot after the players' (coop_base_slot)
+TELL_SAVE_LOADED = 9
+SYNC_KEEP = 24          # the host's last saves whose heroes and treasury are kept (sync.json)
+SYNC_HERO_S = 60.0      # seconds after a host's save a hero coming in still counts as written at it
+BASE_SLOT = MAX_PLAYERS  # a player's camp goes out in the slots after the players' (coop_base_slot)
 # what a game tells the log with &lg=code,a,b,c (coop_note_... in coop/constants.py): the name in the
 # log's "together" line, and what a, b and c are
 NOTE_BANDITS = 14
@@ -275,7 +279,7 @@ GAME_NOTES = {
     4: ("tournament", ("rounds", "gold", "stake_lost")),
     5: ("training", ("ratio", "earned")),
     6: ("tree", ("troop",)),
-    7: ("follow_jump", ("distance",)),
+    7: ("follow_step", ("distance",)),
     8: ("signal", ("how", "invite")),
     9: ("lair", ("won", "quest")),
     10: ("village", ("center", "won", "relation")),
@@ -328,6 +332,7 @@ class Player:
         self.name_pending = False
         self.rename_wait = 0    # requests until the hero's name is asked for again
         self.saves_told = None  # the host's saves this player's game was told of
+        self.hero_stale = False # the host went back to a save: this game's hero waits for the game to load it
         self.build = None       # the CoopWorld build its game runs (see coop/constants.py)
         self.others_cursor = 0
         self.status_sent = None  # (paused, slot, why) this player was last told
@@ -342,8 +347,6 @@ class Player:
         self.sent_at = {}       # sid -> this player's request that last carried its position
         self.profile_out = []   # the kept hero, in replies, after joining
         self.profile_in = None  # [seq, total, {offset: values}] the hero coming in
-        self.leader = None      # cid of the player whose party this one follows
-        self.join_asked = None  # cid of the player this one asked to join
         self.hours = None       # its game clock, as it last reported
         self.clock = 0          # -1 its clock is ahead of the world's, 1 behind, 0 the same time
         self.clock_since = None # when it last stopped being the same time
@@ -452,14 +455,35 @@ class World:
         self.store_lock = None  # (cid, since): who has the party store open
         self.shared_path = Path(shared_path) if shared_path else (
             self.profiles_path.with_name("shared.json") if self.profiles_path else None)
-        self.army = {"names": {}, "gear": {}}  # the player's own army: the host's save is its master
+        # the player's own army, kept in army.json: a save loaded, or the bridge started anew, takes nothing back
+        self.army_path = self.shared_path.with_name("army.json") if self.shared_path else None
+        self.army = {"names": {}, "gear": {}, "levels": {}}
+        if self.army_path is not None and self.army_path.exists():
+            try:
+                kept = json.loads(self.army_path.read_text("utf-8"))
+                self.army = {part: {int(k): v for k, v in kept.get(part, {}).items()} for part in self.army}
+            except (OSError, ValueError, AttributeError):
+                pass
         self.army_told = {}     # kind -> items: what the battle server's game has of its gear
-        self.shared = {"gold": 0, "items": []}  # the treasury and the party store, kept in shared.json
+        # the treasury, the party store and the players' camps, kept in shared.json
+        self.shared = {"gold": 0, "items": [], "bases": [None] * MAX_PLAYERS}
         if self.shared_path is not None and self.shared_path.exists():
             try:
                 self.shared.update(json.loads(self.shared_path.read_text("utf-8")))
             except (OSError, ValueError):
                 pass
+        old_camp = self.shared.pop("base", None)
+        if old_camp:  # when there was one camp for all: the host's now
+            self.shared["bases"][0] = {"who": None, "host": True, "x": old_camp[0], "y": old_camp[1]}
+        # the world's clock at each of the host's saves -> the heroes and the treasury as they stood then
+        self.sync_path = self.shared_path.with_name("sync.json") if self.shared_path else None
+        self.sync = {}
+        self.sync_open = None   # (clock, until): the save the players' heroes are still coming in for
+        if self.sync_path is not None and self.sync_path.exists():
+            try:
+                self.sync = {int(k): v for k, v in json.loads(self.sync_path.read_text("utf-8")).items()}
+            except (OSError, ValueError, AttributeError):
+                self.sync = {}
 
     # ---- players
 
@@ -482,18 +506,10 @@ class World:
             self.mp_names.pop(cid, None)
 
     def _part_company(self, cid):
-        """A player leaves the game: the leader is told, followers ride on alone, troops offered
-        to this player go back to their giver."""
+        """A player leaves the game: troops offered to this player go back to their giver."""
         p = self.players.get(cid)
         if p is None:
             return
-        leader = self.players.get(p.leader) if p.leader else None
-        if leader is not None and p.slot is not None:
-            leader.mp_out.append([19, p.slot, 0])
-        for q in self.players.values():
-            if q.leader == cid and p.slot is not None:
-                q.leader = None
-                q.mp_out.append([20, p.slot])
         for oid, (giver, receiver, stacks) in list(self.offers.items()):
             if receiver == cid:
                 del self.offers[oid]
@@ -537,29 +553,44 @@ class World:
             if after is not None:
                 after.mp_out.append([27, TELL_FOLLOWED, p.slot, 0, 0])
 
+    def _camp_key(self, p):
+        return self._profile_key(p.cid) or p.cid
+
     def _marks_reply(self, p):
-        """The company's camp, the only thing on the map all games add by themselves; none takes away
-        what a save still holds."""
-        if not self.shared.get("base"):
-            return [28, 0]
-        x, y = self.shared["base"]
-        return [28, 1, BASE_SLOT, x + COORD_OFFSET, y + COORD_OFFSET, 0]
+        """The camps, the only thing on the map all games add by themselves; none takes away what a save
+        still holds."""
+        out = [28, 0]
+        me = self._camp_key(p)
+        for index, camp in enumerate(self.shared["bases"]):
+            if camp:
+                own = camp["who"] == me or (camp["who"] is None and p.on_server)
+                out += [BASE_SLOT + index, camp["x"] + COORD_OFFSET, camp["y"] + COORD_OFFSET,
+                        1 if own else 2 if camp["host"] else 0]
+                out[1] += 1
+        return out
 
     def _marks_out(self):
         for q in self.players.values():
             q.mp_out.append(self._marks_reply(q))
 
     def _base(self, p, where):
-        """The company's camp on everybody's map, one for all, kept with the treasury; where () takes it
-        down. Of two players building at one moment the first one's stands."""
-        if p.slot is None or bool(where) == bool(self.shared.get("base")):
+        """A player's camp on everybody's map, one each, kept with the treasury; where () takes it down."""
+        if p.slot is None:
             return
-        self.shared["base"] = list(where) or None
-        self._save_shared()
+        bases = self.shared["bases"]
+        me = self._camp_key(p)
+        mine = next((i for i, camp in enumerate(bases) if camp and (
+            camp["who"] == me or (camp["who"] is None and p.on_server))), None)
+        free = next((i for i, camp in enumerate(bases) if not camp), None)
+        if (mine is not None) == bool(where) or (where and free is None):
+            return
         if where:
+            bases[free] = {"who": me, "host": p.on_server, "x": where[0], "y": where[1]}
             self._act(p, "base", x=where[0], y=where[1])
         else:
+            bases[mine] = None
             self._act(p, "base_off")
+        self._save_shared()
         self._marks_out()
         for q in self.players.values():
             if q is not p:
@@ -690,33 +721,6 @@ class World:
 
     def _together(self, p, together, now):
         """What the players do together on the map (coop/players.py, coop/together.py)."""
-        if together.get("join") is not None:
-            leader = self._player_in_slot(together["join"], but=p)
-            if leader is not None and p.slot is not None:
-                if p.leader == leader.cid:  # in that party already (the answer got lost): yes again
-                    p.mp_out.append([18, leader.slot, 1])
-                else:
-                    p.join_asked = leader.cid
-                    leader.mp_out.append([17, p.slot])
-        if together.get("joinans") is not None:
-            slot, yes = together["joinans"]
-            asker = self._player_in_slot(slot, but=p)
-            if asker is not None and asker.join_asked == p.cid and p.slot is not None:
-                asker.join_asked = None
-                if yes:
-                    asker.leader = p.cid
-                    p.mp_out.append([19, asker.slot, 1])
-                asker.mp_out.append([18, p.slot, 1 if yes else 0])
-        if together.get("leave"):
-            leader = self.players.get(p.leader) if p.leader else None
-            p.leader = None
-            if leader is not None and p.slot is not None:
-                leader.mp_out.append([19, p.slot, 0])
-        if together.get("release"):
-            for q in self.players.values():
-                if q.leader == p.cid and p.slot is not None:
-                    q.leader = None
-                    q.mp_out.append([20, p.slot])
         if together.get("give") is not None:
             slot, stacks = together["give"]
             receiver = self._player_in_slot(slot, but=p)
@@ -742,10 +746,13 @@ class World:
                 for q in self.players.values():
                     if q is not p:
                         q.mp_out.append([27, TELL_BANDITS, p.slot, values[0], 0])
+        saved = together.get("army_saved", False)
         if together.get("army_name") is not None:
-            self._army_name(p, *together["army_name"])
+            self._army_name(p, *together["army_name"], saved)
         if together.get("army_gear") is not None:
-            self._army_gear(p, *together["army_gear"])
+            self._army_gear(p, *together["army_gear"], saved)
+        if together.get("army_level") is not None:
+            self._army_level(p, *together["army_level"], saved)
         if together.get("follow") is not None:
             self._follow(p, together["follow"])
         if together.get("base") is not None:
@@ -757,10 +764,53 @@ class World:
         if together.get("store_put") is not None:
             self._store_put(p, together["store_put"])
 
-    def host_saved(self):
-        """The host saved the game (and the relays got the file): each player's game is told."""
+    def host_saved(self, now=None):
+        """The host saved the game (and the relays got the file): each player's game is told and writes its
+        hero down. The heroes and the treasury are kept with that save, by the world's clock."""
         with self.lock:
             self.saves += 1
+            hours = self.srv_hours
+            if hours is not None:
+                self.sync.pop(hours, None)  # the newest stands last
+                self.sync[hours] = json.loads(json.dumps({"profiles": self.profiles, "shared": self.shared}))
+                while len(self.sync) > SYNC_KEEP:
+                    del self.sync[next(iter(self.sync))]
+                self.sync_open = (hours, (time.time() if now is None else now) + SYNC_HERO_S)
+                self._save_sync()
+
+    def _save_sync(self):
+        if self.sync_path is None:
+            return
+        try:
+            tmp = self.sync_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.sync), "utf-8")
+            tmp.replace(self.sync_path)
+        except OSError:
+            pass
+
+    def _clock_reported(self, hours):
+        """The world's clock from the host. Gone back, or heard for the first time since the bridge started:
+        a save was loaded, and the heroes and the treasury go back to that save with it. A game still in
+        the session is told to load it too; until then what it writes of its hero counts for nothing."""
+        known, self.srv_hours = self.srv_hours, hours
+        if known is not None and hours >= known:
+            return
+        kept = self.sync.get(hours)
+        if kept is None:
+            if known is not None:
+                self.log(f"the host went back to hour {hours}: no save kept for it, the heroes stay as they are")
+            return
+        kept = json.loads(json.dumps(kept))
+        self.profiles = kept["profiles"]
+        self.shared = kept["shared"]
+        self.sync_open = None
+        self._save_profiles()
+        self._save_shared()
+        self.log(f"the host's save of hour {hours}: the heroes and the treasury are back to it")
+        for q in self.players.values():
+            if not q.on_server:
+                q.hero_stale = True
+                q.mp_out += [[27, TELL_SAVE_LOADED, 0, 0, 0], self._marks_reply(q), [29, 0, 0, self.shared["gold"]]]
 
     def set_mp_name(self, cid, name):
         name = " ".join((name or "").split())[:40]
@@ -792,7 +842,7 @@ class World:
         with self.lock:
             self.stats["srv"] += 1
             if hours is not None:
-                self.srv_hours = hours
+                self._clock_reported(hours)
             for sid, enemy in battles:
                 self.map_battles[sid] = (enemy, now)
                 self.map_battles[enemy] = (sid, now)
@@ -901,8 +951,11 @@ class World:
         key = self.mp_names.get(cid) or (q.name if q is not None else None)
         return " ".join(key.lower().split()) if key else None
 
-    def _profile_part(self, p, part):
-        """A part of the player's hero: keep it once all of it arrived."""
+    def _profile_part(self, p, part, now):
+        """A part of the player's hero: keep it once all of it arrived, with the host's last save if it is
+        the answer to that."""
+        if p.hero_stale:
+            return
         seq, offset, total, values = part[0], part[1], part[2], part[3:]
         if p.profile_in is None or p.profile_in[0] != seq or p.profile_in[1] != total:
             p.profile_in = [seq, total, {}]
@@ -919,6 +972,9 @@ class World:
             self.profiles[key] = flat_values
             p.profile_in = None
             self._save_profiles()
+            if self.sync_open and now <= self.sync_open[1] and self.sync_open[0] in self.sync:
+                self.sync[self.sync_open[0]]["profiles"][key] = flat_values
+                self._save_sync()
 
     def _save_profiles(self):
         if self.profiles_path is None:
@@ -930,25 +986,46 @@ class World:
         except OSError:
             pass
 
-    def _army_name(self, p, index, text):
-        """The host names its army (0) or a soldier (1 + kind): the other games hear it."""
-        if p.on_server and text:
-            self.army["names"][index] = text
-            for q in self.players.values():
-                if q is not p:
-                    q.army_out.append(([34, index], text))
+    def _army_save(self):
+        if self.army_path is None:
+            return
+        try:
+            tmp = self.army_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.army), "utf-8")
+            tmp.replace(self.army_path)
+        except OSError:
+            pass
 
-    def _army_gear(self, p, kind, items):
-        """What a soldier carries, whoever chose it: the other games hear it, the battle server when it asks."""
-        self.army["gear"][kind] = items
+    def _army_tell(self, p, word):
+        self._army_save()
         for q in self.players.values():
             if q is not p:
-                q.army_out.append(([35, kind, len(items)] + items, None))
+                q.army_out.append(word)
+
+    def _army_name(self, p, index, text, saved=False):
+        """The host names its army (0) or a soldier (1 + kind): the other games hear it. saved: what a save
+        held when its session began, which only fills a gap (so for the other two)."""
+        if p.on_server and text and not (saved and index in self.army["names"]):
+            self.army["names"][index] = text
+            self._army_tell(p, ([34, index], text))
+
+    def _army_gear(self, p, kind, items, saved=False):
+        """What a soldier carries, whoever chose it: the other games hear it, the battle server when it asks."""
+        if not (saved and kind in self.army["gear"]):
+            self.army["gear"][kind] = items
+            self._army_tell(p, ([35, kind, len(items)] + items, None))
+
+    def _army_level(self, p, kind, level, saved=False):
+        """The level a kind was taught, whoever paid for it. It never falls."""
+        if level > self.army["levels"].get(kind, 1) and not (saved and kind in self.army["levels"]):
+            self.army["levels"][kind] = level
+            self._army_tell(p, ([36, kind, level], None))
 
     def _army_replies(self):
         """All of the army, for a game that comes in."""
         names = [([34, index], text) for index, text in sorted(self.army["names"].items())]
-        return names + [([35, kind, len(items)] + items, None) for kind, items in sorted(self.army["gear"].items())]
+        return (names + [([35, kind, len(items)] + items, None) for kind, items in sorted(self.army["gear"].items())]
+                + [([36, kind, level], None) for kind, level in sorted(self.army["levels"].items())])
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
                        on_server=False, faction=None, profile=None, together=None, profile_ask=False,
@@ -988,6 +1065,7 @@ class World:
             if hello:
                 self.joins += 1
                 p.together_told = False
+                p.hero_stale = False
             if (hello or profile_ask) and not on_server and not p.profile_out:
                 # the hero kept for this player goes back to its game, or word that there is none
                 kept = self.profiles.get(self._profile_key(cid) or "", [])
@@ -995,14 +1073,13 @@ class World:
                                  + kept[off:off + PROFILE_PER_REPLY]
                                  for off in range(0, len(kept), PROFILE_PER_REPLY)] or [[14, 0, 0, 0]]
             if profile is not None and not on_server:
-                self._profile_part(p, profile)
+                self._profile_part(p, profile, now)
             if together:
                 self._together(p, together, now)
             if not p.together_told:
                 p.together_told = True
-                if not on_server:
-                    p.army_out = self._army_replies()
-                if self.shared["gold"] or self.shared.get("base") or on_server:  # a host's save may hold an old camp
+                p.army_out = self._army_replies()
+                if self.shared["gold"] or any(self.shared["bases"]) or on_server:  # a host's save may hold an old camp
                     p.shared_out = [self._marks_reply(p), [29, 0, 0, self.shared["gold"]]]
             back = self.returns.pop(self._profile_key(cid) or "", None)
             if back:
@@ -1260,13 +1337,6 @@ class World:
                 self.log("joint battle: refused - the enemy is not a party of the world (no server id)")
                 p.mp_out.append([7, 0, 2, 0])
                 return
-            for q in self.players.values():
-                if q.leader == p.cid and q is not defender and q.slot is not None and not b.event:
-                    # the starter's followers: called in, they fight on the starter's side
-                    b.sides[q.cid] = b.player_team
-                    b.invited.add(q.cid)
-                    target = b.enemy_sid if b.enemy_sid is not None else (b.center if b.center is not None else -1)
-                    q.mp_out.append([6, b.bid, 3, p.slot, target])
             for q in self.players.values():
                 if q is p or q is defender or q.slot is None or q.pos is None or p.pos is None:
                     continue
@@ -1820,15 +1890,6 @@ def parse_entries(d):
 def parse_together(q):
     """What a player does together with the others (see World._together), or None."""
     out = {}
-    if "join" in q:
-        out["join"] = query_int(q, "join", -1)
-    v = parse_ints(q.get("joinans", "")) if "joinans" in q else None
-    if v and len(v) == 2:
-        out["joinans"] = (v[0], v[1])
-    if q.get("leave") == "1":
-        out["leave"] = True
-    if q.get("release") == "1":
-        out["release"] = True
     v = parse_ints(q.get("give", "").replace(",,", ",")) if "give" in q else None
     if v:
         stacks = parse_stacks(v[1:]) or []
@@ -1859,6 +1920,11 @@ def parse_together(q):
     index, _, text = q.get("an", "").partition(",")
     if index.isdigit() and int(index) <= ARMY_KINDS:
         out["army_name"] = (int(index), game_text_in(text).replace("|", " ").strip()[:ARMY_NAME_MAX])
+    v = parse_ints(q.get("al", "")) if "al" in q else None
+    if v and len(v) == 2 and 0 <= v[0] < ARMY_KINDS and 2 <= v[1] <= ARMY_LEVELS:
+        out["army_level"] = (v[0], v[1])
+    if q.get("ao") == "1" and out:
+        out["army_saved"] = True
     return out or None
 
 
@@ -1997,8 +2063,8 @@ def reply_text(numbers, string=None):
     return text
 
 
-TRACE_KEYS = ("mp=", "join=", "joinans=", "leave=", "release=", "give=", "giveans=", "hello=", "bye=",
-              "res=", "pfq=", "&lg=", "&fl=", "&bs=", "&tg=", "&st=", "&sti=", "&mpk=", "&ag=", "&an=")
+TRACE_KEYS = ("mp=", "give=", "giveans=", "hello=", "bye=",
+              "res=", "pfq=", "&lg=", "&fl=", "&bs=", "&tg=", "&st=", "&sti=", "&mpk=", "&ag=", "&an=", "&al=")
 QUIET_KINDS = {0, 2, 3, 4, 5, 12, 33}  # replies that come round all the time (positions, troops, pause...)
 
 

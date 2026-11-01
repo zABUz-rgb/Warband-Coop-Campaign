@@ -2,6 +2,7 @@
 
     python -I tools/test_coop_bridge.py
 """
+import json
 import socket
 import sys
 import tempfile
@@ -507,17 +508,71 @@ def test_base():
     check(cb.parse_together({"bs": "-"}) == {"base": ()}, "and taken down")
     mine = replies(w, "a", 1.0, 28, together={"base": (-1500, 200)})[0]
     theirs = replies(w, "b", 1.0, 28)[0]
-    camp = [cb.BASE_SLOT, -1500 + OFF, 200 + OFF, 0]
-    check(mine == [28, 1] + camp == theirs, f"everybody's map shows the camp, in the slot after the players': {mine}")
-    check(w.shared["base"] == [-1500, 200], "it is kept with the treasury")
-    req(w, "b", now=2.0, together={"base": (1, 2)})
-    check(w.shared["base"] == [-1500, 200], "the first camp stands")
-    req(w, "b", now=3.1, together={"base": ()})
-    check(not w.shared["base"] and replies(w, "a", 3.2, 28)[0] == [28, 0], "any player takes it down")
-    w2 = cb.World()
-    w2.shared["base"] = [7, 8]
-    first = replies(w2, "a", 0.0, 28, me=[], name="Ivan")[0]
-    check(first == [28, 1, cb.BASE_SLOT, 7 + OFF, 8 + OFF, 0], f"a game coming in hears of the camp: {first}")
+    camp = [cb.BASE_SLOT, -1500 + OFF, 200 + OFF]
+    check(mine == [28, 1] + camp + [1] and theirs == [28, 1] + camp + [0],
+          f"everybody's map shows the camp, in the slot after the players', and whose it is: {mine} {theirs}")
+    check(w.shared["bases"][0]["x"] == -1500, "it is kept with the treasury")
+    req(w, "a", now=1.5, together={"base": (5, 6)})
+    check(w.shared["bases"][0]["x"] == -1500 and not w.shared["bases"][1], "one camp a player")
+    second = replies(w, "b", 2.0, 28, together={"base": (1, 2)})[0]
+    check(second == [28, 2] + camp + [0, cb.BASE_SLOT + 1, 1 + OFF, 2 + OFF, 1], f"the second player sets up another: {second}")
+    down = replies(w, "b", 3.1, 28, together={"base": ()})[0]
+    check(w.shared["bases"][0] and not w.shared["bases"][1], "a player takes down only their own")
+    check(down == [28, 1] + camp + [0], "and the others' stands on the map")
+    req(w, "h", on_server=True, now=4.0, me=[], name="Host", together={"base": (9, 9)})
+    check(replies(w, "b", 4.1, 28)[0][-4:] == [cb.BASE_SLOT + 1, 9 + OFF, 9 + OFF, 2], "the host's camp is told apart")
+    with tempfile.TemporaryDirectory() as folder:
+        old = Path(folder) / "shared.json"
+        old.write_text(json.dumps({"gold": 5, "items": [], "base": [7, 8]}), "utf-8")
+        w2 = cb.World(shared_path=old)
+        check(replies(w2, "h", 0.0, 28, on_server=True, me=[], name="Host")[0] == [28, 1, cb.BASE_SLOT, 7 + OFF, 8 + OFF, 1],
+              "the one camp of an older shared.json is the host's")
+        check(replies(w2, "a", 0.1, 28, me=[], name="Ivan")[0] == [28, 1, cb.BASE_SLOT, 7 + OFF, 8 + OFF, 2],
+              "and a game coming in hears of it")
+
+
+def test_save_sync():
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "profiles.json"
+        w = cb.World(path)
+        w.log = lambda m: None
+        req(w, "a", now=0.0, hello=True, name="Ivan")
+        req(w, "h", now=0.0, hello=True, name="Host", on_server=True)
+        w.server_report([], None, 0.0, hours=100)
+        w.shared["gold"] = 500
+        w.host_saved(now=1.0)
+        req(w, "a", now=2.0, profile=[1, 0, 3, 7, 8, 9])
+        check(w.sync[100]["profiles"]["ivan"] == [7, 8, 9] and w.sync[100]["shared"]["gold"] == 500,
+              "a host's save keeps the treasury, and the hero its player writes down in answer")
+        w.shared["gold"] = 900
+        req(w, "a", now=500.0, profile=[2, 0, 3, 1, 1, 1])
+        check(w.profiles["ivan"] == [1, 1, 1] and w.sync[100]["profiles"]["ivan"] == [7, 8, 9], "what comes later is not that save's")
+        w.server_report([], None, 501.0, hours=110)
+        check(w.profiles["ivan"] == [1, 1, 1], "the clock going on changes nothing")
+        w.server_report([], None, 502.0, hours=100)
+        check(w.profiles["ivan"] == [7, 8, 9] and w.shared["gold"] == 500, "the host loads that save: heroes and treasury go back")
+        told = [req(w, "a", now=503.0)[0] for _ in range(4)]
+        check([27, cb.TELL_SAVE_LOADED, 0, 0, 0] in told and [29, 0, 0, 500] in told, f"a game in the session is told: {told}")
+        req(w, "a", now=504.0, profile=[3, 0, 3, 2, 2, 2])
+        check(w.profiles["ivan"] == [7, 8, 9], "what it writes of its later hero counts for nothing")
+        heard = [req(w, "a", now=505.0, hello=True)[0]] + [req(w, "a", now=505.1)[0] for _ in range(4)]
+        check([14, 0, 3, 3, 7, 8, 9] in heard, f"it loads the save: the hero of that moment comes back: {heard}")
+        req(w, "a", now=506.0, profile=[4, 0, 3, 3, 3, 3])
+        check(w.profiles["ivan"] == [3, 3, 3], "and it writes as before")
+        w2 = cb.World(path)
+        w2.log = lambda m: None
+        w2.server_report([], None, 0.0, hours=100)
+        check(w2.profiles["ivan"] == [7, 8, 9] and w2.shared["gold"] == 500, "the bridge started anew knows that save too")
+        w3 = cb.World(path)
+        w3.log = lambda m: None
+        w3.server_report([], None, 0.0, hours=107)
+        check(w3.profiles["ivan"] == [7, 8, 9] and w3.shared["gold"] == 500, "a clock no save knows changes nothing")
+        w3.server_report([], None, 1.0, hours=50)
+        check(w3.profiles["ivan"] == [7, 8, 9], "not when it goes back either")
+        for hours in range(200, 200 + cb.SYNC_KEEP + 2):
+            w3.server_report([], None, 2.0, hours=hours)
+            w3.host_saved(now=2.0)
+        check(len(w3.sync) == cb.SYNC_KEEP and 200 not in w3.sync, "only the last saves are kept")
 
 
 def test_no_marks():
@@ -589,6 +644,11 @@ def test_army():
     check(cb.parse_together({"ag": "3," + ",".join(["5"] * 25)}) is None, "nor so much gear")
     check(cb.parse_together({"an": "0,The Wolves"}) == {"army_name": (0, "The Wolves")}, "a name is read, spaces and all")
     check(cb.parse_together({"an": "14,x"}) is None, "and only of what has a name")
+    check(cb.parse_together({"al": "3,2"}) == {"army_level": (3, 2)}, "a kind's level is read")
+    check(cb.parse_together({"al": "3,1"}) is None and cb.parse_together({"al": "3,4"}) is None, "and only 2 or 3")
+    check(cb.parse_together({"ao": "1", "ag": "3,10"}) == {"army_gear": (3, [10]), "army_saved": True},
+          "what a save held is marked")
+    check(cb.parse_together({"ao": "1"}) is None, "and that mark says nothing by itself")
     req(w, "h", on_server=True, now=0.5, together={"army_name": (0, "The Wolves")})
     heard = [req(w, "a", now=0.6) for _ in range(3)]
     check(([34, 0], "The Wolves") in heard, f"the clients hear the army's name: {heard}")
@@ -611,6 +671,27 @@ def test_army():
     w.battle.until = 0.0  # nobody else is coming
     check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.3) == [10, bid, 2, 2, 10, 20], "the battle server gets the gear first")
     check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.4)[0] == 2, "then the stacks, no second word")
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "profiles.json"
+        w3 = cb.World(path)
+        req(w3, "h", on_server=True, now=0.0, name="Host", together={"army_name": (0, "The Wolves")})
+        req(w3, "a", now=0.1, name="Ivan", together={"army_gear": (2, [10, 20])})
+        req(w3, "a", now=0.2, together={"army_level": (2, 3)})
+        check(([36, 2, 3], None) in [req(w3, "h", on_server=True, now=0.3) for _ in range(4)], "a kind's level reaches the others")
+        w4 = cb.World(path)
+        heard = [req(w4, "h", on_server=True, now=0.5, name="Host") for _ in range(4)]
+        check(([34, 0], "The Wolves") in heard and ([35, 2, 2, 10, 20], None) in heard and ([36, 2, 3], None) in heard,
+              f"army.json outlives the bridge, and the host's game hears it too: {heard}")
+        req(w4, "h", on_server=True, now=0.6, together={"army_gear": (2, [99]), "army_saved": True})
+        req(w4, "h", on_server=True, now=0.7, together={"army_name": (0, "Old"), "army_saved": True})
+        req(w4, "h", on_server=True, now=0.8, together={"army_level": (2, 2), "army_saved": True})
+        check(w4.army["gear"][2] == [10, 20] and w4.army["names"][0] == "The Wolves" and w4.army["levels"][2] == 3,
+              "what an older save held takes nothing back")
+        req(w4, "h", on_server=True, now=0.9, together={"army_gear": (5, [99]), "army_saved": True})
+        req(w4, "h", on_server=True, now=1.0, together={"army_level": (5, 2), "army_saved": True})
+        check(w4.army["gear"][5] == [99] and w4.army["levels"][5] == 2, "it fills what the file has no word of")
+        req(w4, "a", now=1.1, name="Ivan", together={"army_level": (2, 2)})
+        check(w4.army["levels"][2] == 3, "a level never falls")
     w.army_told = {2: [10]}
     w.battle.state = "loading"
     w.battle.sent = 0
@@ -1309,19 +1390,6 @@ def test_notices_and_asking_again():
           f"an invited player on the battle server is told to answer in the campaign window: {r[:3]}")
     r = cb.handle_request(w, "mp", "/mp?seq=2&st=0&bid=0&pl=0~Ivan;3~Olga;", 0.4).split("|")
     check(r[1] != "3", "once")
-    # asking again to join a party one rides in already: yes at once, no new question to the leader
-    w2 = cb.World()
-    req(w2, "a", now=0.0, name="Ivan")
-    req(w2, "b", x=50, now=0.0, name="Olga")
-    sa, sb = w2.players["a"].slot, w2.players["b"].slot
-    req(w2, "b", now=1.0, together={"join": sa})
-    req(w2, "a", now=1.1)
-    req(w2, "a", now=1.2, together={"joinans": (sb, 1)})
-    w2.players["b"].mp_out.clear()
-    w2.players["a"].mp_out.clear()
-    nums, _ = req(w2, "b", now=2.0, together={"join": sa})
-    check(nums == [18, sa, 1], f"a follower asking again hears yes at once: {nums}")
-    check(not any(m[0] == 17 for m in w2.players["a"].mp_out), "and the leader is not asked again")
 
 
 def test_logs():
@@ -1374,27 +1442,11 @@ def test_blank_values():
     check(w.players["local"].stacks_last == [], "an empty me= (heroes only, troops given away) is heard too")
 
 
-def test_joining_and_giving():
+def test_giving():
     w = cb.World()
     req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
     req(w, "b", x=50000, now=0.0, me=[(33, 4)], name="Olga")
     slot_a, slot_b = w.players["a"].slot, w.players["b"].slot
-    req(w, "b", x=50000, now=1.0, together={"join": slot_a})
-    check(req(w, "a", now=1.1)[0] == [17, slot_b], "the leader hears who asks to join")
-    told_leader = req(w, "a", now=1.2, together={"joinans": (slot_b, 1)})[0]
-    check(w.players["b"].leader == "a", "accepted: that player follows the leader")
-    check(req(w, "b", x=50000, now=1.3)[0] == [18, slot_a, 1] and told_leader == [19, slot_b, 1],
-          "both are told")
-    w.mp_request(0, 0, -1, {}, {}, 1.4)
-    req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 5)]))
-    b = w.battle
-    check(b.sides.get("b") == 0 and "b" in b.invited, "the follower is called into the leader's battle, far away or not")
-    check([6, b.bid, 3, slot_a, 600] in [req(w, "b", x=50000, now=2.1)[0] for _ in range(3)],
-          "as an invitation that cannot be declined (type 3)")
-    w.battle = None
-    req(w, "b", x=50000, now=3.0, together={"leave": True})
-    check(w.players["b"].leader is None, "the follower leaves the party")
-    check([19, slot_b, 0] in [req(w, "a", now=3.1)[0] for _ in range(4)], "the leader is told")
     # troops: offered, declined, back
     req(w, "a", now=4.0, together={"give": (slot_b, [(31, 3)])})
     nums = req(w, "b", x=50000, now=4.1)[0]
@@ -1410,8 +1462,10 @@ def test_joining_and_giving():
     w.drop_player("b")
     check(any(r[0] == 16 and r[2] == 0 for r in (req(w, "a", now=6.1)[0] for _ in range(4))),
           "troops offered to a player who left come back")
-    check(cb.parse_together({"give": "1,,31,2,32,1", "joinans": "2,1"}) ==
-          {"give": (1, [(31, 2), (32, 1)]), "joinans": (2, 1)}, "the request's parts are read")
+    check(cb.parse_together({"give": "1,,31,2,32,1", "giveans": "2,1"}) ==
+          {"give": (1, [(31, 2), (32, 1)]), "giveans": (2, 1)}, "the request's parts are read")
+    check(cb.parse_together({"join": "1", "joinans": "2,1", "leave": "1", "release": "1"}) is None,
+          "a party cannot be joined any more")
 
 
 def test_companions_spoils_terrain():
@@ -1749,7 +1803,7 @@ if __name__ == "__main__":
     test_factions()
     test_joint_siege()
     test_companions_spoils_terrain()
-    test_joining_and_giving()
+    test_giving()
     test_profiles()
     test_joint_defence()
     test_centers_reach_players()
@@ -1771,6 +1825,7 @@ if __name__ == "__main__":
     test_invite_distance()
     test_game_notes()
     test_follow()
+    test_save_sync()
     test_no_marks()
     test_bandits()
     test_trail()
