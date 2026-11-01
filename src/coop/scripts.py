@@ -141,7 +141,7 @@ DIPLOMACY_WORLD_ACTS = (
 
 
 def merge(orig_scripts):
-  from coop_merge import script_block, insert_after
+  from coop_merge import script_block, insert_after, insert_before
   from coop.net import net_scripts, net_reply_handler
   from coop.triggers import first_dynamic_party
   # the engine's speed hook: Native has it commented out, Diplomacy has its own. The engine calls the
@@ -190,6 +190,12 @@ def merge(orig_scripts):
   item_value = script_block(orig_scripts, "multiplayer_get_item_value_for_troop")
   item_value[2:-1] = [(assign, ":item_value", 0), (try_begin), (ge, ":troop_no", 0)] + item_value[2:-1] + [(try_end)]
   script_block(orig_scripts, "cf_multiplayer_is_item_default_for_troop")[2:2] = [(ge, ":troop_no", 0)]
+  # the tournament's teams 3 and 4: the engine keeps bots' kills and deaths for the first three teams only
+  kills = script_block(orig_scripts, "add_kill_death_counts")
+  insert_before(kills, (team_get_bot_kill_count, ":killer_agent_team_bot_kill_count", ":killer_agent_team"),
+                [(lt, ":killer_agent_team", 3)])
+  insert_before(kills, (team_get_bot_death_count, ":dead_agent_team_bot_death_count", ":dead_agent_team"),
+                [(lt, ":dead_agent_team", 3)])
   # Diplomacy's own acts on the world (treaties, envoys, gifts, patrols, recruiters, scouts) would
   # happen in a client's game only: on a client they are refused (the world server and the host
   # keep them, and the world's kingdoms still use them)

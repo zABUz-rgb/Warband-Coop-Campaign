@@ -1652,7 +1652,7 @@ quick_strings_en|CoopWorld: the walls of {s1} are yours!|CoopWorld: стены {
 game_menus|mno_coop_mp_defend|CoopWorld: защищать стены вместе (совместная осада на сервере мультиплеера).
 quick_strings_en|CoopWorld: {s1} is under siege! Ride there to defend its walls together.|CoopWorld: {s1} в осаде! Скачите туда, чтобы вместе защищать стены.
 quick_strings_en|CoopWorld: a new hero - from now on it is kept between sessions.|CoopWorld: новый герой — теперь он сохраняется между сессиями.
-quick_strings_en|CoopWorld: your own hero is back - gold, skills, gear, troops and prisoners as you left them.|CoopWorld: ваш собственный герой вернулся — деньги, навыки, снаряжение, войска и пленные, как вы их оставили.
+quick_strings_en|CoopWorld: your own hero is back - gold, skills, gear, troops, companions and prisoners as you left them.|CoopWorld: ваш герой вернулся - деньги, навыки, снаряжение, войска, компаньоны и пленные такие, какими вы их оставили.
 quick_strings_en|CoopWorld: the hero kept for you is from another version of CoopWorld and was not put back.|CoopWorld: сохранённый для вас герой из другой версии CoopWorld и не был восстановлен.
 game_menus|mno_coop_give_troops|CoopWorld: передать войска этому игроку.
 game_menus|menu_coop_give_troops|CoopWorld: войска для {s1}.^^Выбрано: {reg1}. Выберите бойцов в окне обмена (слева ваш отряд, справа подарок); {s1} примет их или откажется, а отвергнутые бойцы вернутся к вам. Компаньоны остаются с вами.
@@ -2094,3 +2094,5 @@ quick_strings_en|CoopWorld: the host went back to an earlier save. Load the host
 quick_strings_en|{s10}^{s1}: {reg1} km away.|{s10}^{s1}: в {reg1} км.
 quick_strings_en|CoopWorld: your hero is written down at the host a few seconds after you are back on the map.|CoopWorld: ваш герой будет записан у хоста через несколько секунд после возвращения на карту.
 dialogs_en|Let us speak of this another time.|Поговорим об этом в другой раз.
+game_menus|mno_coop_shared_off|Кооператив выключен: казна и склад ждут следующей сессии.
+quick_strings_en|CoopWorld: save the game now: your friends get that save and load it.|CoopWorld: сохраните игру сейчас: друзья получат это сохранение и загрузят его.

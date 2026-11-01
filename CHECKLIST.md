@@ -69,6 +69,18 @@ Open (build 590170735, not confirmed yet):
   joint battle - the players and the lord's men (bots, team of the players) against his enemy; a
   second soldier choosing it joins the same battle; the lord keeps the men who survived, the enemy is
   beaten as in any joint battle. Freelancer's own "Follow the commander" (single player) stays.
+Open (not played yet) - 1.0.1, saves, the camp after a stop, the tournament:
+- The most important: at the host change a soldier's gear, name and level, save, load that save, in the same window
+  and after restarting Warband. All of it stays, in John's menu and in the tree. A second save after the load keeps it too.
+- Bridge log after a load: "the host loaded a save: the heroes and the treasury are back to it (save N)".
+- A client buys things, gains experience, takes a companion and gives him gear; the host saves within a minute; both
+  restart; the client's hero, health, troops, companion and his gear are back. The kept hero is version 2 now.
+- Reload within the same game hour: noticed. A load of a save that is not the newest: the host is asked to save.
+- Stop co-op in the camp: your camp stays on the map, a click opens it with John, no treasury buttons, and the
+  build option is gone. Start co-op again: the camp is there, no second payment.
+- Building a camp: the 1000 are taken only when the tents go up.
+- Tournament with 3 and 4 teams: no "Invalid Team ID" in rgl_log.txt.
+
 Open (not played yet) - 1.0.1, the list of 11 fixes:
 - John: 1, 5, 10 or 20 recruits at a time. Gear and levels can be bought with none of that soldier in the party;
   a level is one purchase for the kind, shared by all players, promoted men rise to it within a few seconds on the map.

@@ -7,16 +7,18 @@ from coop.constants import *
 # player is the host's hero; so the client's game sends the bridge its own hero now and then (the
 # profile), and when it joins again the bridge sends it back and the game puts it in place: gold,
 # experience, renown, honor, right to rule, the kingdom served, where the party stands, attributes,
-# skills, weapon proficiencies, the whole inventory, the party's troops (wounded too) and prisoners.
-# (Experience only grows: the level can be raised to the profile's, never lowered.)
+# skills, weapon proficiencies, the whole inventory, the party's troops (wounded too) and prisoners,
+# and the companions in the party with all they carry and can do.
+# (Experience only grows: the level can be raised to the profile's, never lowered. A stack's experience
+# towards its next upgrade stays behind: no operation reads it.)
 #
-# Layout (numbers): version, gold, xp, renown, honor, right to rule, kingdom, x, y,
-#   4 attributes, NUM_SKILLS skills, 7 proficiencies,
-#   inventory capacity, (item, modifier, amount) * capacity,
-#   members n, (troop, count, wounded) * n, prisoners n, (troop, count) * n
+# Layout (numbers): version, gold, xp, renown, honor, right to rule, kingdom, x, y, HERO,
+#   members n, (troop, count, wounded) * n, prisoners n, (troop, count) * n,
+#   and from version 2: health, companions n, (troop, health, xp, HERO) * n
+# HERO: 4 attributes, NUM_SKILLS skills, 7 proficiencies, inventory capacity, (item, modifier, amount) * capacity
 # trp_tutorial_student_3 keeps the profile coming in, trp_tutorial_student_4 the one going out.
 
-PROFILE_VERSION = 1
+PROFILE_VERSION = 2
 NUM_SKILLS = 42
 PROFILE_IN = "trp_tutorial_student_3"
 PROFILE_OUT = "trp_tutorial_student_4"
@@ -28,6 +30,70 @@ def put(value):
 
 def take(dest):
   return [(troop_get_slot, dest, PROFILE_IN, ":at"), (val_add, ":at", 1)]
+
+
+def hero_out(hero):
+  """Ops: HERO of the layout above, of this hero, into the profile."""
+  return [
+    (try_for_range, ":attribute", 0, 4),
+      (store_attribute_level, ":v", hero, ":attribute"),
+      ] + put(":v") + [
+    (try_end),
+    (try_for_range, ":skill", 0, NUM_SKILLS),
+      (store_skill_level, ":v", ":skill", hero),
+      ] + put(":v") + [
+    (try_end),
+    (try_for_range, ":wpt", 0, coop_hero_profs),
+      (store_proficiency_level, ":v", hero, ":wpt"),
+      ] + put(":v") + [
+    (try_end),
+    (troop_get_inventory_capacity, ":capacity", hero),
+    ] + put(":capacity") + [
+    (try_for_range, ":i", 0, ":capacity"),
+      (troop_get_inventory_slot, ":item", hero, ":i"),
+      (troop_get_inventory_slot_modifier, ":modifier", hero, ":i"),
+      (assign, ":amount", 0),
+      (try_begin),
+        (ge, ":item", 0),
+        (troop_inventory_slot_get_item_amount, ":amount", hero, ":i"),
+      (try_end),
+      ] + put(":item") + put(":modifier") + put(":amount") + [
+    (try_end),
+  ]
+
+
+def hero_in(hero):
+  """Ops: HERO of the layout above, from the profile, onto this hero."""
+  return [
+    (try_for_range, ":attribute", 0, 4),
+      ] + take(":v") + [
+      (call_script, "script_coop_mp_hero_stat", hero, ":attribute", ":v"),
+    (try_end),
+    (try_for_range, ":skill", 0, NUM_SKILLS),
+      ] + take(":v") + [
+      (store_add, ":code", ":skill", 10),
+      (call_script, "script_coop_mp_hero_stat", hero, ":code", ":v"),
+    (try_end),
+    (try_for_range, ":wpt", 0, coop_hero_profs),
+      ] + take(":v") + [
+      (store_add, ":code", ":wpt", 100),
+      (call_script, "script_coop_mp_hero_stat", hero, ":code", ":v"),
+    (try_end),
+    ] + take(":saved_capacity") + [
+    (troop_get_inventory_capacity, ":capacity", hero),
+    (try_for_range, ":i", 0, ":saved_capacity"),
+      ] + take(":item") + take(":modifier") + take(":amount") + [
+      (lt, ":i", ":capacity"),
+      (troop_set_inventory_slot, hero, ":i", ":item"),
+      (ge, ":item", 0),
+      (troop_set_inventory_slot_modifier, hero, ":i", ":modifier"),
+      (gt, ":amount", 0),
+      (troop_inventory_slot_set_item_amount, hero, ":i", ":amount"),
+    (try_end),
+    (try_for_range, ":i", ":saved_capacity", ":capacity"),
+      (troop_set_inventory_slot, hero, ":i", -1),
+    (try_end),
+  ]
 
 
 profile_scripts = [
@@ -48,30 +114,7 @@ profile_scripts = [
      ] + put(":v") + [
      (position_get_y, ":v", pos1),
      ] + put(":v") + [
-     (try_for_range, ":attribute", 0, 4),
-       (store_attribute_level, ":v", "trp_player", ":attribute"),
-       ] + put(":v") + [
-     (try_end),
-     (try_for_range, ":skill", 0, NUM_SKILLS),
-       (store_skill_level, ":v", ":skill", "trp_player"),
-       ] + put(":v") + [
-     (try_end),
-     (try_for_range, ":wpt", 0, coop_hero_profs),
-       (store_proficiency_level, ":v", "trp_player", ":wpt"),
-       ] + put(":v") + [
-     (try_end),
-     (troop_get_inventory_capacity, ":capacity", "trp_player"),
-     ] + put(":capacity") + [
-     (try_for_range, ":i", 0, ":capacity"),
-       (troop_get_inventory_slot, ":item", "trp_player", ":i"),
-       (troop_get_inventory_slot_modifier, ":modifier", "trp_player", ":i"),
-       (assign, ":amount", 0),
-       (try_begin),
-         (ge, ":item", 0),
-         (troop_inventory_slot_get_item_amount, ":amount", "trp_player", ":i"),
-       (try_end),
-       ] + put(":item") + put(":modifier") + put(":amount") + [
-     (try_end),
+     ] + hero_out("trp_player") + [
      # members: the count first, filled in after
      (assign, ":count_at", ":at"),
      ] + put(0) + [
@@ -94,6 +137,24 @@ profile_scripts = [
        (party_prisoner_stack_get_troop_id, ":troop", "p_main_party", ":stack"),
        (party_prisoner_stack_get_size, ":size", "p_main_party", ":stack"),
        ] + put(":troop") + put(":size") + [
+       (val_add, ":n", 1),
+     (try_end),
+     (troop_set_slot, PROFILE_OUT, ":count_at", ":n"),
+     (store_troop_health, ":v", "trp_player"),
+     ] + put(":v") + [
+     (assign, ":count_at", ":at"),
+     ] + put(0) + [
+     (assign, ":n", 0),
+     (party_get_num_companion_stacks, ":stacks", "p_main_party"),
+     (try_for_range, ":stack", 0, ":stacks"),
+       (party_stack_get_troop_id, ":hero", "p_main_party", ":stack"),
+       (neq, ":hero", "trp_player"),
+       (troop_is_hero, ":hero"),
+       ] + put(":hero") + [
+       (store_troop_health, ":v", ":hero"),
+       ] + put(":v") + [
+       (troop_get_xp, ":v", ":hero"),
+       ] + put(":v") + hero_out(":hero") + [
        (val_add, ":n", 1),
      (try_end),
      (troop_set_slot, PROFILE_OUT, ":count_at", ":n"),
@@ -163,7 +224,7 @@ profile_scripts = [
      (assign, ":at", 0),
      ] + take(":version") + [
      (try_begin),
-       (eq, ":version", PROFILE_VERSION),
+       (is_between, ":version", 1, PROFILE_VERSION + 1),
        ] + take(":v") + [
        (store_troop_gold, ":gold", "trp_player"),
        (troop_remove_gold, "trp_player", ":gold"),
@@ -193,34 +254,7 @@ profile_scripts = [
        (position_set_x, pos1, ":x"),
        (position_set_y, pos1, ":y"),
        (party_set_position, "p_main_party", pos1),
-       (try_for_range, ":attribute", 0, 4),
-         ] + take(":v") + [
-         (call_script, "script_coop_mp_hero_stat", "trp_player", ":attribute", ":v"),
-       (try_end),
-       (try_for_range, ":skill", 0, NUM_SKILLS),
-         ] + take(":v") + [
-         (store_add, ":code", ":skill", 10),
-         (call_script, "script_coop_mp_hero_stat", "trp_player", ":code", ":v"),
-       (try_end),
-       (try_for_range, ":wpt", 0, coop_hero_profs),
-         ] + take(":v") + [
-         (store_add, ":code", ":wpt", 100),
-         (call_script, "script_coop_mp_hero_stat", "trp_player", ":code", ":v"),
-       (try_end),
-       ] + take(":saved_capacity") + [
-       (troop_get_inventory_capacity, ":capacity", "trp_player"),
-       (try_for_range, ":i", 0, ":saved_capacity"),
-         ] + take(":item") + take(":modifier") + take(":amount") + [
-         (lt, ":i", ":capacity"),
-         (troop_set_inventory_slot, "trp_player", ":i", ":item"),
-         (ge, ":item", 0),
-         (troop_set_inventory_slot_modifier, "trp_player", ":i", ":modifier"),
-         (gt, ":amount", 0),
-         (troop_inventory_slot_set_item_amount, "trp_player", ":i", ":amount"),
-       (try_end),
-       (try_for_range, ":i", ":saved_capacity", ":capacity"),
-         (troop_set_inventory_slot, "trp_player", ":i", -1),
-       (try_end),
+       ] + hero_in("trp_player") + [
        # the party: the host's men out, the player's own in
        (party_get_num_companion_stacks, ":stacks", "p_main_party"),
        (try_for_range_backwards, ":stack", 0, ":stacks"),
@@ -249,7 +283,25 @@ profile_scripts = [
          ] + take(":troop") + take(":size") + [
          (party_add_prisoners, "p_main_party", ":troop", ":size"),
        (try_end),
-       (display_message, "@CoopWorld: your own hero is back - gold, skills, gear, troops and prisoners as you left them.", 0x66FF66),
+       (try_begin),
+         (ge, ":version", 2),
+         ] + take(":v") + [
+         (troop_set_health, "trp_player", ":v"),
+         ] + take(":n") + [
+         (try_for_range, ":unused", 0, ":n"),
+           ] + take(":hero") + take(":v") + [
+           (troop_set_health, ":hero", ":v"),
+           ] + take(":v") + [
+           (troop_get_xp, ":xp", ":hero"),
+           (try_begin),
+             (gt, ":v", ":xp"),
+             (store_sub, ":more", ":v", ":xp"),
+             (add_xp_to_troop, ":more", ":hero"),
+           (try_end),
+           ] + hero_in(":hero") + [
+         (try_end),
+       (try_end),
+       (display_message, "@CoopWorld: your own hero is back - gold, skills, gear, troops, companions and prisoners as you left them.", 0x66FF66),
      (else_try),
        (display_message, "@CoopWorld: the hero kept for you is from another version of CoopWorld and was not put back.", 0xFF6666),
      (try_end),

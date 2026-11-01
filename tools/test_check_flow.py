@@ -167,6 +167,22 @@ def test_real():
     check(done.returncode == 0, "the real module has nothing wrong: " + done.stdout[-300:])
 
 
+def test_hero_reads_what_it_writes():
+    from coop.profile import PROFILE_IN, PROFILE_OUT, profile_scripts
+    block = {s[0]: s[1] for s in profile_scripts}
+    written = [op for op in block["coop_profile_build"] if isinstance(op, tuple) and op[:3] == (ops.troop_set_slot, PROFILE_OUT, ":at")]
+    taken = [op for op in block["coop_profile_apply"] if isinstance(op, tuple) and op[0] == ops.troop_get_slot and op[2:4] == (PROFILE_IN, ":at")]
+    check(len(written) == len(taken) == 35, f"a kept hero is read as it was written: {len(written)} and {len(taken)} kinds of number")
+
+
+def test_tournament_teams():
+    import module_scripts
+    kills = next(s[1] for s in module_scripts.scripts if s[0] == "add_kill_death_counts")
+    for team, count in ((":killer_agent_team", team_get_bot_kill_count), (":dead_agent_team", team_get_bot_death_count)):
+        at = next(i for i, op in enumerate(kills) if isinstance(op, tuple) and op[0] == count)
+        check(kills[at - 1] == (lt, team, 3), "the engine counts bots of three teams: the tournament's others stay out")
+
+
 if __name__ == "__main__":
     test_dialogs()
     test_talks()
@@ -176,5 +192,7 @@ if __name__ == "__main__":
     test_texts()
     test_data()
     test_john()
+    test_hero_reads_what_it_writes()
+    test_tournament_teams()
     test_real()
     print("all tests passed")

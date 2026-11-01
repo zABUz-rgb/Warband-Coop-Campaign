@@ -516,6 +516,8 @@ def test_base():
     check(w.shared["bases"][0]["x"] == -1500 and not w.shared["bases"][1], "one camp a player")
     second = replies(w, "b", 2.0, 28, together={"base": (1, 2)})[0]
     check(second == [28, 2] + camp + [0, cb.BASE_SLOT + 1, 1 + OFF, 2 + OFF, 1], f"the second player sets up another: {second}")
+    again = replies(w, "a", 2.9, 28, together={"base": (7, 8)})
+    check(again and w.shared["bases"][0]["x"] != 7, f"a second camp is not built: the game hears what stands: {again}")
     down = replies(w, "b", 3.1, 28, together={"base": ()})[0]
     check(w.shared["bases"][0] and not w.shared["bases"][1], "a player takes down only their own")
     check(down == [28, 1] + camp + [0], "and the others' stands on the map")
@@ -537,42 +539,88 @@ def test_save_sync():
         w = cb.World(path)
         w.log = lambda m: None
         req(w, "a", now=0.0, hello=True, name="Ivan")
-        req(w, "h", now=0.0, hello=True, name="Host", on_server=True)
-        w.server_report([], None, 0.0, hours=100)
+        check(req(w, "h", now=0.0, hello=True, name="Host", on_server=True)[0] == [37, 1, 0],
+              "the host's game hears what its next save is to carry")
+        w.server_report([], None, 0.0, hours=100, stamp=0)
+        w.server_report([], None, 0.2, hours=100, stamp=1)
         w.shared["gold"] = 500
         w.host_saved(now=1.0)
         req(w, "a", now=2.0, profile=[1, 0, 3, 7, 8, 9])
-        check(w.sync[100]["profiles"]["ivan"] == [7, 8, 9] and w.sync[100]["shared"]["gold"] == 500,
+        check(w.sync[1]["profiles"]["ivan"] == [7, 8, 9] and w.sync[1]["shared"]["gold"] == 500,
               "a host's save keeps the treasury, and the hero its player writes down in answer")
+        check([37, 2, 0] in [req(w, "h", now=2.1, on_server=True)[0] for _ in range(6)], "and the next save gets a new stamp")
+        w.server_report([], None, 2.2, hours=101, stamp=2)
+        req(w, "a", now=3.0, profile=[2, 0, 3, 4, 4, 4])
+        check(w.profiles["ivan"] == [4, 4, 4] and w.sync[1]["profiles"]["ivan"] == [7, 8, 9],
+              "a player's first hero after a save is that save's, the next one is not")
         w.shared["gold"] = 900
-        req(w, "a", now=500.0, profile=[2, 0, 3, 1, 1, 1])
-        check(w.profiles["ivan"] == [1, 1, 1] and w.sync[100]["profiles"]["ivan"] == [7, 8, 9], "what comes later is not that save's")
-        w.server_report([], None, 501.0, hours=110)
+        req(w, "a", now=500.0, profile=[3, 0, 3, 1, 1, 1])
+        w.server_report([], None, 501.0, hours=110, stamp=2)
         check(w.profiles["ivan"] == [1, 1, 1], "the clock going on changes nothing")
-        w.server_report([], None, 502.0, hours=100)
-        check(w.profiles["ivan"] == [7, 8, 9] and w.shared["gold"] == 500, "the host loads that save: heroes and treasury go back")
+        w.server_report([], None, 502.0, hours=110, stamp=1)
+        check(w.profiles["ivan"] == [7, 8, 9] and w.shared["gold"] == 500,
+              "the host loads that save, even within the same hour: heroes and treasury go back")
+        w.server_report([], None, 502.5, hours=100, stamp=1)
         told = [req(w, "a", now=503.0)[0] for _ in range(4)]
-        check([27, cb.TELL_SAVE_LOADED, 0, 0, 0] in told and [29, 0, 0, 500] in told, f"a game in the session is told: {told}")
-        req(w, "a", now=504.0, profile=[3, 0, 3, 2, 2, 2])
-        check(w.profiles["ivan"] == [7, 8, 9], "what it writes of its later hero counts for nothing")
+        check(told.count([27, cb.TELL_SAVE_LOADED, 0, 0, 0]) == 1 and [29, 0, 0, 500] in told,
+              f"a game in the session is told, once for the stamp and the clock together: {told}")
+        heard = [req(w, "h", now=503.1, on_server=True)[0] for _ in range(6)]
+        check([37, 2, 1] in heard, f"the host's game hears a save was loaded, and a stamp no file holds yet: {heard}")
+        req(w, "a", now=504.0, profile=[4, 0, 3, 2, 2, 2])
+        check(w.profiles["ivan"] == [7, 8, 9], "what a friend's game writes of its later hero counts for nothing")
         heard = [req(w, "a", now=505.0, hello=True)[0]] + [req(w, "a", now=505.1)[0] for _ in range(4)]
         check([14, 0, 3, 3, 7, 8, 9] in heard, f"it loads the save: the hero of that moment comes back: {heard}")
-        req(w, "a", now=506.0, profile=[4, 0, 3, 3, 3, 3])
+        req(w, "a", now=506.0, profile=[5, 0, 3, 3, 3, 3])
         check(w.profiles["ivan"] == [3, 3, 3], "and it writes as before")
         w2 = cb.World(path)
         w2.log = lambda m: None
-        w2.server_report([], None, 0.0, hours=100)
+        w2.server_report([], None, 0.0, hours=100, stamp=1)
         check(w2.profiles["ivan"] == [7, 8, 9] and w2.shared["gold"] == 500, "the bridge started anew knows that save too")
+        check(w2.save_stamp == 2, "and goes on from the stamp it reached")
         w3 = cb.World(path)
         w3.log = lambda m: None
-        w3.server_report([], None, 0.0, hours=107)
-        check(w3.profiles["ivan"] == [7, 8, 9] and w3.shared["gold"] == 500, "a clock no save knows changes nothing")
-        w3.server_report([], None, 1.0, hours=50)
-        check(w3.profiles["ivan"] == [7, 8, 9], "not when it goes back either")
-        for hours in range(200, 200 + cb.SYNC_KEEP + 2):
-            w3.server_report([], None, 2.0, hours=hours)
-            w3.host_saved(now=2.0)
+        w3.server_report([], None, 0.0, hours=107, stamp=2)
+        check(w3.profiles["ivan"] == [7, 8, 9] and w3.shared["gold"] == 500, "a stamp with no save kept changes nothing")
+        w3.server_report([], None, 1.0, hours=108, stamp=0)
+        check(w3.profiles["ivan"] == [7, 8, 9], "a save from before the stamps changes nothing either")
+        req(w3, "h", now=1.1, on_server=True, name="Host")
+        req(w3, "a", now=1.1, name="Ivan", hello=True)
+        w3.server_report([], None, 20.0, hours=109, stamp=5)
+        w3.server_report([], None, 40.0, hours=50, stamp=5)
+        again = [req(w3, "h", now=40.1, on_server=True)[0] for _ in range(8)]
+        check([27, cb.TELL_SAVE_AGAIN, 0, 0, 0] in again, f"a save friends do not have: the host is asked to save: {again}")
+        for stamp in range(200, 200 + cb.SYNC_KEEP + 2):
+            w3.server_report([], None, 60.0, hours=stamp, stamp=stamp)
+            w3.host_saved(now=60.0)
         check(len(w3.sync) == cb.SYNC_KEEP and 200 not in w3.sync, "only the last saves are kept")
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "profiles.json"
+        path.with_name("sync.json").write_text(json.dumps({"33": {"profiles": {}, "shared": {}}}), "utf-8")
+        w4 = cb.World(path)
+        check(w4.sync == {} and w4.save_stamp == 1, "a sync.json of the older kind is not read")
+        w4.army["gear"][3] = [203, 303]
+        w4.server_report([], None, 0.0, hours=33, stamp=1)
+        req(w4, "h", now=0.1, on_server=True, name="Host")
+        for _ in range(4):
+            req(w4, "h", now=0.2, on_server=True)
+        w4.server_report([], None, 0.3, hours=33, stamp=1)
+        w4.host_saved(now=0.3)
+        w4.server_report([], None, 0.4, hours=33, stamp=2)
+        w4.server_report([], None, 0.5, hours=33, stamp=1)
+        heard = [req(w4, "h", now=0.6, on_server=True)[0] for _ in range(6)]
+        check([35, 3, 2, 203, 303] in heard, f"a save holds no army: the host's game hears it again after a load: {heard}")
+        heard = [req(w4, "h", now=0.7, on_server=True, together={"anew": True})[0]]
+        check([35, 3, 2, 203, 303] in heard, f"and when its session begins again: {heard}")
+        w4.profiles["ivan"] = [1, 2, 3]
+        w4.server_report([], None, 20.0, hours=34, stamp=2)
+        w4.host_saved(now=20.1)  # and the host leaves the game at once: it never hears the new stamp
+        w4.profiles["ivan"] = [9, 9, 9]
+        heard = [req(w4, "h", now=40.0, on_server=True, together={"loaded": 2})[0]]
+        heard += [req(w4, "h", now=40.1, on_server=True)[0] for _ in range(4)]
+        check(w4.profiles["ivan"] == [1, 2, 3] and [37, 3, 1] in heard and [35, 3, 2, 203, 303] in heard,
+              f"the game saying it loaded a save is enough: {heard}")
+        w4.server_report([], None, 40.2, hours=34, stamp=2)
+        check(w4.loaded == (2, 40.0), "and the other signs of that load count for nothing")
 
 
 def test_no_marks():
@@ -649,6 +697,8 @@ def test_army():
     check(cb.parse_together({"ao": "1", "ag": "3,10"}) == {"army_gear": (3, [10]), "army_saved": True},
           "what a save held is marked")
     check(cb.parse_together({"ao": "1"}) is None, "and that mark says nothing by itself")
+    check(cb.parse_together({"ld": "7"}) == {"loaded": 7} and cb.parse_together({"anew": "1"}) == {"anew": True},
+          "the host's game says it loaded a save, or began anew")
     req(w, "h", on_server=True, now=0.5, together={"army_name": (0, "The Wolves")})
     heard = [req(w, "a", now=0.6) for _ in range(3)]
     check(([34, 0], "The Wolves") in heard, f"the clients hear the army's name: {heard}")

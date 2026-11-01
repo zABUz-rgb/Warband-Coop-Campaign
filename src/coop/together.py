@@ -114,10 +114,13 @@ together_scripts = [
      (assign, "$coop_store_state", 0),
      (assign, "$coop_store_step", 0),
      (assign, "$coop_store_camp", 0),
+     (assign, "$coop_tg_token", 0),
+     (assign, "$coop_tg_camp", 0),
      (assign, "$coop_ping_on", 0),
      (assign, "$coop_enc_center", 0),
      (assign, "$coop_signal_bid", 0),
      (assign, "$coop_signal_menu", 0),
+     (assign, "$coop_anew", 1), #the bridge sends the host's game the camps again; a client's hello says as much
      (call_script, "script_coop_marks_clear"),
     ]),
 
@@ -709,6 +712,13 @@ together_scripts = [
        (else_try),
          (eq, ":code", coop_tell_save_loaded),
          (display_message, "@CoopWorld: the host went back to an earlier save. Load the host's save again: your hero and the treasury went back with it.", 0xFFDD66),
+       (else_try),
+         (eq, ":code", coop_tell_save_again),
+         (display_message, "@CoopWorld: save the game now: your friends get that save and load it.", 0xFFDD66),
+       (else_try),
+         (eq, ":code", coop_tell_base_up), #paid only now: a word nobody answered costs nothing
+         (troop_remove_gold, "trp_player", coop_base_cost),
+         (display_message, "@CoopWorld: the tents go up. Ride into the camp for the treasury and the party store.", 0x66CCFF),
        (try_end),
      (else_try),
        (eq, ":kind", 28),
@@ -1132,13 +1142,11 @@ def camp_options():
                                    (try_end)],
      "CoopWorld: set up the company's camp here (%d denars)." % coop_base_cost,
      [
-       (troop_remove_gold, "trp_player", coop_base_cost),
        (set_fixed_point_multiplier, 100),
        (party_get_position, pos1, "p_main_party"),
        (position_get_x, "$coop_base_x", pos1),
        (position_get_y, "$coop_base_y", pos1),
        (assign, "$coop_base_send", 1),
-       (display_message, "@CoopWorld: the tents go up. Ride into the camp for the treasury and the party store.", 0x66CCFF),
        (change_screen_return),
      ]),
     ("coop_base_ride", plays() + [(call_script, "script_coop_camp_best"), (gt, reg0, 0), (str_store_party_name, s1, reg0)],
@@ -1264,22 +1272,24 @@ def treasury_options():
   options = []
   for amount in (100, 1000):
     options.append(("coop_tg_in_%d" % amount,
-                    [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (ge, ":gold", amount)],
+                    plays() + [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (ge, ":gold", amount)],
                     "Put in %d denars." % amount,
                     [(call_script, "script_coop_treasury_move", amount)] + stay))
   options.append(("coop_tg_in_all",
-                  [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (gt, ":gold", 0)],
+                  plays() + [(eq, "$coop_tg_token", 0), (store_troop_gold, ":gold", "trp_player"), (gt, ":gold", 0)],
                   "Put in everything you carry.",
                   [(store_troop_gold, ":gold", "trp_player"), (call_script, "script_coop_treasury_move", ":gold")] + stay))
   for amount in (100, 1000):
-    options.append(("coop_tg_out_%d" % amount, [(eq, "$coop_tg_token", 0), (ge, "$coop_shared_gold", amount)],
+    options.append(("coop_tg_out_%d" % amount, plays() + [(eq, "$coop_tg_token", 0), (ge, "$coop_shared_gold", amount)],
                     "Take %d denars." % amount,
                     [(call_script, "script_coop_treasury_move", -amount)] + stay))
-  options.append(("coop_tg_out_all", [(eq, "$coop_tg_token", 0), (gt, "$coop_shared_gold", 0)],
+  options.append(("coop_tg_out_all", plays() + [(eq, "$coop_tg_token", 0), (gt, "$coop_shared_gold", 0)],
                   "Take everything in it.",
                   [(store_sub, ":amount", 0, "$coop_shared_gold"), (call_script, "script_coop_treasury_move", ":amount")] + stay))
-  options.append(("coop_tg_wait", [(neq, "$coop_tg_token", 0)], "The coins are being counted. Look again.",
+  options.append(("coop_tg_wait", plays() + [(neq, "$coop_tg_token", 0)], "The coins are being counted. Look again.",
                   [(jump_to_menu, "mnu_coop_shared")]))
+  options.append(("coop_shared_off", [(eq, "$coop_role", coop_role_single), (disable_menu_option)],
+                  "Co-op is off: the treasury and the store wait for the next session.", []))
   return options
 
 
@@ -1290,7 +1300,7 @@ together_menus = [
    "none",
    [(set_background_mesh, "mesh_pic_camp"), (assign, reg1, "$coop_shared_gold"), (store_troop_gold, reg2, "trp_player")],
    treasury_options() + [
-     ("coop_store_open", [(eq, "$coop_store_state", 0)],
+     ("coop_store_open", plays() + [(eq, "$coop_store_state", 0)],
       "Open the party store (one player at a time).",
       [
         (assign, "$coop_tg_camp", 0),
@@ -1303,7 +1313,7 @@ together_menus = [
       ]),
      ("coop_blackborn", [], "Talk to John Blackborn.",
       [(assign, "$coop_tg_camp", 0), (call_script, "script_coop_blackborn_talk")]),
-     ("coop_base_down", [(party_slot_eq, "$g_encountered_party", slot_party_coop_mine, 1)],
+     ("coop_base_down", plays() + [(party_slot_eq, "$g_encountered_party", slot_party_coop_mine, 1)],
       "Take the camp down (the treasury and the store stay with the company, the denars do not come back).",
       [
         (assign, "$coop_tg_camp", 0),

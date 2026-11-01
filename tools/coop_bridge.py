@@ -30,7 +30,7 @@ virtual network (Radmin's 26.x) was turned away: "invalid authorization number".
 the player there by it, so each player's soldiers obey that player; without it, by the hero's name
 (which friends who loaded the host's save share with the host).
 
-World server -> /srv?seq=S&h=H&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...][&cf=center,faction,lord,besieger+1,bandits]
+World server -> /srv?seq=S&h=H&sv=V&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n1,...][&cf=center,faction,lord,besieger+1,bandits]
                   or  /srv?seq=S&hold=1
     d: spawned parties: position, where the party is heading (tx,ty), and the party it is inside
        (a town) + 1, or 0 on the open map; c: troops of one party (or a town's or castle's garrison)
@@ -48,7 +48,7 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
                     [&pf=seq,offset,total,v1,v2,...][&pfq=1]
                     [&give=slot,t1,n1,...][&giveans=id,yes]
                     [&lg=code,a,b,c][&fl=slot+1][&bs=x,y|-][&tg=token,amount][&st=1][&sti=token,offset,total,pairs...]
-                    [&ag=kind,item,...][&an=index,name][&al=kind,level][&ao=1]
+                    [&ag=kind,item,...][&an=index,name][&al=kind,level][&ao=1][&anew=1][&ld=stamp]
                     [&me=t1,n1,...][&name=player name]
     fac: the kingdom the player serves (0: none); lord: the world party of the lord the player serves
     as a soldier (Freelancer), -1 or absent: none; pf: part of the player's hero (the profile, see
@@ -61,6 +61,8 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     sti: part of the party store coming back, pairs (item, modifier + 100 * amount), repeated until kind 31;
     ag, an, al: the player's own army, a kind's gear, a name (0 the army's, 1 + kind a soldier's), a kind's
     level, kept in army.json apart from any save; ao: these come from a save, and only fill what the file lacks;
+    anew: the host's game began its session again and has to hear everything once more; ld: it finds it
+    loaded a save, whose stamp this is (a save left at once never heard the new stamp, so its load shows no other way);
     busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
     dbg: a client's state for the log when it goes quiet: parties, mirrors spawned, swept, Freelancer's
@@ -145,6 +147,8 @@ player's bet wins, a duel's stake]
           7777|34|index|name                   the player's own army: a name (as for an)
           7777|35|kind|n|items*n               its kind's gear
           7777|36|kind|level                   its kind's level
+          7777|37|stamp|loaded                 to the host: what its next save is to carry (the sv of /srv: the bridge
+                                               knows a save by it); loaded 1: a save was loaded, nothing under way goes on
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...
                   &kl=no,count;...]&pl=no~name;...
@@ -265,9 +269,10 @@ PING_HOLD_S = 0.7       # a game off the map asks this often whether it is calle
 TRAIL_ACK = 7779        # the whole reply to a debug build's /tr (trail_ack in src/trail/marks.py)
 ALIVE_S = 3.0           # a game that pinged this recently answers, though its map does not run
 TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_GOLD, TELL_STORE, TELL_LEFT, TELL_BASE, TELL_BANDITS = 1, 2, 4, 5, 6, 7, 8  # kind 27
-TELL_SAVE_LOADED = 9
+TELL_SAVE_LOADED, TELL_BASE_UP, TELL_SAVE_AGAIN = 9, 10, 11
 SYNC_KEEP = 24          # the host's last saves whose heroes and treasury are kept (sync.json)
-SYNC_HERO_S = 60.0      # seconds after a host's save a hero coming in still counts as written at it
+SYNC_HERO_S = 180.0     # seconds after a host's save a player's first hero still counts as written at it
+LOAD_ONCE_S = 10.0      # the signs of one load, coming apart, are one load
 BASE_SLOT = MAX_PLAYERS  # a player's camp goes out in the slots after the players' (coop_base_slot)
 # what a game tells the log with &lg=code,a,b,c (coop_note_... in coop/constants.py): the name in the
 # log's "together" line, and what a, b and c are
@@ -333,6 +338,8 @@ class Player:
         self.rename_wait = 0    # requests until the hero's name is asked for again
         self.saves_told = None  # the host's saves this player's game was told of
         self.hero_stale = False # the host went back to a save: this game's hero waits for the game to load it
+        self.stamp_told = None  # the host's game: the stamp of its next save, as it last heard
+        self.loaded_told = 0    # and 1 when that word is to say a save was loaded
         self.build = None       # the CoopWorld build its game runs (see coop/constants.py)
         self.others_cursor = 0
         self.status_sent = None  # (paused, slot, why) this player was last told
@@ -475,14 +482,19 @@ class World:
         old_camp = self.shared.pop("base", None)
         if old_camp:  # when there was one camp for all: the host's now
             self.shared["bases"][0] = {"who": None, "host": True, "x": old_camp[0], "y": old_camp[1]}
-        # the world's clock at each of the host's saves -> the heroes and the treasury as they stood then
+        # each of the host's saves, by the stamp its file carries -> the heroes and the treasury as they stood then
         self.sync_path = self.shared_path.with_name("sync.json") if self.shared_path else None
         self.sync = {}
-        self.sync_open = None   # (clock, until): the save the players' heroes are still coming in for
+        self.save_stamp = 1     # what the host's next save is to carry
+        self.srv_stamp = None   # the stamp the host's game holds now
+        self.sync_open = None   # (stamp, until, players): the save those players' heroes are still coming in for
+        self.loaded = (None, 0.0)  # (stamp, when): the last save the host loaded
         if self.sync_path is not None and self.sync_path.exists():
             try:
-                self.sync = {int(k): v for k, v in json.loads(self.sync_path.read_text("utf-8")).items()}
-            except (OSError, ValueError, AttributeError):
+                kept = json.loads(self.sync_path.read_text("utf-8"))
+                self.sync = {int(k): v for k, v in kept["saves"].items()}  # a file of the older kind has none
+                self.save_stamp = int(kept["stamp"])
+            except (OSError, ValueError, AttributeError, KeyError, TypeError):
                 self.sync = {}
 
     # ---- players
@@ -583,10 +595,12 @@ class World:
             camp["who"] == me or (camp["who"] is None and p.on_server))), None)
         free = next((i for i, camp in enumerate(bases) if not camp), None)
         if (mine is not None) == bool(where) or (where and free is None):
+            p.mp_out.append(self._marks_reply(p))  # its game knew less than this: nothing was built, nothing is paid
             return
         if where:
             bases[free] = {"who": me, "host": p.on_server, "x": where[0], "y": where[1]}
             self._act(p, "base", x=where[0], y=where[1])
+            p.mp_out.append([27, TELL_BASE_UP, p.slot, 0, 0])
         else:
             bases[mine] = None
             self._act(p, "base_off")
@@ -759,6 +773,10 @@ class World:
             self._base(p, together["base"])
         if together.get("treasury") is not None:
             self._treasury(p, *together["treasury"])
+        if together.get("anew") and p.on_server:
+            p.together_told = False
+        if together.get("loaded") is not None and p.on_server:
+            self._host_loaded(together["loaded"], now)
         if together.get("store_open"):
             self._store_open(p, now)
         if together.get("store_put") is not None:
@@ -766,50 +784,74 @@ class World:
 
     def host_saved(self, now=None):
         """The host saved the game (and the relays got the file): each player's game is told and writes its
-        hero down. The heroes and the treasury are kept with that save, by the world's clock."""
+        hero down. The heroes and the treasury are kept with that save, under the stamp the file carries; the
+        host's game gets a new one for its next save."""
         with self.lock:
             self.saves += 1
-            hours = self.srv_hours
-            if hours is not None:
-                self.sync.pop(hours, None)  # the newest stands last
-                self.sync[hours] = json.loads(json.dumps({"profiles": self.profiles, "shared": self.shared}))
+            stamp = self.srv_stamp
+            if stamp:
+                self.sync.pop(stamp, None)  # the newest stands last
+                self.sync[stamp] = json.loads(json.dumps({"profiles": self.profiles, "shared": self.shared}))
                 while len(self.sync) > SYNC_KEEP:
                     del self.sync[next(iter(self.sync))]
-                self.sync_open = (hours, (time.time() if now is None else now) + SYNC_HERO_S)
-                self._save_sync()
+                waiting = {self._profile_key(q.cid) for q in self.players.values() if not q.on_server}
+                self.sync_open = (stamp, (time.time() if now is None else now) + SYNC_HERO_S, waiting)
+                self.save_stamp = max(self.save_stamp, stamp + 1)
+            self._save_sync()
 
     def _save_sync(self):
         if self.sync_path is None:
             return
         try:
             tmp = self.sync_path.with_suffix(".tmp")
-            tmp.write_text(json.dumps(self.sync), "utf-8")
+            tmp.write_text(json.dumps({"stamp": self.save_stamp, "saves": self.sync}), "utf-8")
             tmp.replace(self.sync_path)
         except OSError:
             pass
 
-    def _clock_reported(self, hours):
-        """The world's clock from the host. Gone back, or heard for the first time since the bridge started:
-        a save was loaded, and the heroes and the treasury go back to that save with it. A game still in
-        the session is told to load it too; until then what it writes of its hero counts for nothing."""
+    def _stamp_reported(self, stamp, now):
+        """The stamp in the host's game. The bridge gave it a higher one, so a lower one came from a file: a save
+        was loaded. A first word of one the bridge kept a save under says the same of a bridge started anew."""
+        known, self.srv_stamp = self.srv_stamp, stamp
+        if (known is not None and stamp < known) or (known is None and stamp in self.sync):
+            self._host_loaded(stamp, now)
+
+    def _clock_reported(self, hours, now):
+        """The world's clock from the host: going back, it says a save was loaded."""
         known, self.srv_hours = self.srv_hours, hours
-        if known is not None and hours >= known:
+        if known is not None and hours < known:
+            self._host_loaded(self.srv_stamp or 0, now)
+
+    def _host_loaded(self, stamp, now):
+        """The host's game loaded a save. Nothing of the army is in a save file, so its game hears all of it again.
+        The heroes and the treasury go back to that save with the world. A game still in the session is told to
+        load it too; until then what it writes of its hero counts for nothing."""
+        if self.loaded[0] == stamp and now - self.loaded[1] < LOAD_ONCE_S:
             return
-        kept = self.sync.get(hours)
-        if kept is None:
-            if known is not None:
-                self.log(f"the host went back to hour {hours}: no save kept for it, the heroes stay as they are")
-            return
-        kept = json.loads(json.dumps(kept))
-        self.profiles = kept["profiles"]
-        self.shared = kept["shared"]
+        self.loaded = (stamp, now)
+        self.save_stamp = max(self.save_stamp, stamp + 1)
+        kept = self.sync.get(stamp)
         self.sync_open = None
-        self._save_profiles()
-        self._save_shared()
-        self.log(f"the host's save of hour {hours}: the heroes and the treasury are back to it")
+        if kept is None:
+            self.log("the host loaded a save the bridge kept nothing for: the heroes stay as they are")
+        else:
+            kept = json.loads(json.dumps(kept))
+            self.profiles = kept["profiles"]
+            self.shared = kept["shared"]
+            self._save_profiles()
+            self._save_shared()
+            self.log(f"the host loaded a save: the heroes and the treasury are back to it (save {stamp})")
+        self._save_sync()
+        friends = [q for q in self.players.values() if not q.on_server]
+        newest = next(reversed(self.sync), None)
         for q in self.players.values():
-            if not q.on_server:
-                q.hero_stale = True
+            if q.on_server:
+                q.together_told = False
+                q.stamp_told, q.loaded_told = None, 1
+                if friends and stamp != newest:  # friends only ever get the newest save
+                    q.mp_out.append([27, TELL_SAVE_AGAIN, 0, 0, 0])
+            else:
+                q.hero_stale = kept is not None
                 q.mp_out += [[27, TELL_SAVE_LOADED, 0, 0, 0], self._marks_reply(q), [29, 0, 0, self.shared["gold"]]]
 
     def set_mp_name(self, cid, name):
@@ -836,13 +878,15 @@ class World:
 
     # ---- server
 
-    def server_report(self, entries, troops, now, hold=False, center=None, hours=None, battles=()):
+    def server_report(self, entries, troops, now, hold=False, center=None, hours=None, battles=(), stamp=None):
         """Returns (pause, joins, [(slot, x, y)], payload numbers, name string or None).
         battles: (sid, sid of the party it fights) of world parties in a map battle."""
         with self.lock:
             self.stats["srv"] += 1
+            if stamp is not None:
+                self._stamp_reported(stamp, now)
             if hours is not None:
-                self._clock_reported(hours)
+                self._clock_reported(hours, now)
             for sid, enemy in battles:
                 self.map_battles[sid] = (enemy, now)
                 self.map_battles[enemy] = (sid, now)
@@ -972,7 +1016,9 @@ class World:
             self.profiles[key] = flat_values
             p.profile_in = None
             self._save_profiles()
-            if self.sync_open and now <= self.sync_open[1] and self.sync_open[0] in self.sync:
+            if self.sync_open and now <= self.sync_open[1] and key in self.sync_open[2] \
+                    and self.sync_open[0] in self.sync:
+                self.sync_open[2].discard(key)
                 self.sync[self.sync_open[0]]["profiles"][key] = flat_values
                 self._save_sync()
 
@@ -1076,6 +1122,10 @@ class World:
                 self._profile_part(p, profile, now)
             if together:
                 self._together(p, together, now)
+            if on_server and p.stamp_told != self.save_stamp:
+                p.stamp_told = self.save_stamp
+                p.mp_out.append([37, self.save_stamp, p.loaded_told])
+                p.loaded_told = 0
             if not p.together_told:
                 p.together_told = True
                 p.army_out = self._army_replies()
@@ -1925,6 +1975,10 @@ def parse_together(q):
         out["army_level"] = (v[0], v[1])
     if q.get("ao") == "1" and out:
         out["army_saved"] = True
+    if q.get("anew") == "1":
+        out["anew"] = True
+    if q.get("ld", "").isdigit():
+        out["loaded"] = int(q["ld"])
     return out or None
 
 
@@ -2191,7 +2245,8 @@ def _handle_request(world, role, target, now, cid="local"):
         world.clock("srv", parse_hours(q), now)
         pause, joins, puppets, payload, name = world.server_report(
             parse_entries(q.get("d", "")), parse_troops(q.get("c", "")), now, hold=q.get("hold") == "1",
-            center=parse_center(q.get("cf", "")), hours=parse_hours(q), battles=parse_battles(q.get("lb", "")))
+            center=parse_center(q.get("cf", "")), hours=parse_hours(q), battles=parse_battles(q.get("lb", "")),
+            stamp=int(q["sv"]) if q.get("sv", "").isdigit() else None)
         nums = [MARKER, 1, int(pause), joins, len(puppets)]
         for slot, x, y, faction in puppets:
             nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, faction]

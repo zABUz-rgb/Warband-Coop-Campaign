@@ -690,10 +690,11 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   держится рядом, друг получает сообщение. Свой щелчок по карте останавливает поход. Пока мир стоит
   (кто-то в меню или в бою), отряд идёт по карте шагами, часы при этом не идут.
   ЛАГЕРЬ ОТРЯДА: у каждого игрока свой, все лагеря видны на карте у всех. Лагерь - CoopWorld -
-  "разбить здесь лагерь отряда" (1000 динаров). "Поехать к лагерю" ведёт к вашему лагерю, если его нет -
+  "разбить здесь лагерь отряда" (1000 динаров, снимаются, когда лагерь поставлен). "Поехать к лагерю" ведёт к вашему лагерю, если его нет -
   к лагерю хоста, затем к лагерю другого игрока; можно и щёлкнуть по лагерю на карте. Внутри казна,
   склад и Джон Блэкборн. Свернуть можно только свой лагерь, казна и склад при этом сохраняются.
-  Кнопки казны не выбрасывают на карту: меню лагеря остаётся открытым.
+  Кнопки казны не выбрасывают на карту: меню лагеря остаётся открытым. После остановки кооператива лагерь
+  остаётся на карте, Джон на месте, казна и склад ждут новой сессии; при новом запуске всё возвращается само.
   ОБЩАЯ КАЗНА И СКЛАД: теперь только в лагере отряда. Склад
   открыт только у одного игрока: взятое вдвоём существовало бы дважды. Вещей до 96 (сколько вмещает
   окно добычи). Всё хранится у хоста в файле shared.json в "Документы\\Warband Coop Campaign" и
@@ -743,8 +744,10 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   тира, Торговля на неё не влияет.
   Обучение меняет только уровень. Но игра не даёт скрипту прочитать опыт отряда, поэтому у воинов ниже купленного уровня
   накопленное к следующему тиру пропадает: сначала повысьте тех, кто уже готов.
-  НАСТРОЙКИ ВОЙСКА: названия, снаряжение и уровни хранятся у хоста в файле army.json в "Документы\\Warband Coop Campaign"
-  и не зависят от сохранения: загрузка сохранения их не сбрасывает. Для новой кампании с чистым войском удалите этот файл.
+  НАСТРОЙКИ ВОЙСКА: сама игра не записывает названия и снаряжение обычных войск в файл сохранения. Поэтому они хранятся
+  у хоста в файле army.json в "Документы\\Warband Coop Campaign", и мост возвращает их игре после каждой загрузки.
+  Хост должен играть с запущенным host.bat: без моста после загрузки войско вернётся к исходному виду.
+  Для новой кампании с чистым войском удалите этот файл.
 
 ФРАКЦИИ
   Каждый игрок может присягнуть своему королевству обычным разговором с королём или лордом.
@@ -758,16 +761,19 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 ВАШ ГЕРОЙ МЕЖДУ СЕССИЯМИ
   Друг каждый раз загружает свежее сохранение хоста, но играет своим героем: мост хоста хранит
   героя каждого игрока (profiles.json в "Документы\\Warband Coop Campaign") под его именем в мультиплеере из join.bat -
-  деньги, опыт, известность, честь, присягу, атрибуты, навыки, владение оружием, весь инвентарь,
-  войска (и раненых), пленных, место на карте. При подключении герой возвращается сам. Имя в
+  деньги, опыт, здоровье, известность, честь, присягу, атрибуты, навыки, владение оружием, весь инвентарь,
+  войска (и раненых), пленных, компаньонов с их навыками и снаряжением, место на карте. При подключении герой
+  возвращается сам. Имя в
   join.bat должно оставаться тем же. Опыт можно только добавить: уровень не станет ниже, чем у
   героя хоста. Нераспределённые очки навыков и атрибутов не сохраняются - распределите их до
-  выхода. Клиенты тоже получают недельный бюджет (жалованье войскам, доходы) и читают книги.
+  выхода. Опыт отрядов клиента к следующему повышению тоже не сохраняется: игра не даёт его прочитать, повышайте тех, кто готов.
+  Клиенты тоже получают недельный бюджет (жалованье войскам, доходы) и читают книги.
   СОХРАНЕНИЯ: при каждом сохранении хоста мост запоминает героев всех игроков, казну, склад и лагеря (sync.json,
-  последние 24 сохранения); клиенты дописывают своего героя в ответ, в течение минуты. Если хост загрузил более раннее
-  сохранение, всё это возвращается к нему, а клиенты получают сообщение загрузить сохранение хоста снова: до этого их
-  герой не записывается. Сделанное после последнего сохранения хоста при этом теряется. Загрузка в пределах того же
-  игрового часа без перезапуска моста не распознаётся.
+  последние 24 сохранения); каждый клиент сразу присылает своего героя. Мост узнаёт сохранение по метке внутри файла,
+  поэтому точно знает, какое из них загрузил хост. Всё запомненное возвращается к нему, а клиенты получают сообщение
+  загрузить сохранение хоста снова: до этого их герой не записывается. Сделанное после этого сохранения при загрузке
+  теряется, как и в обычной игре. Если хост загрузил не самое новое сохранение, игра попросит сохраниться: только
+  так друзья получат этот мир.
   НОВАЯ КАМПАНИЯ: удалите из "Документы\\Warband Coop Campaign" файлы profiles.json, shared.json, sync.json и army.json.
 
 ОСТАНОВКА
@@ -916,9 +922,10 @@ TOGETHER WITHOUT MEETING ON THE MAP: all in Camp - CoopWorld: co-op.
   close; a click of your own on the map stops it. While the world stands (someone in a menu or a battle)
   the party goes on over the map in steps, and the clock stays.
   THE COMPANY'S CAMP: each player has one, on everybody's map. Camp - CoopWorld - "set up the company's camp here"
-  (1000 denars). "Ride to" takes you to your own camp, with none to the host's, then to another player's; or click
-  a camp on the map. It holds the treasury, the store and John Blackborn. Only your own camp can be taken down;
-  the treasury and the store stay. The treasury's buttons keep the camp's menu open.
+  (1000 denars, paid once it stands). "Ride to" takes you to your own camp, with none to the host's, then to another
+  player's; or click a camp on the map. It holds the treasury, the store and John Blackborn. Only your own camp can be
+  taken down; the treasury and the store stay. The treasury's buttons keep the camp's menu open. After stopping co-op
+  the camp stays on the map with John; the treasury and the store wait for the next session, and all comes back then.
   SHARED TREASURY AND PARTY STORE: in the company's camp only. The store is open for one
   player at a time; up to 96 things (what the loot window holds). They are kept at the host, in
   shared.json in "Documents\\Warband Coop Campaign", from session to session: no host, no treasury.
@@ -965,19 +972,23 @@ YOUR OWN ARMY: a branch of troops of no faction: a recruit and three branches (i
   your party: men hired or promoted later stand at that level at once. All players share it; the price is set by the
   tier, Trade does not change it. Training changes the level only, but no script can read a party's experience, so
   what the men below that level gathered towards the next tier is lost: promote those who are ready first.
-  THE ARMY'S SETTINGS: names, gear and levels are kept at the host in army.json in "Documents\\Warband Coop Campaign",
-  apart from the save: loading a save does not reset them. For a new campaign with a clean army delete that file.
+  THE ARMY'S SETTINGS: the game itself writes no names or gear of regular troops into a save file. So they are kept at
+  the host in army.json in "Documents\\Warband Coop Campaign", and the bridge gives them back after every load. The host
+  has to play with host.bat running: with no bridge the army goes back to how it began after a load.
+  For a new campaign with a clean army delete that file.
 
 FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave the player alone, its
   enemies hunt the player. Fiefs and Diplomacy's diplomacy go only to the host for now.
 
 YOUR HERO BETWEEN SESSIONS: the host's bridge keeps each player's hero (profiles.json in
   "Documents\\Warband Coop Campaign") under the multiplayer name given to join.bat and puts it back on joining. Keep the name.
+  It holds money, experience, health, gear, troops, prisoners and the companions with their skills and gear. A client's
+  troops lose their experience towards the next upgrade between sessions: the game does not let it be read.
   SAVES: at each save of the host the bridge keeps every hero, the treasury, the store and the camps (sync.json, the
-  last 24 saves); clients write their heroes in answer, within a minute. When the host loads an earlier save all of
-  that goes back to it, and clients are told to load the host's save again: until then their heroes are not written.
-  What was done after the host's last save is lost. A load within the same hour of the game, with the bridge
-  running on, is not noticed.
+  last 24 saves); each client sends its hero at once. The bridge knows a save by a stamp inside the file, so it knows
+  exactly which one the host loaded. All of that goes back to it, and clients are told to load the host's save again:
+  until then their heroes are not written. What was done after that save is lost, as in a normal game. If the host
+  loads a save that is not the newest, the game asks to save: only then do friends get that world.
   A NEW CAMPAIGN: delete profiles.json, shared.json, sync.json and army.json from "Documents\\Warband Coop Campaign".
 
 Stopping: Camp - "CoopWorld: co-op..." - "CoopWorld: stop co-op", then close the bridge window.
