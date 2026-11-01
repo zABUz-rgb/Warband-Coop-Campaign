@@ -1259,7 +1259,7 @@ coop_mp_event_ready = [
 ]
 
 
-# the town menu, beside Native's way into the arena
+# the town menu, beside Native's way into the arena: it calls everybody, so a menu asks first
 coop_mp_arena_option = (
   "coop_mp_arena",
   coop_mp_event_ready + [
@@ -1270,7 +1270,7 @@ coop_mp_arena_option = (
   ],
   "CoopWorld: fight in the arena together (on the multiplayer server).",
   [
-    (call_script, "script_coop_client_mp_begin_event", coop_event_arena, 0, "mnu_town", 0),
+    (jump_to_menu, "mnu_coop_arena_ask"),
   ])
 
 
@@ -1325,6 +1325,16 @@ coop_mp_encounter_option = (
 
 
 mp_campaign_menus = [
+  ("coop_arena_ask", 0,
+   "CoopWorld: the arena together.^^Your friends get the invitation at once and the world waits for their answer. Call them to the arena?",
+   "none",
+   [],
+   [
+     ("coop_arena_back", [], "Go back.", [(jump_to_menu, "mnu_town")]),
+     ("coop_arena_call", [], "Call my friends to the arena.",
+      [(call_script, "script_coop_client_mp_begin_event", coop_event_arena, 0, "mnu_town", 0)]),
+   ]),
+
   ("coop_tournament_bet", 0,
    "CoopWorld: the tournament of {s1}.^^Your team fights {reg2} rounds in a row, as many against as many as it has players; it stands as long as one of its heroes does. If it wins the last round every player gets the prize of the tournament.^^Whoever bets stakes on the whole team: 100 denars win {reg1} more, for every player, and if the team is beaten only the stake is lost. How much do you bet?",
    "none",

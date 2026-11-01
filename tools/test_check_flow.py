@@ -175,6 +175,13 @@ def test_hero_reads_what_it_writes():
     check(len(written) == len(taken) == 35, f"a kept hero is read as it was written: {len(written)} and {len(taken)} kinds of number")
 
 
+def test_town_events_ask_first():
+    # 19:32, 1.11: a click nobody meant on the row under Native's arena called the friend at once
+    from coop.mp_campaign import coop_mp_arena_option, coop_mp_tournament_option, coop_mp_training_option
+    for option in (coop_mp_arena_option, coop_mp_tournament_option, coop_mp_training_option):
+        check(option[3][0][0] == jump_to_menu, f"{option[0]}: one click calls nobody, a menu asks first")
+
+
 def test_holders_apart():
     from coop.players import OFFER
     from coop.profile import PROFILE_IN, PROFILE_OUT
@@ -216,6 +223,7 @@ if __name__ == "__main__":
     test_data()
     test_john()
     test_hero_reads_what_it_writes()
+    test_town_events_ask_first()
     test_holders_apart()
     test_item_numbers_checked()
     test_tournament_teams()

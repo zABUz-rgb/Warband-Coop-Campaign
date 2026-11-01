@@ -80,6 +80,7 @@ Open (not played yet) - 1.0.1, saves, the camp after a stop, the tournament:
   build option is gone. Start co-op again: the camp is there, no second payment.
 - Building a camp: the 1000 are taken only when the tents go up.
 - Tournament with 3 and 4 teams: no "Invalid Team ID" in rgl_log.txt.
+- Town: the arena together asks first. "Go back" returns to the town and nobody is invited.
 - A friend loads the host's save while the world is held, in the debug build: its hero comes back, no crash (0xe17d3 was
   the debug trail's number read as an item). In trail.log no bare numbers like "local 1 314" and no restart of the count.
 

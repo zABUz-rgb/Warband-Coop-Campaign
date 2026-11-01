@@ -1776,6 +1776,9 @@ game_menus|mno_coop_bet_50|50 динаров.
 game_menus|mno_coop_bet_100|100 динаров.
 game_menus|mno_coop_bet_none|Без ставки.
 game_menus|mno_coop_bet_back|Назад.
+game_menus|menu_coop_arena_ask|CoopWorld: арена вместе.^^Друзья сразу получат приглашение, и мир будет ждать их ответа. Позвать их на арену?
+game_menus|mno_coop_arena_back|Назад.
+game_menus|mno_coop_arena_call|Позвать друзей на арену.
 game_menus|menu_coop_training_pick|CoopWorld: тренировка вместе.^^Все игроки сражаются плечом к плечу, в тренировочном снаряжении, против ваших собственных бойцов. Сколько соперников на каждого игрока?
 game_menus|mno_coop_train_1|Один.
 game_menus|mno_coop_train_2|Двое.
