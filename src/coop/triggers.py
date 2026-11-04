@@ -191,11 +191,10 @@ def net_triggers(first_dynamic):
            (call_script, "script_coop_append_entry", ":party_no"),
            (try_begin),
              (lt, ":lb_party", 0),
-             (party_get_battle_opponent, ":opponent", ":party_no"),
-             (ge, ":opponent", first_dynamic), #a field battle with a world party
-             (party_is_active, ":opponent"),
+             (call_script, "script_coop_battle_opponent", ":party_no"), #not a party beaten together a moment ago
+             (ge, reg0, first_dynamic), #a field battle with a world party
              (assign, ":lb_party", ":party_no"),
-             (assign, ":lb_opponent", ":opponent"),
+             (assign, ":lb_opponent", reg0),
            (try_end),
            (val_add, ":near", 1),
            (val_add, ":count", 1),

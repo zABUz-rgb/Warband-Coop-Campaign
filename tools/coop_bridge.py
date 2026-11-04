@@ -177,9 +177,12 @@ import ipaddress
 import json
 import random
 import secrets
+import shutil
 import socket
 import threading
 import time
+import traceback
+import zlib
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -227,7 +230,8 @@ BATTLE_PLAYING = 50       # datagrams of one game's link: a game on the server, 
 BATTLE_IDLE_S = 120.0     # a battle relay link silent this long is closed
 BATTLE_TAG = 8            # bytes in front of each relayed datagram that prove the key
 FETCHED_MARK = "coop_campaign_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
-PROTOCOL = 1
+PROTOCOL = 2               # 2: the host's saves go packed, in parts
+SAVE_PART = 32_000         # characters of a packed save in one message: a game's replies go in between
 SAVE_POLL_S = 2.0         # how often the hub looks for a new save of the host
 RECONNECT_GRACE_S = 30.0  # a relay that lost the hub keeps its player (slot, party, battle) this long
 RELAY_MISSES = 2          # replies in a row the hub did not give in time: the link is dead, reconnect
@@ -467,11 +471,11 @@ class World:
         self.army = {"names": {}, "gear": {}, "levels": {}}
         if self.army_path is not None and self.army_path.exists():
             try:
-                kept = json.loads(self.army_path.read_text("utf-8"))
-                self.army = {part: {int(k): v for k, v in kept.get(part, {}).items()} for part in self.army}
+                self.army = army_from(json.loads(self.army_path.read_text("utf-8")))
             except (OSError, ValueError, AttributeError):
                 pass
         self.army_told = {}     # kind -> items: what the battle server's game has of its gear
+        self.host_slot = False  # run_host: slot 0 waits for the host's own game, the friends take the others first
         # the treasury, the party store and the players' camps, kept in shared.json
         self.shared = {"gold": 0, "items": [], "bases": [None] * MAX_PLAYERS}
         if self.shared_path is not None and self.shared_path.exists():
@@ -486,6 +490,7 @@ class World:
         self.sync_path = self.shared_path.with_name("sync.json") if self.shared_path else None
         self.sync = {}
         self.save_stamp = 1     # what the host's next save is to carry
+        self.campaign = 0       # the host's campaigns, counted: a new game is the next one
         self.srv_stamp = None   # the stamp the host's game holds now
         self.sync_open = None   # (stamp, until, players): the save those players' heroes are still coming in for
         self.loaded = (None, 0.0)  # (stamp, when): the last save the host loaded
@@ -494,6 +499,7 @@ class World:
                 kept = json.loads(self.sync_path.read_text("utf-8"))
                 self.sync = {int(k): v for k, v in kept["saves"].items()}  # a file of the older kind has none
                 self.save_stamp = int(kept["stamp"])
+                self.campaign = int(kept.get("campaign", 0))
             except (OSError, ValueError, AttributeError, KeyError, TypeError):
                 self.sync = {}
 
@@ -505,7 +511,11 @@ class World:
             p = self.players[cid] = Player(cid)
         if p.slot is None:
             used = {q.slot for q in self.players.values() if q.slot is not None}
-            free = [s for s in range(MAX_PLAYERS) if s not in used]
+            order = list(range(MAX_PLAYERS))
+            if self.host_slot and cid != "local":
+                # a friend's relay may come back before the host's game after host.bat starts again
+                order = order[1:] + order[:1]
+            free = [s for s in order if s not in used]
             if free:
                 p.slot = free[0]
                 p.name_pending = p.name is not None
@@ -776,6 +786,8 @@ class World:
         if together.get("anew") and p.on_server:
             p.together_told = False
         if together.get("loaded") is not None and p.on_server:
+            if together["loaded"] == 0:
+                self._new_campaign(now)
             self._host_loaded(together["loaded"], now)
         if together.get("store_open"):
             self._store_open(p, now)
@@ -791,7 +803,8 @@ class World:
             stamp = self.srv_stamp
             if stamp:
                 self.sync.pop(stamp, None)  # the newest stands last
-                self.sync[stamp] = json.loads(json.dumps({"profiles": self.profiles, "shared": self.shared}))
+                self.sync[stamp] = json.loads(json.dumps({"profiles": self.profiles, "shared": self.shared,
+                                                          "army": self.army, "campaign": self.campaign}))
                 while len(self.sync) > SYNC_KEEP:
                     del self.sync[next(iter(self.sync))]
                 waiting = {self._profile_key(q.cid) for q in self.players.values() if not q.on_server}
@@ -804,7 +817,7 @@ class World:
             return
         try:
             tmp = self.sync_path.with_suffix(".tmp")
-            tmp.write_text(json.dumps({"stamp": self.save_stamp, "saves": self.sync}), "utf-8")
+            tmp.write_text(json.dumps({"stamp": self.save_stamp, "campaign": self.campaign, "saves": self.sync}), "utf-8")
             tmp.replace(self.sync_path)
         except OSError:
             pass
@@ -841,18 +854,76 @@ class World:
             self._save_profiles()
             self._save_shared()
             self.log(f"the host loaded a save: the heroes and the treasury are back to it (save {stamp})")
+            if kept.get("campaign", 0) != self.campaign:
+                # a save of the campaign before a new game: its army comes back with it, when kept
+                self.campaign = kept.get("campaign", 0)
+                if "army" in kept:
+                    self.army, self.army_told = army_from(kept["army"]), {}
+                    self._army_save()
+                    self.log(f"the save is of another campaign: its army is back too (save {stamp})")
         self._save_sync()
+        self._tell_loaded(stamp, kept is not None)
+
+    def _tell_loaded(self, stamp, stale, again=True):
+        """The games hear that the host's world went back (stale: and the heroes with it). again: the friends are
+        told to load the save too (not twice for one load)."""
         friends = [q for q in self.players.values() if not q.on_server]
         newest = next(reversed(self.sync), None)
         for q in self.players.values():
             if q.on_server:
                 q.together_told = False
                 q.stamp_told, q.loaded_told = None, 1
-                if friends and stamp != newest:  # friends only ever get the newest save
+                if friends and stamp != newest and again:  # friends only ever get the newest save
                     q.mp_out.append([27, TELL_SAVE_AGAIN, 0, 0, 0])
             else:
-                q.hero_stale = kept is not None
-                q.mp_out += [[27, TELL_SAVE_LOADED, 0, 0, 0], self._marks_reply(q), [29, 0, 0, self.shared["gold"]]]
+                q.hero_stale = stale
+                q.mp_out += ([[27, TELL_SAVE_LOADED, 0, 0, 0]] if again else []) + [
+                    self._marks_reply(q), [29, 0, 0, self.shared["gold"]]]
+
+    def _new_campaign(self, now):
+        """The host's own game says its world carries no stamp of this bridge: a new game (or a campaign from
+        before the co-op). The camps, the treasury, the store, the army and the friends' heroes start empty; the
+        last campaign's files are kept in a folder of their own, and its saves in sync.json bring it all back if
+        the host loads one of them. (Only the host's own word: the world server alone never hears a stamp.)"""
+        told = self.loaded[0] == 0 and now - self.loaded[1] < LOAD_ONCE_S  # its stamp or clock said so already
+        self.loaded = (0, now)
+        self.sync_open = None
+        old = (self.profiles or self.shared["gold"] or self.shared["items"] or any(self.shared["bases"])
+               or any(self.army.values()))
+        folder = self._keep_campaign() if old else None  # before the count goes up: the copy is that campaign's
+        self.campaign += 1
+        self._save_sync()
+        if not old:
+            if not told:
+                self._tell_loaded(0, False)
+            return
+        self.profiles = {}
+        self.shared = {"gold": 0, "items": [], "bases": [None] * MAX_PLAYERS}
+        self.army, self.army_told = {"names": {}, "gear": {}, "levels": {}}, {}
+        self.store_lock = None
+        self.returns = {}
+        self._save_profiles()
+        self._save_shared()
+        self._army_save()
+        self.log("the host began a new campaign: the camps, the treasury, the store, the army and the friends' heroes"
+                 " start empty" + (f" (the last campaign's files are in {folder})" if folder else ""))
+        self._tell_loaded(0, True, again=not told)
+
+    def _keep_campaign(self):
+        """A copy of the bridge's files of the campaign that ends, or None."""
+        files = [p for p in (self.profiles_path, self.shared_path, self.army_path, self.sync_path)
+                 if p is not None and p.exists()]
+        if not files:
+            return None
+        folder = files[0].with_name(f"old campaign {time.strftime('%Y-%m-%d %H-%M-%S')}")
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            for p in files:
+                shutil.copy2(p, folder / p.name)
+        except OSError as e:
+            self.log(f"could not keep the last campaign's files: {e}")
+            return None
+        return folder
 
     def set_mp_name(self, cid, name):
         name = " ".join((name or "").split())[:40]
@@ -888,6 +959,8 @@ class World:
             if hours is not None:
                 self._clock_reported(hours, now)
             for sid, enemy in battles:
+                if sid in self.tombstones or enemy in self.tombstones:
+                    continue  # beaten by the players: the host's game has not removed it yet
                 self.map_battles[sid] = (enemy, now)
                 self.map_battles[enemy] = (sid, now)
             for sid in [s for s, (_, when) in self.map_battles.items() if now - when > MAP_BATTLE_S]:
@@ -981,6 +1054,9 @@ class World:
         if destroyed:
             self._forget(sid, except_cid=cid)
             self.tombstones[sid] = now
+            enemy = self.map_battles.pop(sid, (None,))[0]
+            if self.map_battles.get(enemy, (None,))[0] == sid:
+                del self.map_battles[enemy]  # its lord fights nobody now: his soldiers are told so
         else:
             # after a battle the player's view is what the party has now
             self.version += 1
@@ -1319,6 +1395,12 @@ class World:
                 else:  # the answer to this player's start got lost: its battle, again
                     p.mp_out.append([7, b.bid, b.fighting, b.sides[p.cid]])
                 return
+            if not event and mp["sid"] > 0 and mp["sid"] in self.tombstones:
+                # beaten a moment ago: the host's game still has it until its next report, and its lord
+                # called the players to the same battle again
+                self.log(f"joint battle: refused - party {mp['sid']} was destroyed a moment ago")
+                p.mp_out.append([7, 0, 2, 0])
+                return
             if not self._mp_online(now):
                 self.log("joint battle: refused - no battle server (Multiplayer - Host a game, Battle)")
                 p.mp_out.append([7, 0, 3, 0])
@@ -1475,7 +1557,9 @@ class World:
                             key=lambda s: -s[3])[:room]
             stacks += allies + enemy
         stacks = [s for s in stacks if s[3] > 0][:MP_MAX_STACKS]
-        if b.center is None and not any(s[0] != b.player_team for s in stacks):
+        # a player on the other side is an enemy too, with no soldiers at all (heroes against each other)
+        foes = any(team != b.player_team for team in b.sides.values())
+        if b.center is None and not foes and not any(s[0] != b.player_team for s in stacks):
             # the enemy fell in the last battle and the lord's fight still shows: with nobody to
             # beat this battle would never end, and the players in it would wait for good
             self.log(f"joint battle {b.bid}: no enemy left - there is nothing to fight, the battle is off")
@@ -1916,6 +2000,11 @@ class World:
         if len(samples) < 2 or samples[-1][0] - samples[0][0] < 5:
             return None
         return (samples[-1][1] - samples[0][1]) * 60.0 / (samples[-1][0] - samples[0][0])
+
+
+def army_from(kept):
+    """The army as army.json (or a save's copy in sync.json) holds it: the keys back to numbers."""
+    return {part: {int(k): v for k, v in kept.get(part, {}).items()} for part in ("names", "gear", "levels")}
 
 
 def parse_entries(d):
@@ -2442,12 +2531,24 @@ def store_save(save_dir, rep, slot_name=None):
     if slot_name is None:
         free = [n for n in [rep["name"]] + [f"sg{i:02d}.sav" for i in range(100)] if not (folder / n).exists()]
         slot_name = free[0]
+    data = rep["raw"] if "raw" in rep else unpack_save(rep)  # a damaged one stops here, the old file stays
     target = folder / slot_name
     mark.write_text(slot_name)
     if target.exists():
         target.replace(target.with_suffix(".sav.bak"))
-    target.write_bytes(base64.b64decode(rep["data"]))
+    target.write_bytes(data)
     return target
+
+
+def unpack_save(msg):
+    """The file a save message carries (see serve_relays), checked: ValueError if it came damaged."""
+    try:
+        raw = zlib.decompress(base64.b64decode(msg["packed"]))
+    except (KeyError, TypeError, zlib.error) as e:
+        raise ValueError(f"it cannot be read ({e!r})")
+    if len(raw) != msg.get("size") or zlib.crc32(raw) != msg.get("crc"):
+        raise ValueError("its size or sum is wrong")
+    return raw
 
 
 def newest_save(save_dir):
@@ -2474,17 +2575,39 @@ def serve_relays(addr, world, key, save_dir, log):
     owners = {}  # cid -> the connection serving it now (a reconnect takes the player over)
     links = {}   # cid -> (connection, its send lock): where a new save of the host goes
 
+    pushing = {}  # cid -> the save on its way to that player: a newer one stops the older one's parts
+
     def save_message(path):
-        return {"t": "save", "name": path.name, "stamp": save_stamp(path),
-                "data": base64.b64encode(path.read_bytes()).decode()}
+        """The host's save, packed: it shrinks to about a twentieth."""
+        at, raw = path.stat().st_mtime, path.read_bytes()
+        return {"t": "save", "name": path.name, "stamp": save_stamp(path), "at": at, "size": len(raw),
+                "crc": zlib.crc32(raw), "packed": base64.b64encode(zlib.compress(raw, 6)).decode()}
 
     def push_save(cid, conn, lock, msg, why):
-        try:
-            send_msg(conn, lock, {"t": "save_coming", "size": len(msg["data"])})
-            send_msg(conn, lock, dict(msg, push=True))
-            log(f"net: {why}: {msg['name']} sent to {cid}")
-        except OSError as e:
-            log(f"net: could not send the save to {cid}: {e}")
+        """A save to one player, in parts, on a thread of its own: the replies to its game go in between (they
+        waited behind a whole save, and the game stood), and a slow link holds up no other player."""
+        pushing[cid] = msg
+
+        def send():
+            began, data = time.time(), msg["packed"]
+            parts = max(1, -(-len(data) // SAVE_PART))
+            try:
+                for i in range(parts):
+                    if pushing.get(cid) is not msg or links.get(cid, (None,))[0] is not conn:
+                        return  # a newer save goes there now, or the player's link is gone
+                    send_msg(conn, lock, {"t": "save_part", "name": msg["name"], "stamp": msg["stamp"], "at": msg["at"],
+                                          "size": msg["size"], "crc": msg["crc"], "i": i, "n": parts,
+                                          "data": data[i * SAVE_PART:(i + 1) * SAVE_PART]})
+                    time.sleep(0.005)  # the link's replies first
+                log(f"net: {why}: {msg['name']} sent to {cid} ({len(data) // 1024} KB packed, "
+                    f"{time.time() - began:.0f} s)")
+            except OSError as e:
+                log(f"net: could not send the save to {cid}: {e}")
+            finally:
+                if pushing.get(cid) is msg:
+                    pushing.pop(cid, None)
+
+        threading.Thread(target=send, daemon=True).start()
 
     def push_saves():
         """Every save the host makes goes to all players at once: the next session starts from it."""
@@ -2505,9 +2628,12 @@ def serve_relays(addr, world, key, save_dir, log):
                 msg = save_message(now_state[0])
             except OSError:
                 continue
-            world.host_saved()
-            for cid, (conn, lock) in list(links.items()):
-                push_save(cid, conn, lock, msg, "the host saved")
+            try:
+                world.host_saved()
+                for cid, (conn, lock) in list(links.items()):
+                    push_save(cid, conn, lock, msg, "the host saved")
+            except Exception:  # the next save must still go out
+                log("net: error sending the host's save: " + traceback.format_exc().strip())
 
     if save_dir:
         threading.Thread(target=push_saves, daemon=True).start()
@@ -2527,10 +2653,16 @@ def serve_relays(addr, world, key, save_dir, log):
         try:
             msgs = read_msgs(conn)
             hello = next(msgs, None)
-            if (not hello or hello.get("t") != "hello" or hello.get("protocol") != PROTOCOL
+            if (not hello or hello.get("t") != "hello"
                     or not hmac.compare_digest(str(hello.get("key", "")), key)):
-                send_msg(conn, lock, {"t": "refused", "why": "wrong key or protocol"})
-                log(f"net: refused {peer[0]}")
+                send_msg(conn, lock, {"t": "refused", "why": "wrong key"})
+                log(f"net: refused {peer[0]}: wrong key")
+                return
+            if hello.get("protocol") != PROTOCOL:
+                send_msg(conn, lock, {"t": "refused", "why": "the host's bridge is of another version: "
+                                                             "install the same package on both PCs"})
+                log(f"net: refused {peer[0]}: its bridge is of another version (protocol {hello.get('protocol')}, "
+                    f"this one {PROTOCOL}) - install the same package on both PCs")
                 return
             session = "".join(ch for ch in str(hello.get("session", "")) if ch.isalnum())[:16]
             if session:
@@ -2567,6 +2699,8 @@ def serve_relays(addr, world, key, save_dir, log):
                         log(f"net: sent save {path.name} to {cid}")
         except (OSError, ValueError) as e:
             log(f"net: {cid} error {e}")
+        except Exception:  # a fault of the bridge: written down, the player's relay makes a new link
+            log(f"net: {cid} error: " + traceback.format_exc().strip())
         finally:
             conn.close()
             if links.get(cid, (None,))[0] is conn:
@@ -2604,6 +2738,7 @@ class Relay:
         self.saves = False      # the first save fetched (or tried): the hub then sends any one missed
         self.save_stamp = None  # the host's save this player has (see save_stamp)
         self.quiet_until = 0.0  # a save on its way: replies behind it come late, the link is fine
+        self.incoming = None    # {"stamp", "at", "parts": {i: text}}: the host's save coming in parts
         self.trail = lambda cid, query: None  # run_join: this player's own trail.log
         self.late = []          # replies with news that came after their request gave up: next ones
 
@@ -2645,11 +2780,8 @@ class Relay:
     def _reader(self, msgs, sock):
         try:
             for msg in msgs:
-                if msg.get("t") == "save_coming":
-                    self.quiet_until = time.time() + 15 + msg.get("size", 0) / 100_000
-                    continue
-                if msg.get("t") == "save" and msg.get("push"):
-                    self._take_pushed_save(msg)
+                if msg.get("t") == "save_part":
+                    self._take_save_part(msg)
                     continue
                 waiter = self.waiting.pop(msg.get("id"), None) if msg.get("t") == "rep" else \
                     self.waiting.pop(msg["t"], None) if msg.get("t") in ("save", "sig") else None
@@ -2725,6 +2857,28 @@ class Relay:
                 pass
         return reply_text([0, 0])
 
+    def _take_save_part(self, msg):
+        """A part of the host's new save; with the last one the file is written. A newer save's parts drop an
+        older one's."""
+        self.quiet_until = time.time() + 15  # replies may come a little late meanwhile: the link is fine
+        at = msg.get("at", 0.0)
+        if self.incoming is not None and at < self.incoming["at"]:
+            return  # the last part of an older save, sent as a newer one began
+        if self.incoming is None or self.incoming["stamp"] != msg.get("stamp"):
+            self.incoming = {"stamp": msg.get("stamp"), "at": at, "parts": {}}
+        parts = self.incoming["parts"]
+        parts[msg.get("i")] = msg.get("data", "")
+        count = msg.get("n", 0)
+        if len(parts) < count:
+            return
+        self.incoming = None
+        try:
+            raw = unpack_save(dict(msg, packed="".join(parts.get(i, "") for i in range(count))))
+        except ValueError as e:
+            self.log(f"relay: the host's new save came damaged ({e}); the next one comes whole")
+            return
+        self._take_pushed_save({"name": msg.get("name"), "stamp": msg.get("stamp"), "raw": raw})
+
     def _take_pushed_save(self, msg):
         if not self.save_dir:
             return
@@ -2740,7 +2894,10 @@ class Relay:
         rep = self.call({"t": "save"}, "save")
         if not rep or rep.get("error"):
             raise RuntimeError((rep or {}).get("error", "no answer"))
-        path = store_save(save_dir, rep, slot_name)
+        try:
+            path = store_save(save_dir, rep, slot_name)
+        except ValueError as e:
+            raise RuntimeError(f"the save came damaged: {e}")
         self.save_stamp = rep.get("stamp")
         return path, rep["name"]
 
@@ -3100,6 +3257,7 @@ def make_log(path):
 def run_host(args, log):
     world = World(args.profiles or Path(args.log).with_name("profiles.json"))
     world.log = log
+    world.host_slot = True
     world.trace = make_trace(Path(args.log).with_name("trace.log"))
     world.trail = make_trail(Path(args.log).with_name("trail.log"))
     log(f"logs: {Path(args.log).resolve()} and trace.log next to it (requests about battles, parties, joining)")
@@ -3126,11 +3284,7 @@ def run_host(args, log):
         serve_battle_hub(parse_addr(args.listen, NET_PORT), args.key, args.battle_port, args.battle_from, log)
     else:
         log("net: no --key given, other players cannot join (this PC only)")
-    last = dict(world.stats)
-    last_cause = None
-    known = None
-    while True:
-        time.sleep(5)
+    def report(last, last_cause, known):
         # who the battle server recognises: told whenever it changes
         seen = world.mp_recognition(time.time())
         on_server = sorted(world.mp_players.values())
@@ -3182,7 +3336,15 @@ def run_host(args, log):
         log(f"parties {n}, server {rate['srv']:.1f}/s, players {rate['cli']:.1f}/s [{players or 'none'}], "
             f"{'PAUSED' if paused else 'running'}, results {s['results']}, {clock_text}, {mp_text}, "
             f"parties: {s['new'] - last['new']} new, {s['gone'] - last['gone']} gone, {s['back'] - last['back']} back")
-        last = s
+        return s, last_cause, known
+
+    last, last_cause, known = dict(world.stats), None, None
+    while True:
+        time.sleep(5)
+        try:
+            last, last_cause, known = report(last, last_cause, known)
+        except Exception:  # the bridge goes on: what went wrong is in the log
+            log("error in the bridge's report: " + traceback.format_exc().strip())
 
 
 def fetch_first_save(relay, save_dir, slot_name, log):
@@ -3198,6 +3360,17 @@ def fetch_first_save(relay, save_dir, slot_name, log):
     return path
 
 
+def serve_copy_of_host(addr, log):
+    """A friend's game that loaded the host's save still calls the host's bridge (127.0.0.1): told at once,
+    link or no link, that it is a client (reply 24). Before, only every third request of it went to the
+    host's bridge, and while the link was down that copy went on as a world of its own, with the host's hero."""
+    try:
+        serve_http(addr, lambda target: reply_text([MARKER, 24] if target.startswith("/srv") else [0, 0]), log, "srv")
+    except SystemExit as e:
+        log(f"srv: {e} - a copy of the host's save becomes a client here a little later (all is well if the host's "
+            f"bridge runs on this PC)")
+
+
 def run_join(args, log):
     try:
         hub = check_host_address(args.host, NET_PORT)
@@ -3208,6 +3381,7 @@ def run_join(args, log):
         log(f"relay: the host's address read as {hub[0]}:{hub[1]} (typed '{args.host}')")
     relay = Relay(hub, args.key, log, mp_name=args.mp_name)
     relay.trail = make_trail(Path(args.log).with_name("trail.log"))
+    serve_copy_of_host(parse_addr(args.server, 80), log)
     try:
         relay.connect()
     except (OSError, ConnectionError) as e:
@@ -3246,6 +3420,8 @@ def main():
     j.add_argument("host", help="the host's address, e.g. 26.1.2.3 (Radmin VPN) or 192.168.1.5")
     j.add_argument("--key", required=True)
     j.add_argument("--client", default="127.0.0.2:80", help="address this PC's player game calls")
+    j.add_argument("--server", default="127.0.0.1:80",
+                   help="address a game with the host's save calls: it is told to be a client")
     j.add_argument("--fetch-save", action="store_true", help="copy the host's newest save here first")
     j.add_argument("--mp-name", default=None, help="this player's name on the battle server (multiplayer profile)")
     j.add_argument("--save-dir", default=str(default_save_dir()))
@@ -3259,10 +3435,22 @@ def main():
     if args.mode is None:
         args = ap.parse_args(["host"])  # the PC-only setup of the prototype
     log = make_log(args.log)
+
+    def thread_failed(hook):  # a fault in any of the bridge's threads goes to its log, not to the window alone
+        log(f"error in {hook.thread.name if hook.thread else 'a thread'}: "
+            + "".join(traceback.format_exception(hook.exc_type, hook.exc_value, hook.exc_traceback)).strip())
+
+    threading.excepthook = thread_failed
     try:
         (run_host if args.mode == "host" else run_join)(args, log)
     except KeyboardInterrupt:
         log("stopped")
+    except SystemExit as e:
+        log(f"the bridge stops: {e}")
+        raise
+    except BaseException:
+        log("the bridge stops on an error: " + traceback.format_exc().strip())
+        raise
 
 
 if __name__ == "__main__":

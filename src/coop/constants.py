@@ -159,6 +159,7 @@ coop_arena_xp = 10                # and for the prizes under it (the lowest give
 coop_prisoner_chance_first = 10
 coop_prisoner_chance_step = 5
 coop_hero_knocked_out_health = 5 # a hero who fell in a joint battle comes back to the map wounded, as in Native
+coop_beaten_hours = 24            # the host: a party beaten in a joint battle is no lord's foe for so long (its removal comes later)
 # Weapon proficiency from a joint battle, as Native raises it in battle: for each kind of weapon used,
 # (damage + coop_wpt_hit_bonus * hits) * coop_wpt_gain / (proficiency + coop_wpt_softness) points, so
 # a weapon already mastered grows slowly; the engine still keeps it within the weapon master limit

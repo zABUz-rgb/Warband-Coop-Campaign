@@ -1321,9 +1321,11 @@ together_menus = [
         (assign, "$coop_base_send", 2),
         (display_message, "@CoopWorld: the tents come down.", 0xFFDD66),
         (leave_encounter),
-        (change_screen_return),
+        (change_screen_map),
       ]),
-     ("coop_shared_back", [], "Back to the map.", [(assign, "$coop_tg_camp", 0), (leave_encounter), (change_screen_return)]),
+     # change_screen_map, not _return: after John's conversation or the store's screen the camp's
+     # return did nothing (03.11), the player could not leave the camp
+     ("coop_shared_back", [], "Back to the map.", [(assign, "$coop_tg_camp", 0), (leave_encounter), (change_screen_map)]),
    ]),
 
   # the store is asked for from here: a menu stops the map's requests, so the answers come to this one

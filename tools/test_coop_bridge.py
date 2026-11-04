@@ -2,13 +2,16 @@
 
     python -I tools/test_coop_bridge.py
 """
+import base64
 import json
+import random
 import socket
 import sys
 import tempfile
 import threading
 import time
 import urllib.request
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -184,9 +187,13 @@ def test_lord_battle():
     w.mp_request(4, bid, 0, {0: 10, 2: 5}, {0: "ivan", 1: "olga"}, 5.0)
     check((800, 1, [(60, 20)], []) in w.results, "won: the enemy is beaten")
     check((700, 0, [(51, 20), (50, 1)], []) in w.results, "the lord keeps his men who survived, never destroyed")
+    # 03.11 22:57: the host's game still had the beaten party and reported its lord's battle on
+    w.server_report([], None, 5.5, battles=[(700, 800)])
+    told = [r[0] for r in (req(w, "a", now=5.6, lord=700) for _ in range(12)) if r[0][0] == 25]
+    check(told == [[25, -1, -1]], "the lord's battle is over at once: the soldier is told, not called again")
     w.server_report([], None, 20.0)
     told = [r[0] for r in (req(w, "a", now=20.1, lord=700) for _ in range(12)) if r[0][0] == 25]
-    check(told == [[25, -1, -1]], "the lord's battle is over: the soldier is told")
+    check(told == [], "and once only")
     # 31.10 19:12: the lord far off on a soldier's map stood where it was seen last, and the soldier with it
     w3 = cb.World()
     req(w3, "a", now=0.0, me=[], name="Ivan", lord=700)
@@ -428,6 +435,13 @@ def test_joint_battle():
           "a player who lost nobody still hears the outcome, after the news it was fought")
     check(req(w, "b", x=300, now=9.1)[0] == [10, bid, 0, -1], "a hero who fell comes back with 0 health")
     check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
+    for _ in range(6):
+        req(w, "a", now=9.2)
+    nums, _ = req(w, "a", now=9.5, busy=True, mp={**mp(1, sid=600, troops=[(40, 20)]), "ally": 289})
+    check(nums == [7, 0, 2, 0] and w.battle is None,
+          "the same party again before the host's game removed it (its lord's battle): refused")
+    nums, _ = req(w, "a", now=9.6, busy=True, mp=mp(1, sid=602, troops=[(40, 5)]))
+    check(nums[0] == 7 and w.battle is not None and w.battle.enemy_sid == 602, "another party may be fought")
 
 
 FIGHTER = 500  # the first arena fighter's troop number, as the game sends it
@@ -1352,8 +1366,11 @@ def test_names_and_saves():
     (host_saves / "sg00.sav").write_bytes(b"day 2, saved again")
     for _ in range(40):
         time.sleep(0.1)
-        if path.read_bytes() == b"day 2, saved again":
-            break
+        try:
+            if path.read_bytes() == b"day 2, saved again":
+                break
+        except PermissionError:  # Windows: the relay is replacing the file this very moment
+            pass
     check(path.read_bytes() == b"day 2, saved again", "a new save of the host replaces the friend's copy")
 
     # a new campaign: the host has not saved yet - the friend's bridge waits for the first save
@@ -1705,6 +1722,189 @@ def test_no_enemy_left():
           f"both players are told the battle is off: {w.players['a'].mp_out}, {answer}")
 
 
+def test_players_fight_without_soldiers():
+    # session 15:51, 2.11: a player attacked another, both heroes with no soldiers: "the battle was cancelled"
+    w = cb.World()
+    lines = []
+    w.log = lines.append
+    req(w, "a", now=0.0, me=[], name="Ivan")
+    req(w, "b", x=100, now=0.0, me=[], name="Olga")
+    w.mp_request(0, 0, -1, {}, {}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp=mp(1, slot=w.players["b"].slot, hero=HERO))
+    bid = w.battle.bid
+    req(w, "b", x=100, now=1.1, busy=True, mp=mp(3, bid, hero=HERO))
+    w.mp_request(0, 0, -1, {}, {}, 2.0)
+    check(w.battle is not None and w.battle.state != "gathering" and not any("no enemy left" in s for s in lines),
+          f"two heroes against each other: the other player is the enemy, the battle goes on: {lines[-2:]}")
+
+
+def test_host_slot():
+    # session 21:08, 2.11: host.bat started again and the friends' relays came back first: one of them took
+    # the host's party
+    w = cb.World()
+    w.host_slot = True
+    req(w, "net-1@x", now=0.0, name="O")
+    req(w, "net-2@y", now=0.0, name="WenJoy")
+    req(w, "local", now=0.1, name="Dimon", on_server=True)
+    check(w.players["local"].slot == 0 and {w.players["net-1@x"].slot, w.players["net-2@y"].slot} == {1, 2},
+          "the host's game gets slot 0 though its friends came back first")
+    w2 = cb.World()
+    w2.host_slot = True
+    for i in range(4):
+        req(w2, f"net-{i}@x", now=0.0)
+    check(sorted(p.slot for p in w2.players.values()) == [0, 1, 2, 3],
+          "with no host in the world (the world server alone), a fourth friend still gets a party")
+    w3 = cb.World()
+    req(w3, "a", now=0.0)
+    check(w3.players["a"].slot == 0, "without the host's bridge the slots go in order, as before")
+
+
+def test_new_campaign():
+    # session 20:10 and 20:33, 2.11: the host began a new game, and the last campaign's camp, treasury and the
+    # army's training were still there
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "profiles.json"
+        w = cb.World(path)
+        lines = []
+        w.log = lines.append
+        req(w, "a", now=0.0, hello=True, name="Ivan")
+        req(w, "h", now=0.0, hello=True, name="Host", on_server=True)
+        w.server_report([], None, 0.1, hours=100, stamp=1)
+        w.shared["gold"] = 700
+        w.shared["bases"][0] = {"who": None, "host": True, "x": 10, "y": 20}
+        w._save_shared()
+        w.army["levels"][2] = 3
+        w._army_save()
+        w.host_saved(now=1.0)
+        req(w, "a", now=2.0, profile=[1, 0, 3, 7, 8, 9])
+        check(w.sync[1]["army"]["levels"] == {"2": 3} and w.sync[1]["campaign"] == 0,
+              "a host's save keeps the army and the campaign it belongs to")
+        w.server_report([], None, 10.0, hours=0, stamp=0)
+        check(w.shared["gold"] == 700, "the world server's word alone changes nothing (a world server alone never "
+                                       "hears a stamp)")
+        heard = [req(w, "h", now=10.1, on_server=True, together={"loaded": 0})[0]]
+        heard += [req(w, "h", now=10.2, on_server=True)[0] for _ in range(6)]
+        check(w.shared["gold"] == 0 and not any(w.shared["bases"]) and w.profiles == {}
+              and w.army == {"names": {}, "gear": {}, "levels": {}},
+              "the host's game says its world has no stamp: a new campaign starts with nothing of the last one")
+        check(json.loads(path.with_name("shared.json").read_text("utf-8"))["gold"] == 0
+              and json.loads(path.with_name("army.json").read_text("utf-8"))["levels"] == {}
+              and json.loads(path.read_text("utf-8")) == {}, "on disk too")
+        kept = [d for d in Path(folder).iterdir() if d.name.startswith("old campaign")]
+        check(len(kept) == 1 and json.loads((kept[0] / "shared.json").read_text("utf-8"))["gold"] == 700
+              and json.loads((kept[0] / "profiles.json").read_text("utf-8")) == {"ivan": [7, 8, 9]}
+              and (kept[0] / "army.json").exists(), f"the last campaign's files are kept apart: {kept}")
+        kept_sync = kept[0] / "sync.json"
+        check(not kept_sync.exists() or json.loads(kept_sync.read_text("utf-8")).get("campaign", 0) == w.campaign - 1,
+              "its sync.json is that campaign's, not the new one's")
+        check(any("new campaign" in s and "old campaign" in s for s in lines), f"the log says so: {lines[-1:]}")
+        check([28, 0] in heard and [29, 0, 0, 0] in heard, f"the host's game hears no camp and no treasury: {heard}")
+        told = [req(w, "a", now=10.3)[0] for _ in range(6)]
+        check(told.count([27, cb.TELL_SAVE_LOADED, 0, 0, 0]) <= 1 and [29, 0, 0, 0] in told,
+              f"the friend's game hears it once: {told}")
+        req(w, "a", now=11.0, profile=[2, 0, 3, 4, 4, 4])
+        check(w.profiles == {}, "the friend's hero of the last campaign does not come into the new one")
+        heard = [req(w, "a", now=12.0, hello=True)[0]] + [req(w, "a", now=12.1)[0] for _ in range(4)]
+        check([14, 0, 0, 0] in heard, f"once its game loads the new campaign, the friend starts anew: {heard}")
+        before = len(kept)
+        req(w, "h", now=12.2, on_server=True, together={"loaded": 0})
+        check(len([d for d in Path(folder).iterdir() if d.name.startswith("old campaign")]) == before,
+              "a new game again with nothing in it: nothing to keep")
+        w.army["levels"][5] = 2
+        w.server_report([], None, 20.0, hours=1, stamp=2)
+        w.host_saved(now=20.0)
+        w.server_report([], None, 40.0, hours=100, stamp=1)
+        check(w.shared["gold"] == 700 and w.profiles["ivan"] == [7, 8, 9] and w.army["levels"] == {2: 3},
+              "the host loads a save of the last campaign: all of it comes back, its army too")
+        w.server_report([], None, 60.0, hours=1, stamp=2)
+        check(w.shared["gold"] == 0 and w.army["levels"] == {5: 2}, "and the new campaign's save brings that one back")
+        w.army["levels"][5] = 3
+        w.server_report([], None, 70.0, hours=2, stamp=3)
+        w.host_saved(now=70.0)
+        w.server_report([], None, 80.0, hours=1, stamp=2)
+        check(w.army["levels"] == {5: 3}, "a load within one campaign leaves the army as it is, as before")
+
+
+def test_save_in_parts():
+    # session 20:43, 2.11: a whole save (7 MB as text) stood between a friend's game and its replies for up
+    # to a minute; the world stood, and links broke in the middle of it
+    raw = random.Random(5).randbytes(150_000)  # hardly packs: it goes in parts
+    host_saves = Path(tempfile.mkdtemp())
+    (host_saves / "sg00.sav").write_bytes(b"first " * 1000)
+    hub_lines = []
+    w = cb.World()
+    cb.SAVE_POLL_S = 0.1
+    cb.serve_relays(("127.0.0.8", 18101), w, "secret", str(host_saves), hub_lines.append)
+    friend = Path(tempfile.mkdtemp())
+    relay = cb.Relay(("127.0.0.8", 18101), "secret", lambda m: None)
+    relay.connect()
+    relay.save_dir = str(friend)
+    path = cb.fetch_first_save(relay, str(friend), None, lambda m: None)
+    check(path.read_bytes() == b"first " * 1000, "the first save comes packed and whole")
+    parts = []
+    take = relay._take_save_part
+    relay._take_save_part = lambda msg: (parts.append(msg["i"]), take(msg))
+    time.sleep(0.3)
+    (host_saves / "sg00.sav").write_bytes(raw)
+    for _ in range(50):
+        time.sleep(0.1)
+        if path.read_bytes() == raw:
+            break
+    check(path.read_bytes() == raw and len(parts) > 1, f"a new save comes in {len(parts)} parts, byte for byte")
+    check(any("KB packed" in s for s in hub_lines), f"the host's log says how big it went: {hub_lines[-1:]}")
+    check(relay.forward("/cli?seq=1&x=0&y=0&busy=0").startswith("7777|"), "and the friend's game is answered")
+
+    lines = []
+    alone = cb.Relay(("127.0.0.1", 1), "k", lines.append)
+    alone.save_dir = str(Path(tempfile.mkdtemp()))
+
+    def packed_parts(data, stamp, at, n=2, crc=None):
+        text = base64.b64encode(zlib.compress(data)).decode()
+        size = -(-len(text) // n)
+        return [{"t": "save_part", "name": "sg00.sav", "stamp": stamp, "at": at, "size": len(data),
+                 "crc": zlib.crc32(data) if crc is None else crc, "i": i, "n": n,
+                 "data": text[i * size:(i + 1) * size]} for i in range(n)]
+
+    first = packed_parts(b"abc" * 1000, "s1", 1.0)
+    alone._take_save_part(first[1])
+    alone._take_save_part(first[0])
+    saved = Path(alone.save_dir) / "sg00.sav"
+    check(saved.read_bytes() == b"abc" * 1000, "parts in any order make the save")
+    older, newer = packed_parts(b"old" * 900, "s2", 2.0), packed_parts(b"new" * 900, "s3", 3.0)
+    alone._take_save_part(older[0])
+    alone._take_save_part(newer[0])
+    alone._take_save_part(older[1])
+    check(saved.read_bytes() == b"abc" * 1000, "an older save's last part does not drop the newer one's")
+    alone._take_save_part(newer[1])
+    check(saved.read_bytes() == b"new" * 900, "and the newer one is written")
+    for part in packed_parts(b"bad" * 900, "s4", 4.0, crc=1):
+        alone._take_save_part(part)
+    check(saved.read_bytes() == b"new" * 900 and any("damaged" in s for s in lines),
+          f"a damaged save is not written over the good one: {lines[-1:]}")
+
+    sock = socket.create_connection(("127.0.0.8", 18101), timeout=3)
+    sock.sendall(b'{"t": "hello", "key": "secret", "protocol": 1}\n')
+    answer = sock.recv(4096)
+    sock.close()
+    check(b"another version" in answer and any("another version" in s for s in hub_lines),
+          "a friend's bridge of the last version is told to install the same package")
+
+
+def test_copy_of_the_hosts_save_turns_client():
+    # session 21:18, 2.11: a friend's game that loaded the host's save went on as a world of its own, with the
+    # host's hero, while the link was down
+    lines = []
+    cb.serve_copy_of_host(("127.0.0.8", 18103), lines.append)
+    time.sleep(0.1)
+    check(raw_get("127.0.0.8", 18103, "/srv?seq=5&h=1&sv=28&n=0&d=") == "7777|24",
+          "the host's role on a friend's PC is told at once: be a client")
+    check(raw_get("127.0.0.8", 18103, "/srv?seq=6&hold=1") == "7777|24", "a held save too")
+    check(raw_get("127.0.0.8", 18103, "/cli?seq=7") == "0|0", "nothing else is answered there")
+    cb.serve_copy_of_host(("127.0.0.8", 18103), lines.append)
+    check(any(s.startswith("srv:") and "a little later" in s for s in lines),
+          f"the address taken (the host's own bridge on this PC): the relay goes on and says so: {lines[-1:]}")
+
+
 def test_map_of_many_parties():
     # session 15:49, 30.10: 500 parties, 279 of them "gone" in 40 minutes though alive
     w = cb.World()
@@ -1873,6 +2073,11 @@ if __name__ == "__main__":
     test_host_address()
     test_lan_search()
     test_no_enemy_left()
+    test_players_fight_without_soldiers()
+    test_host_slot()
+    test_new_campaign()
+    test_save_in_parts()
+    test_copy_of_the_hosts_save_turns_client()
     test_map_of_many_parties()
     test_invite_distance()
     test_game_notes()

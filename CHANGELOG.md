@@ -1,5 +1,28 @@
 # История изменений
 
+## Следующая версия (в работе)
+
+Меняются мост (`coop_bridge.py`) и игра. Хост и друзья должны поставить один и тот же пакет: мост старой версии
+получит отказ с просьбой поставить тот же пакет.
+
+### Исправлено
+- Сохранение хоста идёт друзьям сжатым (примерно в 18 раз меньше) и по частям, каждому другу отдельно. Раньше
+  целый файл стоял между игрой друга и ответами моста до минуты: мир вставал на паузу, связь рвалась, а друг
+  оставался без свежего сохранения.
+- Игра друга, загрузившая сохранение хоста, сразу становится клиентом: мост друга сам отвечает ей на адресе хоста.
+  Раньше, пока связь была прервана, такая копия жила как отдельный мир с героем хоста, а остальным писало, что этот
+  игрок в бою.
+- После перезапуска host.bat хост снова получает слот 0, даже если друзья подключились раньше.
+- Новая игра хоста начинает кампанию с чистого листа: лагеря, казна, склад, войско и герои друзей прошлой кампании
+  не переносятся. Их файлы остаются в папке `old campaign <дата>` рядом с `profiles.json`, а если хост загрузит
+  сохранение прошлой кампании, всё вернётся.
+- Бой игрока против игрока, где у обоих только герои без бойцов, больше не отменяется.
+- Ошибки моста записываются в `bridge.log` / `join.log`, а мост после ошибки продолжает работу.
+- После совместной победы рядом с лордом (Freelancer) хоста и друзей больше не зовёт второй раз в бой с тем же,
+  уже разбитым отрядом, и нет ошибок скрипта «Invalid Party ID» с воинами лорда на карте: игра хоста ждала, пока мост
+  удалит разбитый отряд, а лорд всё ещё числился в бою с ним.
+- Кнопка «Back to the map» в полевом лагере снова выводит на карту после разговора с Джоном и после склада.
+
 ## 1.1
 
 Большое обновление после 1.0. **Сохранения версии 1.0 не подходят: нужна новая кампания** (в игре появилось
@@ -95,6 +118,29 @@
 ---
 
 # Changelog
+
+## Next version (in progress)
+
+The bridge (`coop_bridge.py`) and the game change. The host and the friends must install the same package: a bridge of
+the older version is refused and told to install the same package.
+
+### Fixed
+- The host's save goes to the friends packed (about 18 times smaller) and in parts, to each friend on its own.
+  A whole file used to stand between a friend's game and the bridge's replies for up to a minute: the world paused,
+  links broke, and the friend was left without the fresh save.
+- A friend's game that loaded the host's save becomes a client at once: the friend's bridge answers it at the host's
+  address itself. While the link was down, such a copy used to go on as a world of its own with the host's hero,
+  and the others were told this player was in battle.
+- After host.bat starts again the host gets slot 0, even when the friends came back first.
+- A new game of the host starts the campaign afresh: the last campaign's camps, treasury, store, army and the
+  friends' heroes do not carry over. Their files stay in an `old campaign <date>` folder next to `profiles.json`,
+  and loading a save of that campaign brings it all back.
+- A battle of one player against another with heroes alone, no soldiers, is no longer called off.
+- The bridge's errors go to `bridge.log` / `join.log`, and the bridge goes on after one.
+- After a joint victory beside a lord (Freelancer) the host and the friends are no longer called a second time against
+  the same, already beaten party, and there are no "Invalid Party ID" script errors with the lord's men on the map: the
+  host's game waited for the bridge to remove the beaten party while the lord still stood in battle with it.
+- "Back to the map" in the field camp leaves for the map again after a talk with John and after the store.
 
 ## 1.1
 

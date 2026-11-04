@@ -204,6 +204,15 @@ mp_campaign_scripts = [
      (assign, reg1, ":killed_all"),
      (assign, reg2, ":wounded_all"),
      (try_begin),
+       # the host: the party beaten stays on this map until the bridge's result removes it (the next
+       # report of the world), and the lord it fought still stands in battle with it meanwhile
+       (eq, ":won", 1),
+       (eq, "$coop_srv_player", 1),
+       (ge, "$coop_mp_target_sid", first_dynamic()),
+       (assign, "$coop_mp_beaten_party", "$coop_mp_target_sid"),
+       (store_current_hours, "$coop_mp_beaten_hours"),
+     (try_end),
+     (try_begin),
        (eq, ":won", 1),
        (display_message, "@CoopWorld: the joint battle is WON. Your losses: {reg1} killed, {reg2} wounded.", 0x66FF66),
      (else_try),
@@ -1131,16 +1140,35 @@ mp_campaign_scripts = [
        (val_sub, reg0, 1),
      (else_try),
        (eq, "$coop_srv_player", 1), #the host: the world's own battle
-       (gt, "$enlisted_party", 0),
-       (party_is_active, "$enlisted_party"),
-       (party_get_battle_opponent, ":enemy", "$enlisted_party"),
-       (ge, ":enemy", first_dynamic()), #a field battle (not a siege's walls, not a player)
-       (party_is_active, ":enemy"),
-       (assign, reg0, ":enemy"),
-       (assign, reg1, ":enemy"),
+       (call_script, "script_coop_battle_opponent", "$enlisted_party"),
+       (ge, reg0, first_dynamic()), #a field battle (not a siege's walls, not a player)
+       (assign, reg1, reg0),
        (assign, reg2, "$enlisted_party"),
      (try_end),
      (ge, reg1, 0),
+    ]),
+
+  # script_coop_battle_opponent: arg1 = a party; reg0 = whom it fights on the map, -1 nobody. Nobody
+  # either when that one is gone (the engine names it while the world stands still after its removal)
+  # or when it was beaten in a joint battle and its removal has not come yet: the soldier's menu
+  # called the players to the same battle again, then into a party that was no more.
+  ("coop_battle_opponent",
+   [
+     (store_script_param, ":party_no", 1),
+     (assign, reg0, -1),
+     (try_begin),
+       (gt, ":party_no", 0),
+       (party_is_active, ":party_no"),
+       (party_get_battle_opponent, ":enemy", ":party_no"),
+       (gt, ":enemy", 0),
+       (party_is_active, ":enemy"),
+       (assign, reg0, ":enemy"),
+       (eq, ":enemy", "$coop_mp_beaten_party"),
+       (store_current_hours, ":hours"),
+       (val_sub, ":hours", "$coop_mp_beaten_hours"),
+       (lt, ":hours", coop_beaten_hours),
+       (assign, reg0, -1),
+     (try_end),
     ]),
 
   # script_coop_client_mp_begin_lord: a joint battle beside the lord this player serves, against

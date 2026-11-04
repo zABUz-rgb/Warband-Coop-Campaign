@@ -79,10 +79,11 @@ triggers = [
                         (try_end),
                 (try_end),
                 
-                #Is currently in battle (CoopWorld: a client's lord is a mirror, the bridge tells of his battles)
+                #Is currently in battle (CoopWorld: a client's lord is a mirror, the bridge tells of his battles;
+                #a foe gone or just beaten together is no battle)
         (neq, "$coop_role", coop_role_client),
-        (party_get_battle_opponent, ":commander_enemy", "$enlisted_party"),
-        (gt, ":commander_enemy", 0),
+        (call_script, "script_coop_battle_opponent", "$enlisted_party"),
+        (gt, reg0, 0),
                 
                 #checks that the player's health is high enough to join battle
         (store_troop_health, ":player_health", "trp_player"),
