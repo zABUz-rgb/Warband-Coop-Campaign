@@ -26,10 +26,11 @@ from dplmc_assets import assets  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = "Warband Coop Campaign"  # also the module folder in Modules and the logs folder in Documents
 MODULE = ROOT / "game" / "Modules" / PROJECT
+CHINESE = MODULE / "languages" / "cns"  # tools/make_zh.py: Native's Chinese plus Warband Coop Campaign's
 RUSSIFIER_UI = ROOT / "vendor" / "l10n_ru" / "languages" / "ru"  # the russifier's engine interface
 BUILD_ONLY = {"variables.txt", "variable_uses.txt", "tag_uses.txt"}  # compiler state; quick_strings.txt is read by the game
 PREREQS = ROOT / "vendor" / "prereqs"  # installers of the programs the mod needs (not in git)
-VERSION = "1.1"
+VERSION = "1.2"
 DIST = ROOT / "dist" / VERSION  # every version keeps its own folder
 DEBUG = ROOT / "dist" / f"{VERSION}-debug"  # python tools/make_package.py --trail
 DISCORD = "https://discord.gg/nfmWC5SWfp"
@@ -451,6 +452,33 @@ folder - the bridge sends the friends the newest one (README.txt, SAVES).
 More in README.txt. Questions and bugs: {DISCORD}
 '''
 
+START_HERE_ZH = f'''{PROJECT} {VERSION} - 从这里开始
+===========================================
+
+本模组是《骑马与砍杀：战团》1.174的联机合作战役（基于Diplomacy和Freelancer）。在游戏启动器里把语言
+选为中文（简体），模组、Freelancer和Diplomacy的文本就会显示中文。
+
+1. 只需一次：把整个压缩包解压（最好解压到游戏文件夹里），关闭战团，双击install.bat：
+   它会从Programs文件夹安装缺少的程序（Python 3、Radmin VPN），并安装模组。
+   在启动器中选择Warband Coop Campaign模组，以窗口模式启动。在Radmin VPN中加入主机的网络。
+2. 每次游戏：打开Radmin VPN，确认网络已连接。
+   主机：运行host.bat，然后在战团中读取你的战役 - 营地 - “CoopWorld：联机合作……” -
+   “……作为世界服务器运行，并在其中游玩（主机）”。
+   朋友：运行join.bat（输入主机的地址、主机的密码、你的多人游戏名字），不要关闭它的窗口。
+   启动战团（Warband Coop Campaign），读取join.bat取来的存档，等待约5秒：游戏会自动成为客户端。
+   如果没有：营地 - “CoopWorld：联机合作……” - “让世界继续运行”。
+3. 联合作战：再开一个战团窗口（Warband Coop Campaign）。主机：多人游戏 - 创建游戏，类型“战斗”。
+   朋友：多人游戏 - 加入游戏 - 局域网（通过桥接程序，join.bat的窗口保持打开）。
+存档：主机和朋友在Warband Coop Campaign的存档文件夹里只保留这个联机战役的存档 - 桥接程序会把最新的
+存档发给朋友（详见README.txt的SAVES部分，英文）。
+1.2新内容：援军分波进入战斗（一场战斗最多1500人）；附近的部队会像单人游戏一样加入战斗；在任何被围
+城堡和城镇的城墙下联合守城或攻城（还可以站在对立一方）；攻城战中的骑兵，库吉特城镇在草原地图上攻打；
+骑射手保持距离；倒下的英雄接管己方士兵；Esc菜单里的“撤退”；屏幕上方的双方人数；玩家之间的交易（部队、
+物品和第纳尔）；朋友的菜单不再让世界暂停；自己的商队、营地矿场和驻留士兵、按阶训练、城镇铁匠；
+朋友的封地。所有玩家都需要1.2的安装包。
+更多内容见README.txt（英文）。问题和错误报告：{DISCORD}
+'''
+
 
 def launcher_bat(kind):
     return f'@echo off\r\npowershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0{kind}.ps1" %*\r\n'
@@ -486,6 +514,33 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 
   Discord (вопросы, ошибки, поиск напарников): {DISCORD}
   Поддержать разработку (по желанию, ничего не даёт сверх бесплатной версии): {BOOSTY}
+
+ЧТО НОВОГО В 1.2
+  Совместные бои и осады
+  - Подкрепления волнами, как в одиночной игре: в бой идёт до 1500 человек, на поле до 150 сразу.
+  - Ближайшие отряды присоединяются к бою, как в одиночной игре (лорды, разбойники, их армии): к штурму -
+    друзья осаждающих, к обороне - друзья гарнизона. Лорды в замке держат стены вместе с гарнизоном.
+  - Совместные действия у стен любого осаждённого замка или города: оборона с гарнизоном или штурм вместе с
+    осаждающими. Штурм ИИ ждёт до 6 часов, если у стен стоит игрок, и становится совместным боем.
+  - Клиент сам начинает совместный штурм; штурм и оборона рядом с командиром на службе у лорда (Freelancer).
+  - Приглашение на осаду можно принять на противоположной стороне: друзья сражаются друг против друга.
+  - Конница в осадах: треть конников гарнизона выезжает в поле, треть атакующих скачет к стенам и там
+    спешивается. Хергитские города штурмуются на степной карте, их гарнизон выезжает верхом.
+  - Конные лучники держат дистанцию, пока есть стрелы. Игрок, начавший бой, командует войсками ИИ своей
+    стороны; войско лорда на стороне ИИ воюет по его тактике.
+  - Павший герой встаёт в строй за любого бойца своей стороны. В меню Esc - "Отступить". Вверху экрана -
+    счётчик живых и резерва у обеих сторон.
+  - За помощь чужому королевству в обороне или штурме - половина опыта.
+  Вместе на карте
+  - Торговля между игроками: войска, предметы и деньги одним предложением.
+  - Меню, разговоры и торговля друга больше не ставят мир на паузу.
+  - Свои торговые караваны, шахта и войска в полевом лагере, обучение войска по тирам, кузнец в каждом городе.
+  - Наделы друзей: клиент-вассал держит замки, города и деревни в мире хоста, получает доход раз в неделю и
+    сам распоряжается гарнизоном; наделы можно передавать друг другу (раздел НАДЕЛЫ ДРУЗЕЙ).
+  - Пинг до хоста в окне моста друга, сохранения хоста уходят друзьям сжатыми и по частям.
+  - Упрощённый китайский: все тексты мода, Freelancer и Diplomacy (краткое руководство - 从这里开始.txt).
+  Кампанию 1.1 можно продолжать. Всем игрокам нужен пакет 1.2 (мост 1.1 с мостом 1.2 не соединится).
+  Полный список нового и исправленного - CHANGELOG.md на GitHub.
 
 ЧТО НОВОГО В 1.1
   - Собственное войско: рекрут и три ветви до 5 тира. Джон Блэкборн нанимает, одевает, обучает и
@@ -597,6 +652,24 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   - "передать войска этому игроку": выберите бойцов в окне обмена и отправьте; получатель примет
     или откажется, отвергнутые бойцы вернутся (даже если вы успели выйти - при следующем входе).
 
+НАДЕЛЫ ДРУЗЕЙ
+  Друг, принёсший присягу королевству мира (вассал), может держать наделы в мире хоста - до трёх
+  друзей-вассалов сразу. В мире хоста за друга надел держит его "заместитель": лорд без отряда с
+  именем друга. У друга такие центры показаны как его собственные, наделы хоста - под именем хоста.
+  Как получить надел:
+  - взять центр штурмом в совместной осаде ("CoopWorld: штурмовать стены вместе") - он сразу ваш;
+  - попросить у своего короля: в разговоре с ним "Прошу у вас надел...". Король судит по известности
+    и отношению к вам (известность + отношение x 20 должно быть не меньше 200, и ещё 250 за каждый
+    уже имеющийся надел) и предлагает центры королевства без лорда; ответ приходит из мира хоста.
+  Доход: раз в неделю мир хоста считает подати и пошлины ваших наделов за вычетом жалования их
+  гарнизонам и кладёт разницу вам в кошелёк; пока вас нет в игре, деньги ждут.
+  Гарнизон: в меню своего замка или города "CoopWorld: гарнизон вашего надела" - экран обмена, как с
+  войсками лагеря: оставьте людей или заберите. Гарнизон живёт в мире хоста; кого там уже не
+  оказалось, те из вашего отряда снова уходят. Обычные пункты управления наделом у друга скрыты:
+  они меняли бы только копию в его игре.
+  Вышли из королевства - наделы возвращаются королю. Отношения с лордами и присяга хранятся с
+  героем друга между сессиями.
+
 СЛУЖБА ЛОРДУ (Freelancer)
   Поступить на службу к лорду можно обычным разговором с ним. Пока вы служите, ваш отряд идёт
   за лордом, отдых идёт со скоростью мира, а общая пауза останавливает и вас.
@@ -604,6 +677,11 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   откроется меню солдата ("ваш командир вступает в бой!"). Пункт "CoopWorld: сражаться рядом с
   командиром вместе с друзьями" начнёт совместный бой: игроки и люди лорда против его врага;
   второй солдат, выбравший этот пункт, попадает в тот же бой. Лорд сохраняет уцелевших.
+  Осада рядом с командиром: когда лорд осаждает замок или город, в меню солдата есть "CoopWorld:
+  штурмовать ... рядом с командиром": игроки, лорд и армия, стоящая с ним лагерем, штурмуют стены;
+  взятый центр переходит королевству лорда, не удался штурм - осада лорда продолжается. Когда лорд
+  сам внутри осаждённого центра своей стороны - "CoopWorld: держать стены ... рядом с командиром":
+  игроки, гарнизон и люди лорда на стенах против осаждающих.
 
 СОВМЕСТНЫЕ БОИ (сервер мультиплеера)
   Ограничение - из-за движка игры, есть возможность совместного сражения ТОЛЬКО через второе окно
@@ -667,7 +745,7 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   поднимает сам, когда все войска на поле (сброшенную лестницу - снова через 30 секунд), а
   штурмующие, застрявшие под стеной, идут к лестницам. Штурм удался, если взят флаг или пал весь
   гарнизон: хост берёт замок как в обычной игре, а замок, взятый клиентом, переходит его
-  королевству (клиенту без присяги штурм недоступен). Не удался - гарнизон теряет павших, осаду
+  королевству и становится наделом клиента (клиенту без присяги штурм недоступен). Не удался - гарнизон теряет павших, осаду
   можно продолжить. Кому принадлежат замки и города, видно у всех игроков.
   СОВМЕСТНАЯ ОБОРОНА: когда армия мира осаждает замок или город вашей стороны, все игроки получают
   сообщение. Въехав в него или подъехав к воротам, выберите "CoopWorld: защищать стены вместе":
@@ -711,6 +789,23 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   склад и Джон Блэкборн. Свернуть можно только свой лагерь, казна и склад при этом сохраняются.
   Кнопки казны не выбрасывают на карту: меню лагеря остаётся открытым. После остановки кооператива лагерь
   остаётся на карте, Джон на месте, казна и склад ждут новой сессии; при новом запуске всё возвращается само.
+  ШАХТА: в своём лагере - "Dig a mine here" (2000 динаров, снимаются, когда мост подтвердит). Любой игрок
+  отправляет туда своих пленных (лорды остаются у вас); каждый пленный приносит 10 динаров в казну раз в неделю
+  игрового времени. Если лагерь свернуть, шахта с пленными ждёт следующего лагеря того же игрока.
+  ВОЙСКА В ЛАГЕРЕ: "The men left at the camp" открывает экран обмена: что оставили справа - стоит в лагере, до 80
+  человек на лагерь (лишние возвращаются к вам). Брать и оставлять может любой игрок, но по одному за раз. Раз в
+  неделю казна платит им половину жалования; если денег не хватает, уходят самые дешёвые. Пока в лагере стоят
+  люди, свернуть его нельзя.
+  ТОРГОВЫЕ КАРАВАНЫ: в лагере ("Send a trade caravan") или у гильдмастера в городе ("I would send a trade
+  caravan"). 300 динаров - караван по 5 ближним городам, 700 - кругосветный по 18 городам; у игрока до трёх
+  караванов в пути. Дальше: охрана (экран обмена), потом деньги на торговлю (по 100, 500, 1000 или всё;
+  "Enough: send the caravan off" - когда захотите). "Cancel the caravan" на каждом шаге возвращает цену,
+  деньги и людей. Караван - настоящий отряд на карте хоста, его видят все, на него могут напасть бандиты и
+  враги. В каждом городе он покупает товар, который выгоднее всего продать в другом городе, и везёт его туда;
+  города королевств, воюющих с вами или с хостом, обходит. В конце пути деньги идут в казну, выжившие люди -
+  в ваш лагерь (или в лагерь хоста), от высшего тира к низшему, пока есть место; остальные расходятся по домам.
+  КУЗНЕЦ: в меню любого города - "Visit the smith". Оружие и доспехи из всех лавок Кальрадии по видам и ценам,
+  на 20% дороже, чем в лавках. Кузнец только продаёт.
   ОБЩАЯ КАЗНА И СКЛАД: теперь только в лагере отряда. Склад
   открыт только у одного игрока: взятое вдвоём существовало бы дважды. Вещей до 96 (сколько вмещает
   окно добычи). Всё хранится у хоста в файле shared.json в "Документы\\Warband Coop Campaign" и
@@ -755,9 +850,9 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
   стоимости, Торговля её повышает. У каждого тира своё снаряжение: купленное рекруту
   есть только у рекрута. Уровни одного тира носят одно и то же. Снаряжение общее у всех игроков. Покупать его можно,
   даже если таких воинов у вас сейчас нет. Кого одеть, Джон спросит сам: рекрут, пехота, лучники или всадники, а затем тир.
-  ОБУЧЕНИЕ: Джон так же спрашивает, кого учить. Уровень 2 и 3 покупается один раз на весь отряд, даже если таких воинов
-  у вас сейчас нет: нанятые и повышенные позже сразу стоят на этом уровне. Уровень общий у всех игроков, цена зависит от
-  тира, Торговля на неё не влияет.
+  ОБУЧЕНИЕ: Джон спрашивает, какой тир учить. Уровень 2 и 3 покупается один раз на весь тир: пехота, лучники и
+  всадники этого тира учатся сразу, за цену одного вида, даже если таких воинов у вас сейчас нет: нанятые и повышенные
+  позже сразу стоят на этом уровне. Уровень общий у всех игроков, цена зависит от тира, Торговля на неё не влияет.
   Обучение меняет только уровень. Но игра не даёт скрипту прочитать опыт отряда, поэтому у воинов ниже купленного уровня
   накопленное к следующему тиру пропадает: сначала повысьте тех, кто уже готов.
   НАСТРОЙКИ ВОЙСКА: сама игра не записывает названия и снаряжение обычных войск в файл сохранения. Поэтому они хранятся
@@ -777,7 +872,8 @@ README_RU = f'''{PROJECT} {VERSION} - кооперативная кампани�
 ВАШ ГЕРОЙ МЕЖДУ СЕССИЯМИ
   Друг каждый раз загружает свежее сохранение хоста, но играет своим героем: мост хоста хранит
   героя каждого игрока (profiles.json в "Документы\\Warband Coop Campaign") под его именем в мультиплеере из join.bat -
-  деньги, опыт, здоровье, известность, честь, присягу, атрибуты, навыки, владение оружием, весь инвентарь,
+  деньги, опыт, здоровье, известность, честь, присягу, отношения с королями и лордами, атрибуты, навыки,
+  владение оружием, весь инвентарь,
   войска (и раненых), пленных, компаньонов с их навыками и снаряжением, место на карте. При подключении герой
   возвращается сам. Имя в
   join.bat должно оставаться тем же. Опыт можно только добавить: уровень не станет ниже, чем у
@@ -819,6 +915,37 @@ It needs a new campaign.
 
   Discord (questions, bugs, finding players): {DISCORD}
   Support the development (optional, gives nothing beyond the free mod): {BOOSTY}
+
+NEW IN 1.2
+  Joint battles and sieges
+  - Reinforcements in waves, as in the single player game: up to 1500 men go into a battle, up to 150 at
+    once on the field.
+  - Parties nearby join a battle as in the single player game (lords, bandits, their armies): the
+    besiegers' friends join a storm, the garrison's a defence. Lords inside a castle hold its walls too.
+  - Joint actions at the walls of any besieged castle or town: defend them with the garrison or storm them
+    with the besiegers. The AI's storm waits up to 6 hours while a player is at the walls, and becomes a
+    joint battle.
+  - A client may start a joint storm; storm and defend beside your commander while serving a lord
+    (Freelancer).
+  - A siege's invitation may be taken on the opposite side: friends fight each other.
+  - Horsemen in sieges: a third of the garrison's ride out into the field, a third of the attackers' ride
+    to the walls and get off there. Khergit towns are stormed on the steppe map, their garrison mounted.
+  - Horse archers keep their distance while they have arrows. The player who began a battle commands the
+    AI's men of its side; a lord's army on the AI's side fights by his tactics.
+  - A fallen hero takes over any soldier of its side. "Retreat" in the Esc menu. A count of the living
+    and the reserves of both sides at the top of the screen.
+  - Half the experience for helping another's kingdom in a defence or a storm.
+  Together on the map
+  - Trade between players: troops, items and denars in one offer.
+  - A friend's menus, talks and trades no longer pause the world.
+  - Trade caravans of your own, a mine and men at the company's camp, training the army by tier, a smith
+    in every town.
+  - Friends' fiefs: a sworn client holds castles, towns and villages in the host's world, gets their
+    income every week and commands their garrisons; fiefs may be given to each other (FRIENDS' FIEFS).
+  - The ping to the host in a friend's bridge window; the host's saves go to friends packed, in parts.
+  - Simplified Chinese: all texts of the mod, of Freelancer and of Diplomacy (a short guide: 从这里开始.txt).
+  A campaign of 1.1 goes on. Every player needs the 1.2 package (a 1.1 bridge does not connect to a 1.2
+  one). The full list of what is new and fixed: CHANGELOG.md on GitHub.
 
 NEW IN 1.1
   - Your own army: a recruit and three branches to tier 5. John Blackborn hires, equips, trains and
@@ -889,8 +1016,25 @@ HOW IT WORKS: the world lives at the host; every player has a party on the same 
   whose clock ran 3 hours ahead of the world does not rest until the world catches up (moving is
   free); one 3 hours behind rests three times faster.
 
+FRIENDS' FIEFS: a friend sworn to a kingdom of the world (a vassal) may hold fiefs in the host's
+  world, three friends at most. There a stand-in lord with the friend's name and no party holds them;
+  the friend's game shows them as the friend's own, and the host's fiefs under the host's name.
+  A fief is won by storming it in a joint siege (it is yours at once), or asked of your king: "My
+  liege, I would ask you for a fief". He judges by renown and his relation with you (renown +
+  relation x 20 at least 200, and 250 more for each fief you hold) and offers the realm's lordless
+  centers; the answer comes from the host's world. Every week the host's world counts your fiefs'
+  rents and tariffs less their garrisons' wages and puts the rest into your purse; it waits while you
+  are away. The garrison: "CoopWorld: the garrison of your fief" in your castle's or town's menu, an
+  exchange screen as with a camp's men; men no longer there leave your party again. Native's ways of
+  running a fief are hidden in a friend's game: they would change its copy only. Leaving the kingdom
+  gives the fiefs back to the king. Relations with lords and the oath stay with a friend's hero.
+
 SERVING A LORD (Freelancer): two players serving the same lord fight beside him together: when he
   goes into a field battle the soldier menu opens - "CoopWorld: fight beside your commander".
+  When he besieges a town or castle: "CoopWorld: storm ... beside your commander" - the players, the
+  lord and the army camped with him storm the walls, which go to his kingdom; a failed storm leaves
+  his siege going on. When he is inside walls of his side under siege: "CoopWorld: hold the walls
+  of ... beside your commander" - the players, the garrison and his men against the besiegers.
 
 JOINT BATTLES (multiplayer server):
   A limit of the game's engine: joint battles are fought ONLY in a second game window. So before
@@ -959,6 +1103,22 @@ TOGETHER WITHOUT MEETING ON THE MAP: all in Camp - CoopWorld: co-op.
   player's; or click a camp on the map. It holds the treasury, the store and John Blackborn. Only your own camp can be
   taken down; the treasury and the store stay. The treasury's buttons keep the camp's menu open. After stopping co-op
   the camp stays on the map with John; the treasury and the store wait for the next session, and all comes back then.
+  THE MINE: at your own camp, "Dig a mine here" (2000 denars, paid once the bridge says yes). Any player sends their
+  prisoners there (lords stay with you); each brings 10 denars into the treasury every week of the world. A camp taken
+  down keeps its mine and prisoners for its owner's next camp.
+  MEN AT THE CAMP: "The men left at the camp" opens the exchange screen: what stays on the right stays at the camp, 80
+  men a camp (the rest come back to you). Any player may leave and take them, one at a time. Every week the treasury
+  pays them half their wage; when it cannot, the cheapest leave. A camp with men in it cannot be taken down.
+  TRADE CARAVANS: at the camp ("Send a trade caravan") or from a town's guild master ("I would send a trade
+  caravan"). 300 denars: a caravan for the 5 towns nearby, 700: round the world, 18 towns; three of a player's may be
+  on the road at once. Then its guards (the exchange screen), then its denars (100, 500, 1000 or all you carry; "Enough:
+  send the caravan off" whenever you like). "Cancel the caravan" at every step gives back its price, denars and men.
+  It is a real party on the host's map, seen by all; bandits and enemies may fall on it. In each town it buys the good
+  that sells best in another town and takes it there, and keeps out of the towns of kingdoms at war with you or with
+  the host. At its road's end the denars go into the treasury, the men who lived to your camp (or the host's), the
+  highest tier first while there is room; the rest go home.
+  THE SMITH: any town's menu, "Visit the smith". The arms and armour of all of Calradia's shops by kind and price, a
+  fifth dearer than the shops. The smith only sells.
   SHARED TREASURY AND PARTY STORE: in the company's camp only. The store is open for one
   player at a time; up to 96 things (what the loot window holds). They are kept at the host, in
   shared.json in "Documents\\Warband Coop Campaign", from session to session: no host, no treasury.
@@ -1001,9 +1161,9 @@ YOUR OWN ARMY: a branch of troops of no faction: a recruit and three branches (i
   more with Trade. Each tier has gear of its own: what a recruit got only recruits have.
   The levels of one tier wear the same, and all players share the gear. It can be bought with no such men in your
   party. John asks whom to equip: recruits, infantry, archers or riders, then the tier.
-  TRAINING: John asks whom in the same way. Levels 2 and 3 are paid once for the whole kind, even with none of them in
-  your party: men hired or promoted later stand at that level at once. All players share it; the price is set by the
-  tier, Trade does not change it. Training changes the level only, but no script can read a party's experience, so
+  TRAINING: John asks which tier. Levels 2 and 3 are paid once for the whole tier: its infantry, archers and riders
+  learn at once, for the price of one kind, even with none of them in your party: men hired or promoted later stand at
+  that level at once. All players share it; the price is set by the tier, Trade does not change it. Training changes the level only, but no script can read a party's experience, so
   what the men below that level gathered towards the next tier is lost: promote those who are ready first.
   THE ARMY'S SETTINGS: the game itself writes no names or gear of regular troops into a save file. So they are kept at
   the host in army.json in "Documents\\Warband Coop Campaign", and the bridge gives them back after every load. The host
@@ -1015,7 +1175,8 @@ FACTIONS: each player may swear fealty to a kingdom as usual; its lords leave th
 
 YOUR HERO BETWEEN SESSIONS: the host's bridge keeps each player's hero (profiles.json in
   "Documents\\Warband Coop Campaign") under the multiplayer name given to join.bat and puts it back on joining. Keep the name.
-  It holds money, experience, health, gear, troops, prisoners and the companions with their skills and gear. A client's
+  It holds money, experience, health, gear, troops, prisoners, the companions with their skills and gear, the
+  oath and the relations with kings and lords. A client's
   troops lose their experience towards the next upgrade between sessions: the game does not let it be read.
   SAVES: at each save of the host the bridge keeps every hero, the treasury, the store and the camps (sync.json, the
   last 24 saves); each client sends its hero at once. The bridge knows a save by a stamp inside the file, so it knows
@@ -1043,6 +1204,9 @@ BOM = "\ufeff"
 UNBUNDLED = [
   (f"""  Поддержать разработку (по желанию, ничего не даёт сверх бесплатной версии): {BOOSTY}
 """, ""),
+  ("""   它会从Programs文件夹安装缺少的程序（Python 3、Radmin VPN），并安装模组。""",
+   f"""   它会检查Python 3和Radmin VPN（如果缺少，请从{PYTHON_URL}安装Python，勾选
+   "Add python.exe to PATH"，并从{RADMIN_URL}安装Radmin VPN），然后安装模组。"""),
   (f"""  Support the development (optional, gives nothing beyond the free mod): {BOOSTY}
 """, ""),
   ("""   - Закройте Warband и дважды щёлкните install.bat. Он предложит установить недостающие
@@ -1155,6 +1319,9 @@ def build(name, files, russian=False, programs=True, out=None, also=()):
             z.write(f, f"{name}/{f.name}")
         for arcname, text in files.items():
             z.writestr(f"{name}/{arcname}", text.encode("utf-8"))
+        # the module's Chinese, in every package: the game shows it when its language is Chinese
+        for f in sorted(CHINESE.glob("*.csv")):
+            z.write(f, f"{name}/Warband Coop Campaign/languages/cns/{f.name}")
         if russian:
             # the module's Russian texts, complete (the russifier's Native plus Warband Coop Campaign's), and the
             # russifier's engine interface for the game's own languages folder
@@ -1204,9 +1371,15 @@ def main():
                  for lang in ("en", "ru")}
     if not RUSSIFIER_UI.exists() or not (MODULE / "languages" / "ru" / "dialogs.csv").exists():
         raise SystemExit("no Russian: put the russifier in vendor/l10n_ru and run python tools/make_ru.py")
+    if not (CHINESE / "dialogs.csv").exists():
+        raise SystemExit("no Chinese: run python tools/make_zh.py")
+    for lang, tool in (("ru", "make_ru"), ("cns", "make_zh")):
+        if (MODULE / "languages" / lang / "dialogs.csv").stat().st_mtime < (MODULE / "conversation.txt").stat().st_mtime:
+            raise SystemExit(f"languages/{lang} is older than the build: run python tools/{tool}.py (after python build.py)")
+
     def english(texts):
         return {"install.ps1": BOM + INSTALL_PS1, "install.bat": INSTALL_BAT, "README.txt": texts(README),
-                "START HERE.txt": texts(START_HERE), **launchers["en"]}
+                "START HERE.txt": texts(START_HERE), "从这里开始.txt": BOM + texts(START_HERE_ZH), **launchers["en"]}
 
     def russian(texts):  # PowerShell 5 reads a script without BOM in the ANSI code page: every .ps1 gets one
         return {"install.ps1": BOM + INSTALL_RU_PS1, "install.bat": INSTALL_BAT, "README.txt": BOM + texts(README_RU),

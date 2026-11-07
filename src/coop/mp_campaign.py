@@ -6,6 +6,7 @@ from header_triggers import *
 from header_troops import *
 from module_constants import *
 from coop.constants import *
+from header_parties import ai_bhvr_avoid_party
 
 # Joint battles, the campaign side: a player starts one from an encounter; players nearby are
 # invited, a player attacked by another player is called in. While the battle is fought on the
@@ -56,6 +57,13 @@ mp_campaign_scripts = [
        (party_get_slot, "$coop_mp_inv_type", "p_coop_buf", 3),
        (party_get_slot, "$coop_mp_inv_slot", "p_coop_buf", 4),
        (party_get_slot, ":sid", "p_coop_buf", 5),
+       (party_get_slot, "$coop_mp_inv_siege", "p_coop_buf", 6), #1: a storm or a defence, either side may be taken
+       (try_begin),
+         (neq, "$coop_mp_inv_type", 1),
+         (assign, "$coop_mp_inv_siege", 0),
+       (try_end),
+       (assign, "$coop_mp_inv_other_only", 0),
+       (assign, "$coop_mp_other_side", 0),
        (call_script, "script_coop_client_mp_no_event"),
        (try_begin),
          (ge, "$coop_mp_inv_type", 4), #4 an arena, 5 a tournament, 6 a training, 7 a duel
@@ -103,6 +111,13 @@ mp_campaign_scripts = [
          (eq, "$g_player_is_captive", 1), #a prisoner fights in nobody's battle (Native's captivity must run its course)
          (assign, "$coop_mp_state", 4),
          (display_message, "@CoopWorld: a call to a joint battle - declined: you are a prisoner.", 0xFFDD66),
+       (else_try), #a siege against one's allies: their side may be taken instead (11-07)
+         (eq, ":refuse", 1),
+         (eq, "$coop_mp_inv_siege", 1),
+         (assign, "$coop_mp_inv_other_only", 1),
+         (display_message, "@CoopWorld: a call to arms against your allies ({s1}) - you may fight on their side.", 0xFFDD66),
+         (assign, "$coop_mp_invite_pending", 1),
+         (call_script, "script_coop_signal_battle"),
        (else_try),
          (eq, ":refuse", 1),
          (assign, "$coop_mp_state", 4), #the decline goes out with the next request
@@ -546,8 +561,40 @@ mp_campaign_scripts = [
        (try_end),
        (gt, ":party_no", 0),
        (party_is_active, ":party_no"),
+       (neq, "$g_player_is_captive", 1), #a prisoner already: the same outcome told again
        (assign, "$coop_mp_captor", ":party_no"), #the capture starts back on the map or from the menu
      (try_end),
+    ]),
+
+  # script_cf_coop_storm_ready: (a client) arg1 = a town or castle: fails unless its walls are for this player to
+  # storm: its kingdom at war with this game's own side, or (a player who swore to no kingdom of the world) with
+  # the host's; men fit to fight, and nobody of its own side besieges it already. s1 = its name.
+  ("cf_coop_storm_ready",
+   [
+     (store_script_param, ":center", 1),
+     (is_between, ":center", walled_centers_begin, walled_centers_end),
+     (store_faction_of_party, ":faction", ":center"),
+     (neq, ":faction", "fac_player_supporters_faction"), #the host's realm, or this player's fief
+     (neg|party_slot_eq, ":center", slot_town_lord, "trp_player"),
+     (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
+     (assign, ":enemy", 0),
+     (try_begin),
+       (lt, ":relation", 0),
+       (assign, ":enemy", 1),
+     (else_try),
+       (neg|is_between, "$players_kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+       (is_between, ":faction", npc_kingdoms_begin, npc_kingdoms_end),
+       (store_sub, ":bit", ":faction", npc_kingdoms_begin),
+       (assign, ":mask", 1),
+       (val_lshift, ":mask", ":bit"),
+       (store_and, ":at_war", "$coop_host_wars", ":mask"),
+       (gt, ":at_war", 0),
+       (assign, ":enemy", 1),
+     (try_end),
+     (eq, ":enemy", 1),
+     (call_script, "script_party_count_fit_for_battle", "p_main_party"),
+     (gt, reg0, 3),
+     (str_store_party_name, s1, ":center"),
     ]),
 
   # script_coop_client_mp_taken: kind 13 reply, the host stormed this center (the host's game is the
@@ -585,7 +632,13 @@ mp_campaign_scripts = [
      (assign, ":captor", "$coop_mp_captor"),
      (assign, "$coop_mp_captor", 0),
      (try_begin),
+       (eq, "$g_player_is_captive", 1), #taken already (the outcome came twice): no second captivity
+       (change_screen_return),
+     (else_try),
        (party_is_active, ":captor"),
+       # the encounter with the captor ends on the captivity's first screen (coop/game_menus.py): left open, it
+       # came back after that screen with the captor's talk, which took the player prisoner a second time (11-06)
+       (call_script, "script_coop_truce_begin", ":captor", 24 * 30),
        (assign, "$g_encountered_party", ":captor"),
        (assign, "$g_enemy_party", ":captor"),
        (assign, "$g_ally_party", -1),
@@ -594,6 +647,320 @@ mp_campaign_scripts = [
        (jump_to_menu, "mnu_total_defeat"),
      (else_try),
        (change_screen_return), #the captor is gone: back to the map
+     (try_end),
+    ]),
+
+  # script_coop_truce_begin: arg1 = the party that takes this player prisoner. It leaves the player alone during
+  # the captivity and a day after the escape (coop_truce_hours): a client's copy of it is made anew whenever the
+  # host's id changes kind, and Native's own respite after an escape (party_ignore_player) went with the old copy;
+  # the same party met the escaped player again at once, with a talk that took it prisoner again (11-06).
+  # $coop_truce_party: that party here; $coop_truce_sid: a client's mirror, its id on the server + 1 (0 the host's
+  # own world party); $coop_truce_until: the hour the truce ends (far off while a prisoner)
+  # arg2 = the hours it lasts (a capture: until the escape; the end of a joint battle: coop_truce_battle_hours)
+  ("coop_truce_begin",
+   [
+     (store_script_param, ":party_no", 1),
+     (store_script_param, ":hours", 2),
+     (store_current_hours, ":until"),
+     (val_add, ":until", ":hours"),
+     (try_begin),
+       (eq, ":party_no", "$coop_truce_party"), #the same party: a truce running on is not cut short
+       (val_max, ":until", "$coop_truce_until"),
+     (try_end),
+     (assign, "$coop_truce_party", ":party_no"),
+     (assign, "$coop_truce_sid", 0),
+     (try_begin),
+       (eq, "$coop_role", coop_role_client),
+       (ge, ":party_no", first_dynamic()),
+       (party_get_slot, "$coop_truce_sid", ":party_no", slot_party_coop_sid),
+     (try_end),
+     (assign, "$coop_truce_until", ":until"),
+    ]),
+
+  # script_coop_truce_escape: the player escaped (Native's last captivity screen): the truce lasts a day more
+  ("coop_truce_escape",
+   [
+     (try_begin),
+       (store_current_hours, ":now"),
+       (gt, "$coop_truce_until", ":now"),
+       (store_add, "$coop_truce_until", ":now", coop_truce_hours),
+     (try_end),
+    ]),
+
+  # script_cf_coop_truce_party: reg0 = the party of the truce here (a client: its mirror now); fails without one
+  ("cf_coop_truce_party",
+   [
+     (store_current_hours, ":now"),
+     (gt, "$coop_truce_until", ":now"),
+     (assign, reg0, "$coop_truce_party"),
+     (try_begin),
+       (gt, "$coop_truce_sid", 0),
+       (store_sub, ":sid", "$coop_truce_sid", 1),
+       (party_get_slot, reg0, "p_coop_map", ":sid"),
+       (val_sub, reg0, 1),
+     (try_end),
+     (gt, reg0, 0),
+     (party_is_active, reg0),
+    ]),
+
+  # script_coop_mp_joiners_to_s16: the parties nearby that join a joint battle as in the single player game (11-07,
+  # the user's ask): s16 gets "&mpj=,sid,side,..." (side 1 the players', 0 the enemy's), each told as Native tells it.
+  # Native's rules (let_nearby_parties_join_current_battle): on the map a lord within reach (a bandit party nearer, once
+  # the hero is past level 6) at war with one side and at peace with the other, not in a battle of its own, not inside
+  # a town or in another's army (an army comes with its leader: the bridge adds the parties attached to it). At the
+  # walls of a town or castle the same around the walls: the besiegers' friends storm with them, the garrison's come
+  # to its help. The players' side is the one the player serves (the lord's, the besiegers' in their storm, the
+  # garrison's in a defence), else the player's own.
+  ("coop_mp_joiners_to_s16",
+   [
+     (assign, ":around", "p_main_party"),
+     (assign, ":enemy", "$coop_mp_enemy_party"),
+     (assign, ":ally", -1),
+     (try_begin),
+       (ge, "$coop_mp_ally_sid", 0),
+       (try_begin),
+         (eq, "$coop_role", coop_role_server),
+         (assign, ":ally", "$coop_mp_ally_sid"),
+       (else_try),
+         (party_get_slot, ":ally", "p_coop_map", "$coop_mp_ally_sid"),
+         (val_sub, ":ally", 1),
+       (try_end),
+     (try_end),
+     (assign, ":friend_fac", "fac_player_supporters_faction"),
+     (try_begin),
+       (gt, ":ally", 0),
+       (party_is_active, ":ally"),
+       (store_faction_of_party, ":friend_fac", ":ally"),
+     (try_end),
+     (try_begin),
+       (gt, "$coop_mp_target_center", 0),
+       (assign, ":around", "$coop_mp_target_center"),
+       (try_begin),
+         (eq, "$coop_mp_defend", 1),
+         (store_faction_of_party, ":friend_fac", "$coop_mp_target_center"),
+         (assign, ":enemy", -1),
+         (try_begin),
+           (call_script, "script_cf_coop_besieger", "$coop_mp_target_center"),
+           (assign, ":enemy", reg0),
+         (try_end),
+       (else_try),
+         (assign, ":enemy", "$coop_mp_target_center"),
+       (try_end),
+     (try_end),
+     (assign, ":enemy_fac", -1),
+     (try_begin),
+       (ge, ":enemy", 0),
+       (party_is_active, ":enemy"),
+       (store_faction_of_party, ":enemy_fac", ":enemy"),
+     (try_end),
+     (ge, ":enemy_fac", 0), #a script's early way out: the request goes without
+     (store_character_level, ":level", "trp_player"),
+     (assign, ":n", 0),
+     (try_for_parties, ":party_no"),
+       (lt, ":n", coop_mp_joiners_max),
+       (ge, ":party_no", first_dynamic()),
+       (party_is_active, ":party_no"),
+       (neq, ":party_no", ":enemy"),
+       (neq, ":party_no", ":ally"),
+       (neg|is_between, ":party_no", "p_coop_puppet_1", puppet_end()),
+       (party_get_attached_to, ":attached", ":party_no"),
+       (assign, ":free", 0),
+       (try_begin),
+         (lt, ":attached", 0),
+         (party_get_battle_opponent, ":opponent", ":party_no"),
+         (lt, ":opponent", 0),
+         (assign, ":free", 1),
+       (else_try), #the host's game: Native's encounter menu let it join already (and told so)
+         (this_or_next|eq, ":attached", "p_main_party"),
+         (eq, ":attached", ":enemy"),
+         (assign, ":free", 2),
+       (try_end),
+       (gt, ":free", 0),
+       (assign, ":sid", ":party_no"), #its id on the world server
+       (try_begin),
+         (eq, "$coop_role", coop_role_client),
+         (party_get_slot, ":sid", ":party_no", slot_party_coop_sid),
+         (val_sub, ":sid", 1),
+       (try_end),
+       (gt, ":sid", 0),
+       (party_get_num_companion_stacks, ":stacks", ":party_no"),
+       (gt, ":stacks", 0),
+       (party_stack_get_troop_id, ":leader", ":party_no", 0),
+       (party_get_template_id, ":template", ":party_no"),
+       (assign, ":kind", 0), #1 a lord, 2 bandits
+       (try_begin),
+         (troop_is_hero, ":leader"),
+         (is_between, ":leader", active_npcs_begin, active_npcs_end),
+         (assign, ":kind", 1),
+       (else_try),
+         (this_or_next|is_between, ":leader", "trp_looter", bandits_end),
+         (is_between, ":template", bandit_party_templates_begin, bandit_party_templates_end),
+         (assign, ":kind", 2),
+       (try_end),
+       (gt, ":kind", 0),
+       (store_distance_to_party_from_party, ":distance", ":party_no", ":around"),
+       (assign, ":reach", coop_mp_join_lord_reach),
+       (try_begin),
+         (eq, ":kind", 2),
+         (assign, ":reach", coop_mp_join_bandit_reach),
+       (try_end),
+       (lt, ":distance", ":reach"),
+       (store_faction_of_party, ":faction", ":party_no"),
+       (try_begin),
+         (eq, ":faction", ":friend_fac"),
+         (assign, ":with_friends", 100),
+       (else_try),
+         (eq, ":friend_fac", "fac_player_supporters_faction"),
+         (eq, ":faction", "$players_kingdom"),
+         (assign, ":with_friends", 100),
+       (else_try),
+         (store_relation, ":with_friends", ":faction", ":friend_fac"),
+       (try_end),
+       (try_begin),
+         (eq, ":faction", ":enemy_fac"),
+         (assign, ":with_enemy", 100),
+       (else_try),
+         (store_relation, ":with_enemy", ":faction", ":enemy_fac"),
+       (try_end),
+       (assign, ":side", -1),
+       (try_begin),
+         (lt, ":with_friends", 0),
+         (gt, ":with_enemy", 0),
+         (this_or_next|eq, ":kind", 1),
+         (gt, ":level", 6), #bandits help bandits against a seasoned hero only
+         (get_party_ai_behavior, ":behavior", ":party_no"),
+         (neq, ":behavior", ai_bhvr_avoid_party),
+         (assign, ":side", 0),
+         (try_begin),
+           (eq, ":free", 1),
+           (str_store_party_name, s1, ":party_no"),
+           (display_message, "str_s1_joined_battle_enemy", 0xFF6666),
+         (try_end),
+       (else_try),
+         (eq, ":kind", 1),
+         (gt, ":with_friends", 0),
+         (lt, ":with_enemy", 0),
+         (assign, ":side", 1),
+         (try_begin),
+           (eq, ":free", 1),
+           (str_store_party_name, s1, ":party_no"),
+           (display_message, "str_s1_joined_battle_friend", 0x66FF66),
+         (try_end),
+       (try_end),
+       (ge, ":side", 0),
+       (try_begin),
+         (eq, ":n", 0),
+         (str_store_string, s16, "@{s16}&mpj="),
+       (try_end),
+       (assign, reg20, ":sid"),
+       (assign, reg21, ":side"),
+       (str_store_string, s16, "@{s16},{reg20},{reg21}"),
+       (val_add, ":n", 1),
+       (call_script, "script_coop_mp_army_to_s19", ":party_no"), #its men, if the world server has not seen them
+     (try_end),
+    ]),
+
+  # script_coop_mp_party_to_s19: arg1 = a party of this game. s19 gets ";sid,t1,n1,..." with its men (heroes too, as
+  # the host's reports have them), coop_mp_jt_stacks stacks at most, coop_mp_jt_max parties a request. The bridge
+  # counts them when the world server has not reported that party (it reports the parties near players only): a
+  # garrison, a lord nearby that joins, his army (11-07: they stayed out, "its men are not known").
+  ("coop_mp_party_to_s19",
+   [
+     (store_script_param, ":party_no", 1),
+     (try_begin),
+       (lt, "$coop_mp_jt_n", coop_mp_jt_max),
+       (gt, ":party_no", 0),
+       (party_is_active, ":party_no"),
+       (neg|is_between, ":party_no", "p_coop_puppet_1", puppet_end()),
+       (assign, ":sid", ":party_no"),
+       (try_begin),
+         (eq, "$coop_role", coop_role_client),
+         (neg|is_between, ":party_no", centers_begin, centers_end), #a town or castle: the same id everywhere
+         (party_get_slot, ":sid", ":party_no", slot_party_coop_sid),
+         (val_sub, ":sid", 1),
+       (try_end),
+       (gt, ":sid", 0),
+       (party_get_num_companion_stacks, ":stacks", ":party_no"),
+       (gt, ":stacks", 0),
+       (val_min, ":stacks", coop_mp_jt_stacks),
+       (assign, reg20, ":sid"),
+       (str_store_string, s19, "@{s19};{reg20}"),
+       (try_for_range, ":stack", 0, ":stacks"),
+         (party_stack_get_troop_id, reg21, ":party_no", ":stack"),
+         (party_stack_get_size, reg22, ":party_no", ":stack"),
+         (str_store_string, s19, "@{s19},{reg21},{reg22}"),
+       (try_end),
+       (val_add, "$coop_mp_jt_n", 1),
+     (try_end),
+    ]),
+
+  # script_coop_mp_army_to_s19: arg1 = a party of this game; it and the parties attached to it (its army; a town's
+  # or castle's: the lords inside) into s19 (coop_mp_party_to_s19)
+  ("coop_mp_army_to_s19",
+   [
+     (store_script_param, ":party_no", 1),
+     (try_begin),
+       (gt, ":party_no", 0),
+       (party_is_active, ":party_no"),
+       (call_script, "script_coop_mp_party_to_s19", ":party_no"),
+       (party_get_num_attached_parties, ":n", ":party_no"),
+       (try_for_range, ":k", 0, ":n"),
+         (party_get_attached_party_with_rank, ":child", ":party_no", ":k"),
+         (call_script, "script_coop_mp_party_to_s19", ":child"),
+       (try_end),
+     (try_end),
+    ]),
+
+  # script_cf_coop_player_at_walls: arg1 = a town or castle (the host's game). Succeeds when a player is at its walls:
+  # the host's own party, or another player's on the map (its puppet), within coop_storm_near
+  ("cf_coop_player_at_walls",
+   [
+     (store_script_param, ":center", 1),
+     (assign, ":near", 0),
+     (try_begin),
+       (store_distance_to_party_from_party, ":distance", "p_main_party", ":center"),
+       (lt, ":distance", coop_storm_near),
+       (assign, ":near", 1),
+     (try_end),
+     (try_for_range, ":puppet", "p_coop_puppet_1", puppet_end()),
+       (eq, ":near", 0),
+       (party_is_active, ":puppet"),
+       (store_distance_to_party_from_party, ":distance", ":puppet", ":center"),
+       (lt, ":distance", coop_storm_near),
+       (assign, ":near", 1),
+     (try_end),
+     (eq, ":near", 1),
+    ]),
+
+  # script_cf_coop_besieger: arg1 = a town or castle. reg0 = its besieger as this game has it (a client: the mirror,
+  # -1 when this game has none), reg1 = the besieger's id on the world server; fails unless it is besieged. Any side:
+  # the joint actions at its walls let a player hold them or storm them (coop_siege_actions). s1 = the center,
+  # s2 = the besieger (or "its besiegers")
+  ("cf_coop_besieger",
+   [
+     (store_script_param, ":center", 1),
+     (is_between, ":center", walled_centers_begin, walled_centers_end),
+     (assign, reg0, -1),
+     (try_begin),
+       (eq, "$coop_srv_player", 1), #the host: the world's own siege
+       (party_get_slot, reg1, ":center", slot_center_is_besieged_by),
+       (assign, reg0, reg1),
+     (else_try),
+       (party_get_slot, reg1, ":center", slot_center_coop_besieger), #a client: as the server reports it, + 1
+       (val_sub, reg1, 1),
+       (gt, reg1, 0),
+       (party_get_slot, reg0, "p_coop_map", reg1),
+       (val_sub, reg0, 1),
+     (try_end),
+     (gt, reg1, 0),
+     (str_store_party_name, s1, ":center"),
+     (str_store_string, s2, "@its besiegers"),
+     (try_begin),
+       (gt, reg0, 0),
+       (party_is_active, reg0),
+       (str_store_party_name, s2, reg0),
+     (else_try),
+       (assign, reg0, -1),
      (try_end),
     ]),
 
@@ -649,6 +1016,11 @@ mp_campaign_scripts = [
      (else_try),
        (eq, "$coop_mp_state", 3),
        (assign, reg6, 3),
+       (try_begin),
+         (eq, "$coop_mp_other_side", 1), #a siege's other side (11-07)
+         (assign, reg6, 5),
+         (assign, "$coop_mp_other_side", 0),
+       (try_end),
        (assign, "$coop_mp_state", 2),
      (try_end),
      (str_clear, s16),
@@ -665,7 +1037,6 @@ mp_campaign_scripts = [
        (eq, reg6, 1),
        (ge, "$coop_mp_ally_sid", 0),
        (assign, reg14, "$coop_mp_ally_sid"),
-       (str_store_string, s16, "@{s16}&mpa={reg14}"),
        (try_begin),
          (eq, "$coop_role", coop_role_server), #the host: the world's own party
          (assign, ":ally", "$coop_mp_ally_sid"),
@@ -673,6 +1044,20 @@ mp_campaign_scripts = [
          (party_get_slot, ":ally", "p_coop_map", "$coop_mp_ally_sid"),
          (val_sub, ":ally", 1),
        (try_end),
+       (assign, reg15, 0), #his kingdom: the walls stormed beside him go to it
+       (try_begin),
+         (eq, "$freelancer_state", 1),
+         (store_troop_faction, reg15, "$enlisted_lord"),
+       (else_try),
+         (gt, "$coop_mp_target_center", 0), #a siege of the world joined (coop_mp_join_siege): the besiegers' kingdom
+         (eq, "$coop_mp_defend", 0),
+         (gt, ":ally", 0),
+         (party_is_active, ":ally"),
+         (store_faction_of_party, reg15, ":ally"),
+         (neg|is_between, reg15, kingdoms_begin, kingdoms_end),
+         (assign, reg15, 0),
+       (try_end),
+       (str_store_string, s16, "@{s16}&mpa={reg14}&mpaf={reg15}"),
        (gt, ":ally", 0),
        (party_is_active, ":ally"),
        (call_script, "script_coop_troops_to_s12", ":ally", 1),
@@ -714,6 +1099,77 @@ mp_campaign_scripts = [
        (assign, reg17, "trp_arena_training_fighter_1"),
        (assign, reg18, "$coop_mp_bet_win"),
        (str_store_string, s16, "@{s16}&mpx={reg14},{reg15},{reg16},{reg17},{reg18}"),
+     (try_end),
+     # a defence: the besieger's kingdom (one who defends walls of another's kingdom came to help: less experience)
+     (try_begin),
+       (eq, reg6, 1),
+       (gt, "$coop_mp_target_center", 0),
+       (eq, "$coop_mp_defend", 1),
+       (call_script, "script_cf_coop_besieger", "$coop_mp_target_center"),
+       (gt, reg0, 0),
+       (store_faction_of_party, reg14, reg0),
+       (is_between, reg14, kingdoms_begin, kingdoms_end),
+       (str_store_string, s16, "@{s16}&mpef={reg14}"),
+     (try_end),
+     # a Khergit town (by its culture): the battle server storms it on the steppe map, its garrison's horsemen ride out
+     (try_begin),
+       (eq, reg6, 1),
+       (is_between, "$coop_mp_target_center", towns_begin, towns_end),
+       (party_slot_eq, "$coop_mp_target_center", slot_center_culture, "fac_culture_3"),
+       (str_store_string, s16, "@{s16}&mps=1"),
+     (try_end),
+     # the men of the parties in the battle as this game has them (&mpjt): the bridge counts them for the parties the
+     # world server has not reported (it reports those near players only): the garrison and the lords inside its
+     # walls, the besieger's or the enemy's army, the lord's army, then the parties nearby that join (below)
+     (str_clear, s19),
+     (assign, "$coop_mp_jt_n", 0),
+     (try_begin),
+       (eq, reg6, 1),
+       (le, "$coop_mp_event", 0),
+       (neq, "$coop_mp_kind", coop_kind_bandits),
+       (neq, "$coop_mp_kind", coop_kind_village),
+       (try_begin),
+         (gt, "$coop_mp_target_center", 0),
+         (call_script, "script_coop_mp_army_to_s19", "$coop_mp_target_center"),
+       (try_end),
+       (assign, ":enemy", "$coop_mp_enemy_party"),
+       (try_begin),
+         (gt, "$coop_mp_target_center", 0),
+         (eq, "$coop_mp_defend", 1),
+         (call_script, "script_cf_coop_besieger", "$coop_mp_target_center"),
+         (gt, reg0, 0),
+         (assign, ":enemy", reg0),
+       (try_end),
+       (try_begin),
+         (neq, ":enemy", "$coop_mp_target_center"),
+         (call_script, "script_coop_mp_army_to_s19", ":enemy"),
+       (try_end),
+       (try_begin),
+         (ge, "$coop_mp_ally_sid", 0),
+         (try_begin),
+           (eq, "$coop_role", coop_role_server),
+           (assign, ":ally", "$coop_mp_ally_sid"),
+         (else_try),
+           (party_get_slot, ":ally", "p_coop_map", "$coop_mp_ally_sid"),
+           (val_sub, ":ally", 1),
+         (try_end),
+         (neq, ":ally", ":enemy"),
+         (call_script, "script_coop_mp_army_to_s19", ":ally"),
+       (try_end),
+     (try_end),
+     # the parties nearby join it, as in the single player game: a field battle with a party of the world, a siege
+     (try_begin),
+       (eq, reg6, 1),
+       (le, "$coop_mp_event", 0),
+       (neq, "$coop_mp_kind", coop_kind_bandits),
+       (neq, "$coop_mp_kind", coop_kind_village),
+       (this_or_next|gt, "$coop_mp_target_center", 0),
+       (ge, "$coop_mp_target_sid", first_dynamic()),
+       (call_script, "script_coop_mp_joiners_to_s16"),
+     (try_end),
+     (try_begin),
+       (gt, "$coop_mp_jt_n", 0),
+       (str_store_string, s16, "@{s16}&mpjt={s19}"),
      (try_end),
      (str_clear, s18),
      (str_clear, s20),
@@ -968,11 +1424,23 @@ mp_campaign_scripts = [
   # script_coop_client_mp_leave_battle: the joint battle is over and the player goes back to the map
   ("coop_client_mp_leave_battle",
    [
+     # the party fought leaves the player alone a few hours: on 11-06 the host, back on the map a moment after a
+     # lost battle, was met by the same bandits at once, and their talk took it prisoner as Native does
+     (try_begin),
+       (ge, "$coop_mp_enemy_party", first_dynamic()),
+       (party_is_active, "$coop_mp_enemy_party"),
+       (neg|is_between, "$coop_mp_enemy_party", "p_coop_puppet_1", puppet_end()),
+       (call_script, "script_coop_truce_begin", "$coop_mp_enemy_party", coop_truce_battle_hours),
+     (try_end),
      (try_begin),
        (gt, "$coop_mp_target_center", 0), #a siege that ended: the walls are someone else's now
        (eq, "$coop_mp_defend", 0), #(a defence leaves the world's siege to the world)
-       (call_script, "script_lift_siege", "$coop_mp_target_center", 0),
-       (assign, "$g_player_besiege_town", -1),
+       (try_begin),
+         (neq, "$freelancer_state", 1), #beside a lord: his siege is the world's (taken walls: the server lifts it)
+         (lt, "$coop_mp_ally_sid", 0), #beside the besiegers of the world (coop_mp_join_siege): the same
+         (call_script, "script_lift_siege", "$coop_mp_target_center", 0),
+         (assign, "$g_player_besiege_town", -1),
+       (try_end),
        (assign, "$coop_mp_target_center", -1),
      (try_end),
      (assign, "$coop_busy", 2), #back on the map: the first map frame ends the battle's hold on the world
@@ -1002,7 +1470,8 @@ mp_campaign_scripts = [
      (assign, "$coop_mp_target_slot", -1),
      (assign, "$coop_mp_defend", 1),
      (assign, "$coop_mp_enemy_party", -1),
-     (assign, "$coop_mp_ally_sid", -1),
+     (store_sub, "$coop_mp_ally_sid", "$coop_mp_next_ally", 1), #the lord the player serves, -1 nobody
+     (assign, "$coop_mp_next_ally", 0),
      (try_begin),
        (eq, "$coop_srv_player", 1),
        (party_get_slot, "$coop_mp_target_sid", ":center", slot_center_is_besieged_by),
@@ -1203,6 +1672,74 @@ mp_campaign_scripts = [
        (display_message, "@CoopWorld: your commander is no longer in battle.", 0xFFDD66),
      (try_end),
     ]),
+
+  # script_cf_coop_lord_besieges: the lord this player serves (Freelancer) besieges a town or castle.
+  # reg0 = that center, reg1 = the lord's party on the world server
+  ("cf_coop_lord_besieges",
+   [
+     (assign, reg0, -1),
+     (assign, reg1, -1),
+     (try_begin),
+       (eq, "$coop_srv_player", 1), #the host: the world's own siege
+       (gt, "$enlisted_party", 0),
+       (party_is_active, "$enlisted_party"),
+       (try_for_range, ":center", walled_centers_begin, walled_centers_end),
+         (party_slot_eq, ":center", slot_center_is_besieged_by, "$enlisted_party"),
+         (assign, reg0, ":center"),
+         (assign, reg1, "$enlisted_party"),
+       (try_end),
+     (else_try),
+       (eq, "$coop_role", coop_role_client), #a client: as the server reports it (besieger + 1)
+       (ge, "$coop_lord_sid", 0),
+       (store_add, ":mark", "$coop_lord_sid", 1),
+       (try_for_range, ":center", walled_centers_begin, walled_centers_end),
+         (party_slot_eq, ":center", slot_center_coop_besieger, ":mark"),
+         (assign, reg0, ":center"),
+         (assign, reg1, "$coop_lord_sid"),
+       (try_end),
+     (try_end),
+     (gt, reg0, 0),
+    ]),
+
+  # script_cf_coop_lord_besieged: the lord this player serves (Freelancer) is inside a town or castle of
+  # his side that is besieged. reg0 = that center, reg1 = the lord's party on the world server
+  ("cf_coop_lord_besieged",
+   [
+     (assign, reg0, -1),
+     (assign, reg1, -1),
+     (store_troop_faction, ":lord_faction", "$enlisted_lord"),
+     (try_begin),
+       (eq, "$coop_srv_player", 1), #the host: the world's own siege
+       (gt, "$enlisted_party", 0),
+       (party_is_active, "$enlisted_party"),
+       (party_get_cur_town, ":center", "$enlisted_party"),
+       (is_between, ":center", walled_centers_begin, walled_centers_end),
+       (party_get_slot, ":besieger", ":center", slot_center_is_besieged_by),
+       (gt, ":besieger", 0),
+       (assign, reg0, ":center"),
+       (assign, reg1, "$enlisted_party"),
+     (else_try),
+       (eq, "$coop_role", coop_role_client), #a client: where the lord's mirror stands
+       (ge, "$coop_lord_sid", 0),
+       (party_get_slot, ":lord", "p_coop_map", "$coop_lord_sid"),
+       (val_sub, ":lord", 1),
+       (gt, ":lord", 0),
+       (party_is_active, ":lord"),
+       (try_for_range, ":center", walled_centers_begin, walled_centers_end),
+         (party_get_slot, ":besieger", ":center", slot_center_coop_besieger),
+         (gt, ":besieger", 0),
+         (store_faction_of_party, ":faction", ":center"),
+         (store_relation, ":relation", ":faction", ":lord_faction"),
+         (this_or_next|eq, ":faction", ":lord_faction"),
+         (ge, ":relation", 0),
+         (store_distance_to_party_from_party, ":distance", ":lord", ":center"),
+         (le, ":distance", 1),
+         (assign, reg0, ":center"),
+         (assign, reg1, "$coop_lord_sid"),
+       (try_end),
+     (try_end),
+     (gt, reg0, 0),
+    ]),
 ]
 
 
@@ -1225,38 +1762,61 @@ coop_mp_lord_option = (
   ])
 
 
-# a besieged center on the player's side: defend its walls together (inside, or arriving outside)
-coop_mp_defend_option = (
-  "coop_mp_defend",
+# Freelancer's soldier menu: the lord the player serves besieges a town or castle - storm it together,
+# the players beside him and the army camped with him; the walls go to his kingdom
+coop_mp_lord_siege_option = (
+  "coop_mp_lord_siege",
   [
     (this_or_next|eq, "$coop_role", coop_role_client),
     (eq, "$coop_srv_player", 1),
+    (eq, "$coop_mp_state", 0),
     (neg|troop_is_wounded, "trp_player"),
     (neq, "$g_player_is_captive", 1),
-    (store_encountered_party, ":center"),
-    (is_between, ":center", walled_centers_begin, walled_centers_end),
-    (store_faction_of_party, ":faction", ":center"),
-    (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
-    (ge, ":relation", 0),
-    (try_begin),
-      (eq, "$coop_srv_player", 1), #the host: the world's own siege
-      (party_get_slot, ":besieger", ":center", slot_center_is_besieged_by),
-    (else_try),
-      (party_get_slot, ":besieger", ":center", slot_center_coop_besieger), #a client: as the server reports it, + 1
-      (val_sub, ":besieger", 1),
-    (try_end),
-    (gt, ":besieger", 0),
+    (call_script, "script_cf_coop_lord_besieges"),
+    (str_store_party_name, s1, reg0),
   ],
-  "CoopWorld: defend the walls together (joint siege on the multiplayer server).",
+  "CoopWorld: storm {s1} beside your commander together with your friends (joint siege on the multiplayer server).",
   [
-    (store_encountered_party, ":center"),
-    (call_script, "script_coop_client_mp_begin_defence", ":center"),
+    (try_begin),
+      (call_script, "script_cf_coop_lord_besieges"),
+      (store_add, "$coop_mp_next_ally", reg1, 1),
+      (assign, "$coop_mp_next_kind", 0),
+      (call_script, "script_coop_client_mp_begin", reg0),
+    (else_try),
+      (display_message, "@CoopWorld: your commander besieges nothing now.", 0xFFDD66),
+    (try_end),
+  ])
+
+
+# Freelancer's soldier menu: the lord the player serves is inside walls of his side under siege - hold
+# them together, the players, the garrison and his men
+coop_mp_lord_defend_option = (
+  "coop_mp_lord_defend",
+  [
+    (this_or_next|eq, "$coop_role", coop_role_client),
+    (eq, "$coop_srv_player", 1),
+    (eq, "$coop_mp_state", 0),
+    (neg|troop_is_wounded, "trp_player"),
+    (neq, "$g_player_is_captive", 1),
+    (call_script, "script_cf_coop_lord_besieged"),
+    (str_store_party_name, s1, reg0),
+  ],
+  "CoopWorld: hold the walls of {s1} beside your commander together with your friends (joint siege on the multiplayer server).",
+  [
+    (try_begin),
+      (call_script, "script_cf_coop_lord_besieged"),
+      (store_add, "$coop_mp_next_ally", reg1, 1),
+      (call_script, "script_coop_client_mp_begin_defence", reg0),
+    (else_try),
+      (display_message, "@CoopWorld: the siege is over.", 0xFFDD66),
+    (try_end),
   ])
 
 
 # the siege menu: storm the walls together, on the battle server's Siege. Native's own conditions
-# for leading the assault (ladders or a tower ready, men fit to fight); a client needs a kingdom to
-# give the center to (only the host holds fiefs)
+# for leading the assault (ladders or a tower ready, men fit to fight). The walls go to the storming
+# player's kingdom, a client's to its own (or to the host's realm, whose fiefs it holds), else to the
+# host's (coop_bridge.py _storm_kingdom)
 coop_mp_siege_option = (
   "coop_mp_siege",
   [
@@ -1268,12 +1828,51 @@ coop_mp_siege_option = (
     (gt, "$g_friend_fit_for_battle", 3),
     (store_current_hours, ":cur_hours"),
     (ge, ":cur_hours", "$g_siege_method_finish_hours"),
-    (this_or_next|eq, "$coop_srv_player", 1),
-    (is_between, "$players_kingdom", npc_kingdoms_begin, npc_kingdoms_end),
   ],
   "CoopWorld: storm the walls together (joint siege on the multiplayer server).",
   [
     (call_script, "script_coop_client_mp_begin", "$g_encountered_party"),
+  ])
+
+
+def coop_siege_actions_option(back_menu):
+  """The option, in menu `back_menu` (its Back. returns there)."""
+  return (
+  "coop_siege_actions",
+  [
+    (this_or_next|eq, "$coop_role", coop_role_client),
+    (eq, "$coop_srv_player", 1),
+    (eq, "$coop_mp_state", 0),
+    (neg|troop_is_wounded, "trp_player"),
+    (neq, "$g_player_is_captive", 1),
+    (call_script, "script_cf_coop_besieger", "$g_encountered_party"),
+  ],
+  "CoopWorld: joint actions at the walls of {s1} (besieged by {s2})...",
+  [
+    (assign, "$coop_siege_back", "mnu_" + back_menu),
+    (jump_to_menu, "mnu_coop_siege_actions"),
+  ])
+
+
+# a client before the walls of an enemy, its own or the host's (the host's game reports whom its realm
+# fights, kind 52): storm them together at once. The siege camp would be this game's own: the host's
+# world knows nothing of it, and the battle server raises the ladders itself.
+coop_mp_storm_option = (
+  "coop_mp_storm",
+  [
+    (eq, "$coop_role", coop_role_client),
+    (eq, "$coop_mp_state", 0),
+    (neg|troop_is_wounded, "trp_player"),
+    (neq, "$g_player_is_captive", 1),
+    (store_encountered_party, ":center"),
+    (call_script, "script_cf_coop_storm_ready", ":center"),
+  ],
+  "CoopWorld: storm the walls of {s1} together (joint siege on the multiplayer server).",
+  [
+    (store_encountered_party, ":center"),
+    (assign, "$coop_mp_next_ally", 0),
+    (assign, "$coop_mp_next_kind", 0),
+    (call_script, "script_coop_client_mp_begin", ":center"),
   ])
 
 
@@ -1453,6 +2052,12 @@ mp_campaign_menus = [
       "Enter the stormed walls.",
       [
         # the host's own game: Native's victory and the center's capture, as after its own assault
+        (try_begin),
+          (is_between, "$players_kingdom", kingdoms_begin, kingdoms_end),
+          (call_script, "script_coop_walls_cleared", "$coop_mp_taken_center", "$players_kingdom"),
+        (else_try),
+          (call_script, "script_coop_walls_cleared", "$coop_mp_taken_center", "fac_player_supporters_faction"),
+        (try_end),
         (party_clear, "$coop_mp_taken_center"),
         (assign, "$coop_mp_taken_center", 0),
         (assign, "$g_next_menu", "mnu_castle_taken"),
@@ -1460,6 +2065,8 @@ mp_campaign_menus = [
       ]),
      ("coop_mp_siege_on", [(neg|is_between, "$coop_mp_state", 1, 4), (le, "$coop_mp_taken_center", 0),
                            (eq, "$coop_mp_defend", 0),
+                           (neq, "$freelancer_state", 1), #a soldier goes back with his commander
+                           (lt, "$coop_mp_ally_sid", 0), #beside the besiegers of the world: their siege, not this player's
                            (eq, "$coop_mp_last_won", 0), #the storm failed: the siege goes on
                            (le, "$coop_mp_captor", 0), (gt, "$coop_mp_target_center", 0),
                            (party_is_active, "$coop_mp_target_center"),
@@ -1491,6 +2098,7 @@ mp_campaign_menus = [
       [(call_script, "script_coop_client_mp_capture")]),
    ]),
 
+  # joint actions at besieged walls: hold them, or storm them beside the besiegers
   ("coop_mp_invite", 0,
    "{s2}",
    "none",
@@ -1519,6 +2127,12 @@ mp_campaign_menus = [
        (eq, "$coop_mp_inv_type", 2),
        (str_store_string, s2, "@{s1} attacks you!^^The battle is fought on the multiplayer server. Join it there; if you do not, your troops fight without you."),
      (else_try),
+       (eq, "$coop_mp_inv_other_only", 1),
+       (str_store_string, s2, "@{s1} begins a siege battle nearby, against your allies.^^The battle is fought on the multiplayer server. You may fight on your allies' side: against {s1}."),
+     (else_try),
+       (eq, "$coop_mp_inv_siege", 1),
+       (str_store_string, s2, "@{s1} begins a siege battle nearby and calls you to arms.^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side, or on the other side if you choose it (the walls' defenders or their stormers)."),
+     (else_try),
        (str_store_string, s2, "@{s1} begins a battle nearby and calls you to arms.^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side."),
      (try_end),
    ],
@@ -1526,11 +2140,25 @@ mp_campaign_menus = [
      ("coop_mp_join",
       [(store_troop_gold, ":gold", "trp_player"), #a duel: the stake must be there to lose
        (this_or_next|neq, "$coop_mp_inv_type", 7),
-       (ge, ":gold", "$coop_mp_bet")],
+       (ge, ":gold", "$coop_mp_bet"),
+       (eq, "$coop_mp_inv_other_only", 0)],
       "To battle!",
       [
         (assign, "$coop_signal_menu", 0),
         (assign, "$coop_mp_status", 0),
+        (assign, "$coop_mp_other_side", 0),
+        (assign, "$coop_mp_state", 3),
+        (assign, "$coop_mp_hidden", 0),
+        (jump_to_menu, "mnu_coop_mp_wait"),
+      ]),
+     # a siege: the other side, in the same battle (11-07, the user's ask): one's own characters on both sides
+     ("coop_mp_join_other",
+      [(eq, "$coop_mp_inv_siege", 1)],
+      "To battle on the opposite side!",
+      [
+        (assign, "$coop_signal_menu", 0),
+        (assign, "$coop_mp_status", 0),
+        (assign, "$coop_mp_other_side", 1),
         (assign, "$coop_mp_state", 3),
         (assign, "$coop_mp_hidden", 0),
         (jump_to_menu, "mnu_coop_mp_wait"),
@@ -1651,9 +2279,15 @@ def client_map_tick():
         (rest_for_hours, 0, 0, 0), #a rest hides the map until a click: the call ends it
       (try_end),
     (try_end),
-    # lost a joint battle while away from its window: the capture begins on the map
+    # the party that took this player prisoner leaves it alone for a while (script_coop_truce_begin)
+    (try_begin),
+      (call_script, "script_cf_coop_truce_party"),
+      (party_ignore_player, reg0, 1),
+    (try_end),
+    # lost a joint battle while away from its window: the capture begins on the map (once the result is in)
     (try_begin),
       (gt, "$coop_mp_captor", 0),
+      (neg|is_between, "$coop_mp_state", 1, 4),
       (map_free),
       (call_script, "script_coop_client_mp_capture"),
     (try_end),
@@ -1789,3 +2423,47 @@ def reply_branches():
       (eq, "$coop_srv_player", 1), #the host's own player requests
       (call_script, "script_coop_client_mp_result"),
   ]
+
+
+# The joint actions at a siege's walls (11-07): after every menu of 1.1 and 1.2.0 (src/late), so that a save made in
+# one of those opens the same menu
+siege_actions_menus = [
+  ("coop_siege_actions", 0,
+   "{s3}",
+   "none",
+   [
+     (str_clear, s3),
+     (try_begin),
+       (call_script, "script_cf_coop_besieger", "$g_encountered_party"),
+       (str_store_string, s3, "@CoopWorld: {s1} is besieged by {s2}.^^Fight on the multiplayer server together with your friends: hold the walls with the garrison and the lords inside, or storm them beside the besiegers and the army camped with them. Stormed walls go to the besiegers' kingdom.^^Neither choice changes how the kingdoms see you."),
+     (else_try),
+       (str_store_party_name, s1, "$g_encountered_party"),
+       (str_store_string, s3, "@CoopWorld: {s1} is no longer besieged."),
+     (try_end),
+   ],
+   [
+     ("coop_siege_defend",
+      [(eq, "$coop_mp_state", 0), (call_script, "script_cf_coop_besieger", "$g_encountered_party")],
+      "Defend: hold the walls with the garrison.",
+      [
+        (assign, "$coop_mp_next_ally", 0),
+        (call_script, "script_coop_client_mp_begin_defence", "$g_encountered_party"),
+      ]),
+     ("coop_siege_attack",
+      [(eq, "$coop_mp_state", 0), (call_script, "script_cf_coop_besieger", "$g_encountered_party"), (gt, reg0, 0),
+       (call_script, "script_party_count_fit_for_battle", "p_main_party"), (gt, reg0, 0)],
+      "Attack: storm the walls beside the besiegers.",
+      [
+        (try_begin),
+          (call_script, "script_cf_coop_besieger", "$g_encountered_party"),
+          (gt, reg0, 0),
+          (store_add, "$coop_mp_next_ally", reg1, 1),
+          (assign, "$coop_mp_next_kind", 0),
+          (call_script, "script_coop_client_mp_begin", "$g_encountered_party"),
+        (else_try),
+          (display_message, "@CoopWorld: the siege is over.", 0xFFDD66),
+        (try_end),
+      ]),
+     ("coop_siege_back", [], "Back.", [(jump_to_menu, "$coop_siege_back")]),
+   ]),
+]

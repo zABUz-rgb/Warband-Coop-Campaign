@@ -7,7 +7,7 @@ Each mod package exposes <kind>.merge(list, **extra); they run in the order of M
 import importlib
 import os
 
-MODS = ["dplmc_fix", "freelancer", "coop", "custom_troops"]
+MODS = ["dplmc_fix", "freelancer", "coop", "custom_troops", "late"]
 if os.environ.get("COOP_TRAIL") == "1":  # a debug build (python build.py --trail): last, it marks what the others wrote
   MODS.append("trail")
 

@@ -1,4 +1,4 @@
-# Russian for what CoopWorld adds on top of Native's languages/ru: file|id|text (tools/make_ru.py)
+﻿# Russian for what CoopWorld adds on top of Native's languages/ru: file|id|text (tools/make_ru.py)
 # Keep {s1}, {reg0}, {playername}, {sir/my lady} and the like exactly as they are.
 #
 # ---- CoopWorld
@@ -220,7 +220,6 @@ quick_strings_en|CoopWorld: your hero fell in the joint battle and is badly woun
 quick_strings_en|CoopWorld: your hero comes out of the joint battle with {reg1}% health.|CoopWorld: ваш герой выходит из совместного боя с {reg1}% здоровья.
 quick_strings_en|CoopWorld: you take {reg1} prisoners from the defeated side.|CoopWorld: вы берёте в плен {reg1} бойцов побеждённой стороны.
 quick_strings_en|^^Your name on the battle server must be {s3} (Multiplayer - Profiles); then your soldiers obey you.|^^На сервере боя ваше имя должно быть {s3} (Мультиплеер - Профили): тогда ваши солдаты будут вас слушаться.
-quick_strings_en|CoopWorld: in co-op only the host holds fiefs for now. {s1} stays with its lord in the shared world; your oath, rank and relations stay yours.|CoopWorld: в кооперативе владения пока получает только хост. {s1} остаётся за своим лордом в общем мире; ваша присяга, звание и отношения остаются при вас.
 quick_strings_en|CoopWorld: a call to arms against your allies ({s1}) - declined.|CoopWorld: вас зовут в бой против ваших союзников ({s1}) — приглашение отклонено.
 # Diplomacy 1.174: texts neither the russifier nor MRCMOD's translation has
 game_menus|mno_town_none|смело отправиться туда, где не ступал{/а} ни один человек...
@@ -1649,35 +1648,30 @@ quick_strings_en|CoopWorld: {s1} was stormed in a joint siege and now belongs to
 quick_strings_en|CoopWorld: {s1} now belongs to {s2}.|CoopWorld: {s1} теперь принадлежит {s2}.
 quick_strings_en|CoopWorld: a siege of the campaign begins! Team 1 holds the walls, team 2 storms them.|CoopWorld: начинается осада из кампании! Команда 1 держит стены, команда 2 их штурмует.
 quick_strings_en|CoopWorld: the walls of {s1} are yours!|CoopWorld: стены {s1} ваши!
-game_menus|mno_coop_mp_defend|CoopWorld: защищать стены вместе (совместная осада на сервере мультиплеера).
-quick_strings_en|CoopWorld: {s1} is under siege! Ride there to defend its walls together.|CoopWorld: {s1} в осаде! Скачите туда, чтобы вместе защищать стены.
 quick_strings_en|CoopWorld: a new hero - from now on it is kept between sessions.|CoopWorld: новый герой — теперь он сохраняется между сессиями.
 quick_strings_en|CoopWorld: your own hero is back - gold, skills, gear, troops, companions and prisoners as you left them.|CoopWorld: ваш герой вернулся - деньги, навыки, снаряжение, войска, компаньоны и пленные такие, какими вы их оставили.
 quick_strings_en|CoopWorld: the hero kept for you is from another version of CoopWorld and was not put back.|CoopWorld: сохранённый для вас герой из другой версии CoopWorld и не был восстановлен.
-game_menus|mno_coop_give_troops|CoopWorld: передать войска этому игроку.
-game_menus|menu_coop_give_troops|CoopWorld: войска для {s1}.^^Выбрано: {reg1}. Выберите бойцов в окне обмена (слева ваш отряд, справа подарок); {s1} примет их или откажется, а отвергнутые бойцы вернутся к вам. Компаньоны остаются с вами.
+game_menus|mno_coop_give_troops|CoopWorld: торговать с этим игроком (войска, предметы, деньги).
+game_menus|menu_coop_give_troops|CoopWorld: обмен с {s1}.^^В предложении: бойцов {reg1}, предметов {reg3}, денег {reg4} динаров (у вас {reg5}).^^Бойцов выбирают в окне обмена (слева ваш отряд, справа предложение), предметы - в окне добычи (справа предложение). {s1} примет всё или откажется; отвергнутое вернётся к вам. Компаньоны остаются с вами.
 game_menus|mno_coop_give_choose|Выбрать бойцов.
-game_menus|mno_coop_give_send|Отправить.
+game_menus|mno_coop_give_send|Отправить предложение.
 game_menus|mno_coop_give_cancel|Передумать.
-game_menus|menu_coop_troops_offered|CoopWorld: {s1} предлагает вам войска:^{s2}
+game_menus|menu_coop_troops_offered|CoopWorld: {s1} предлагает вам:^{s2}
 game_menus|mno_coop_offer_accept|Принять.
 game_menus|mno_coop_offer_decline|Отказаться.
-quick_strings_en|CoopWorld: your troops were accepted.|CoopWorld: ваши войска приняты.
-quick_strings_en|CoopWorld: your troops were declined and came back to you.|CoopWorld: от ваших войск отказались, они вернулись к вам.
 quick_strings_en|{s2}^{reg1} {s3}|{s2}^{reg1} {s3}
-quick_strings_en|CoopWorld: troops sent; waiting for the answer.|CoopWorld: войска отправлены, ждём ответа.
 game_menus|menu_coop_loot|CoopWorld: ваша доля добычи из совместного боя.
 game_menus|mno_coop_loot_leave|Вернуться на карту.
 game_menus|mno_coop_mp_loot|Забрать свою долю добычи (затем на карту).
 quick_strings_en|CoopWorld: {s1} fell in the joint battle and is badly wounded.|CoopWorld: {s1} пал в совместном бою и тяжело ранен.
 quick_strings_en|CoopWorld: the host answers again.|CoopWorld: хост снова отвечает.
 quick_strings_en|CoopWorld: no answer from the host. Check the join.bat window and the network (Radmin); the game goes on and catches up once the host answers. Your hero is written down at the host every minute while the link works.|CoopWorld: хост не отвечает. Проверьте окно join.bat и сеть (Radmin); игра продолжается и догонит мир, когда хост ответит. Пока связь есть, ваш герой записывается у хоста каждую минуту.
-game_menus|mno_coop_players|CoopWorld: другие игроки (ехать следом, передать войска)...
-game_menus|menu_coop_players|CoopWorld: игроки в этом мире:^{s10}^^Войска можно передать игроку поблизости (до {reg2} км).
-game_menus|mno_coop_pl_give_0|Передать войска игроку {s1}.
-game_menus|mno_coop_pl_give_1|Передать войска игроку {s1}.
-game_menus|mno_coop_pl_give_2|Передать войска игроку {s1}.
-game_menus|mno_coop_pl_give_3|Передать войска игроку {s1}.
+game_menus|mno_coop_players|CoopWorld: другие игроки (ехать следом, торговать)...
+game_menus|menu_coop_players|CoopWorld: игроки в этом мире:^{s10}^^С игроком поблизости (до {reg2} км) можно торговать: войска, предметы, деньги.
+game_menus|mno_coop_pl_give_0|Торговать с {s1}: войска, предметы, деньги.
+game_menus|mno_coop_pl_give_1|Торговать с {s1}: войска, предметы, деньги.
+game_menus|mno_coop_pl_give_2|Торговать с {s1}: войска, предметы, деньги.
+game_menus|mno_coop_pl_give_3|Торговать с {s1}: войска, предметы, деньги.
 game_menus|mno_coop_pl_write_hero|Записать моего героя у хоста сейчас.
 game_menus|mno_coop_pl_back|Назад.
 quick_strings_en|CoopWorld: hero name - {s0}.|CoopWorld: имя героя - {s0}.
@@ -1810,7 +1804,7 @@ game_menus|mno_coop_mp_village|CoopWorld: прогнать налётчиков 
 game_menus|mno_coop_mp_lair|CoopWorld: взять логово вместе (совместный бой на сервере боя).
 game_menus|mno_coop_tree|CoopWorld: древо войск.
 game_menus|mno_coop_pl_stop_follow|Перестать следовать за игроком {s1}.
-game_menus|menu_coop_shared|CoopWorld: лагерь отряда.^^В казне {reg1} динаров, у вас с собой {reg2}. Здесь каждый игрок может положить деньги и забрать их; то же с вещами склада. Всё хранится у хоста в shared.json и остаётся от сессии к сессии.
+game_menus|menu_coop_shared|CoopWorld: лагерь отряда.^^В казне {reg1} динаров, у вас с собой {reg2}. Здесь каждый игрок может положить деньги и забрать их; то же с вещами склада. Всё хранится у хоста в shared.json и остаётся от сессии к сессии.^^{s5}
 game_menus|mno_coop_tg_in_100|Положить 100 динаров.
 game_menus|mno_coop_tg_in_1000|Положить 1000 динаров.
 game_menus|mno_coop_tg_in_all|Положить всё, что есть.
@@ -1914,7 +1908,7 @@ game_menus_over|menu_sneak_into_town_suceeded|Ваша маскировка: {re
 game_menus|mno_coop_base_build|CoopWorld: разбить здесь лагерь отряда (1000 динаров).
 game_menus|mno_coop_base_ride|CoopWorld: поехать к лагерю: {s1} (там общая казна и склад).
 game_menus|mno_coop_blackborn|Поговорить с Джоном Блэкборном.
-game_menus|mno_coop_base_down|Свернуть лагерь (казна и склад останутся у отряда, динары не вернутся).
+game_menus|mno_coop_base_down|Свернуть лагерь (сначала уведите отсюда оставленные войска; казна, склад и шахта останутся у отряда, динары не вернутся).
 dialogs_en|Go away, traveller.|Уходи, путник.
 dialogs_en|Leave.|Уйти.
 quick_strings_en|Back|Назад
@@ -1936,10 +1930,10 @@ game_menus|mno_custom_blackborn|Поговорить с Джоном Блэкб�
 game_menus|menu_custom_screen|Джон Блэкборн ждёт вашего слова.
 game_menus|mno_custom_screen_talk|Поговорить с Джоном Блэкборном.
 game_menus|mno_custom_screen_back|Назад.
-game_menus|menu_custom_train|{s11}, тир {reg11}, уровень {reg12} из 3.^^Джон Блэкборн осматривает их. Обучение повышает только уровень характеристик. Тир остаётся прежним: он растёт в боях и на тренировочном поле. Цена платится один раз за весь отряд, даже если сейчас таких воинов у вас нет: каждый его воин, нанятый или повышенный позже, тоже будет на этом уровне. Игра не может перенести опыт, поэтому у тех, кто стоит ниже, накопленное к следующему тиру пропадёт: сначала повысьте тех, кто уже готов.^^У вас {reg10} динаров.
+game_menus|menu_custom_train|Тир {reg11}, уровень {reg12} из 3: {s11}.^^Джон Блэкборн осматривает их. Обучение повышает только уровень характеристик, сразу у всех видов этого тира. Тир остаётся прежним: он растёт в боях и на тренировочном поле. Цена платится один раз за весь тир, даже если сейчас таких воинов у вас нет: каждый его воин, нанятый или повышенный позже, тоже будет на этом уровне. Игра не может перенести опыт, поэтому у тех, кто стоит ниже, накопленное к следующему тиру пропадёт: сначала повысьте тех, кто уже готов.^^У вас {reg10} динаров.
 game_menus|mno_custom_train_back|На этом всё.
-game_menus|mno_custom_train_1|{s1}: до уровня {reg2}: {reg4} динаров.
-game_menus|mno_custom_train_2|{s1}: до уровня {reg2}: {reg4} динаров.
+game_menus|mno_custom_train_1|Тир {reg1}: до уровня {reg2}: {reg4} динаров.
+game_menus|mno_custom_train_2|Тир {reg1}: до уровня {reg2}: {reg4} динаров.
 game_menus|mno_custom_train_none|Больше их учить нечему.
 dialogs_en|Sorry, there is nothing I can do for you.|Извини, мне нечем тебе помочь.
 dialogs_en|Good day. What brings you to me?|Добрый день. С чем пожаловали?
@@ -2099,3 +2093,182 @@ quick_strings_en|CoopWorld: your hero is written down at the host a few seconds 
 dialogs_en|Let us speak of this another time.|Поговорим об этом в другой раз.
 game_menus|mno_coop_shared_off|Кооператив выключен: казна и склад ждут следующей сессии.
 quick_strings_en|CoopWorld: save the game now: your friends get that save and load it.|CoopWorld: сохраните игру сейчас: друзья получат это сохранение и загрузят его.
+# ---- 1.2.0: training by tier, the camp's mine and men, caravans, the smith
+game_menus|mno_coop_smith|Зайти к кузнецу: любое оружие и доспехи на заказ (на пятую часть дороже лавок).
+game_menus|mno_coop_mine_build|Вырыть здесь шахту (2000 динаров): каждый пленный в ней приносит 10 динаров в неделю в казну.
+game_menus|mno_coop_mine_send|Отправить пленных в шахту ({reg5} человек; лорды остаются у вас).
+game_menus|mno_coop_mine_wait|Рудокопы за работой. Загляните ещё раз.
+game_menus|mno_coop_gar_open|Войска в лагере ({reg32} из 80): оставить людей здесь или забрать их (по одному игроку за раз).
+game_menus|mno_coop_gar_wait|Войска в лагере пересчитывают. Загляните ещё раз.
+game_menus|mno_coop_cv_camp|Отправить отсюда свой торговый караван (бесплатно).
+game_menus|menu_coop_garrison_wait|CoopWorld: войска лагеря созывают...
+game_menus|mno_coop_garrison_wait_back|Назад в лагерь.
+game_menus|menu_coop_garrison|CoopWorld: войска, оставленные в лагере.
+game_menus|mno_coop_garrison_leave|Назад на карту.
+game_menus|mno_coop_cv_buy_near|Караван по ближним городам (бесплатно, 5 городов).
+game_menus|mno_coop_cv_buy_round|Караван вокруг света (бесплатно, 18 городов).
+game_menus|mno_coop_cv_guards|Дать людей в охрану (экран отряда).
+game_menus|mno_coop_cv_to_money|Дальше: деньги на торговлю.
+game_menus|mno_coop_cv_gold_100|Добавить ещё 100 динаров.
+game_menus|mno_coop_cv_gold_500|Добавить ещё 500 динаров.
+game_menus|mno_coop_cv_gold_1000|Добавить ещё 1000 динаров.
+game_menus|mno_coop_cv_gold_all|Отдать всё, что у вас с собой.
+game_menus|mno_coop_cv_send|Хватит: отправить караван.
+game_menus|mno_coop_cv_to_guards|Назад к охране.
+game_menus|mno_coop_cv_cancel|Отменить караван (цена, деньги и люди вернутся).
+game_menus|mno_coop_cv_back|Не сейчас.
+game_menus|menu_coop_smith|Кузнец города {s1}.^^Любое оружие и доспехи, какие продают лавки Кальрадии, кузнец сделает на заказ, на пятую часть дороже: не нужно объезжать города ради одного шлема. Что вам нужно?^^У вас с собой {reg1} динаров.
+game_menus|mno_coop_smith_0|Одноручное оружие, 4-250 динаров
+game_menus|mno_coop_smith_1|Одноручное оружие, 263-550 динаров
+game_menus|mno_coop_smith_2|Двуручное оружие
+game_menus|mno_coop_smith_3|Древковое оружие
+game_menus|mno_coop_smith_4|Луки и стрелы
+game_menus|mno_coop_smith_5|Арбалеты и болты
+game_menus|mno_coop_smith_6|Метательное оружие
+game_menus|mno_coop_smith_7|Щиты
+game_menus|mno_coop_smith_8|Шлемы, 1-174 динара
+game_menus|mno_coop_smith_9|Шлемы, 180-1240 динаров
+game_menus|mno_coop_smith_10|Доспехи, 3-454 динара
+game_menus|mno_coop_smith_11|Доспехи, 520-6553 динара
+game_menus|mno_coop_smith_12|Сапоги и перчатки
+game_menus|mno_coop_smith_back|Назад в город.
+game_menus|menu_coop_smith_shop|Кузнец города {s1}.
+game_menus|mno_coop_smith_shop_back|Назад к кузнецу.
+dialogs_en|Which tier shall I train, my lord? All of its men learn at once.|Какой тир обучать, милорд? Учатся сразу все его воины.
+dialogs_en|Tier {reg1}: the recruits.|Тир {reg1}: рекруты.
+dialogs_en|Tier {reg1}: infantry, archers and riders.|Тир {reg1}: пехота, лучники и всадники.
+dialogs_en|I would send a trade caravan of my own from here.|Я хотел бы отправить отсюда свой торговый караван.
+dialogs_en|A fine thought. The guild will find you a caravan master and pack animals; the guards and the coin are yours to give.|Хорошая мысль. Гильдия найдёт вам караванщика и вьючных животных; охрану и деньги дадите вы сами.
+dialogs_en|This is {s1}, my lord. The goods are safe and the road is open. We ride on, if you allow.|Это {s1}, господин. Товар цел, дорога открыта. Если позволите, мы едем дальше.
+dialogs_en|Ride on. Safe travels.|Езжайте. Доброго пути.
+quick_strings_en|CoopWorld: the men of the camp do not answer.|CoopWorld: войска лагеря не отвечают.
+quick_strings_en|CoopWorld: a week went by. The mines brought {reg3} denars into the treasury, the men left at the camps cost {reg4}.|CoopWorld: прошла неделя. Шахты принесли в казну {reg3} динаров, войска в лагерях стоили {reg4}.
+quick_strings_en|CoopWorld: the treasury could not pay them: {reg3} men left the camps.|CoopWorld: казне нечем было платить: {reg3} человек ушли из лагерей.
+quick_strings_en|CoopWorld: {s1}'s caravan sets out round the world with {reg3} denars.|CoopWorld: караван игрока {s1} отправился вокруг света с {reg3} динарами.
+quick_strings_en|CoopWorld: {s1}'s caravan sets out for the towns nearby with {reg3} denars.|CoopWorld: караван игрока {s1} отправился по ближним городам с {reg3} динарами.
+quick_strings_en|CoopWorld: {s1}'s caravan is home: {reg3} denars into the treasury, {reg4} men stay at the camp.|CoopWorld: караван игрока {s1} вернулся: {reg3} динаров в казну, {reg4} человек остались в лагере.
+quick_strings_en|CoopWorld: {s1}'s caravan was taken on the road: its men and denars are lost.|CoopWorld: караван игрока {s1} разбит в пути: люди и деньги потеряны.
+quick_strings_en|CoopWorld: {reg3} men of {s1}'s caravan found no room at the camps and went home.|CoopWorld: {reg3} человек из каравана игрока {s1} не нашли места в лагерях и разошлись по домам.
+quick_strings_en|CoopWorld: the men left at the camp are counted at the host.|CoopWorld: войска лагеря пересчитывают у хоста.
+quick_strings_en|CoopWorld: {s1} is with the men of this camp: wait for them to finish.|CoopWorld: {s1} сейчас распоряжается войсками этого лагеря: подождите, пока закончит.
+quick_strings_en|CoopWorld: the camp is gone.|CoopWorld: лагеря больше нет.
+quick_strings_en|CoopWorld: the miners are sent for...|CoopWorld: за рудокопами послали...
+quick_strings_en|CoopWorld: {reg1} prisoners are led to the mine...|CoopWorld: {reg1} пленных ведут в шахту...
+quick_strings_en|CoopWorld: the mine is dug. Send prisoners there: each brings 10 denars a week into the treasury.|CoopWorld: шахта вырыта. Отправляйте туда пленных: каждый приносит 10 динаров в неделю в казну.
+quick_strings_en|CoopWorld: no mine was dug: the camp is gone, or has one already. Nothing was paid.|CoopWorld: шахту не вырыли: лагеря нет или шахта в нём уже есть. Деньги не списаны.
+quick_strings_en|CoopWorld: the prisoners are at work in the mine.|CoopWorld: пленные работают в шахте.
+quick_strings_en|CoopWorld: the mine is gone: the prisoners stay with you.|CoopWorld: шахты больше нет: пленные остаются у вас.
+quick_strings_en|CoopWorld: {reg1} men who went missing on the way to the camp or a caravan are back with you.|CoopWorld: {reg1} человек, пропавших по дороге в лагерь или в караван, вернулись к вам.
+quick_strings_en|CoopWorld: the camp has room for 80 men: {reg1} {s1} stay with you.|CoopWorld: в лагере место для 80 человек: {s1} ({reg1}) остаются у вас.
+quick_strings_en|CoopWorld: {reg1} men stay at the camp.|CoopWorld: в лагере остаются {reg1} человек.
+quick_strings_en|CoopWorld: the caravan is called off: its price, denars and men are yours again.|CoopWorld: караван отменён: цена, деньги и люди снова ваши.
+quick_strings_en|CoopWorld: the caravan is loaded and waits for the road...|CoopWorld: караван нагружен и ждёт выхода в путь...
+quick_strings_en|CoopWorld: your caravan is on its way at the host. What it earns comes into the treasury; its men to your camp.|CoopWorld: ваш караван в пути у хоста. Его доход пойдёт в казну, люди - в ваш лагерь.
+quick_strings_en|CoopWorld: no caravan set out (three of yours are on the road already?): its price, denars and men are yours again.|CoopWorld: караван не вышел (три ваших уже в пути?): цена, деньги и люди снова ваши.
+quick_strings_en|Caravan of {s1}|Караван игрока {s1}
+quick_strings_en|CoopWorld: {s1}'s caravan sets out for {s2}.|CoopWorld: караван игрока {s1} идёт в {s2}.
+quick_strings_en|CoopWorld: {s1}'s caravan is home with {reg1} denars.|CoopWorld: караван игрока {s1} вернулся с {reg1} динарами.
+quick_strings_en|Temp Troop|Temp Troop
+quick_strings_en|The smith of {s1}|Кузнец города {s1}
+quick_strings_en|The mine: {reg31} prisoners at work bring {reg34} denars a week.|Шахта: {reg31} пленных приносят {reg34} динаров в неделю.
+quick_strings_en|No mine here: the camp's owner can dig one.|Шахты здесь нет: владелец лагеря может её вырыть.
+quick_strings_en|{s5} Men left here: {reg32} of 80, paid half their wage out of the treasury, {reg33} denars a week; those it cannot pay leave.|{s5} Войска в лагере: {reg32} из 80, казна платит им половину жалования, {reg33} динаров в неделю; кому не хватит денег - уходят.
+quick_strings_en|{s12} (level {reg13})|{s12} (уровень {reg13})
+quick_strings_en|{s11}, {s12} (level {reg13})|{s11}, {s12} (уровень {reg13})
+quick_strings_en|CoopWorld: your caravan, its guards.^^{reg3} men guard it now. Give it men for the road: bandits and enemies may fall on it, and those who live through it all stay at your camp when it is home (80 men a camp; the rest go home, the highest stay first).|CoopWorld: ваш караван, охрана.^^Сейчас его охраняют {reg3} человек. Дайте ему людей в дорогу: на него могут напасть бандиты и враги, а выжившие по возвращении останутся в вашем лагере (80 человек на лагерь; остальные расходятся по домам, первыми остаются высшие тиры).
+quick_strings_en|CoopWorld: your caravan, its denars.^^It carries {reg1} denars to trade with; you carry {reg2}. The more it carries, the more it can buy where a good is cheap and sell where it is dear. Load as much as you like and send it off when you will.|CoopWorld: ваш караван, деньги.^^У него {reg1} динаров на торговлю, у вас с собой {reg2}. Чем больше денег, тем больше он купит там, где товар дёшев, и продаст там, где дорог. Дайте сколько хотите и отправляйте, когда решите.
+quick_strings_en|CoopWorld: a trade caravan of your own.^^It is a party of the host's world, where all may see it: it rides from town to town, buys the good that brings the most and sells it in the town that pays the most for it, and keeps out of the towns of kingdoms at war with you or with the host. Bandits and enemies may take it. When its road ends, what it carries comes into the camp's treasury and its men stay at your camp.^^A caravan for the towns nearby: 5 towns. Round the world: 18 towns. Sending one costs nothing. Three of yours may be on the road at once. You carry {reg2} denars.|CoopWorld: свой торговый караван.^^Это отряд в мире хоста, его видят все: он ходит из города в город, покупает самый выгодный товар и продаёт его там, где за него платят больше всего, а города королевств, воюющих с вами или с хостом, обходит. На него могут напасть бандиты и враги. В конце пути всё, что он везёт, идёт в казну лагеря, а его люди остаются в вашем лагере.^^Караван по ближним городам: 5 городов. Вокруг света: 18 городов. Отправка бесплатна. В пути может быть до трёх ваших караванов. У вас с собой {reg2} динаров.
+# ---- 1.2.0: joint sieges beside the commander (Freelancer)
+game_menus|mno_coop_mp_lord_siege|CoopWorld: штурмовать {s1} рядом с командиром вместе с друзьями (совместная осада на сервере мультиплеера).
+game_menus|mno_coop_mp_lord_defend|CoopWorld: держать стены {s1} рядом с командиром вместе с друзьями (совместная осада на сервере мультиплеера).
+quick_strings_en|CoopWorld: the siege is over.|CoopWorld: осада закончилась.
+quick_strings_en|CoopWorld: your commander besieges nothing now.|CoopWorld: ваш командир сейчас ничего не осаждает.
+quick_strings_en|CoopWorld: your commander goes into battle!|CoopWorld: ваш командир вступает в бой!
+quick_strings_en|CoopWorld: {reg1} skill points are free again: the levels the hero regained on loading gave them a second time. Spend them in the character screen.|CoopWorld: {reg1} очков навыков снова свободны: уровни, которые герой заново получил при загрузке, выдали их второй раз. Распределите их в окне персонажа.
+quick_strings_en|CoopWorld: the companions' skills too: {reg1} points are free again in their character screens.|CoopWorld: у компаньонов тоже: {reg1} очков навыков снова свободны в их окнах персонажа.
+# ---- 1.2.0: a client's fiefs in the host's world (coop/fiefs.py)
+game_menus|mno_coop_fief_garrison_open|CoopWorld: гарнизон вашего надела (оставить здесь людей или забрать их, в общем мире).
+game_menus|menu_coop_fief_wait|CoopWorld: гарнизон пересчитывают в мире хоста...
+game_menus|mno_coop_fief_wait_back|Назад в город.
+game_menus|mno_coop_empty_party_leave|Уйти.
+game_menus|menu_coop_fief_garrison|CoopWorld: гарнизон вашего надела.
+game_menus|mno_coop_fief_garrison_leave|Назад в город.
+game_menus|menu_coop_fief_ask|CoopWorld: владения {s1} без лорда.^^Король может пожаловать вам одно из них в общем мире. О каком вы просите?
+game_menus|mno_coop_fief_ask_back|Не сейчас.
+dialogs_en|My liege, I would ask you for a fief: one of the realm's places that has no lord.|Мой государь, прошу у вас надел: одно из владений королевства, у которого нет лорда.
+dialogs_en|You ask much. Win more renown, and more of my trust, and we shall speak of land again.|Вы просите многого. Добудьте больше славы и моего доверия - тогда и поговорим о земле.
+dialogs_en|Every hall of the realm has its lord. Take one from our enemies, and it shall be yours.|У каждого замка королевства есть свой лорд. Отнимите владение у наших врагов - и оно будет вашим.
+dialogs_en|You have served us well. Name the place you would hold.|Вы хорошо нам служили. Назовите владение, которое хотите держать.
+quick_strings_en|CoopWorld: {s1} stays with its lord in the shared world. A vassal holds fiefs there: storm one in a joint siege, or ask your king for one.|CoopWorld: {s1} остаётся за своим лордом в общем мире. Наделы там держит вассал: возьмите владение штурмом в совместной осаде или попросите его у своего короля.
+quick_strings_en|CoopWorld: the host's world does not answer about the garrison.|CoopWorld: мир хоста не отвечает насчёт гарнизона.
+quick_strings_en|CoopWorld: {s2} no longer serves its kingdom: {s1} goes back to its king.|CoopWorld: {s2} больше не служит своему королевству: {s1} возвращается королю.
+quick_strings_en|CoopWorld: {s1} is now the fief of {s2}.|CoopWorld: {s1} теперь надел игрока {s2}.
+quick_strings_en|CoopWorld: {s2} left {reg1} men in the garrison of {s1} and took {reg2}.|CoopWorld: {s2}: в гарнизон владения {s1} оставлено {reg1} человек, забрано {reg2}.
+quick_strings_en|CoopWorld: {reg1} men stay in the garrison, {reg2} come with you: the host's world hears of it...|CoopWorld: в гарнизоне остаются {reg1} человек, с вами идут {reg2}: мир хоста узнаёт об этом...
+quick_strings_en|CoopWorld: as a vassal of your kingdom you may hold fiefs in the shared world: take them in a joint siege, or ask your king for one.|CoopWorld: как вассал своего королевства вы можете держать наделы в общем мире: берите их в совместной осаде или просите у своего короля.
+quick_strings_en|CoopWorld: your king grants you {s1}. It is your fief in the shared world: its rents come to you each week, its garrison is yours to command.|CoopWorld: король жалует вам {s1}. Это ваш надел в общем мире: его доход приходит к вам каждую неделю, его гарнизон в вашем распоряжении.
+quick_strings_en|CoopWorld: {s1} was given to another, or is no longer the king's to give.|CoopWorld: {s1} отдали другому, или король больше не может им распоряжаться.
+quick_strings_en|CoopWorld: your fiefs brought you {reg1} denars: rents and tariffs, less the garrisons' wages.|CoopWorld: ваши наделы принесли вам {reg1} динаров: подати и пошлины за вычетом жалования гарнизонам.
+quick_strings_en|CoopWorld: your fiefs' garrisons cost {reg1} denars more than their rents brought.|CoopWorld: гарнизоны ваших наделов обошлись на {reg1} динаров дороже, чем принесли подати.
+quick_strings_en|CoopWorld: the garrison of {s1} is changed in the shared world.|CoopWorld: гарнизон владения {s1} изменён в общем мире.
+quick_strings_en|CoopWorld: {reg1} of the men you took were no longer in the garrison: they stay there.|CoopWorld: {reg1} из взятых вами людей уже не было в гарнизоне: они остаются там.
+quick_strings_en|CoopWorld: {s1} is no longer your fief in the shared world: its garrison stays as it was, your men stay with you.|CoopWorld: {s1} больше не ваш надел в общем мире: гарнизон остаётся прежним, ваши люди - при вас.
+quick_strings_en|CoopWorld: the host's world has not counted this garrison yet: look again in a moment.|CoopWorld: мир хоста ещё не пересчитал этот гарнизон: загляните чуть позже.
+quick_strings_en|CoopWorld: you ask your king for {s1}; his answer comes from the host's world...|CoopWorld: вы просите у короля {s1}; его ответ придёт из мира хоста...
+quick_strings_en|CoopWorld: reinforcements come for team {reg20} ({reg21} still in reserve).|CoopWorld: к команде {reg20} подходят подкрепления (в резерве ещё {reg21}).
+quick_strings_en|CoopWorld: the first troops are on the field, the others come as they fall (in reserve: team 1 {reg20}, team 2 {reg21}). To battle!|CoopWorld: первые отряды на поле, остальные подойдут по мере потерь (в резерве: команда 1 — {reg20}, команда 2 — {reg21}). В бой!
+game_menus|mno_coop_fief_gift_meet|CoopWorld: передать этому игроку один из ваших наделов.
+game_menus|mno_coop_mp_storm|CoopWorld: штурмовать стены {s1} вместе (совместная осада на сервере мультиплеера).
+game_menus|mno_coop_pl_fief_0|Передать надел игроку {s1}.
+game_menus|mno_coop_pl_fief_1|Передать надел игроку {s1}.
+game_menus|mno_coop_pl_fief_2|Передать надел игроку {s1}.
+game_menus|mno_coop_pl_fief_3|Передать надел игроку {s1}.
+game_menus|menu_coop_fief_gift|CoopWorld: какой из ваших наделов вы передаёте игроку {s30}?^^В общем мире он станет наделом игрока {s30} вместе с доходом и гарнизоном. Друг, не присягавший ни одному королевству, станет по нему вассалом вашего собственного государства; присягнувший другому королевству держать его не сможет.
+game_menus|mno_coop_fief_gift_back|Не сейчас.
+game_menus|mno_coop_siege_actions|CoopWorld: совместные действия у стен {s1} (осаждает {s2})...
+game_menus|mno_coop_siege_defend|Оборона: держать стены вместе с гарнизоном.
+game_menus|mno_coop_siege_attack|Атака: штурмовать стены вместе с осаждающими.
+game_menus|mno_coop_siege_back|Назад.
+game_menus|mno_coop_mp_join_other|В бой на противоположной стороне!
+game_menus|mno_coop_give_items|Выбрать предметы.
+game_menus|mno_coop_give_gold_100|Добавить 100 динаров.
+game_menus|mno_coop_give_gold_1000|Добавить 1000 динаров.
+game_menus|mno_coop_give_gold_10000|Добавить 10000 динаров.
+game_menus|mno_coop_give_gold_none|Без денег.
+quick_strings_en|CoopWorld: the host's world did not answer about {s1}: it stays as it was.|CoopWorld: мир хоста не ответил насчёт {s1}: всё остаётся как было.
+quick_strings_en|CoopWorld: {s1} is your fief now.|CoopWorld: {s1} теперь ваш надел.
+quick_strings_en|CoopWorld: {s2} gives you {s1}. It is your fief in the shared world: its rents come to you each week, its garrison is yours to command.|CoopWorld: {s2} передаёт вам {s1}. Это ваш надел в общем мире: его доход приходит к вам каждую неделю, его гарнизон в вашем распоряжении.
+quick_strings_en|CoopWorld: {s2} serves another kingdom than {s1}'s: it cannot be theirs. A friend who serves no kingdom may hold fiefs of your own realm.|CoopWorld: {s2} служит не тому королевству, которому принадлежит {s1}: передать нельзя. Наделы вашего государства может держать друг, не присягавший ни одному королевству.
+quick_strings_en|CoopWorld: {s2} is not in the world now: {s1} stays yours.|CoopWorld: игрока {s2} сейчас нет в мире: {s1} остаётся вашим.
+quick_strings_en|CoopWorld: the host's world has not counted {s1} yet: give it again in a moment.|CoopWorld: мир хоста ещё не учёл {s1}: попробуйте передать чуть позже.
+quick_strings_en|CoopWorld: three friends hold fiefs already: there is nobody left to hold {s1} for {s2}.|CoopWorld: наделы уже держат трое друзей: больше некому держать {s1} за игрока {s2}.
+quick_strings_en|CoopWorld: {s1} is no longer yours to give.|CoopWorld: {s1} уже не ваш, передать нельзя.
+quick_strings_en|CoopWorld: you give {s1} to {s30}; the host's world hears of it...|CoopWorld: вы передаёте {s1} игроку {s30}; мир хоста узнаёт об этом...
+quick_strings_en|CoopWorld: none of you served a kingdom: {s1} is the host's, and the host's own kingdom stands now.|CoopWorld: никто из вас не служил королевству: {s1} отходит хосту, и теперь у хоста своё королевство.
+quick_strings_en|CoopWorld: {s1} sounds the retreat: the storm is over, the men still standing go back to the siege camp.|CoopWorld: {s1} трубит отступление: штурм окончен, уцелевшие возвращаются в осадный лагерь.
+quick_strings_en|CoopWorld: your men go back to the storm (or to holding the walls).|CoopWorld: ваши люди возвращаются к штурму (или к обороне стен).
+quick_strings_en|CoopWorld: your men follow your orders now; order a charge to send them back to the storm.|CoopWorld: теперь ваши люди слушают ваши приказы; прикажите «В атаку!», чтобы вернуть их к штурму.
+quick_strings_en|Retreat|Отступить
+quick_strings_en|Retreat: sure?|Отступить: точно?
+quick_strings_en|CoopWorld: {s1} sounds the retreat: the walls are left to the enemy, the men still standing get away.|CoopWorld: {s1} трубит отступление: стены оставлены врагу, уцелевшие уходят.
+quick_strings_en|CoopWorld: {s1} sounds the retreat: the battle is over, the men still standing get away and the enemy keeps the field.|CoopWorld: {s1} трубит отступление: бой окончен, уцелевшие уходят, поле остаётся за врагом.
+quick_strings_en|CoopWorld: only a player of a campaign battle may sound the retreat.|CoopWorld: трубить отступление может только игрок боя из кампании.
+quick_strings_en|CoopWorld: Esc - Retreat ends the battle: nobody is taken prisoner, the men still standing get away.|CoopWorld: Esc — «Отступить» заканчивает бой: в плен никого не берут, уцелевшие уходят.
+quick_strings_en|CoopWorld: a fallen hero takes over one of its own soldiers. Orders lead your men yourself; a charge sends them up the walls again.|CoopWorld: павший герой берёт под управление одного из своих солдат. Приказами вы ведёте своих людей сами; приказ «В атаку!» снова отправляет их на стены.
+quick_strings_en|Opponents left: {reg0}     Your kills: {reg1}|Осталось противников: {reg0}     Ваши убийства: {reg1}
+quick_strings_en|CoopWorld: {s1} let you go only lately and leaves you alone for now.|CoopWorld: {s1} недавно отпустил вас и пока не трогает.
+quick_strings_en|Your side: {reg0} standing, {reg1} in reserve     Enemy: {reg2} standing, {reg3} in reserve     Your kills: {reg4}|Ваша сторона: {reg0} в строю, {reg1} в резерве     Враг: {reg2} в строю, {reg3} в резерве     Ваши убийства: {reg4}
+quick_strings_en|its besiegers|осаждающие
+quick_strings_en|CoopWorld: {s1} is under siege! Ride there: joint actions at its walls - defend them or storm them together.|CoopWorld: {s1} в осаде! Езжайте туда: у стен - совместные действия, оборона или штурм вместе.
+quick_strings_en|CoopWorld: {s1} is besieged by {s2}.^^Fight on the multiplayer server together with your friends: hold the walls with the garrison and the lords inside, or storm them beside the besiegers and the army camped with them. Stormed walls go to the besiegers' kingdom.^^Neither choice changes how the kingdoms see you.|CoopWorld: {s2} осаждает {s1}.^^Сражайтесь на сервере мультиплеера вместе с друзьями: держите стены с гарнизоном и лордами внутри или штурмуйте их вместе с осаждающими и армией в их лагере. Взятые стены отходят королевству осаждающих.^^Ни то, ни другое не меняет отношения королевств к вам.
+quick_strings_en|CoopWorld: {s1} is no longer besieged.|CoopWorld: {s1} больше не в осаде.
+quick_strings_en|CoopWorld: the besiegers storm {s1}! The storm waits up to {reg22} hours: joint actions at its walls - defend them or attack beside the besiegers - fight it as a joint battle.|CoopWorld: осаждающие идут на штурм {s1}! Штурм ждёт вас до {reg22} ч: совместные действия у стен - оборона или атака вместе с осаждающими - превращают его в совместный бой.
+quick_strings_en|CoopWorld: a call to arms against your allies ({s1}) - you may fight on their side.|CoopWorld: вас зовут в бой против ваших союзников ({s1}) - можно сражаться на их стороне.
+quick_strings_en|CoopWorld: your offer was accepted.|CoopWorld: ваше предложение принято.
+quick_strings_en|CoopWorld: your offer was declined and came back to you.|CoopWorld: от вашего предложения отказались, всё вернулось к вам.
+quick_strings_en|{s2}^{reg1} denars|{s2}^{reg1} динаров
+quick_strings_en|{s2}^{s3} ({reg1})|{s2}^{s3} ({reg1})
+quick_strings_en|CoopWorld: no room in your inventory for {s3}: you get its price, {reg1} denars.|CoopWorld: в инвентаре нет места для «{s3}»: вы получаете его цену, {reg1} динаров.
+quick_strings_en|{s1} begins a siege battle nearby, against your allies.^^The battle is fought on the multiplayer server. You may fight on your allies' side: against {s1}.|{s1} начинает рядом бой за стены, против ваших союзников.^^Бой идёт на сервере мультиплеера. Вы можете сражаться на стороне союзников: против {s1}.
+quick_strings_en|{s1} begins a siege battle nearby and calls you to arms.^^The battle is fought on the multiplayer server: your troops fight on {s1}'s side, or on the other side if you choose it (the walls' defenders or their stormers).|{s1} начинает рядом бой за стены и зовёт на помощь.^^Бой идёт на сервере мультиплеера: ваши отряды сражаются на стороне {s1} или, если выберете, на противоположной (защитники стен или штурмующие).
+quick_strings_en|CoopWorld: the offer is sent; waiting for the answer.|CoopWorld: предложение отправлено, ждём ответа.

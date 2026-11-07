@@ -22,6 +22,7 @@ CLI_SID, CLI_NUM_STACKS, CLI_STACKS = 2, 3, 4  # kind 3: troops of one party
 
 def net_scripts(first_dynamic):
   from coop.triggers import puppet_range
+  from coop.fiefs import capture_ops
   puppets_end = puppet_range()[1]
   return [
   # script_coop_become_server: this game owns the world; it rests so that time keeps flowing.
@@ -107,8 +108,28 @@ def net_scripts(first_dynamic):
      (try_end),
      (call_script, "script_coop_player_kingdom"),
      (assign, reg8, reg0),
+     (assign, reg10, 0),
+     (try_begin), #the host's own realm: friends storm walls for it, and hold fiefs of it
+       (eq, reg8, 0),
+       (eq, "$players_kingdom", "fac_player_supporters_faction"),
+       (faction_slot_eq, "fac_player_supporters_faction", slot_faction_state, sfs_active),
+       (assign, reg8, "fac_player_supporters_faction"),
+       (assign, reg10, reg8),
+     (try_end),
+     # whom the host's side fights, one bit for each kingdom: a friend who swore to none may storm their walls
+     (assign, reg11, 0),
+     (try_for_range, ":faction", npc_kingdoms_begin, npc_kingdoms_end),
+       (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
+       (store_relation, ":relation_2", ":faction", "fac_player_faction"),
+       (this_or_next|lt, ":relation", 0),
+       (lt, ":relation_2", 0),
+       (store_sub, ":bit", ":faction", npc_kingdoms_begin),
+       (assign, ":mask", 1),
+       (val_lshift, ":mask", ":bit"),
+       (val_or, reg11, ":mask"),
+     (try_end),
      (assign, reg9, coop_build_id),
-     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy=0&srvp=1&fac={reg8}&ver={reg9}{s17}{s14}"),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&h={reg5}&free={reg6}&x={reg2}&y={reg3}&busy=0&srvp=1&fac={reg8}&rlm={reg10}&hw={reg11}&ver={reg9}{s17}{s14}"),
     ]),
 
   # script_coop_become_client: the world simulation stops here; parties follow the server.
@@ -421,13 +442,15 @@ def net_scripts(first_dynamic):
      (try_end),
     ]),
 
-  # script_coop_server_capture: arg1 = center, arg2 = kingdom. A player stormed the center in a joint
-  # siege: its garrison is gone, it now belongs to the player's kingdom (whose king grants it as usual).
+  # script_coop_server_capture: arg1 = center, arg2 = kingdom, arg3 = the vassal who stormed it, index + 1 (0: none).
+  # A player stormed the center in a joint siege: its garrison is gone, it now belongs to the player's kingdom, whose
+  # king grants it as usual, or a vassal holds it at once (coop/fiefs.py).
   # Kingdom -1: the defenders lost a joint defence, the center goes to its besiegers' kingdom.
   ("coop_server_capture",
    [
      (store_script_param, ":center", 1),
      (store_script_param, ":kingdom", 2),
+     (store_script_param, ":vassal", 3),
      (try_begin),
        (lt, ":kingdom", 0),
        (party_get_slot, ":besieger", ":center", slot_center_is_besieged_by),
@@ -435,15 +458,61 @@ def net_scripts(first_dynamic):
        (party_is_active, ":besieger"),
        (store_faction_of_party, ":kingdom", ":besieger"),
      (try_end),
+     # nobody of the players serves a kingdom (the bridge sends the host's realm then): the walls are the host's,
+     # and its own realm is founded with them, as Native does when a player of no kingdom takes walls (11-05)
+     (assign, ":founded", 0),
+     (try_begin),
+       (eq, ":kingdom", "fac_player_supporters_faction"),
+       (faction_slot_eq, "fac_player_supporters_faction", slot_faction_state, sfs_inactive),
+       (is_between, ":center", walled_centers_begin, walled_centers_end),
+       (neg|is_between, "$players_kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+       (assign, ":founded", 1),
+     (try_end),
      (try_begin),
        (is_between, ":center", walled_centers_begin, walled_centers_end),
-       (is_between, ":kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+       (this_or_next|is_between, ":kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+       (eq, ":kingdom", "fac_player_supporters_faction"), #the host's own realm, once it stands
+       (this_or_next|neq, ":kingdom", "fac_player_supporters_faction"),
+       (this_or_next|eq, ":founded", 1),
+       (faction_slot_eq, "fac_player_supporters_faction", slot_faction_state, sfs_active),
+       (store_faction_of_party, ":had", ":center"),
+       (neq, ":had", ":kingdom"),
        (party_clear, ":center"),
        (call_script, "script_lift_siege", ":center", 0),
-       (call_script, "script_give_center_to_faction", ":center", ":kingdom"),
+       (call_script, "script_give_center_to_faction", ":center", ":kingdom"), #founds the host's realm (Native)
+       (call_script, "script_coop_walls_cleared", ":center", ":kingdom"),
        (str_store_party_name, s1, ":center"),
        (str_store_faction_name, s2, ":kingdom"),
        (display_message, "@CoopWorld: {s1} was stormed in a joint siege and now belongs to {s2}.", 0x66FF66),
+       (try_begin),
+         (eq, ":founded", 1),
+         (try_begin), #the kingdom it was taken from does not stay at peace with the new realm
+           (is_between, ":had", npc_kingdoms_begin, npc_kingdoms_end),
+           (store_relation, ":relation", ":had", "fac_player_supporters_faction"),
+           (ge, ":relation", 0),
+           (call_script, "script_diplomacy_start_war_between_kingdoms", ":had", "fac_player_supporters_faction", 1),
+         (try_end),
+         (call_script, "script_give_center_to_lord", ":center", "trp_player", 1),
+         (display_message, "@CoopWorld: none of you served a kingdom: {s1} is the host's, and the host's own kingdom stands now.", 0x66FF66),
+       (try_end),
+       ] + capture_ops() + [
+     (try_end),
+    ]),
+
+  # script_coop_walls_cleared: arg1 = a center just taken, arg2 = the kingdom it goes to: the parties of others still
+  # inside (lords whose men fell on its walls, caravans) leave it, as they would a town of their enemies
+  ("coop_walls_cleared",
+   [
+     (store_script_param, ":center", 1),
+     (store_script_param, ":owner", 2),
+     (party_get_num_attached_parties, ":n", ":center"),
+     (try_for_range_backwards, ":rank", 0, ":n"),
+       (party_get_attached_party_with_rank, ":party", ":center", ":rank"),
+       (gt, ":party", 0),
+       (party_is_active, ":party"),
+       (store_faction_of_party, ":of", ":party"),
+       (neq, ":of", ":owner"),
+       (party_detach, ":party"),
      (try_end),
     ]),
 
@@ -475,7 +544,8 @@ def net_scripts(first_dynamic):
          (is_between, ":center", walled_centers_begin, walled_centers_end),
          (display_message, "@CoopWorld: {s1} now belongs to {s2}.", 0xFFDD66),
        (try_end),
-       (party_set_slot, ":center", slot_town_lord, ":lord"),
+       (call_script, "script_coop_fief_lord", ":center", ":lord"), #the host's fiefs and this player's own
+       (party_set_slot, ":center", slot_town_lord, reg0),
      (try_end),
     ]),
 
@@ -523,8 +593,11 @@ def net_scripts(first_dynamic):
        (val_add, ":base", 1),
        (party_get_slot, ":kingdom", "p_coop_buf", ":base"),
        (val_add, ":base", 1),
+       (party_get_slot, ":meet", "p_coop_buf", ":base"), #the world party that player meets + 1, 0 none
+       (val_add, ":base", 1),
        (is_between, ":slot", 0, coop_max_players),
        (store_add, ":puppet", "p_coop_puppet_1", ":slot"),
+       (call_script, "script_coop_server_hold_met", ":puppet", ":meet"),
        # the player's kingdom: its lords leave the player alone, its enemies hunt the player
        (try_begin),
          (is_between, ":kingdom", npc_kingdoms_begin, npc_kingdoms_end),
@@ -543,10 +616,66 @@ def net_scripts(first_dynamic):
      (try_end),
      (try_for_range, ":puppet", "p_coop_puppet_1", puppets_end),
        (party_slot_eq, ":puppet", slot_party_coop_sid, 0),
+       (call_script, "script_coop_server_hold_met", ":puppet", 0),
        (disable_party, ":puppet"), #that player left
      (try_end),
-     (store_mul, reg0, ":num_players", 4),
+     (store_mul, reg0, ":num_players", 5),
      (val_add, reg0, SRV_PLAYERS),
+    ]),
+
+  # script_coop_server_hold_met: arg1 = a player's puppet, arg2 = the world party that player meets + 1 (0 none).
+  # A friend in a talk, a menu or a trade no longer pauses the world (11-07, the user's ask): only the party it
+  # meets stands still meanwhile (its AI held), and goes its way as before once the friend is back on the map.
+  ("coop_server_hold_met",
+   [
+     (store_script_param, ":puppet", 1),
+     (store_script_param, ":meet", 2),
+     (val_sub, ":meet", 1),
+     (party_get_slot, ":held", ":puppet", slot_party_coop_held),
+     (val_sub, ":held", 1),
+     (try_begin), #another party, or none: the one held goes its way
+       (ge, ":held", 0),
+       (neq, ":held", ":meet"),
+       (party_set_slot, ":puppet", slot_party_coop_held, 0),
+       (party_is_active, ":held"),
+       (party_get_slot, ":bhvr", ":held", slot_party_coop_hold_bhvr),
+       (party_set_ai_behavior, ":held", ":bhvr"),
+       (party_get_slot, ":object", ":held", slot_party_coop_hold_object),
+       (try_begin),
+         (ge, ":object", 0),
+         (party_is_active, ":object"),
+         (party_set_ai_object, ":held", ":object"),
+       (try_end),
+       (set_fixed_point_multiplier, 100),
+       (party_get_slot, ":x", ":held", slot_party_coop_hold_x),
+       (party_get_slot, ":y", ":held", slot_party_coop_hold_y),
+       (init_position, pos2),
+       (position_set_x, pos2, ":x"),
+       (position_set_y, pos2, ":y"),
+       (party_set_ai_target_position, ":held", pos2),
+     (try_end),
+     (try_begin),
+       (ge, ":meet", first_dynamic),
+       (party_is_active, ":meet"),
+       (neg|is_between, ":meet", "p_coop_puppet_1", puppets_end), #another player: its own game moves it
+       (store_add, ":mark", ":meet", 1),
+       (try_begin), #a new hold: what it was doing, to give back
+         (party_slot_eq, ":puppet", slot_party_coop_held, 0),
+         (party_set_slot, ":puppet", slot_party_coop_held, ":mark"),
+         (get_party_ai_behavior, ":bhvr", ":meet"),
+         (party_set_slot, ":meet", slot_party_coop_hold_bhvr, ":bhvr"),
+         (get_party_ai_object, ":object", ":meet"),
+         (party_set_slot, ":meet", slot_party_coop_hold_object, ":object"),
+         (set_fixed_point_multiplier, 100),
+         (party_get_ai_target_position, pos2, ":meet"),
+         (position_get_x, ":x", pos2),
+         (position_get_y, ":y", pos2),
+         (party_set_slot, ":meet", slot_party_coop_hold_x, ":x"),
+         (party_set_slot, ":meet", slot_party_coop_hold_y, ":y"),
+       (try_end),
+       (party_slot_eq, ":puppet", slot_party_coop_held, ":mark"),
+       (party_set_ai_behavior, ":meet", ai_bhvr_hold), #every report: Native's own AI may have moved it on
+     (try_end),
     ]),
 
   # script_coop_client_no_answer: a request of this player game went unanswered (the bridge window
@@ -945,13 +1074,33 @@ def net_scripts(first_dynamic):
        (val_add, ":n", 1),
      (try_end),
      (party_set_slot, "p_coop_enc", 0, ":n"),
-     # tell the server now: the map triggers may not run during the encounter
+     # tell the server now: the map triggers may not run during the encounter. enc: the party met, as the server
+     # knows it - the world holds it still meanwhile, and runs on for everyone else (11-07)
+     (party_get_slot, reg4, "$g_encountered_party", slot_party_coop_sid),
+     (val_sub, reg4, 1),
      (val_add, "$coop_net_seq", 1),
      (assign, reg1, "$coop_net_seq"),
      (position_get_x, reg2, pos1),
      (position_get_y, reg3, pos1),
-     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&busy=1&x={reg2}&y={reg3}"),
+     (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&busy=1&x={reg2}&y={reg3}&enc={reg4}"),
      (send_message_to_url, s10, 0),
+    ]),
+
+  # script_coop_client_fight_start: a client goes into a battle of its own game (Native's, with the party it met).
+  # Its menus and talks hold nothing in the world, but a battle does, as before (11-07): fight=1.
+  ("coop_client_fight_start",
+   [
+     (try_begin),
+       (eq, "$coop_role", coop_role_client),
+       (set_fixed_point_multiplier, 100),
+       (party_get_position, pos1, "p_main_party"),
+       (val_add, "$coop_net_seq", 1),
+       (assign, reg1, "$coop_net_seq"),
+       (position_get_x, reg2, pos1),
+       (position_get_y, reg3, pos1),
+       (str_store_string, s10, "@" + coop_client_url + "/cli?seq={reg1}&busy=1&fight=1&x={reg2}&y={reg3}"),
+       (send_message_to_url, s10, 0),
+     (try_end),
     ]),
 
   # script_coop_client_next_result: s13 = "&res=..." for the next remembered mirror whose size
@@ -1002,6 +1151,7 @@ def net_reply_handler():
   from coop.mp_campaign import reply_branches as mp_reply_branches
   from coop.players import reply_branches as players_reply_branches
   from coop.together import reply_branches as together_reply_branches
+  from coop.fiefs import reply_branches as fief_reply_branches
   copy = [(party_set_slot, "p_coop_buf", i, reg(i)) for i in range(coop_net_max_numbers)]
   return [
     (try_begin),
@@ -1067,11 +1217,13 @@ def net_reply_handler():
           (val_add, ":at", 1),
           (call_script, "script_coop_set_party_troops", ":puppet", ":at", ":num_pairs", 0),
         (else_try),
-          (eq, ":payload", 4), #a center a player took: center, kingdom
+          (eq, ":payload", 4), #a center a player took: center, kingdom, the vassal who stormed it (index + 1, 0 none)
           (party_get_slot, ":center", "p_coop_buf", ":at"),
           (val_add, ":at", 1),
           (party_get_slot, ":kingdom", "p_coop_buf", ":at"),
-          (call_script, "script_coop_server_capture", ":center", ":kingdom"),
+          (val_add, ":at", 1),
+          (party_get_slot, ":vassal", "p_coop_buf", ":at"),
+          (call_script, "script_coop_server_capture", ":center", ":kingdom", ":vassal"),
         (else_try),
           (eq, ":payload", 3), #a player's name: slot, and the name in s0
           (ge, ":num_strings", 1),
@@ -1137,7 +1289,7 @@ def net_reply_handler():
         (this_or_next|eq, "$coop_role", coop_role_client),
         (eq, "$coop_srv_player", 1), #the host playing on the server: who holds the world, and why
         (call_script, "script_coop_client_set_world_pause"),
-      ] + mp_reply_branches() + players_reply_branches() + together_reply_branches() + [
+      ] + mp_reply_branches() + players_reply_branches() + together_reply_branches() + fief_reply_branches() + [
       (try_end),
       (call_script, "script_coop_ping_next"),
     (try_end),

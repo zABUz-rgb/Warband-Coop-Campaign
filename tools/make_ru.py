@@ -208,6 +208,14 @@ def missing(texts, bases, ours, matched):
     return out
 
 
+def stale(texts, ours, over):
+    """(file, id) of lang/ru.csv rows kept by id whose English since took or dropped a {regN} or {sN}: the
+    English changed under the translation, which then shows the old text (or loses what the slot holds)."""
+    slots = lambda s: set(re.findall(r"\{(?:reg|s)\d+\}", s))
+    return [(f, k) for (f, k), v in (*ours.items(), *over.items())
+            if k in texts.get(f, {}) and slots(texts[f][k]) != slots(v)]
+
+
 def match_by_text(texts, native, diplomacy, ours, ours_en):
     """{file: {id: Russian}} for the files matched by English text: the russifier's Native first,
     then Diplomacy's translation, then lang/ru.csv (by English; old rows by id)."""
@@ -265,6 +273,8 @@ def main():
     unused += [(f + "_en", en) for f in BY_TEXT for en in ours_en[f] if en not in set(texts[f].values())]
     for f, k in unused:
         print(f"lang/ru.csv: {f}|{k} is not in the build (renamed or removed?)", file=sys.stderr)
+    for f, k in stale(texts, ours, over):
+        print(f"lang/ru.csv: {f}|{k}: its English has other {{reg}}/{{s}} slots now (changed? translate again)", file=sys.stderr)
     target = MODULE / "languages" / "ru"
     target.mkdir(parents=True, exist_ok=True)
     ADDITIONS.mkdir(parents=True, exist_ok=True)

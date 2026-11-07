@@ -8,6 +8,7 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC))
 from header_items import *  # noqa: E402,F403
+from header_operations import troop_set_slot  # noqa: E402
 from header_troops import tf_guarantee_horse, tf_guarantee_ranged, tf_mounted  # noqa: E402
 from custom_troops import constants as c, dialogs, game_menus, item_tiers, presentations, scripts, stats  # noqa: E402
 from custom_troops.constants import BRANCH_NAMES, KINDS, LEVELS, TIERS, kind_of, troop_id  # noqa: E402
@@ -77,15 +78,30 @@ def test_training_field():
 
 
 def test_levels_leave_tiers():
+    cost = dict(scripts.scripts)["custom_train"]
     options = game_menus.train_options()
     check([o[0] for o in options] == ["custom_train_1", "custom_train_2", "custom_train_none"],
-          "John's menu holds the picked kind's next level and nothing else")
+          "John's menu holds the picked tier's next level and nothing else")
+    from custom_troops.constants import TRAIN_TIERS, tier_kinds
+    check(TRAIN_TIERS == (1, 2, 3, 4, 5) and tier_kinds(1) == [0]
+          and all(sorted(KINDS[k][1] for k in tier_kinds(t)) == [t] * 3 for t in TIERS)
+          and sorted(k for t in TRAIN_TIERS for k in tier_kinds(t)) == list(range(len(KINDS))),
+          "a tier trains the recruit alone, or infantry, archers and riders of it: every kind once")
+    raised = [op for op in cost if isinstance(op, tuple) and op[0] == troop_set_slot]
+    check(sorted(op[2] - c.custom_slot_level for op in raised if op[2] < c.custom_slot_level_word)
+          == sorted(k for t in TRAIN_TIERS for k in tier_kinds(t)),
+          "one payment raises every kind of the tier (each tier's kinds, in its own branch of the script)")
     calls = [(name, op) for name, ops in scripts.scripts for op in ops if isinstance(op, tuple) and "script_custom_swap" in op]
     check([name for name, _ in calls] == ["custom_levels_apply"], "only a kind's level changes a soldier's troop by script")
+    from header_operations import party_force_add_members, party_add_members
+    swap = dict(scripts.scripts)["custom_swap"]
+    check(not any(isinstance(op, tuple) and op[0] == party_force_add_members for op in swap)
+          and sum(isinstance(op, tuple) and op[0] == party_add_members for op in swap) == 2,
+          "men rising to their kind's level join its stack as Native adds regulars (a force-add lost men), "
+          "and those without room stay as they were")
     train = dict(scripts.scripts)["custom_levels_apply"]
     made = [op for op in train if isinstance(op, tuple) and "script_custom_troop" in op]
     check([op[2] for op in made] == [":kind", ":kind"], "and it stays within the kind, so within the tier")
-    cost = dict(scripts.scripts)["custom_train"]
     check(not any(isinstance(op, tuple) and "script_custom_men" in str(op) for op in cost), "and no men need to stand there")
 
 
@@ -198,8 +214,11 @@ def test_dialogs():
     for branch, name in enumerate(BRANCH_NAMES):
         check(1 + branch * len(TIERS) == kind_of(name, 2), "")  # as script_custom_tier_kind counts it
     asks = [d for d in main if "gear" in d[3] or "stats" in d[3]]
-    check(len(asks) == 2 and all(d[4] == "custom_who" and not d[2] for d in asks),
-          "gear and training both ask whom, men or no men")
+    check([d[4] for d in asks] == ["custom_who", "custom_train_ask"] and not any(d[2] for d in asks),
+          "gear asks whom, training which tier; men or no men")
+    picks = [d for d in lines if d[1] == "custom_train_pick"]
+    check([d[5][0][2] for d in picks[:-1]] == [1, 2, 3, 4, 5] and picks[-1][4] == "custom_what",
+          "John trains tier 1 to 5, or nothing")
     check(len([d for d in lines if d[1] == "custom_buy_many"]) == 5, "1, 5, 10, 20, or nothing")
 
 

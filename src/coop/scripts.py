@@ -181,6 +181,16 @@ def merge(orig_scripts):
   orig_scripts.extend(players_scripts)
   from coop.together import together_scripts, encounter_end
   orig_scripts.extend(together_scripts)
+  from coop.caravans import caravan_scripts
+  orig_scripts.extend(caravan_scripts)
+  # a client's fiefs in the host's world (coop/fiefs.py)
+  from coop.fiefs import fief_scripts
+  orig_scripts.extend(fief_scripts)
+  # the smith of every town: his goods a fifth dearer than the shops'
+  from coop.smith import smith_scripts, price_ops as smith_price_ops
+  orig_scripts.extend(smith_scripts)
+  insert_before(script_block(orig_scripts, "game_get_item_buy_price_factor"), (assign, reg0, ":price_factor"),
+                smith_price_ops())
   from coop.tree import tree_scripts
   orig_scripts.extend(tree_scripts)
   response[:0] = mp_reply_hook()
@@ -214,7 +224,8 @@ def merge(orig_scripts):
     ] + block + [
         (try_end),
     ]
-  # a client's fief would exist in its own game only: the world server's center keeps its lord
+  # a client's fief taken in its own game would exist there only: the world server's center keeps its lord (a
+  # vassal's fiefs come from a joint siege or the king's grant, coop/fiefs.py)
   block = script_block(orig_scripts, "give_center_to_lord")
   if [op[0] for op in block[:3]] != [store_script_param] * 3:
     from coop_merge import MergeError
@@ -226,7 +237,7 @@ def merge(orig_scripts):
         (eq, ":lord_troop_id", "trp_player"),
         (assign, ":coop_fief_refused", 1),
         (str_store_party_name, s1, ":center_no"),
-        (display_message, "@CoopWorld: in co-op only the host holds fiefs for now. {s1} stays with its lord in the shared world; your oath, rank and relations stay yours.", 0xFFDD66),
+        (display_message, "@CoopWorld: {s1} stays with its lord in the shared world. A vassal holds fiefs there: storm one in a joint siege, or ask your king for one.", 0xFFDD66),
       (try_end),
       (try_begin),
         (eq, ":coop_fief_refused", 0),
@@ -265,6 +276,35 @@ def merge(orig_scripts):
         (is_between, ":root_attacker_party", "p_coop_puppet_1", puppets_end),
         (assign, ":coop_puppet_fight", 1),
         (set_trigger_result, 1), #end this battle
+      (try_end),
+      # the world's besiegers storm a town or castle with a player at its walls (11-07, the user's ask): the autocalc
+      # waits up to coop_storm_wait_hours, every player hears of it, and the joint actions at the walls fight the
+      # storm as a joint battle (defend or attack). With nobody at the walls, or after the wait, Native's own goes on.
+      (try_begin),
+        (eq, ":coop_puppet_fight", 0),
+        (eq, "$coop_role", coop_role_server),
+        (assign, ":coop_center", -1),
+        (try_begin),
+          (is_between, ":root_defender_party", walled_centers_begin, walled_centers_end),
+          (party_slot_eq, ":root_defender_party", slot_center_is_besieged_by, ":root_attacker_party"),
+          (assign, ":coop_center", ":root_defender_party"),
+        (else_try),
+          (is_between, ":root_attacker_party", walled_centers_begin, walled_centers_end),
+          (party_slot_eq, ":root_attacker_party", slot_center_is_besieged_by, ":root_defender_party"),
+          (assign, ":coop_center", ":root_attacker_party"),
+        (try_end),
+        (ge, ":coop_center", 0),
+        (call_script, "script_cf_coop_player_at_walls", ":coop_center"),
+        (store_current_hours, ":coop_now"),
+        (party_get_slot, ":coop_since", ":coop_center", slot_center_coop_storm_since),
+        (try_begin),
+          (eq, ":coop_since", 0),
+          (store_add, ":coop_since", ":coop_now", 1),
+          (party_set_slot, ":coop_center", slot_center_coop_storm_since, ":coop_since"),
+        (try_end),
+        (val_sub, ":coop_now", ":coop_since"),
+        (lt, ":coop_now", coop_storm_wait_hours),
+        (assign, ":coop_puppet_fight", 2), #this round of the assault is not fought: the walls wait for the players
       (try_end),
       (try_begin),
         (eq, ":coop_puppet_fight", 0),

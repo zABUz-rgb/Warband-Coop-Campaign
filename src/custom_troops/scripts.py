@@ -39,6 +39,17 @@ def train_cost_ops():
   return ops
 
 
+def tier_ops(body):
+  """Ops: body(kind) for each kind of the tier in :tier."""
+  ops = []
+  for tier in TRAIN_TIERS:
+    ops += [(try_begin), (eq, ":tier", tier)]
+    for kind in tier_kinds(tier):
+      ops += body(kind)
+    ops += [(try_end)]
+  return ops
+
+
 def own_game():
   """Conditions: a game the army's words go out from: a client, or the host while its world runs."""
   return [(this_or_next|eq, "$coop_role", coop_role_client), (eq, "$coop_role", coop_role_server),
@@ -283,7 +294,10 @@ scripts = [
     ]),
 
   # script_custom_swap: arg1 = troop, arg2 = troop: the first's men, wounded as they were, become the second's.
-  # The engine lets no script read a stack's experience: it starts anew
+  # The engine lets no script read a stack's experience: it starts anew.
+  # party_add_members, as Native adds regulars: party_force_add_members (Native's for a hero, who has no stack
+  # yet) onto a stack of the same troop lost men (1.2.0, 11-04: 5 of 91 militia, the stack already there).
+  # Men the party has no room for stay what they were
   ("custom_swap",
    [
      (store_script_param, ":from", 1),
@@ -300,57 +314,76 @@ scripts = [
      (try_begin),
        (gt, ":men", 0),
        (party_remove_members, "p_main_party", ":from", ":men"),
-       (party_force_add_members, "p_main_party", ":to", ":men"),
+       (assign, ":gone", reg0),
+       (party_add_members, "p_main_party", ":to", ":gone"),
+       (store_sub, ":left", ":gone", reg0),
+       (val_min, ":wounded", reg0),
        (party_wound_members, "p_main_party", ":to", ":wounded"),
+       (try_begin),
+         (gt, ":left", 0),
+         (party_add_members, "p_main_party", ":from", ":left"),
+       (try_end),
      (try_end),
     ]),
 
-  # script_custom_train_cost: arg1 = kind, arg2 = level the men stand at; reg0 = the next level's price
-  ("custom_train_cost",
+  # script_custom_tier_level: arg1 = tier; reg0 = the level it stands at: its lowest kind's (the kinds were trained
+  # one by one before 1.2.0, and a level bought never falls)
+  ("custom_tier_level",
    [
-     (store_script_param, ":kind", 1),
+     (store_script_param, ":tier", 1),
+     (assign, ":lowest", LEVELS[-1]),
+     ] + tier_ops(lambda kind: [(call_script, "script_custom_level", kind), (val_min, ":lowest", reg0)]) + [
+     (assign, reg0, ":lowest"),
+    ]),
+
+  # script_cf_custom_train_text: arg1 = tier, arg2 = level: an option of the training menu, or a failure when the
+  # tier does not stand at that level. reg1 = the tier, reg2 = the next level, reg4 = dinars
+  ("cf_custom_train_text",
+   [
+     (store_script_param, ":tier", 1),
      (store_script_param, ":level", 2),
-     (call_script, "script_custom_tier", ":kind"),
-     (assign, ":tier", reg0),
+     (call_script, "script_custom_tier_level", ":tier"),
+     (eq, reg0, ":level"),
+     (assign, reg1, ":tier"),
+     (call_script, "script_custom_tier_cost", ":tier", ":level"),
+     (assign, reg4, reg0),
+     (store_add, reg2, ":level", 1),
+    ]),
+
+  # script_custom_tier_cost: arg1 = tier, arg2 = the level it stands at; reg0 = the next level's price, for all its kinds
+  ("custom_tier_cost",
+   [
+     (store_script_param, ":tier", 1),
+     (store_script_param, ":level", 2),
      (assign, ":cost", 0),
      ] + train_cost_ops() + [
      (assign, reg0, ":cost"),
     ]),
 
-  # script_cf_custom_train_text: arg1 = kind, arg2 = level: an option of the training menu, or a failure when the
-  # kind does not stand at that level. s1 = the soldier, reg2 = the next level, reg4 = dinars
-  ("cf_custom_train_text",
-   [
-     (store_script_param, ":kind", 1),
-     (store_script_param, ":level", 2),
-     (call_script, "script_custom_level", ":kind"),
-     (eq, reg0, ":level"),
-     (call_script, "script_custom_troop", ":kind", ":level"),
-     (str_store_troop_name, s1, reg0),
-     (call_script, "script_custom_train_cost", ":kind", ":level"),
-     (assign, reg4, reg0),
-     (store_add, reg2, ":level", 1),
-    ]),
-
-  # script_custom_train: arg1 = kind, arg2 = the level it stands at: it goes up one, for the men there are and those
-  # to come. Their kind, and so their tier, stays
+  # script_custom_train: arg1 = tier, arg2 = the level it stands at: every kind of it standing there goes up one
+  # (infantry, archers and riders of the tier at once), for the men there are and those to come. Their kind, and so
+  # their tier, stays
   ("custom_train",
    [
-     (store_script_param, ":kind", 1),
+     (store_script_param, ":tier", 1),
      (store_script_param, ":level", 2),
-     (call_script, "script_custom_train_cost", ":kind", ":level"),
+     (call_script, "script_custom_tier_cost", ":tier", ":level"),
      (assign, ":cost", reg0),
      (store_troop_gold, ":gold", "trp_player"),
-     (call_script, "script_custom_level", ":kind"),
+     (call_script, "script_custom_tier_level", ":tier"),
      (try_begin),
        (eq, reg0, ":level"),
        (ge, ":gold", ":cost"),
        (troop_remove_gold, "trp_player", ":cost"),
        (store_add, ":next", ":level", 1),
-       (store_add, ":slot", custom_slot_level, ":kind"),
-       (troop_set_slot, custom_holder, ":slot", ":next"),
-       (store_add, ":slot", custom_slot_level_word, ":kind"),
-       (troop_set_slot, custom_holder, ":slot", custom_word_change),
+       ] + tier_ops(lambda kind: [
+         (call_script, "script_custom_level", kind),
+         (try_begin),
+           (eq, reg0, ":level"),
+           (troop_set_slot, custom_holder, custom_slot_level + kind, ":next"),
+           (troop_set_slot, custom_holder, custom_slot_level_word + kind, custom_word_change),
+         (try_end),
+       ]) + [
        (call_script, "script_custom_levels_apply"),
      (try_end),
     ]),
@@ -629,7 +662,7 @@ def merge(orig_scripts, **extra):
   ]
   # (a name never comes without its text: the bridge sees to that)
   handler = script_block(orig_scripts, "game_receive_url_response")
-  insert_before(handler, (is_between, ":kind", 27, 33), [
+  insert_before(handler, (is_between, ":kind", 27, 45), [
     (is_between, ":kind", 34, 37),
     (this_or_next|eq, "$coop_role", coop_role_client),
     (eq, "$coop_srv_player", 1),

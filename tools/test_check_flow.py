@@ -172,7 +172,7 @@ def test_hero_reads_what_it_writes():
     block = {s[0]: s[1] for s in profile_scripts}
     written = [op for op in block["coop_profile_build"] if isinstance(op, tuple) and op[:3] == (ops.troop_set_slot, PROFILE_OUT, ":at")]
     taken = [op for op in block["coop_profile_apply"] if isinstance(op, tuple) and op[0] == ops.troop_get_slot and op[2:4] == (PROFILE_IN, ":at")]
-    check(len(written) == len(taken) == 35, f"a kept hero is read as it was written: {len(written)} and {len(taken)} kinds of number")
+    check(len(written) == len(taken) == 38, f"a kept hero is read as it was written: {len(written)} and {len(taken)} kinds of number")
 
 
 def test_town_events_ask_first():
@@ -213,6 +213,129 @@ def test_tournament_teams():
         check(kills[at - 1] == (lt, team, 3), "the engine counts bots of three teams: the tournament's others stay out")
 
 
+def test_victory_to_map():
+    # 11-04: after the loot screen of a field battle the host's game never came back to the map; then, sent to the
+    # map, the emptied beaten party stayed on it and a talk with it went black
+    import module_game_menus
+    block = next(m[4] for m in module_game_menus.game_menus if m[0] == "total_victory")
+    at = block.index((val_add, "$g_total_victories", 1))
+    check(block[at + 1:at + 4] == [leave_encounter, (call_script, "script_coop_remove_beaten", "$g_enemy_party"),
+                                   change_screen_map], "a won field battle ends on the map, the beaten party gone")
+    menu = next(m for m in module_game_menus.game_menus if m[0] == "simple_encounter")
+    leave = next(o for o in menu[5] if o[0] == "encounter_leave")
+    check(leave[3][-2:] == [leave_encounter, change_screen_map], "the encounter's Leave goes to the map")
+    at = menu[4].index((eq, "$g_leave_encounter", 1))
+    check(menu[4][at + 1:at + 3] == [leave_encounter, change_screen_map], "a talk ended with farewell goes to the map")
+    empty = next(m for m in module_game_menus.game_menus if m[0] == "coop_empty_party")
+    check(empty[4][-2:] == [leave_encounter, change_screen_map], "a party with nobody in it is no talk: back to the map")
+    check([m[0] for m in module_game_menus.game_menus[-3:]] == ["coop_empty_party", "coop_fief_gift", "coop_siege_actions"],
+          "the new menus are the last: saves keep the others")
+    names = [m[0] for m in module_game_menus.game_menus]
+    check(names.index("coop_mp_invite") < names.index("coop_custom_screen" if "coop_custom_screen" in names else "custom_screen")
+          and names.index("coop_siege_actions") > names.index("coop_smith_shop"),
+          "the joint actions at the walls come after every menu of 1.1 and 1.2.0 (11-07: they had moved 1.1's)")
+    import module_scripts
+    party_met = next(s[1] for s in module_scripts.scripts if s[0] == "game_event_party_encounter")
+    check((jump_to_menu, "mnu_coop_empty_party") in party_met, "meeting an empty party opens that menu")
+
+
+def test_own_caravan_talk():
+    # 11-04: the host's own caravan got the talk of a party one attacks, and the game went out after it
+    import module_dialogs
+    starts = [d for d in module_dialogs.dialogs if d[1] == "start"]
+    ours = next(i for i, d in enumerate(starts) if d[4] == "coop_cv_met")
+    attacked = next(i for i, d in enumerate(starts) if d[3] == "What do you want?")
+    check(ours < attacked, "a players' caravan has its own words, before the talk of a party one attacks")
+    leave = [d for d in module_dialogs.dialogs if d[1] == "coop_cv_met"]
+    check(len(leave) == 1 and leave[0][4] == "close_window" and (assign, "$g_leave_encounter", 1) in leave[0][5],
+          "the caravan's talk ends with the encounter left")
+
+
+def ops_of(block):
+    """Every op of a block, nested lists flattened."""
+    return [op for op in block if isinstance(op, tuple)]
+
+
+def test_siege_and_waves():
+    # 11-05: some of the garrison came behind doors no bot opens; both sides stood under the walls; the
+    # armies came all at once (no reinforcements)
+    from coop import mp
+    from coop.constants import coop_mp_field_bots, coop_mp_mode_arena
+    from header_common import reg0
+    import coop_bridge
+    import module_scripts
+    import module_mission_templates
+    check(sorted(mp.DEFENDER_ENTRIES) == sorted(mp.SIEGE_SCENES), "every Siege map has its garrison's spawn points")
+    check(all(0 < len(e) <= 100 and max(e) <= 63 for e in mp.DEFENDER_ENTRIES.values()),
+          "the points are the mission's and fit their slots")
+    import siege_scenes
+    if all((siege_scenes.SCENE_DIR / f"{s}.sco").exists() for s in mp.SIEGE_SCENES):
+        check(siege_scenes.all_maps() == mp.DEFENDER_ENTRIES, "the points are what the scenes give (tools/siege_scenes.py)")
+    else:
+        print("skip  the game's scenes are not here: the points are not read again")
+    block = {s[0]: s[1] for s in module_scripts.scripts}
+    send = ops_of(block["coop_mp_send_bot"])
+    picked = send.index((gt, "$coop_mp_entries_n", 0))
+    native = send.index((call_script, "script_multiplayer_find_spawn_point", 0, 1, 0))
+    check(picked < native, "the garrison spawns at those points; Native's only on a map without them")
+    sent = [op for name in ("coop_mp_storm", "coop_mp_hold") for op in block[name] if isinstance(op, tuple)
+            and op[0] == agent_set_scripted_destination]
+    check(len(sent) >= 4, "the storming bots are sent up the walls and to the flag, the garrison to its posts")
+    triggers = module_mission_templates.mission_templates
+    bt = next(t for t in triggers if t[0] == "multiplayer_bt")[5]
+    gate = [i for t in bt for i, op in enumerate(t[4]) if op == (call_script, "script_cf_coop_mp_may_end")]
+    check(len(gate) == 1, "Battle's own end waits while reinforcements are to come")
+    ours = mp.mp_battle_triggers
+    siege_end = next(t for t in ours if (eq, "$coop_mp_mode", 1) in t[3])
+    check((call_script, "script_coop_mp_reserves") in siege_end[4], "a siege counts the men still to come")
+    field_end = next(t for t in ours if (eq, "$coop_mp_mode", 0) in t[3])
+    check((call_script, "script_coop_mp_reserves") in field_end[4] and (call_script, "script_coop_mp_fallen") in field_end[4],
+          "a field battle too, and a side that lost nobody is not beaten")
+    events = [t for t in ours if (ge, "$coop_mp_mode", coop_mp_mode_arena) in t[3] and t[0] == 0]
+    waves = [t for t in ours if (lt, "$coop_mp_mode", coop_mp_mode_arena) in t[3] and t[0] == 0]
+    check(len(events) == 1 and len(waves) == 1, "a joint event spawns as before, a campaign battle by waves")
+    check((call_script, "script_coop_mp_send_bot", reg0) in waves[0][4], "a wave takes the next stack's men")
+    check(coop_bridge.MP_MAX_BOTS == 1500 and coop_mp_field_bots == 150, "1500 men a battle, 150 on the field at once")
+    from coop.constants import coop_mp_max_stacks
+    check(coop_bridge.MP_MAX_STACKS == coop_mp_max_stacks, "the bridge sends no more stacks than the server keeps")
+    wave = next(t for t in ours if t[0] == 1 and (call_script, "script_coop_mp_reserves") in t[4]
+                and (call_script, "script_coop_mp_tell_all") in t[4])
+    check(any(isinstance(op, tuple) and op[0] == store_mission_timer_a for op in wave[4]),
+          "the waves are told now and then, not each one")
+    storm = next(t for t in ours if (call_script, "script_coop_mp_storm") in t[4])
+    check((call_script, "script_coop_mp_hold") in storm[4], "the storm and the hold run together")
+
+
+def test_storm_and_gift():
+    # 11-05: walls stormed together went to nobody; a client could not start a storm; a fief could not be given
+    import module_game_menus
+    import module_scripts
+    menus = {m[0]: m for m in module_game_menus.game_menus}
+    scripts = {s[0]: s[1] for s in module_scripts.scripts}
+    for name in ("castle_outside", "town"):
+        check(any(o[0] == "coop_mp_storm" for o in menus[name][5]), f"{name}: a client may storm the walls together")
+    siege = next(o for o in menus["castle_besiege"][5] if o[0] == "coop_mp_siege")
+    check(not any(isinstance(op, tuple) and len(op) > 1 and op[1] == "$players_kingdom" for op in siege[1]),
+          "the siege camp's storm asks no kingdom of a client")
+    check(any(o[0] == "coop_fief_gift_meet" for o in menus["simple_encounter"][5]),
+          "a fief is given to a friend met on the map")
+    check(any(o[0].startswith("coop_pl_fief_") for o in menus["coop_players"][5]), "or from the players menu")
+    capture = ops_of(scripts["coop_server_capture"])
+    check((eq, ":kingdom", "fac_player_supporters_faction") in capture
+          and (call_script, "script_coop_walls_cleared", ":center", ":kingdom") in capture,
+          "walls go to the host's own realm too, and its enemies leave them")
+    proxy = ops_of(scripts["coop_fief_proxy_set"])
+    check((this_or_next | eq, ":faction", "fac_player_supporters_faction") in proxy,
+          "a friend's stand-in may serve the host's own realm")
+    host = scripts["coop_host_player_request"]
+    url = next(op for op in host if isinstance(op, tuple) and op[0] == str_store_string and op[1] == 10)
+    check("&rlm={reg10}&hw={reg11}" in url[2], "the host's game says its realm and whom it fights")
+    taken = next(o for o in menus["coop_mp_wait"][5] if o[0] == "coop_mp_taken")
+    check(any(isinstance(op, tuple) and op[:2] == (call_script, "script_coop_walls_cleared") for op in taken[3])
+          or any(isinstance(op, tuple) and op[0] == call_script and op[1] == "script_coop_walls_cleared"
+                 for op in ops_of(taken[3])), "the host's own capture sends its enemies out of the walls")
+
+
 if __name__ == "__main__":
     test_dialogs()
     test_talks()
@@ -227,5 +350,9 @@ if __name__ == "__main__":
     test_holders_apart()
     test_item_numbers_checked()
     test_tournament_teams()
+    test_victory_to_map()
+    test_own_caravan_talk()
+    test_siege_and_waves()
+    test_storm_and_gift()
     test_real()
     print("all tests passed")

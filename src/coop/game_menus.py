@@ -131,17 +131,29 @@ def merge(menus):
     ("coop_camp", 0, "CoopWorld: co-op.^^This game is {s1}.", "none", coop_role_text, coop_camp))
   # joint battles on the multiplayer server
   from coop.mp_campaign import mp_campaign_menus, coop_mp_encounter_option, coop_mp_siege_option
-  from coop.mp_campaign import coop_mp_defend_option, coop_mp_lord_option
+  from coop.mp_campaign import coop_mp_lord_option, coop_mp_storm_option
+  from coop.mp_campaign import coop_mp_lord_siege_option, coop_mp_lord_defend_option
   from coop.mp_campaign import coop_mp_arena_option, coop_mp_tournament_option, coop_mp_training_option
-  menu_options(menus, "world_map_soldier").insert(0, coop_mp_lord_option)
+  menu_options(menus, "world_map_soldier")[0:0] = [coop_mp_lord_option, coop_mp_lord_siege_option,
+                                                   coop_mp_lord_defend_option]
+  # a besieged town or castle: joint actions - hold the walls or storm them beside the besiegers (11-07). They take
+  # the place of the defence alone (coop_mp_defend) and of the storm beside friendly besiegers (coop_mp_join_siege).
+  from coop.mp_campaign import coop_siege_actions_option
   town = menu_options(menus, "town")
-  town.insert(0, coop_mp_defend_option)
+  town.insert(0, coop_siege_actions_option("town"))
+  town.insert(1, coop_mp_storm_option) #a client at peace here in its own game, its friends not
   town.insert(find_by_id(town, "join_tournament") + 1, coop_mp_tournament_option)
   town.insert(find_by_id(town, "town_arena") + 1, coop_mp_arena_option)
   training = menu_options(menus, "training_ground")
   training.insert(find_by_id(training, "camp_train_melee") + 1, coop_mp_training_option)
   outside = menu_options(menus, "castle_outside")
-  outside.insert(find_by_id(outside, "castle_leave"), coop_mp_defend_option)
+  outside.insert(find_by_id(outside, "castle_leave"), coop_siege_actions_option("castle_outside"))
+  outside.insert(find_by_id(outside, "castle_leave"), coop_mp_storm_option)
+  # a siege of the world by a friendly kingdom: the players may storm with the besiegers (on the attackers' side)
+  sighted = menu_options(menus, "join_siege_outside")
+  sighted.insert(find_by_id(sighted, "leave"), coop_siege_actions_option("join_siege_outside"))
+  allies = menu_options(menus, "besiegers_camp_with_allies")
+  allies.insert(find_by_id(allies, "join_siege_with_allies") + 1, coop_siege_actions_option("besiegers_camp_with_allies"))
   siege = menu_options(menus, "castle_besiege")
   siege.insert(find_by_id(siege, "castle_lead_attack") + 1, coop_mp_siege_option)
   # meeting another player's party opens the encounter menu with the co-op choices at once: Native
@@ -150,8 +162,17 @@ def merge(menus):
   encounter = menu_block(menus, "simple_encounter")
   talk = find_line(encounter, (call_script, "script_setup_party_meeting", "$g_encountered_party"))
   first_puppet, end_puppet = _puppets()
+  # the party that took this player prisoner a moment ago (script_coop_truce_begin): no talk, no new
+  # capture; the encounter ends at once (11-06: the escaped player was met and taken again)
   encounter[talk:talk + 1] = [
     (try_begin),
+      (call_script, "script_cf_coop_truce_party"),
+      (eq, reg0, "$g_encountered_party"),
+      (str_store_party_name, s1, "$g_encountered_party"),
+      (display_message, "@CoopWorld: {s1} let you go only lately and leaves you alone for now.", 0xFFDD66),
+      (leave_encounter),
+      (change_screen_map),
+    (else_try),
       (neg | is_between, "$g_encountered_party", first_puppet, end_puppet),
       encounter[talk],
     (try_end),
@@ -163,10 +184,17 @@ def merge(menus):
   first, end = puppet_range()
   for option_id in ("encounter_attack", "encounter_order_attack"):
     options[find_by_id(options, option_id)][1].insert(0, (neg | is_between, "$g_encountered_party", first, end))
+  # a client's battle of its own game holds the world (fight=1); its menus and talks no longer do (11-07)
+  options[find_by_id(options, "encounter_attack")][3].insert(0, (call_script, "script_coop_client_fight_start"))
+  join = menu_options(menus, "join_battle")
+  join[find_by_id(join, "join_attack")][3].insert(0, (call_script, "script_coop_client_fight_start"))
+  siege[find_by_id(siege, "castle_lead_attack")][3].insert(0, (call_script, "script_coop_client_fight_start"))
   menus.extend(mp_campaign_menus)
   # players together: giving troops
   from coop.players import players_menus, encounter_options, camp_options
   options.insert(find_by_id(options, "encounter_leave"), encounter_options()[0])
+  from coop import fiefs as _fiefs
+  options.insert(find_by_id(options, "encounter_leave"), _fiefs.gift_encounter_option())
   menus.extend(players_menus)
   stop = find_by_id(coop_camp, "coop_role_stop")
   coop_camp[stop:stop] = camp_options()
@@ -178,11 +206,28 @@ def merge(menus):
   menus.extend(together.together_menus)
   stop = find_by_id(coop_camp, "coop_role_stop")
   coop_camp[stop:stop] = together.camp_options()
+  # trade caravans of the players: from the company's camp (and a town's guild master, coop/dialogs.py)
+  from coop import caravans
+  shared = menu_options(menus, "coop_shared")
+  shared.insert(find_by_id(shared, "coop_blackborn"), caravans.camp_option())
+  # the smith of every town
+  from coop import smith
+  town = menu_options(menus, "town")
+  town.insert(find_by_id(town, "town_leave"), smith.town_option())
+  # a client's fiefs live in the host's world: Native's ways of running one act on this game's copy only
+  from coop import fiefs
+  town.insert(find_by_id(town, "town_leave"), fiefs.garrison_option())
+  for option_id in ("walled_center_manage", "walled_center_move_court", "castle_station_troops",
+                    "dplmc_castle_give_troops"):
+    fiefs.client_only(town[find_by_id(town, option_id)])
+  village = menu_options(menus, "village")
+  fiefs.client_only(village[find_by_id(village, "village_manage")])
   players = menu_options(menus, "coop_players")
   at = find_by_id(players, "coop_pl_write_hero")
   for k in range(coop_max_players):
     puppet = f"p_coop_puppet_{k + 1}"
-    players[at:at] = together.players_menu_options(k, [(party_is_active, puppet), (str_store_party_name, s1, puppet)])
+    name = [(party_is_active, puppet), (str_store_party_name, s1, puppet)]
+    players[at:at] = together.players_menu_options(k, name) + [fiefs.gift_players_option(k, name)]
     at = find_by_id(players, "coop_pl_write_hero")
   players.insert(at, together.players_stop_option())
   lair = menu_options(menus, "bandit_lair")
@@ -199,3 +244,47 @@ def merge(menus):
   ]
   # the camp stops the map's requests: a call to battle must still get through
   menu_block(menus, "camp")[0:0] = [(call_script, "script_coop_ping_kick")]
+  # a field battle won, the loot screen closed: Native goes back to the map with change_screen_return. After a
+  # screen of its own (the loot screen) that return can do nothing (the camp's exit, 11-03); on 11-04 the host's game
+  # stood after it with the loot screen's last picture and messages running, then black, and asked the bridge nothing
+  # more. change_screen_map goes to the map from wherever the game stands; the encounter is left just before.
+  # The engine's return also took the emptied beaten party off the map: without it that party stayed with 0 men, and
+  # a talk with it went black (11-04), so it goes here (script_coop_remove_beaten).
+  victory = menu_block(menus, "total_victory")
+  done = find_line(victory, (val_add, "$g_total_victories", 1))
+  if victory[done + 1:done + 3] != [(leave_encounter), (change_screen_return)]:
+    raise MergeError("total_victory: expected leave_encounter, change_screen_return after the victories count")
+  victory[done + 2:done + 3] = [(call_script, "script_coop_remove_beaten", "$g_enemy_party"), (change_screen_map)]
+  # the same return did nothing in the encounter's menu (11-04): "Leave." stood, and a talk ended with "farewell"
+  # ($g_leave_encounter) came back to the menu. Both go to the map as the victory now does.
+  leave = options[find_by_id(options, "encounter_leave")][3]
+  if leave[-2:] != [(leave_encounter), (change_screen_return)]:
+    raise MergeError("simple_encounter: expected Leave to end with leave_encounter, change_screen_return")
+  leave[-1] = (change_screen_map)
+  farewell = find_line(encounter, (eq, "$g_leave_encounter", 1))
+  if encounter[farewell + 1] != (change_screen_return):
+    raise MergeError("simple_encounter: expected change_screen_return after $g_leave_encounter")
+  encounter[farewell + 1:farewell + 2] = [(leave_encounter), (change_screen_map)]
+  # "Retreat, leaving some men behind": its Continue... stood dead (11-06), as Leave did on 11-04 - the same
+  # return after the encounter's menu. It goes to the map the same way.
+  retreat = menu_options(menus, "encounter_retreat")
+  go = retreat[find_by_id(retreat, "continue")][3]
+  at = go.index((leave_encounter))
+  if go[at + 1] != (change_screen_return):
+    raise MergeError("encounter_retreat: expected leave_encounter, change_screen_return in Continue")
+  go[at + 1] = (change_screen_map)
+  # the captivity's first screen ("Your enemies take you prisoner"): its Continue... stood dead for the host on 11-06
+  # (the same return as above), and the encounter with the captor, still open, came back with the captor's talk. The
+  # encounter ends there and the game goes to the map, where the captivity runs its hours.
+  taken = menu_options(menus, "captivity_wilderness_taken_prisoner")
+  go = taken[find_by_id(taken, "continue")][3]
+  if go[-1] != (change_screen_return):
+    raise MergeError("captivity_wilderness_taken_prisoner: expected Continue to end with change_screen_return")
+  go[-1:] = [(leave_encounter), (change_screen_map)]
+  # an escape from captivity: the truce with the captor lasts a day more (script_coop_truce_escape), and the map
+  # comes back the same way
+  escape = menu_options(menus, "captivity_end_wilderness_escape")
+  go = escape[find_by_id(escape, "continue")][3]
+  at = go.index((change_screen_return))
+  go[at] = (change_screen_map)
+  go.insert(0, (call_script, "script_coop_truce_escape"))

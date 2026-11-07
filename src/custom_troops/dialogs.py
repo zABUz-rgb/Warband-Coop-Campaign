@@ -42,6 +42,14 @@ def tier_lines():
            ]] for tier in TIERS]
 
 
+def train_lines():
+  """Which tier John trains: every kind of it learns at once."""
+  return [[anyone|plyr, "custom_train_pick", [(assign, reg1, tier)],
+           "Tier {reg1}: the recruits." if tier == 1 else "Tier {reg1}: infantry, archers and riders.", "close_window",
+           [(assign, "$custom_train_tier", tier), (call_script, "script_custom_open", custom_screen_train)]]
+          for tier in TRAIN_TIERS]
+
+
 dialogs = [
   [anyone, "start", JOHN + [(eq, "$custom_army_made", 0), (eq, "$coop_role", coop_role_client)],
    "Sorry, there is nothing I can do for you.", "close_window", []],
@@ -64,8 +72,7 @@ dialogs = [
   [anyone, "custom_what", [], "Of course, my lord. What exactly do you wish to do?", "custom_main", []],
   [anyone|plyr, "custom_main", [], "Change my men's gear. Show me the equipment.", "custom_who",
    [(assign, "$custom_for", custom_screen_shop)]],
-  [anyone|plyr, "custom_main", [], "Teach them new skills. Improve their stats.", "custom_who",
-   [(assign, "$custom_for", custom_screen_train)]],
+  [anyone|plyr, "custom_main", [], "Teach them new skills. Improve their stats.", "custom_train_ask", []],
   [anyone|plyr, "custom_main", [], "I want to buy soldiers for the company.", "custom_buy", []],
   [anyone|plyr, "custom_main", NOT_CLIENT, "I want to rename something.", "custom_rename", []],
   [anyone|plyr, "custom_main", [], "Nothing, let us go on.", "close_window", []],
@@ -77,6 +84,11 @@ dialogs = [
   [anyone, "custom_tiers", [], "Which tier?", "custom_pick_tier", []],
   ] + tier_lines() + [
   [anyone|plyr, "custom_pick_tier", [], "Someone else.", "custom_who", []],
+
+  # training: a whole tier at once
+  [anyone, "custom_train_ask", [], "Which tier shall I train, my lord? All of its men learn at once.", "custom_train_pick", []],
+  ] + train_lines() + [
+  [anyone|plyr, "custom_train_pick", [], "Nothing, let us go on.", "custom_what", []],
 
   # names
   [anyone, "custom_rename", [], "What is to have a new name?", "custom_rename_what", []],

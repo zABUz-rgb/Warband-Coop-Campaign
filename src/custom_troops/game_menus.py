@@ -11,25 +11,25 @@ from custom_troops.constants import *
 
 
 def train_options():
-  """The menu's lines for the soldier picked in John's conversation ($custom_kind): the level next for its kind."""
+  """The menu's lines for the tier picked in John's conversation ($custom_train_tier): the level next for all its kinds."""
   options = []
   for level in LEVELS[:-1]:
     options.append(("custom_train_%d" % level,
       [
-        (call_script, "script_cf_custom_train_text", "$custom_kind", level),
+        (call_script, "script_cf_custom_train_text", "$custom_train_tier", level),
         (try_begin),
           (store_troop_gold, ":gold", "trp_player"),
           (lt, ":gold", reg4),
           (disable_menu_option),
         (try_end),
       ],
-      "{s1}: to level {reg2}: {reg4} dinars.",
+      "Tier {reg1}: to level {reg2}: {reg4} dinars.",
       [
-        (call_script, "script_custom_train", "$custom_kind", level),
+        (call_script, "script_custom_train", "$custom_train_tier", level),
         (jump_to_menu, "mnu_custom_train"),
       ]))
   options.append(("custom_train_none",
-                  [(call_script, "script_custom_level", "$custom_kind"), (ge, reg0, LEVELS[-1]), (disable_menu_option)],
+                  [(call_script, "script_custom_tier_level", "$custom_train_tier"), (ge, reg0, LEVELS[-1]), (disable_menu_option)],
                   "There is nothing more to teach them.", []))
   return options
 
@@ -62,20 +62,30 @@ game_menus = [
    ]),
 
   ("custom_train", 0,
-   "{s11}, tier {reg11}, level {reg12} of 3.^^John Blackborn looks them over. Training raises only their level of stats. Their tier stays as it is: it grows\
- in battles and at the training field. The price is paid once for the kind, even with none of them in your party:\
- every man of it, hired or promoted later too, stands at that level. The game cannot carry experience across, so what\
- those who stand lower have gathered towards the next tier is lost: promote those who are ready first.^^You have\
- {reg10} dinars.", "none",
+   "Tier {reg11}, level {reg12} of 3: {s11}.^^John Blackborn looks them over. Training raises only their level of\
+ stats, for every kind of the tier at once. Their tier stays as it is: it grows in battles and at the training field.\
+ The price is paid once for the tier, even with none of them in your party: every man of it, hired or promoted later\
+ too, stands at that level. The game cannot carry experience across, so what those who stand lower have gathered\
+ towards the next tier is lost: promote those who are ready first.^^You have {reg10} dinars.", "none",
    [
      (call_script, "script_coop_ping_kick"),
      (store_troop_gold, reg10, "trp_player"),
-     (call_script, "script_custom_tier", "$custom_kind"),
-     (assign, reg11, reg0),
-     (call_script, "script_custom_troop", "$custom_kind", 1),
-     (str_store_troop_name, s11, reg0),
-     (call_script, "script_custom_level", "$custom_kind"),
+     (assign, reg11, "$custom_train_tier"),
+     (call_script, "script_custom_tier_level", "$custom_train_tier"),
      (assign, reg12, reg0),
+     (str_clear, s11),
+     ] + [op for tier in TRAIN_TIERS for op in [
+       (try_begin),
+         (eq, "$custom_train_tier", tier),
+         ] + [op for k, kind in enumerate(tier_kinds(tier)) for op in [
+           (call_script, "script_custom_shown", kind),
+           (str_store_troop_name, s12, reg0),
+           (call_script, "script_custom_level", kind),
+           (assign, reg13, reg0),
+           (str_store_string, s11, "@{s12} (level {reg13})" if k == 0 else "@{s11}, {s12} (level {reg13})"),
+         ]] + [
+       (try_end),
+     ]] + [
    ],
    train_options() + [
      ("custom_train_back", [], "That is all.", [(jump_to_menu, "mnu_custom_screen")]),

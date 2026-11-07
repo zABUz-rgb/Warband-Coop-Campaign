@@ -12,6 +12,8 @@ from coop.players import player_name_to_s1, plays
 #   27 news about a player code|slot|a|b   28 the camp n|(slot, x, y, mine)*n
 #   29 the treasury token|delta|balance    30 the store offset|total|n|(item, value)*n
 #   31 the store state|slot                32 a world party near this player fights sid|enemy|on
+#   38 a camp's work token|done            39 a camp camp|mine|prisoners|men|wages
+#   40 the men left at a camp camp|state|slot   41 them camp|offset|total|n|(troop, count)*n
 # A store value is the item's modifier + 100 * its amount (food, ammunition).
 #
 # $coop_follow: the player ridden after, slot + 1. $coop_follow_party: the party ridden to (that
@@ -20,6 +22,8 @@ from coop.players import player_name_to_s1, plays
 # $coop_store_state: 0 idle, 1 asked, 2 arriving, 3 here, 4 open, 5 going back.
 # $coop_store_camp: the store was asked for from the camp's menu, which waits for it and comes back.
 # $coop_tg_camp: money moved from the camp's menu, which stays open and is told when it is done.
+# $coop_camp_at: the camp whose menu is open (its index at the bridge). $coop_cw_token: a mine built (op 1) or
+# prisoners sent into it (op 2) until the bridge answers. $coop_gar_state: the men left at a camp, as the store's.
 # $coop_ping_on: a menu is open and the game asks the bridge for invitations (see script_coop_ping_next).
 # $coop_enc_center: the party of the encounter under way, for a call to a battle to come back to.
 
@@ -60,6 +64,44 @@ def tell(code, text, color):
 
 
 together_scripts = [
+  # script_cf_coop_party_empty: arg1 = a party: passes when nobody is in it, not even a prisoner
+  ("cf_coop_party_empty",
+   [
+     (store_script_param, ":party_no", 1),
+     (party_get_num_companions, ":men", ":party_no"),
+     (eq, ":men", 0),
+     (party_get_num_prisoners, ":prisoners", ":party_no"),
+     (eq, ":prisoners", 0),
+    ]),
+
+  # script_coop_remove_beaten: arg1 = a party beaten in the field. Native's script_clear_party_group only empties it
+  # and the parties attached to it; the engine takes empty parties off the map when the encounter ends with
+  # change_screen_return. A victory here ends with change_screen_map (coop/game_menus.py), and on 11-04 the empty
+  # party stayed: a talk with it (nobody to talk to) left a black screen. Spawned parties only, never a center.
+  ("coop_remove_beaten",
+   [
+     (store_script_param, ":root", 1),
+     (try_begin),
+       (ge, ":root", first_dynamic()),
+       (party_is_active, ":root"),
+       (assign, ":last", 0),
+       (try_for_parties, ":party_no"),
+         (val_max, ":last", ":party_no"),
+       (try_end),
+       (val_add, ":last", 1),
+       (try_for_range, ":party_no", first_dynamic(), ":last"), #by id, not try_for_parties: parties go meanwhile
+         (neq, ":party_no", ":root"),
+         (party_is_active, ":party_no"),
+         (party_get_attached_to, ":to", ":party_no"),
+         (eq, ":to", ":root"),
+         (call_script, "script_cf_coop_party_empty", ":party_no"),
+         (remove_party, ":party_no"),
+       (try_end),
+       (call_script, "script_cf_coop_party_empty", ":root"),
+       (remove_party, ":root"),
+     (try_end),
+    ]),
+
   # script_coop_note: arg1 = code, args 2-4 = what it says: a line for the bridge's log (GAME_NOTES in
   # tools/coop_bridge.py). Kept here until a request can carry it: a game hears no one in a menu.
   ("coop_note",
@@ -116,6 +158,28 @@ together_scripts = [
      (assign, "$coop_store_camp", 0),
      (assign, "$coop_tg_token", 0),
      (assign, "$coop_tg_camp", 0),
+     (assign, "$coop_cw_token", 0),
+     (call_script, "script_coop_gar_drop"),
+     (try_begin),
+       (eq, "$coop_cv_token", 0),
+       (ge, "$coop_cv_step", 1), #a caravan being made ready: its price, denars and men come back
+       (call_script, "script_coop_cv_cancel"),
+     (try_end),
+     (assign, "$coop_cv_token", 0), #a save loaded: the hero is as it was then
+     (assign, "$coop_cv_step", 0),
+     (assign, "$coop_cv_show", 0),
+     (assign, "$coop_cv_fee", 0),
+     (assign, "$coop_cv_gold", 0),
+     (assign, "$coop_cv_n", 0),
+     (assign, "$coop_cv_party", 0),
+     (assign, "$coop_fief_state", 0), #a client's fief (coop/fiefs.py): nothing under way
+     (assign, "$coop_fief_menu", 0),
+     (assign, "$coop_fief_step", 0),
+     (assign, "$coop_fief_dn", 0),
+     (assign, "$coop_fief_vr_token", 0),
+     (assign, "$coop_fief_va", 0),
+     (assign, "$coop_fief_gv_token", 0), #a fief given away (both games)
+     (assign, "$coop_host_wars", 0), #the bridge tells them anew
      (assign, "$coop_ping_on", 0),
      (assign, "$coop_enc_center", 0),
      (assign, "$coop_signal_bid", 0),
@@ -312,6 +376,7 @@ together_scripts = [
      (try_for_range, ":party_no", first_dynamic(), ":last"), #by id, not try_for_parties: parties go meanwhile
        (party_is_active, ":party_no"),
        (party_slot_ge, ":party_no", slot_party_coop_mark, 1),
+       (neg|party_slot_ge, ":party_no", slot_party_coop_mark, coop_hold_tag), #the men of a camp being shown stay
        (remove_party, ":party_no"),
      (try_end),
     ]),
@@ -387,6 +452,7 @@ together_scripts = [
      (assign, reg1, 0),
      (try_for_parties, ":party_no"),
        (party_slot_ge, ":party_no", slot_party_coop_mark, coop_base_tag),
+       (neg|party_slot_ge, ":party_no", slot_party_coop_mark, coop_hold_tag),
        (party_get_slot, ":mine", ":party_no", slot_party_coop_mine),
        (assign, ":rank", 1),
        (try_begin),
@@ -433,9 +499,21 @@ together_scripts = [
        (store_relation, ":relation", ":faction", "fac_player_supporters_faction"),
        (ge, ":relation", 0),
        (str_store_party_name, s1, ":center"),
-       (display_message, "@CoopWorld: {s1} is under siege! Ride there to defend its walls together.", 0xFF6666),
+       (display_message, "@CoopWorld: {s1} is under siege! Ride there: joint actions at its walls - defend them or storm them together.", 0xFF6666),
      (try_end),
      (party_set_slot, ":center", slot_center_coop_besieger, ":besieger"),
+     # a town or castle: the fifth number is its besiegers' assault waiting for the players at its walls (11-07)
+     (try_begin),
+       (is_between, ":center", walled_centers_begin, walled_centers_end),
+       (try_begin),
+         (gt, ":bandits", 0),
+         (party_slot_eq, ":center", slot_center_coop_storm_told, 0),
+         (str_store_party_name, s1, ":center"),
+         (assign, reg22, coop_storm_wait_hours),
+         (display_message, "@CoopWorld: the besiegers storm {s1}! The storm waits up to {reg22} hours: joint actions at its walls - defend them or attack beside the besiegers - fight it as a joint battle.", 0xFF6666),
+       (try_end),
+       (party_set_slot, ":center", slot_center_coop_storm_told, ":bandits"),
+     (try_end),
      (try_begin),
        (is_between, ":center", villages_begin, villages_end),
        (try_begin),
@@ -576,6 +654,21 @@ together_scripts = [
        (display_message, "@CoopWorld: the party store does not answer.", 0xFF6666),
        (jump_to_menu, "mnu_coop_shared"),
      (else_try),
+       (is_between, "$coop_gar_state", 1, 3),
+       (val_add, "$coop_gar_asks", 1),
+       (gt, "$coop_gar_asks", coop_store_asks_max),
+       (call_script, "script_coop_gar_drop"),
+       (display_message, "@CoopWorld: the men of the camp do not answer.", 0xFF6666),
+       (jump_to_menu, "mnu_coop_shared"),
+     (else_try),
+       (eq, "$coop_fief_state", 1),
+       (val_add, "$coop_fief_asks", 1),
+       (gt, "$coop_fief_asks", coop_store_asks_max),
+       (assign, "$coop_fief_state", 0),
+       (assign, "$coop_fief_menu", 0),
+       (display_message, "@CoopWorld: the host's world does not answer about the garrison.", 0xFF6666),
+       (jump_to_menu, "mnu_town"),
+     (else_try),
        (eq, "$coop_store_state", 1),
        (val_sub, "$coop_store_wait", 1),
        (le, "$coop_store_wait", 0),
@@ -583,6 +676,10 @@ together_scripts = [
        (str_store_string, s17, "@&st=1"),
      (try_end),
      (call_script, "script_coop_store_part_to_s17"),
+     (call_script, "script_coop_camp_words_to_s17"),
+     (call_script, "script_coop_cv_words_to_s17"),
+     (call_script, "script_coop_fief_words_to_s17"),
+     (call_script, "script_coop_fief_host_to_s17"),
      ] + treasury_word() + [
      (val_add, "$coop_net_seq", 1),
      (assign, reg1, "$coop_net_seq"),
@@ -665,7 +762,7 @@ together_scripts = [
      (assign, "$coop_fight_enemy", ":enemy"),
     ]),
 
-  # script_coop_together_reply: arg1 = kind: replies 27 to 32
+  # script_coop_together_reply: arg1 = kind: replies 27 to 32, 38 to 44
   ("coop_together_reply",
    [
      (store_script_param, ":kind", 1),
@@ -716,6 +813,36 @@ together_scripts = [
        (else_try),
          (eq, ":code", coop_tell_save_again),
          (display_message, "@CoopWorld: save the game now: your friends get that save and load it.", 0xFFDD66),
+       (else_try),
+         (eq, ":code", coop_tell_week),
+         (assign, reg3, reg1),
+         (assign, reg4, reg2),
+         (display_message, "@CoopWorld: a week went by. The mines brought {reg3} denars into the treasury, the men left at the camps cost {reg4}.", 0x66CCFF),
+       (else_try),
+         (eq, ":code", coop_tell_deserted),
+         (assign, reg3, reg1),
+         (display_message, "@CoopWorld: the treasury could not pay them: {reg3} men left the camps.", 0xFF6666),
+       (else_try),
+         (eq, ":code", coop_tell_caravan_off),
+         (assign, reg3, reg2),
+         (try_begin),
+           (eq, reg1, 2),
+           (display_message, "@CoopWorld: {s1}'s caravan sets out round the world with {reg3} denars.", 0x66CCFF),
+         (else_try),
+           (display_message, "@CoopWorld: {s1}'s caravan sets out for the towns nearby with {reg3} denars.", 0x66CCFF),
+         (try_end),
+       (else_try),
+         (eq, ":code", coop_tell_caravan_home),
+         (assign, reg3, reg1),
+         (assign, reg4, reg2),
+         (display_message, "@CoopWorld: {s1}'s caravan is home: {reg3} denars into the treasury, {reg4} men stay at the camp.", 0x66FF66),
+       (else_try),
+         (eq, ":code", coop_tell_caravan_lost),
+         (display_message, "@CoopWorld: {s1}'s caravan was taken on the road: its men and denars are lost.", 0xFF6666),
+       (else_try),
+         (eq, ":code", coop_tell_caravan_disbanded),
+         (assign, reg3, reg1),
+         (display_message, "@CoopWorld: {reg3} men of {s1}'s caravan found no room at the camps and went home.", 0xFFDD66),
        (else_try),
          (eq, ":code", coop_tell_base_up), #paid only now: a word nobody answered costs nothing
          (troop_remove_gold, "trp_player", coop_base_cost),
@@ -789,7 +916,395 @@ together_scripts = [
        (call_script, "script_cf_coop_protected", ":party_no"),
        (str_store_party_name, s1, ":party_no"),
        (display_message, "@CoopWorld: {s1} is under attack nearby! Ride up to defend it together.", 0xFF6666),
+     (else_try),
+       (eq, ":kind", 38),
+       (call_script, "script_coop_mine_reply"),
+     (else_try),
+       (eq, ":kind", 39), #what a camp holds
+       (party_get_slot, ":camp", "p_coop_buf", 2),
+       (is_between, ":camp", 0, coop_max_players),
+       (store_mul, ":at", ":camp", 4),
+       (val_add, ":at", coop_camp_info),
+       (try_for_range, ":k", 3, 7),
+         (party_get_slot, ":v", "p_coop_buf", ":k"),
+         (troop_set_slot, NOTES, ":at", ":v"),
+         (val_add, ":at", 1),
+       (try_end),
+     (else_try),
+       (eq, ":kind", 40), #the men left at a camp: 0 another player has them, 1 saved
+       (party_get_slot, ":state", "p_coop_buf", 3),
+       (party_get_slot, ":slot", "p_coop_buf", 4),
+       (try_begin),
+         (eq, ":state", 1),
+         (eq, "$coop_gar_state", 5),
+         (assign, "$coop_gar_state", 0),
+         (display_message, "@CoopWorld: the men left at the camp are counted at the host.", 0x66FF66),
+       (else_try),
+         (is_between, "$coop_gar_state", 1, 3),
+         (call_script, "script_coop_gar_drop"),
+         (try_begin),
+           (eq, ":state", 0),
+           (store_add, ":tag", ":slot", 1),
+           ] + player_name_to_s1(":tag") + [
+           (display_message, "@CoopWorld: {s1} is with the men of this camp: wait for them to finish.", 0xFFDD66),
+         (else_try),
+           (display_message, "@CoopWorld: the camp is gone.", 0xFFDD66),
+         (try_end),
+         (jump_to_menu, "mnu_coop_shared"),
+       (try_end),
+     (else_try),
+       (eq, ":kind", 41),
+       (call_script, "script_coop_gar_part"),
+     (else_try),
+       (eq, ":kind", 42), #a caravan for the host's world
+       (eq, "$coop_srv_player", 1),
+       (neq, "$coop_role", coop_role_client),
+       (call_script, "script_coop_cv_spawn"),
+     (else_try),
+       (eq, ":kind", 43),
+       (eq, "$coop_srv_player", 1),
+       (neq, "$coop_role", coop_role_client),
+       (call_script, "script_coop_cv_counted"),
+     (else_try),
+       (eq, ":kind", 44),
+       (call_script, "script_coop_cv_reply"),
      (try_end),
+    ]),
+
+  # script_coop_camp_words_to_s17: what the camp's menu asked of the bridge, onto s17, again after a while
+  # until it answers: a camp's work (kind 38), the men left there asked for (kind 41) and coming back (kind 40)
+  ("coop_camp_words_to_s17",
+   [
+     (try_begin),
+       (neq, "$coop_cw_token", 0),
+       (val_sub, "$coop_cw_wait", 1),
+       (le, "$coop_cw_wait", 0),
+       (assign, "$coop_cw_wait", coop_resend_requests),
+       (assign, reg20, "$coop_cw_token"),
+       (assign, reg21, "$coop_cw_camp"),
+       (assign, reg22, "$coop_cw_op"),
+       (str_store_string, s17, "@{s17}&cw={reg20},{reg21},{reg22}"),
+       (try_for_range, ":k", 0, "$coop_cw_n"),
+         (store_mul, ":at", ":k", 2),
+         (val_add, ":at", coop_mine_pairs),
+         (troop_get_slot, reg20, NOTES, ":at"),
+         (val_add, ":at", 1),
+         (troop_get_slot, reg21, NOTES, ":at"),
+         (str_store_string, s17, "@{s17},{reg20},{reg21}"),
+       (try_end),
+     (try_end),
+     (try_begin),
+       (eq, "$coop_gar_state", 1),
+       (val_sub, "$coop_gar_wait", 1),
+       (le, "$coop_gar_wait", 0),
+       (assign, "$coop_gar_wait", coop_resend_requests),
+       (assign, reg20, "$coop_gar_camp"),
+       (str_store_string, s17, "@{s17}&go={reg20}"),
+     (else_try),
+       (eq, "$coop_gar_state", 5),
+       (try_begin),
+         (gt, "$coop_gar_wait", 0),
+         (val_sub, "$coop_gar_wait", 1),
+       (else_try),
+         (assign, reg20, "$coop_gar_token"),
+         (assign, reg21, "$coop_gar_camp"),
+         (assign, reg22, "$coop_gar_at"),
+         (assign, reg23, "$coop_gar_n"),
+         (str_store_string, s17, "@{s17}&gi={reg20},{reg21},{reg22},{reg23}"),
+         (store_add, ":end", "$coop_gar_at", coop_gar_chunk),
+         (val_min, ":end", "$coop_gar_n"),
+         (try_for_range, ":k", "$coop_gar_at", ":end"),
+           (store_mul, ":at", ":k", 3),
+           (val_add, ":at", coop_gar_slots),
+           (troop_get_slot, reg20, NOTES, ":at"),
+           (val_add, ":at", 1),
+           (troop_get_slot, reg21, NOTES, ":at"),
+           (val_add, ":at", 1),
+           (troop_get_slot, reg22, NOTES, ":at"),
+           (str_store_string, s17, "@{s17},{reg20},{reg21},{reg22}"),
+         (try_end),
+         (assign, "$coop_gar_at", ":end"),
+         (ge, "$coop_gar_at", "$coop_gar_n"),
+         (assign, "$coop_gar_at", 0),
+         (assign, "$coop_gar_wait", coop_resend_requests),
+       (try_end),
+     (try_end),
+    ]),
+
+  # script_coop_camp_info: arg1 = a camp's index: reg30 a mine there (1), reg31 prisoners in it, reg32 men left
+  # there, reg33 their wages a week, as the bridge last said
+  ("coop_camp_info",
+   [
+     (store_script_param, ":camp", 1),
+     (assign, reg30, 0),
+     (assign, reg31, 0),
+     (assign, reg32, 0),
+     (assign, reg33, 0),
+     (try_begin),
+       (is_between, ":camp", 0, coop_max_players),
+       (store_mul, ":at", ":camp", 4),
+       (val_add, ":at", coop_camp_info),
+       (troop_get_slot, reg30, NOTES, ":at"),
+       (val_add, ":at", 1),
+       (troop_get_slot, reg31, NOTES, ":at"),
+       (val_add, ":at", 1),
+       (troop_get_slot, reg32, NOTES, ":at"),
+       (val_add, ":at", 1),
+       (troop_get_slot, reg33, NOTES, ":at"),
+     (try_end),
+    ]),
+
+  # script_coop_mine_build: a mine at the camp whose menu is open; paid when the bridge says yes (kind 38)
+  ("coop_mine_build",
+   [
+     (try_begin),
+       (eq, "$coop_cw_token", 0),
+       ] + request_token("$coop_cw_token") + [
+       (assign, "$coop_cw_camp", "$coop_camp_at"),
+       (assign, "$coop_cw_op", 1),
+       (assign, "$coop_cw_n", 0),
+       (assign, "$coop_cw_wait", 0),
+       (display_message, "@CoopWorld: the miners are sent for...", 0x66CCFF),
+     (try_end),
+    ]),
+
+  # script_coop_mine_send: the prisoners the player leads (no lords) go to the mine of the camp whose menu is open.
+  # They leave the party at once; if the bridge says no (kind 38), they come back
+  ("coop_mine_send",
+   [
+     (try_begin),
+       (eq, "$coop_cw_token", 0),
+       (assign, ":n", 0),
+       (assign, ":men", 0),
+       (party_get_num_prisoner_stacks, ":stacks", "p_main_party"),
+       (try_for_range_backwards, ":stack", 0, ":stacks"),
+         (lt, ":n", coop_mine_stacks),
+         (party_prisoner_stack_get_troop_id, ":troop", "p_main_party", ":stack"),
+         (neg|troop_is_hero, ":troop"),
+         (party_prisoner_stack_get_size, ":count", "p_main_party", ":stack"),
+         (gt, ":count", 0),
+         (store_mul, ":at", ":n", 2),
+         (val_add, ":at", coop_mine_pairs),
+         (troop_set_slot, NOTES, ":at", ":troop"),
+         (val_add, ":at", 1),
+         (troop_set_slot, NOTES, ":at", ":count"),
+         (party_remove_prisoners, "p_main_party", ":troop", ":count"),
+         (val_add, ":n", 1),
+         (val_add, ":men", ":count"),
+       (try_end),
+       (gt, ":n", 0),
+       ] + request_token("$coop_cw_token") + [
+       (assign, "$coop_cw_camp", "$coop_camp_at"),
+       (assign, "$coop_cw_op", 2),
+       (assign, "$coop_cw_n", ":n"),
+       (assign, "$coop_cw_wait", 0),
+       (assign, reg1, ":men"),
+       (display_message, "@CoopWorld: {reg1} prisoners are led to the mine...", 0x66CCFF),
+     (try_end),
+    ]),
+
+  # script_coop_mine_reply: kind 38, the bridge's answer to a camp's work
+  ("coop_mine_reply",
+   [
+     (party_get_slot, ":token", "p_coop_buf", 2),
+     (party_get_slot, ":done", "p_coop_buf", 3),
+     (try_begin),
+       (gt, ":token", 0),
+       (eq, ":token", "$coop_cw_token"),
+       (assign, "$coop_cw_token", 0),
+       (try_begin),
+         (eq, "$coop_cw_op", 1),
+         (try_begin),
+           (eq, ":done", 1),
+           (troop_remove_gold, "trp_player", coop_mine_cost),
+           (display_message, "@CoopWorld: the mine is dug. Send prisoners there: each brings 10 denars a week into the treasury.", 0x66FF66),
+         (else_try),
+           (display_message, "@CoopWorld: no mine was dug: the camp is gone, or has one already. Nothing was paid.", 0xFFDD66),
+         (try_end),
+       (else_try),
+         (eq, ":done", 1),
+         (display_message, "@CoopWorld: the prisoners are at work in the mine.", 0x66FF66),
+       (else_try),
+         (try_for_range, ":k", 0, "$coop_cw_n"),
+           (store_mul, ":at", ":k", 2),
+           (val_add, ":at", coop_mine_pairs),
+           (troop_get_slot, ":troop", NOTES, ":at"),
+           (val_add, ":at", 1),
+           (troop_get_slot, ":count", NOTES, ":at"),
+           (party_add_prisoners, "p_main_party", ":troop", ":count"),
+         (try_end),
+         (display_message, "@CoopWorld: the mine is gone: the prisoners stay with you.", 0xFFDD66),
+       (try_end),
+       (assign, "$coop_cw_n", 0),
+       (eq, "$coop_tg_camp", 1), #the camp's menu shows what came of it
+       (assign, "$coop_tg_camp", 0),
+       (jump_to_menu, "mnu_coop_shared"),
+     (try_end),
+    ]),
+
+  # script_coop_gar_drop: whatever was under way with the men left at a camp is let go (nobody left the player yet:
+  # the men go onto p_temp_party only right before the screen and come off it right after)
+  ("coop_gar_drop",
+   [
+     (assign, "$coop_gar_party", 0),
+     (assign, "$coop_gar_state", 0),
+     (assign, "$coop_gar_step", 0),
+     (assign, "$coop_gar_menu", 0),
+     (assign, "$coop_gar_got", 0),
+    ]),
+
+  # script_coop_hold_recover: the men 1.2.0 before this fix left in a hidden party of its own (slot_party_coop_mark
+  # coop_hold_tag) come back to the player, and the party goes
+  ("coop_hold_recover",
+   [
+     (assign, ":men", 0),
+     (try_for_parties, ":party"),
+       (neq, ":party", "p_main_party"),
+       (party_slot_eq, ":party", slot_party_coop_mark, coop_hold_tag),
+       (party_get_num_companion_stacks, ":stacks", ":party"),
+       (try_for_range, ":stack", 0, ":stacks"),
+         (party_stack_get_troop_id, ":troop", ":party", ":stack"),
+         (party_stack_get_size, ":count", ":party", ":stack"),
+         (neq, ":troop", "trp_player"),
+         (gt, ":count", 0),
+         (party_add_members, "p_main_party", ":troop", ":count"),
+         (val_add, ":men", ":count"),
+       (try_end),
+       (party_get_num_prisoner_stacks, ":stacks", ":party"),
+       (try_for_range, ":stack", 0, ":stacks"),
+         (party_prisoner_stack_get_troop_id, ":troop", ":party", ":stack"),
+         (party_prisoner_stack_get_size, ":count", ":party", ":stack"),
+         (gt, ":count", 0),
+         (party_add_prisoners, "p_main_party", ":troop", ":count"),
+         (val_add, ":men", ":count"),
+       (try_end),
+       (party_set_slot, ":party", slot_party_coop_mark, 0),
+       (remove_party, ":party"),
+     (try_end),
+     (try_begin),
+       (gt, ":men", 0),
+       (assign, reg1, ":men"),
+       (display_message, "@CoopWorld: {reg1} men who went missing on the way to the camp or a caravan are back with you.", 0x66FF66),
+     (try_end),
+    ]),
+
+  # script_coop_gar_fill: the men left at a camp, as the bridge sent them (NOTES from coop_gar_slots), onto
+  # p_temp_party for the screen (Native shows the men freed after a battle on it)
+  ("coop_gar_fill",
+   [
+     (party_clear, "p_temp_party"),
+     (val_min, "$coop_gar_got", coop_gar_stacks),
+     (try_for_range, ":k", 0, "$coop_gar_got"),
+       (store_mul, ":at", ":k", 3),
+       (val_add, ":at", coop_gar_slots),
+       (troop_get_slot, ":troop", NOTES, ":at"),
+       (val_add, ":at", 1),
+       (troop_get_slot, ":count", NOTES, ":at"),
+       (gt, ":troop", 0),
+       (neg|troop_is_hero, ":troop"),
+       (gt, ":count", 0),
+       (party_add_members, "p_temp_party", ":troop", ":count"),
+     (try_end),
+    ]),
+
+  # script_coop_gar_part: kind 41, the men left at a camp, part by part, into NOTES from coop_gar_slots (only this
+  # game's numbers: nobody moves before the screen)
+  ("coop_gar_part",
+   [
+     (party_get_slot, ":camp", "p_coop_buf", 2),
+     (party_get_slot, ":offset", "p_coop_buf", 3),
+     (party_get_slot, ":total", "p_coop_buf", 4),
+     (party_get_slot, ":n", "p_coop_buf", 5),
+     (try_begin),
+       (is_between, "$coop_gar_state", 1, 3),
+       (eq, ":camp", "$coop_gar_camp"),
+       (eq, ":offset", "$coop_gar_got"),
+       (try_for_range, ":k", 0, ":n"),
+         (store_mul, ":at", ":k", 2),
+         (val_add, ":at", 6),
+         (party_get_slot, ":troop", "p_coop_buf", ":at"),
+         (val_add, ":at", 1),
+         (party_get_slot, ":count", "p_coop_buf", ":at"),
+         (store_add, ":stack", ":offset", ":k"),
+         (lt, ":stack", coop_gar_stacks),
+         (store_mul, ":to", ":stack", 3),
+         (val_add, ":to", coop_gar_slots),
+         (troop_set_slot, NOTES, ":to", ":troop"),
+         (val_add, ":to", 1),
+         (troop_set_slot, NOTES, ":to", ":count"),
+         (val_add, ":to", 1),
+         (troop_set_slot, NOTES, ":to", 0),
+       (try_end),
+       (assign, "$coop_gar_state", 2),
+       (store_add, "$coop_gar_got", ":offset", ":n"),
+       (ge, "$coop_gar_got", ":total"),
+       (assign, "$coop_gar_state", 3),
+       (eq, "$coop_gar_menu", 1),
+       (assign, "$coop_gar_step", 1),
+       (jump_to_menu, "mnu_coop_garrison"),
+     (try_end),
+    ]),
+
+  # script_coop_gar_read: the screen closed: the men on the camp's side stay there, up to coop_camp_men (the rest,
+  # lords and prisoners come back to the player), and go back to the bridge part by part with their wage
+  ("coop_gar_read",
+   [
+     (assign, ":n", 0),
+     (assign, ":men", 0),
+     (try_begin),
+       (party_get_num_prisoner_stacks, ":stacks", "p_temp_party"),
+       (try_for_range_backwards, ":stack", 0, ":stacks"),
+         (party_prisoner_stack_get_troop_id, ":troop", "p_temp_party", ":stack"),
+         (party_prisoner_stack_get_size, ":count", "p_temp_party", ":stack"),
+         (party_add_prisoners, "p_main_party", ":troop", ":count"),
+       (try_end),
+       (party_get_num_companion_stacks, ":stacks", "p_temp_party"),
+       (try_for_range, ":stack", 0, ":stacks"),
+         (party_stack_get_troop_id, ":troop", "p_temp_party", ":stack"),
+         (party_stack_get_size, ":count", "p_temp_party", ":stack"),
+         (try_begin),
+           (troop_is_hero, ":troop"),
+           (party_add_members, "p_main_party", ":troop", 1),
+         (else_try),
+           (store_sub, ":room", coop_camp_men, ":men"),
+           (store_sub, ":back", ":count", ":room"),
+           (try_begin),
+             (this_or_next|gt, ":back", 0),
+             (ge, ":n", coop_gar_stacks),
+             (val_min, ":back", ":count"),
+             (try_begin),
+               (ge, ":n", coop_gar_stacks),
+               (assign, ":back", ":count"),
+             (try_end),
+             (party_add_members, "p_main_party", ":troop", ":back"),
+             (val_sub, ":count", ":back"),
+             (assign, reg1, ":back"),
+             (str_store_troop_name_by_count, s1, ":troop", ":back"),
+             (display_message, "@CoopWorld: the camp has room for 80 men: {reg1} {s1} stay with you.", 0xFFDD66),
+           (try_end),
+           (gt, ":count", 0),
+           (call_script, "script_game_get_troop_wage", ":troop", 0),
+           (store_mul, ":at", ":n", 3),
+           (val_add, ":at", coop_gar_slots),
+           (troop_set_slot, NOTES, ":at", ":troop"),
+           (val_add, ":at", 1),
+           (troop_set_slot, NOTES, ":at", ":count"),
+           (val_add, ":at", 1),
+           (troop_set_slot, NOTES, ":at", reg0),
+           (val_add, ":n", 1),
+           (val_add, ":men", ":count"),
+         (try_end),
+       (try_end),
+     (try_end),
+     (party_clear, "p_temp_party"),
+     (call_script, "script_coop_gar_drop"),
+     (assign, "$coop_gar_n", ":n"),
+     (assign, "$coop_gar_at", 0),
+     (assign, "$coop_gar_wait", 0),
+     ] + request_token("$coop_gar_token") + [
+     (assign, "$coop_gar_state", 5),
+     (assign, reg1, ":men"),
+     (display_message, "@CoopWorld: {reg1} men stay at the camp.", 0x66CCFF),
     ]),
 
   # script_coop_after_battle: arg1 = won: what a joint battle was about, after its outcome
@@ -921,8 +1436,16 @@ together_scripts = [
   ("coop_ping_send",
    [
      (try_begin),
+       (call_script, "script_coop_fief_waiting"), #a word about a client's fief (coop/fiefs.py)
+       (eq, reg0, 1),
+       (call_script, "script_coop_store_send"),
+     (else_try),
        (this_or_next|is_between, "$coop_store_state", 1, 3),
        (this_or_next|eq, "$coop_store_state", 5),
+       (this_or_next|neq, "$coop_cw_token", 0),
+       (this_or_next|neq, "$coop_cv_token", 0),
+       (this_or_next|is_between, "$coop_gar_state", 1, 3),
+       (this_or_next|eq, "$coop_gar_state", 5),
        (neq, "$coop_tg_token", 0),
        (call_script, "script_coop_store_send"),
      (else_try),
@@ -1067,6 +1590,11 @@ def request_suffix():
       (str_store_string, s17, "@{s17}&st=1"),
     (try_end),
     (call_script, "script_coop_store_part_to_s17"),
+    (call_script, "script_coop_camp_words_to_s17"),
+    (call_script, "script_coop_cv_words_to_s17"),
+    (call_script, "script_coop_cv_host_to_s17"),
+    (call_script, "script_coop_fief_words_to_s17"),
+    (call_script, "script_coop_fief_host_to_s17"),
     (call_script, "script_coop_note_to_s17"),
   ]
 
@@ -1106,8 +1634,14 @@ def encounter_end():
   call to a battle."""
   return [
     (try_begin),
+      # a party nobody is left in (a beaten one the map kept): no talk, it goes and the player is back on the map
+      (ge, "$g_encountered_party", first_dynamic()),
+      (call_script, "script_cf_coop_party_empty", "$g_encountered_party"),
+      (jump_to_menu, "mnu_coop_empty_party"),
+    (else_try),
       (ge, "$g_encountered_party", first_dynamic()),
       (party_slot_ge, "$g_encountered_party", slot_party_coop_mark, coop_base_tag),
+      (neg|party_slot_ge, "$g_encountered_party", slot_party_coop_mark, coop_hold_tag),
       (jump_to_menu, "mnu_coop_shared"),
     (else_try),
       (eq, "$coop_role", coop_role_client),
@@ -1122,10 +1656,10 @@ def encounter_end():
 
 
 def reply_branches():
-  """else_try branches for net_reply_handler: kinds 27 to 32 (33 says nothing)."""
+  """else_try branches for net_reply_handler: kinds 27 to 32 and 38 to 44."""
   return [
     (else_try),
-      (is_between, ":kind", 27, 33),
+      (is_between, ":kind", 27, 45), #33 to 37 say nothing here (37 goes to the host's game before this)
       (this_or_next|eq, "$coop_role", coop_role_client),
       (eq, "$coop_srv_player", 1),
       (call_script, "script_coop_together_reply", ":kind"),
@@ -1267,6 +1801,55 @@ def village_option(ready):
     ])
 
 
+def mine_options():
+  """The camp's mine and the men left there (the bridge keeps both with the treasury)."""
+  stay = [(assign, "$coop_tg_camp", 1), (call_script, "script_coop_ping_kick"), (jump_to_menu, "mnu_coop_shared")]
+  info = [(call_script, "script_coop_camp_info", "$coop_camp_at")]
+  return [
+    ("coop_mine_build",
+     plays() + info + [(ge, "$coop_camp_at", 0), (eq, reg30, 0), (eq, "$coop_cw_token", 0),
+                       (party_slot_eq, "$g_encountered_party", slot_party_coop_mine, 1),
+                       (try_begin),
+                         (store_troop_gold, ":gold", "trp_player"),
+                         (lt, ":gold", coop_mine_cost),
+                         (disable_menu_option),
+                       (try_end)],
+     "Dig a mine here (%d denars): each prisoner sent there brings %d denars a week into the treasury." % (coop_mine_cost, coop_mine_pay),
+     [(call_script, "script_coop_mine_build")] + stay),
+    ("coop_mine_send",
+     plays() + info + [(eq, reg30, 1), (eq, "$coop_cw_token", 0),
+                       (assign, reg5, 0),
+                       (party_get_num_prisoner_stacks, ":stacks", "p_main_party"),
+                       (try_for_range, ":stack", 0, ":stacks"),
+                         (party_prisoner_stack_get_troop_id, ":troop", "p_main_party", ":stack"),
+                         (neg|troop_is_hero, ":troop"),
+                         (party_prisoner_stack_get_size, ":count", "p_main_party", ":stack"),
+                         (val_add, reg5, ":count"),
+                       (try_end),
+                       (gt, reg5, 0)],
+     "Send your prisoners to the mine ({reg5} men; lords stay with you).",
+     [(call_script, "script_coop_mine_send")] + stay),
+    ("coop_mine_wait", plays() + [(neq, "$coop_cw_token", 0)], "The miners are at work. Look again.",
+     [(jump_to_menu, "mnu_coop_shared")]),
+    ("coop_gar_open",
+     plays() + info + [(ge, "$coop_camp_at", 0), (eq, "$coop_gar_state", 0), (eq, "$coop_store_state", 0)],
+     "The men left at the camp ({reg32} of %d): leave men here, or take them along (one player at a time)." % coop_camp_men,
+     [
+       (assign, "$coop_tg_camp", 0),
+       (assign, "$coop_gar_state", 1),
+       (assign, "$coop_gar_camp", "$coop_camp_at"),
+       (assign, "$coop_gar_got", 0),
+       (assign, "$coop_gar_wait", 0),
+       (assign, "$coop_gar_asks", 0),
+       (assign, "$coop_gar_menu", 1),
+       (call_script, "script_coop_ping_kick"),
+       (jump_to_menu, "mnu_coop_garrison_wait"),
+     ]),
+    ("coop_gar_wait", plays() + [(eq, "$coop_gar_state", 5)], "The men left at the camp are being counted. Look again.",
+     [(jump_to_menu, "mnu_coop_shared")]),
+  ]
+
+
 def treasury_options():
   """The camp's menu stays open: the word goes by the chain of requests a menu runs, and the answer reloads it."""
   stay = [(assign, "$coop_tg_camp", 1), (call_script, "script_coop_ping_kick"), (jump_to_menu, "mnu_coop_shared")]
@@ -1297,11 +1880,32 @@ def treasury_options():
 together_menus = [
   # the company's camp, met on the map: the treasury, the store and its people
   ("coop_shared", 0,
-   "CoopWorld: the company's camp.^^The treasury holds {reg1} denars; you carry {reg2}. Here every player can put money in and take it out; so with the store's things. They are kept at the host, in shared.json, and stay there from session to session.",
+   "CoopWorld: the company's camp.^^The treasury holds {reg1} denars; you carry {reg2}. Here every player can put money in and take it out; so with the store's things. They are kept at the host, in shared.json, and stay there from session to session.^^{s5}",
    "none",
-   [(set_background_mesh, "mesh_pic_camp"), (assign, reg1, "$coop_shared_gold"), (store_troop_gold, reg2, "trp_player")],
-   treasury_options() + [
-     ("coop_store_open", plays() + [(eq, "$coop_store_state", 0)],
+   [
+     (set_background_mesh, "mesh_pic_camp"),
+     (call_script, "script_coop_hold_recover"),
+     (assign, "$coop_camp_at", -1),
+     (try_begin),
+       (party_slot_ge, "$g_encountered_party", slot_party_coop_mark, coop_base_tag),
+       (neg|party_slot_ge, "$g_encountered_party", slot_party_coop_mark, coop_hold_tag),
+       (party_get_slot, "$coop_camp_at", "$g_encountered_party", slot_party_coop_mark),
+       (val_sub, "$coop_camp_at", coop_base_tag),
+     (try_end),
+     (call_script, "script_coop_camp_info", "$coop_camp_at"),
+     (store_mul, reg34, reg31, coop_mine_pay),
+     (try_begin),
+       (eq, reg30, 1),
+       (str_store_string, s5, "@The mine: {reg31} prisoners at work bring {reg34} denars a week."),
+     (else_try),
+       (str_store_string, s5, "@No mine here: the camp's owner can dig one."),
+     (try_end),
+     (str_store_string, s5, "@{s5} Men left here: {reg32} of %d, paid half their wage out of the treasury, {reg33} denars a week; those it cannot pay leave." % coop_camp_men),
+     (assign, reg1, "$coop_shared_gold"),
+     (store_troop_gold, reg2, "trp_player"),
+   ],
+   treasury_options() + mine_options() + [
+     ("coop_store_open", plays() + [(eq, "$coop_store_state", 0), (eq, "$coop_gar_state", 0)],
       "Open the party store (one player at a time).",
       [
         (assign, "$coop_tg_camp", 0),
@@ -1314,8 +1918,13 @@ together_menus = [
       ]),
      ("coop_blackborn", [], "Talk to John Blackborn.",
       [(assign, "$coop_tg_camp", 0), (call_script, "script_coop_blackborn_talk")]),
-     ("coop_base_down", plays() + [(party_slot_eq, "$g_encountered_party", slot_party_coop_mine, 1)],
-      "Take the camp down (the treasury and the store stay with the company, the denars do not come back).",
+     ("coop_base_down", plays() + [(party_slot_eq, "$g_encountered_party", slot_party_coop_mine, 1),
+                                   (call_script, "script_coop_camp_info", "$coop_camp_at"),
+                                   (try_begin),
+                                     (gt, reg32, 0), #they would have nowhere to stay
+                                     (disable_menu_option),
+                                   (try_end)],
+      "Take the camp down (lead the men left here out first; the treasury, the store and the mine stay with the company, the denars do not come back).",
       [
         (assign, "$coop_tg_camp", 0),
         (assign, "$coop_base_send", 2),
@@ -1380,6 +1989,55 @@ together_menus = [
       ]),
    ]),
 
+]
+
+
+# 1.2.0: after every menu of 1.1 (src/late), so that a save made in one of those opens the same menu
+garrison_menus = [
+  # the men left at a camp are asked for from here, as the store
+  ("coop_garrison_wait", 0,
+   "CoopWorld: the men left at the camp are called...",
+   "none",
+   [(set_background_mesh, "mesh_pic_camp")],
+   [
+     ("coop_garrison_wait_back", [], "Back to the camp.",
+      [(call_script, "script_coop_gar_drop"), (jump_to_menu, "mnu_coop_shared")]),
+   ]),
+
+  # them on the screen Native shows the men freed after a battle on: what stays on their side when it closes
+  # stays at the camp
+  ("coop_garrison", 0,
+   "CoopWorld: the men left at the camp.",
+   "none",
+   [
+     (try_begin),
+       (eq, "$coop_gar_step", 1),
+       (assign, "$coop_gar_step", 2),
+       (assign, "$coop_gar_state", 4),
+       (call_script, "script_coop_gar_fill"),
+       (change_screen_exchange_with_party, "p_temp_party"),
+     (else_try),
+       (eq, "$coop_gar_step", 2),
+       (call_script, "script_coop_gar_read"),
+       (call_script, "script_coop_ping_kick"),
+       (jump_to_menu, "mnu_coop_shared"),
+     (try_end),
+   ],
+   [
+     ("coop_garrison_leave", [], "Back to the map.",
+      [
+        (try_begin),
+          (eq, "$coop_gar_step", 2),
+          (call_script, "script_coop_gar_read"),
+        (try_end),
+        (leave_encounter),
+        (change_screen_map),
+      ]),
+   ]),
+]
+
+
+together_menus += [
   ("coop_map_fight", 0,
    "CoopWorld: {s2} are attacking {s1} here.",
    "none",
@@ -1418,5 +2076,25 @@ together_menus = [
         (call_script, "script_coop_client_mp_begin_event", coop_event_duel, ":slot", 0, 0),
       ]),
      ("coop_duel_back", [], "Go back.", [(jump_to_menu, "mnu_coop_players")]),
+   ]),
+]
+
+
+# a party nobody is left in, met on the map (encounter_end): it goes, and so does the encounter. Last of src/late, so
+# the menus before it keep their numbers in saves
+empty_party_menus = [
+  ("coop_empty_party", 0,
+   "{!}Nobody is left of this party.",
+   "none",
+   [
+     (try_begin), #a client's mirror is the bridge's to take away
+       (neq, "$coop_role", coop_role_client),
+       (call_script, "script_coop_remove_beaten", "$g_encountered_party"),
+     (try_end),
+     (leave_encounter),
+     (change_screen_map),
+   ],
+   [
+     ("coop_empty_party_leave", [], "Leave.", [(leave_encounter), (change_screen_map)]),
    ]),
 ]

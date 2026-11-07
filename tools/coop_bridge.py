@@ -35,13 +35,15 @@ World server -> /srv?seq=S&h=H&sv=V&n=K&d=sid,tmpl,x,y,tx,ty,att;...[&c=sid,t1,n
     d: spawned parties: position, where the party is heading (tx,ty), and the party it is inside
        (a town) + 1, or 0 on the open map; c: troops of one party (or a town's or castle's garrison)
        near a player; cf: whom one center belongs to and who besieges it, round robin; h: game hours.
-    reply 7777|1|pause|joins|np|slot|x|y|kingdom|...(np players)|kind|payload...
+    reply 7777|1|pause|joins|np|slot|x|y|kingdom|meet|...(np players)|kind|payload...
       kingdom: the faction the player serves (0: none), which the puppet takes on the server
-      pause 1: a player is in an encounter, a battle or a menu: the world stands still
+      meet: the world party that player meets, + 1 (0 none): the server holds it still meanwhile
+      pause 1: the host off its map, or a player in a battle: the world stands still
       joins: how many times a player game joined (a held world runs again when it changes)
       kind 0: nothing   1: battle result sid|destroyed|n|t1|n1|...|np|t1|n1|... (np: prisoners it takes)
-      2: player troops slot|n|t1|n1|...   4: a center stormed in a joint siege center|kingdom
-         (kingdom -1: the defenders of a joint defence fell, the besiegers' kingdom takes it)
+      2: player troops slot|n|t1|n1|...   4: a center stormed in a joint siege center|kingdom|vassal
+         (kingdom -1: the defenders of a joint defence fell, the besiegers' kingdom takes it; vassal: index + 1 of
+         the client who stormed it as a vassal of that kingdom, whose stand-in holds it, 0 none)
       kind 3: player name slot, and the name as the reply's last (string) token
 
 Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res=sid,destroyed,t1,n1,...]
@@ -53,23 +55,48 @@ Player game -> /cli?seq=S&h=H&free=F&x=X&y=Y&busy=B&fac=K[&hello=1][&bye=1][&res
     fac: the kingdom the player serves (0: none); lord: the world party of the lord the player serves
     as a soldier (Freelancer), -1 or absent: none; pf: part of the player's hero (the profile, see
     coop/profile.py), kept by the hub in profiles.json under the player's name and sent back
-    (kind 14) when that player joins again, or asks again with pfq (the answer got lost); give: offer troops to the player in slot; giveans:
+    (kind 14) when that player joins again, or asks again with pfq (the answer got lost); give: offer troops, items (code
+    100000 + item, value amount * 100 + modifier) and denars (code 99999) to the player in slot, all passed on as they
+    come (coop/players.py); giveans:
     the answer to offer id (see coop/players.py);
     lg: a note for the log (GAME_NOTES below); fl: ride after the player in slot (0: stop); bs: this
     player's camp on everybody's map (-: take it down); tg: put amount denars into the shared treasury,
     or take them (negative), repeated until kind 29 answers that token; st: open the party store;
     sti: part of the party store coming back, pairs (item, modifier + 100 * amount), repeated until kind 31;
+    cw: work at a camp, token,camp,op[,values]: op 1 build a mine there (the game pays once kind 38 says yes),
+    op 2 prisoners into its mine, pairs (troop, count), taken from the hero already; repeated until kind 38;
+    go: open the troops left at a camp (one player at a time, kind 40/41); gi: they come back,
+    token,camp,offset,total,(troop,count,wage)..., repeated until kind 40 says saved;
+    cv: a trade caravan sent off, token,type,denars,x,y,enemies,(troop,count)...: type 1 five towns, 2 eighteen;
+    enemies one bit for each kingdom at war with the player (bit k: kingdoms_begin + k); repeated until kind 44;
+    cvl: (the host's game) the caravans on its map, tokens; cve: one of them home, token,denars,(troop,count,level,
+    wage)..., repeated until kind 43;
+    vas: 1 the hero holds the homage of the kingdom fac (once its own hero is in place), 0 none: a vassal holds fiefs
+    in the host's world through a stand-in lord (coop/fiefs.py); vr: token,center the king asked for a lordless
+    center, repeated until kind 46; vgl: token,center a fief's garrison asked for (kind 49); vgd: token,center,
+    (troop,change)... the garrison changed (left there > 0, taken < 0), repeated until kind 48; va: token, a purse
+    paid out (kind 47) came;
+    vi: (the host's game) the stand-ins' rents and tariffs and their garrisons' wages since the campaign began,
+    income,wages for each; fv: token,done... grants (kind 50) and gifts (kind 53) answered; fg: token,n,(troop,short)*n...
+    garrison changes answered (kind 51), n -1 refused;
+    fgv: token,slot,center one of the player's fiefs given to the player in slot, repeated until kind 54;
+    rlm: (the host's map requests) its own realm (the kingdom it founded), 0 none; hw: the kingdoms at war with the
+    host's side, one bit each (bit k: npc_kingdoms_begin + k);
     ag, an, al: the player's own army, a kind's gear, a name (0 the army's, 1 + kind a soldier's), a kind's
     level, kept in army.json apart from any save; ao: these come from a save, and only fill what the file lacks;
     anew: the host's game began its session again and has to hear everything once more; ld: it finds it
     loaded a save, whose stamp this is (a save left at once never heard the new stamp, so its load shows no other way);
-    busy: not 0 from the start of an encounter until back on the map; hello: just joined; bye:
+    busy: not 0 from the start of an encounter until back on the map; enc: (with busy) the world party met, its id;
+    fight=1: (with busy) a battle of the player's own game began - the world pauses until it is back on the map; hello: just joined; bye:
     stopped co-op; res: a battle result; me: its troops (empty: heroes only); name: last, may hold spaces;
     dbg: a client's state for the log when it goes quiet: parties, mirrors spawned, swept, Freelancer's
     state, clock (-1 ahead, 1 behind), the party its own is attached to;
     srvp=1: the host playing in the world server game itself (its party is real there, no puppet).
-    A player game's triggers do not run in menus, screens and battles: it goes silent, and a player
-    silent for SILENT_PAUSE_S pauses the world just like a busy one. Such a game still sends
+    A player game's triggers do not run in menus, screens and battles: it goes silent. The host silent for
+    SILENT_PAUSE_S, or busy, pauses the world (its game is the world, and Warband stops its map in a menu); so does a
+    player in a joint battle, or in a battle of its own game (fight=1). A friend only in a menu, a talk or a trade
+    pauses nothing (11-07, the user's ask): the world holds only that friend's party and the party it meets
+    (enc=its id on the server, sent when the encounter starts). Such a game still sends
     /tr?trs=N&tr=e1,e2,... (a debug build only: what the game did, entries N, N+1...; see src/trail)
     /pg?seq=S&hold=H (its reply handler sends the next one: the bridge holds one with hold=1 for
     PING_HOLD_S), which keeps it silent for the world: only an invitation (kind 6) comes back, else 33.
@@ -98,18 +125,27 @@ player's bet wins, a duel's stake]
     player in puppet slot, or storm the town or castle mpc (a siege: the players are team 1, the
     garrison team 0); with &mpd=1 defend that center against its besieger mpe (the players and the
     garrison team 0, the besieger and the army camped with it team 1);
-    2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter).
+    2 waiting; 3 accept an invitation; 4 decline, or cancel (the starter); 5 accept a siege's invitation on the other
+    side (the garrison's in a storm, the besiegers' in a defence: 11-07, the user's ask).
     With &mpa=sid[&mpat=t1,n1,...] (a start against a world party) the world party sid, the lord the
-    player serves, fights on the players' side with its troops (mpat: as the player sees them). A
-    start against the enemy of a battle still gathering joins that battle; so does a start of the
+    player serves, fights on the players' side with its troops (mpat: as the player sees them).
+    &mpjt=;sid,t1,n1,...;sid,... (a start): the men of the parties in the battle as the starter's game has them (the
+    garrison and the parties inside its walls, the enemy's and the lord's armies, the joiners and theirs). The
+    world server's view comes first; with no view of a party (it reports the parties near players only) these
+    count. The host's own game is the world: its start's view comes first.
+    &mps=1 (a siege's start): a Khergit town, stormed on the battle server's steppe map (the hint + 1000).
+    &mpj=,sid,side,... (a start): the parties nearby that join, side 1 the players', 0 the enemy's (the starter's
+    game picks them by Native's rules), each with its army; in a field battle the armies of the enemy and of
+    the lord come too. A start against the enemy of a battle still gathering joins that battle; so does a start of the
     joint event gathering. A joint event is fought by the players' heroes alone, in practice gear, on
     one side against bots; it changes nothing in the world, and starts when its players stand on
     the battle server. A duel is the challenged player's to accept, its two heroes fight each other in
     their own gear, with no bots.
-    reply 7777|6|bid|type|slot|sid   an invitation from the player in slot: type 1 may join, 2 attacked,
+    reply 7777|6|bid|type|slot|sid|siege   an invitation from the player in slot: type 1 may join, 2 attacked,
                                      3 + event a joint event (it may be declined);
                                      sid: the world party fought (-1: a player), so the game can see
-                                     whether it would fight its own allies; a duel's: the stake
+                                     whether it would fight its own allies; a duel's: the stake;
+                                     siege 1: a storm or a defence, it may be joined on either side (op 5)
           7777|7|bid|status|team["name"]   0 gathering, 1 fought on the battle server (team 0 or 1),
                                      2 cancelled or another battle is on, 3 no battle server;
                                      "name": the name the player is expected under on the battle server
@@ -149,6 +185,29 @@ player's bet wins, a duel's stake]
           7777|36|kind|level                   its kind's level
           7777|37|stamp|loaded                 to the host: what its next save is to carry (the sv of /srv: the bridge
                                                knows a save by it); loaded 1: a save was loaded, nothing under way goes on
+          7777|38|token|done                   a camp's work (cw): 1 done, 0 refused
+          7777|39|camp|mine|prisoners|men|wages   a camp's mine (0 none) and prisoners in it, the men left there and
+                                               what they cost a week (half their wage)
+          7777|40|camp|state|slot              the men left at a camp: 0 another player (slot) has them open, 1 saved
+          7777|41|camp|offset|total|n|(troop,count)*n   the men left at a camp
+          7777|42|token|slot|type|denars|x|y|enemies|n|(troop,count)*n   to the host: a caravan to send off
+          7777|43|token                        to the host: that caravan is counted, it may go
+          7777|44|token|done                   a caravan sent off (cv): 1 on its way, 0 refused (all comes back)
+          7777|45|index|kingdom|mine|"name"     a vassal's stand-in lord (index 3: the host, in a client's game);
+                                               mine 1: this player's own (kingdom 0: it serves none any more)
+          7777|46|token|center|done            a grant asked of the king (vr): 1 the center is the vassal's
+          7777|47|token|denars                 the fiefs' income (a loss below 0), until va says it came
+          7777|48|token|center|done|n|(troop,short)*n   a garrison change (vgd): done 0 refused (all as it was),
+                                               the men taken that were no longer there
+          7777|49|token|center|known|n|(troop,count)*n  a fief's garrison as the world server reported it (known 0:
+                                               not yet)
+          7777|50|token|center|index|kingdom   to the host: grant the center to the stand-in, if it has no lord
+          7777|51|token|center|index|n|(troop,change)*n   to the host: a vassal changed its fief's garrison
+          7777|52|wars                         to a client: the kingdoms the host's side fights (hw)
+          7777|53|token|center|from|to         to the host: a fief given (from, to: -1 the host, else a stand-in)
+          7777|54|token|center|done|role|slot  a gift (fgv): 1 given, 0 not the giver's, 2 the receiver serves another
+                                               kingdom, 3 no such player, 4 the center not counted yet, 5 no stand-in
+                                               left; role 0 to the giver, 1 to the receiver; slot: the other player
 
 Battle server -> /mp?seq=S&st=PHASE&bid=B[&w=WINNER&r=i,fallen;...&hp=no,percent;...&wx=no,wpt,hits,damage;...
                   &kl=no,count;...]&pl=no~name;...
@@ -193,6 +252,7 @@ RECENT_KEPT = 12        # a player's last requests kept, to log when it goes qui
 RECENT_SHOWN = 6
 QUIET_NOTE_S = 5.0      # a player game silent this long: its last requests go to the log
 MAX_PLAYERS = 4         # puppet parties coop_puppet_1..4 in the module
+HOST_REALM = 14         # fac_player_supporters_faction: the host's own realm (its game founds it when walls go to it)
 CENTERS_PER_REPLY = 25  # 2 + 5 * 25 numbers
 RENAME_EVERY = 40      # requests between asking a game to rename its hero
 PROFILE_PER_REPLY = 120 # 5 + 120 numbers
@@ -225,12 +285,15 @@ ARMY_NAME_MAX = 40
 CLOCK_WINDOW_S = 60.0   # game clock speed is measured over this much real time
 NET_PORT = 7350           # the relays' TCP link, and (UDP) the battle relay
 BATTLE_PORT = 7240        # the battle server's own port (Multiplayer - Host a game)
+LINK_PING_S = 5.0         # a friend's relay measures its link to the host this often
+LINK_REPORT_S = 60.0      # and says what it measured this often (the window and both logs)
+LINK_SLOW_MS = 250        # a worst ping this high is called out as what makes the map lag
 BATTLE_LOCAL = "127.0.0.1:7240"  # on a friend's PC the second window finds the battle server here
 BATTLE_PLAYING = 50       # datagrams of one game's link: a game on the server, not the server list looking
 BATTLE_IDLE_S = 120.0     # a battle relay link silent this long is closed
 BATTLE_TAG = 8            # bytes in front of each relayed datagram that prove the key
 FETCHED_MARK = "coop_campaign_fetched.txt"  # in the save folder: which file the relay wrote the host's save to
-PROTOCOL = 2               # 2: the host's saves go packed, in parts
+PROTOCOL = 3               # 2: the host's saves go packed, in parts; 3: version 1.2 (new requests and replies)
 SAVE_PART = 32_000         # characters of a packed save in one message: a game's replies go in between
 SAVE_POLL_S = 2.0         # how often the hub looks for a new save of the host
 RECONNECT_GRACE_S = 30.0  # a relay that lost the hub keeps its player (slot, party, battle) this long
@@ -239,12 +302,18 @@ MP_MARKER = 7778
 MP_ONLINE_S = 10.0      # a battle server not heard from for this long is not running
 GATHER_S = 45.0         # invited players have this long to answer before the battle starts
 INVITE_DIST = 4000      # map units * 100: players this close to the starter are invited
-MP_MAX_BOTS = 150       # bots on the battle server; bigger armies are scaled down, losses scaled up
-MP_MAX_STACKS = 60
+MP_MAX_BOTS = 1500      # men of a joint battle on the battle server; bigger armies are scaled down, losses
+                        # scaled up. The server keeps 150 of them on the field at once (coop_mp_field_bots),
+                        # the others come as reinforcements
+MP_MAX_STACKS = 60      # stacks of one battle (coop_mp_max_stacks): the world's parties on one side share a stack
+                        # of each troop; the smallest find no room past it and stay out of the battle, unhurt
+MP_SIDE_STACKS = 15     # each side's men under no player keep this many of those stacks at least
 MP_CHUNK = 30           # stacks per reply: 5 + 4 * 30 numbers
 MP_MAX_HEROES = 4        # the battle server's hero troops
 MP_LOST_S = 30.0        # a battle server back in an ordinary round this long after a start lost it
 WOUNDED_PCT = 50        # of a player's fallen soldiers, this share is wounded rather than killed
+HELP_XP_PCT = 50        # a siege fought for another's kingdom (a defence or a storm the player came to help): this
+                        # share of the experience (11-07, the user's ask)
 XP_PER_ENEMY = 30       # battle experience for each fallen enemy, shared by the winning side's players;
                         # the losing side gets a third of it
 MODULE_NAME = "Warband Coop Campaign"  # the module folder in Modules, and its save folder
@@ -266,14 +335,33 @@ PLAIN_TERRAINS = (2, 3) # steppe and plain: a hideout there is fought on a map w
 LAIR_TERRAIN = 11       # the forest's: Forest Hideout
 MAP_BATTLE_DIST = 1500  # map units * 100: a map battle this close to a player is told to that player
 SHARED_ITEMS = 120      # things the party store holds
+WEEK_H = 24 * 7         # world hours of a week: the mines pay and the men left at the camps are paid
+MINE_PAY = 10           # denars a prisoner in a mine brings a week, into the treasury
+CAMP_MEN = 80           # men that may stay at one camp
+CAMP_WAGE_PERCENT = 50  # of their wage the men left at a camp cost
+CAMP_CHUNK = 60         # stacks of the men left at a camp in one reply
+CAMP_TOKENS = 200       # camp works remembered, so that a repeated request changes nothing
+CARAVAN_MAX = 3         # caravans of one player on their way at once
+CARAVAN_RESEND_S = 5.0  # a caravan the host's game has not shown yet is sent to it again after this
+CARAVAN_MISSES = 3      # host's reports in a row without a caravan it showed: it was destroyed
+CARAVANS_DONE = 100     # caravans home or refused, remembered so that a repeated word changes nothing
 STORE_CHUNK = 60        # of them in one reply: 5 + 2 * 60 numbers
 STORE_LOCK_S = 600.0    # a player with the store open this long without giving it back loses it
 TREASURY_TOKENS = 200   # transfers remembered, so that a repeated request changes nothing
+FIEF_VASSALS = 3        # clients who may hold fiefs (stand-ins trp_tutorial_fighter_1..3, coop/fiefs.py)
+FIEF_RESEND_S = 5.0     # a grant, a garrison change or a purse the other game has not answered goes again after this
+FIEF_DONE = 200         # grants and garrison changes answered, remembered so that a repeated word changes nothing
+FIEF_RETELL = 300       # the host's game hears of the stand-ins again every this many of its requests
+FIEF_PAIRS = 60         # (troop, change) pairs of one garrison change
 PING_HOLD_S = 0.7       # a game off the map asks this often whether it is called to a battle
 TRAIL_ACK = 7779        # the whole reply to a debug build's /tr (trail_ack in src/trail/marks.py)
 ALIVE_S = 3.0           # a game that pinged this recently answers, though its map does not run
 TELL_FOLLOWED, TELL_UNFOLLOWED, TELL_GOLD, TELL_STORE, TELL_LEFT, TELL_BASE, TELL_BANDITS = 1, 2, 4, 5, 6, 7, 8  # kind 27
 TELL_SAVE_LOADED, TELL_BASE_UP, TELL_SAVE_AGAIN = 9, 10, 11
+TELL_WEEK, TELL_DESERTED = 12, 13  # a, b: the mines' income and the camps' wages; the men who left unpaid
+TELL_CARAVAN_OFF, TELL_CARAVAN_HOME, TELL_CARAVAN_LOST, TELL_CARAVAN_DISBANDED = 14, 15, 16, 17
+# a caravan of the player in slot: set out (a type, b denars); home (a denars into the treasury, b men to a camp);
+# destroyed; a men it brought had no room at the camps and went home
 SYNC_KEEP = 24          # the host's last saves whose heroes and treasury are kept (sync.json)
 SYNC_HERO_S = 180.0     # seconds after a host's save a player's first hero still counts as written at it
 LOAD_ONCE_S = 10.0      # the signs of one load, coming apart, are one load
@@ -320,6 +408,31 @@ def flat(stacks):
     return [v for st in stacks for v in st]
 
 
+def add_stacks(stacks, more):
+    """[[troop, count], ...] with more (troop, count) pairs added, each troop once."""
+    out = {t: n for t, n in stacks}
+    for t, n in more:
+        if t > 0 and n > 0:
+            out[t] = out.get(t, 0) + n
+    return [[t, n] for t, n in out.items()]
+
+
+def camp_wages(men):
+    """What the men left at a camp cost a week: [[troop, count, wage], ...]."""
+    return sum(n * wage for _, n, wage in men) * CAMP_WAGE_PERCENT // 100
+
+
+def cap_men(men, most):
+    """[[troop, count, wage], ...] cut to most men, in the order given."""
+    out, room = [], most
+    for troop, count, wage in men:
+        if room <= 0:
+            break
+        out.append([troop, min(count, room), wage])
+        room -= min(count, room)
+    return out
+
+
 class Player:
     """One player game as the hub knows it."""
 
@@ -328,6 +441,8 @@ class Player:
         self.slot = None        # puppet coop_puppet_<slot+1> on the server
         self.pos = None
         self.busy = False
+        self.meet = -1          # the world party this player meets (its encounter, a talk or a menu), -1 none
+        self.fight = False      # in a battle of its own game: the world pauses as for a joint battle
         self.last = None        # real time of its last request
         self.recent = []        # its last requests and their replies: what it got before going quiet
         self.quiet_told = False  # its silence is in the log already
@@ -372,6 +487,8 @@ class Player:
         self.signal_told = None # the battle its bridge window sounded for
         self.store_in = None    # [token, {offset: values}] the party store coming back
         self.store_done = None  # the last token that came back in full
+        self.camp_in = None     # [token, {offset: values}] the men left at a camp coming back
+        self.camp_done_token = None  # the last token of them that came back in full
 
 
 class Battle:
@@ -386,13 +503,21 @@ class Battle:
         self.until = now + GATHER_S
         self.enemy_sid = None
         self.enemy_stacks = []
+        self.seen = {}            # sid -> stacks: the parties' men as the starter's game has them (mpjt)
+        self.seen_first = False   # the host started it: its game is the world, its view comes first
         self.center = None        # a siege: the town or castle stormed or defended
         self.defence = False      # the players hold the walls against the world's besiegers
         self.npc_stacks = []      # (team, world party, troop, count): a defence's garrison and besiegers,
                                   # or the troops of the lord the players serve
         self.ally_sid = None      # the world party of the lord fighting on the players' side
+        self.ally_faction = 0     # a siege beside that lord (Freelancer): the kingdom the stormed walls go to
+        self.enemy_faction = 0    # a defence: the besieger's kingdom, as the starter's game has it (0 not known)
         self.player_team = 0      # the starter's side: 0 in the field, 1 storming walls
-        self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]
+        self.stacks = []          # [team, owner cid or None, troop, count, spawned on the server]; a world party's
+                                  # owner is ("npc", ((sid, count), ...)): the parties sharing that stack
+        self.left_out = []        # the stacks that found no room on the battle server: they keep their men
+        self.joiners = {}         # world party -> team: parties nearby that joined, and the armies that came along
+        self.steppe = False       # a siege of a Khergit town: the battle server's steppe map and horsemen
         self.sent = 0
         self.heroes = None        # [(player number, hero numbers)] still to send, after the stacks
         self.heroes_given = set() # cids whose hero went to the battle server (at most MP_MAX_HEROES)
@@ -440,7 +565,7 @@ class World:
         self.mp_last = None     # real time the battle server last asked
         self.mp_players = {}    # player number on the battle server -> name
         self.centers = {}       # center -> (faction, lord, besieger + 1, bandits), as the world server reports them
-        self.captures = []      # (center, kingdom) stormed in joint sieges, for the server
+        self.captures = []      # (center, kingdom, vassal index + 1 or 0) stormed in joint sieges, for the server
         self.saves = 0          # the host's saves sent to the players since the bridge started
         self.last_srv = None    # when the world server last reported
         self.srv_hours = None   # the world's clock (game hours), as the world server last reported it
@@ -464,6 +589,14 @@ class World:
         self.captors = {}       # sid of a world party -> the players it took prisoner in a joint battle
         self.treasury_done = {} # transfer token -> what it did to the treasury
         self.store_lock = None  # (cid, since): who has the party store open
+        self.camp_done = {}     # camp work token -> its answer
+        self.camp_locks = {}    # camp -> (cid, since): who has the men left there open
+        self.cv_sent = {}       # caravan token -> when the host's game last heard of it
+        self.fief_host_told = None  # (kingdom, name) of the host the clients' games heard last
+        self.realm = 0          # the host's own realm (its kingdom when it founded one), 0 none
+        self.host_wars = 0      # the kingdoms the host's side is at war with, one bit each (kind 52)
+        self.fief_sent = {}     # grant or garrison change token -> when the host's game last heard of it
+        self.fief_paid_at = {}  # vassal key -> when its purse last went to its game
         self.shared_path = Path(shared_path) if shared_path else (
             self.profiles_path.with_name("shared.json") if self.profiles_path else None)
         # the player's own army, kept in army.json: a save loaded, or the bridge started anew, takes nothing back
@@ -538,6 +671,8 @@ class World:
                 self._offer_answer(oid, giver, stacks, 0)
         if self.store_lock is not None and self.store_lock[0] == cid:
             self.store_lock = None
+        for camp in [c for c, (holder, _) in self.camp_locks.items() if holder == cid]:
+            del self.camp_locks[camp]
         if p.slot is not None:
             for q in self.players.values():
                 if q.follows == p.slot and q is not p:
@@ -604,18 +739,26 @@ class World:
         mine = next((i for i, camp in enumerate(bases) if camp and (
             camp["who"] == me or (camp["who"] is None and p.on_server))), None)
         free = next((i for i, camp in enumerate(bases) if not camp), None)
-        if (mine is not None) == bool(where) or (where and free is None):
+        if (mine is not None) == bool(where) or (where and free is None) or (
+                not where and (bases[mine].get("garrison") or [])):  # the men left there would have nowhere to stay
             p.mp_out.append(self._marks_reply(p))  # its game knew less than this: nothing was built, nothing is paid
             return
+        kept_mines = self.shared.setdefault("mines", {})  # a camp taken down keeps its mine for the owner's next one
         if where:
             bases[free] = {"who": me, "host": p.on_server, "x": where[0], "y": where[1]}
+            if str(me) in kept_mines:
+                bases[free]["mine"] = kept_mines.pop(str(me))
             self._act(p, "base", x=where[0], y=where[1])
             p.mp_out.append([27, TELL_BASE_UP, p.slot, 0, 0])
         else:
+            if bases[mine].get("mine") is not None:
+                kept_mines[str(me)] = bases[mine]["mine"]
             bases[mine] = None
             self._act(p, "base_off")
         self._save_shared()
         self._marks_out()
+        if where:
+            self._camps_out(free)
         for q in self.players.values():
             if q is not p:
                 q.mp_out.append([27, TELL_BASE, p.slot, 1 if where else 0, 0])
@@ -696,6 +839,308 @@ class World:
             if q is not p and p.slot is not None:
                 q.mp_out.append([27, TELL_STORE, p.slot, len(self.shared["items"]) // 2, 0])
 
+    # ---- the clients' fiefs (coop/fiefs.py): a vassal holds centers of the host's world through a stand-in lord
+
+    def _vassals(self):
+        return self.shared.setdefault("vassals", {})
+
+    def _fief_done(self):
+        return self.shared.setdefault("fief_done", {})
+
+    def _fief_ops(self):
+        return self.shared.setdefault("fief_ops", {})
+
+    def _vassal_of(self, p):
+        """(key, entry) of p's stand-in, or (key, None)."""
+        key = self._profile_key(p.cid)
+        return key, (self._vassals().get(key) if key else None)
+
+    def _vassal_reply(self, entry, mine):
+        return [45, entry["index"], entry["faction"], 1 if mine else 0], entry["name"] or "?"
+
+    def _vassal_replies(self, p):
+        """What p's game is to know of the stand-ins: the host's game its own, a client's all of them and the host's
+        image (index FIEF_VASSALS), its own marked."""
+        key = None if p.on_server else self._profile_key(p.cid)
+        out = [self._vassal_reply(e, k == key) for k, e in sorted(self._vassals().items(), key=lambda kv: kv[1]["index"])]
+        host = next((q for q in self.players.values() if q.on_server), None)
+        if not p.on_server and host is not None and host.name:
+            out.append(([45, FIEF_VASSALS, host.faction, 0], host.name))
+        return out
+
+    def _vassal(self, p, sworn):
+        """p's game says whether its hero holds a kingdom's homage (and p.faction which). A new vassal gets the lowest
+        free stand-in (one whose vassal serves no kingdom any more, when none is free); a vassal who serves no
+        kingdom any more keeps its stand-in, whose fiefs go back to their kings in the host's game."""
+        key = self._profile_key(p.cid)
+        if not key or p.on_server:
+            return
+        vassals = self._vassals()
+        faction = p.faction if sworn else 0
+        entry = vassals.get(key)
+        if entry is not None and entry.get("realm") and not sworn:
+            return  # a vassal of the host's own realm by a fief of it: its own game knows no such oath
+        if entry is None:
+            if not faction:
+                return
+            entry = self._stand_in(p, key)
+            if entry is None:
+                return
+        name = p.name or key
+        if (entry["faction"], entry["name"]) == (faction, name):
+            return
+        entry["faction"], entry["name"] = faction, name
+        entry.pop("realm", None)
+        self._save_shared()
+        self._act(p, "vassal", index=entry["index"], kingdom=faction)
+        self._vassal_told(entry, p)
+
+    def _stand_in(self, p, key):
+        """A new entry for key on the lowest free stand-in (one whose vassal serves no kingdom any more, when none is
+        free), or None: all of them hold fiefs."""
+        vassals = self._vassals()
+        used = {e["index"] for e in vassals.values()}
+        free = [i for i in range(FIEF_VASSALS) if i not in used]
+        if not free:
+            idle = [k for k, e in vassals.items() if not e["faction"]]
+            if not idle:
+                self.log(f"together {self._who(p)}: no stand-in left for one more vassal ({FIEF_VASSALS} hold fiefs)")
+                return None
+            free = [vassals.pop(idle[0])["index"]]
+        entry = vassals[key] = {"index": free[0], "faction": 0, "name": ""}
+        return entry
+
+    def _vassal_told(self, entry, owner=None):
+        """Every game hears of a stand-in (owner: the player whose own it is)."""
+        for q in self.players.values():
+            q.mp_out.append(self._vassal_reply(entry, q is owner))
+
+    def _player_of_key(self, key):
+        return next((q for q in self.players.values() if key and self._profile_key(q.cid) == key), None)
+
+    def _fief_gift(self, p, token, slot, center):
+        """p gives one of its fiefs to the player in slot (the host: one of its own, or as the king of its own realm
+        a lordless center of it; a client: its stand-in's): on its way to the host's game (kind 53) until it
+        answers, never twice. The receiver must serve the center's kingdom; one who serves no kingdom of the world
+        becomes a vassal of the host's own realm by a fief of it. Both players hear how it went (kind 54)."""
+        key = self._profile_key(p.cid)
+        if str(token) in self._fief_done():
+            p.mp_out.append(list(self._fief_done()[str(token)]))
+            return
+        if str(token) in self._fief_ops():
+            return
+        q = self._player_in_slot(slot, but=p)
+        c = self.centers.get(center)
+
+        def refuse(why, text):
+            self._act(p, "fief_gift_refused", center=center, why=text)
+            self._fief_answer(token, [54, token, center, why, 0, slot], key)
+
+        giver = -1
+        if not p.on_server:
+            _, entry = self._vassal_of(p)
+            if entry is None or not entry["faction"]:
+                return refuse(0, "not the giver's")
+            giver = entry["index"]
+        if q is None:
+            return refuse(3, "nobody in that slot")
+        if c is None:
+            return refuse(4, "the host's world has not reported that center yet")
+        faction = c[0]
+        receiver, made, rkey = -1, False, self._profile_key(q.cid)
+        if not q.on_server:
+            rkey, rentry = self._vassal_of(q)
+            if not rkey:
+                return refuse(3, "the receiver has no name yet")
+            if rentry is None or not rentry["faction"]:
+                if q.faction or not self.realm or faction != self.realm:
+                    return refuse(2, "the receiver serves no kingdom of that center")
+                if rentry is None:
+                    rentry = self._stand_in(q, rkey)
+                    if rentry is None:
+                        return refuse(5, "no stand-in left")
+                rentry["faction"], rentry["name"], rentry["realm"] = faction, q.name or rkey, True
+                made = True
+                self._save_shared()
+                self._act(q, "vassal", index=rentry["index"], kingdom=faction)
+                self._vassal_told(rentry, q)
+            elif rentry["faction"] != faction:
+                return refuse(2, "the receiver serves another kingdom")
+            receiver = rentry["index"]
+        op = {"kind": 53, "key": key, "to_key": rkey, "center": center, "from": giver, "to": receiver,
+              "made": made, "giver_slot": p.slot, "slot": slot}
+        self._fief_ops()[str(token)] = op
+        self._save_shared()
+        self._act(p, "fief_gift", center=center, to=self._who(q))
+
+    def _fief_gift_answer(self, token, done, op):
+        """The host's game answered a gift: the giver hears it (kept, for its game asking again), the receiver too;
+        a stand-in made a vassal of the realm for it serves nothing again when nothing came of it."""
+        self.log(f"together: the host's game {'passes' if done == 1 else 'refuses'} {op['center']} "
+                 f"from {op['key']} to {op['to_key']}")
+        if done != 1 and op.get("made"):
+            entry = self._vassals().get(op["to_key"])
+            if entry is not None and entry.get("realm"):
+                entry["faction"] = 0
+                entry.pop("realm", None)
+                self._save_shared()
+                self._vassal_told(entry, self._player_of_key(op["to_key"]))
+        self._fief_answer(token, [54, token, op["center"], done, 0, op["slot"]], op["key"])
+        q = self._player_of_key(op["to_key"])
+        if done == 1 and q is not None:
+            q.mp_out.append([54, token, op["center"], done, 1, -1 if op["giver_slot"] is None else op["giver_slot"]])
+
+    def _fief_answer(self, token, answer, key=None):
+        """A grant or a garrison change answered: kept, so that the vassal's game asking again hears the same; and sent
+        to the vassal's game when it plays."""
+        done = self._fief_done()
+        done[str(token)] = answer
+        while len(done) > FIEF_DONE:
+            del done[next(iter(done))]
+        self._fief_ops().pop(str(token), None)
+        self._save_shared()
+        q = next((q for q in self.players.values() if key and self._profile_key(q.cid) == key), None)
+        if q is not None:
+            q.mp_out.append(list(answer))
+
+    def _fief_ask(self, p, token, center, values=None):
+        """A grant asked of the king (values None: kind 50 to the host's game) or a garrison changed (values: the
+        (troop, change) pairs, kind 51): on its way to the host's game until it answers, never twice."""
+        key, entry = self._vassal_of(p)
+        if str(token) in self._fief_done():
+            p.mp_out.append(list(self._fief_done()[str(token)]))
+            return
+        if str(token) in self._fief_ops():
+            return
+        if values is None:
+            c = self.centers.get(center)
+            if entry is None or not entry["faction"] or (c is not None and (c[0] != entry["faction"] or c[1] != -1)):
+                self._act(p, "fief_refused", center=center)
+                self._fief_answer(token, [46, token, center, 0], key)
+                return
+            op = {"kind": 50, "key": key, "center": center, "index": entry["index"], "faction": entry["faction"]}
+        else:
+            if entry is None or not entry["faction"]:
+                self._fief_answer(token, [48, token, center, 0, 0], key)
+                return
+            op = {"kind": 51, "key": key, "center": center, "index": entry["index"], "pairs": values}
+        self._fief_ops()[str(token)] = op
+        self._save_shared()
+        if values is None:
+            self._act(p, "fief_ask", center=center)
+        else:
+            self._act(p, "fief_garrison", center=center, left=sum(v for v in values[1::2] if v > 0),
+                      taken=-sum(v for v in values[1::2] if v < 0))
+
+    def _fief_list(self, p, token, center):
+        """A fief's garrison as the world server last reported it (the vassal stands there: it reports it)."""
+        known = self.troops.get(center)
+        stacks = list(known[1])[:MAX_STACKS] if known else []
+        p.mp_out.append([49, token, center, 1 if known else 0, len(stacks)] + flat(stacks))
+
+    def _fiefs_host(self, p, now):
+        """The host's game hears of the grants and garrison changes under way, again until it answers; and now and
+        then of the stand-ins (its game names them)."""
+        for token, op in self._fief_ops().items():
+            if now - self.fief_sent.get(token, -FIEF_RESEND_S) < FIEF_RESEND_S:
+                continue
+            self.fief_sent[token] = now
+            if op["kind"] == 50:
+                p.mp_out.append([50, int(token), op["center"], op["index"], op["faction"]])
+            elif op["kind"] == 53:
+                p.mp_out.append([53, int(token), op["center"], op["from"], op["to"]])
+            else:
+                pairs = op["pairs"]
+                p.mp_out.append([51, int(token), op["center"], op["index"], len(pairs) // 2] + pairs)
+        if p.requests % FIEF_RETELL == 1:
+            p.mp_out.extend(self._vassal_replies(p))
+
+    def _fief_income(self, totals):
+        """The host's game counts each stand-in's rents and wages since the campaign began: what came since the last
+        word goes into its vassal's purse (a count gone back: a save loaded, nothing to pay)."""
+        kept = self.shared.setdefault("fief_income", {})
+        purses = self.shared.setdefault("purses", {})
+        changed = False
+        for k in range(min(FIEF_VASSALS, len(totals) // 2)):
+            income, wages = totals[2 * k], totals[2 * k + 1]
+            last = kept.get(str(k), [0, 0])
+            if [income, wages] == last:
+                continue
+            kept[str(k)] = [income, wages]
+            changed = True
+            if income < last[0] or wages < last[1]:
+                continue
+            gain = (income - last[0]) - (wages - last[1])
+            key = next((key for key, e in self._vassals().items() if e["index"] == k), None)
+            if key is None or gain == 0:
+                continue
+            purses[key] = purses.get(key, 0) + gain
+            self.log(f"together: the fiefs of {key} brought {income - last[0]}, their garrisons cost {wages - last[1]}")
+        if changed:
+            self._save_shared()
+
+    def _fief_pay(self, p, now):
+        """A vassal's purse goes to its game, again until it says it came (&va=)."""
+        key = self._profile_key(p.cid)
+        if not key or p.on_server:
+            return
+        pay = self.shared.setdefault("fief_pay", {})
+        purses = self.shared.setdefault("purses", {})
+        if key not in pay and purses.get(key):
+            pay[key] = [random.randint(1, 999_999_999), purses.pop(key)]
+            self._save_shared()
+        if key in pay and now - self.fief_paid_at.get(key, -FIEF_RESEND_S) >= FIEF_RESEND_S:
+            self.fief_paid_at[key] = now
+            p.mp_out.append([47, *pay[key]])
+
+    def _fief_paid(self, p, token):
+        key = self._profile_key(p.cid)
+        pay = self.shared.setdefault("fief_pay", {})
+        if key in pay and pay[key][0] == token:
+            self._act(p, "fief_income", denars=pay[key][1])
+            del pay[key]
+            self._save_shared()
+
+    def _fief_host_answers(self, granted, changed):
+        """The host's game answers: granted (token, done) pairs; changed token, n, (troop, short) * n each, n -1:
+        refused."""
+        for k in range(0, len(granted) - 1, 2):
+            token, done = granted[k], granted[k + 1]
+            op = self._fief_ops().get(str(token))
+            if op is not None and op["kind"] == 53:
+                self._fief_gift_answer(token, done, op)
+                continue
+            if op is None or op["kind"] != 50:
+                continue
+            self.log(f"together: the host's game {'grants' if done else 'refuses'} {op['center']} to {op['key']}")
+            self._fief_answer(token, [46, token, op["center"], 1 if done else 0], op["key"])
+        at = 0
+        while at + 1 < len(changed):
+            token, n = changed[at], changed[at + 1]
+            shorts = changed[at + 2:at + 2 + 2 * max(n, 0)]
+            at += 2 + 2 * max(n, 0)
+            op = self._fief_ops().get(str(token))
+            if op is None or op["kind"] != 51:
+                continue
+            if n >= 0:
+                self._fief_garrison_known(op["center"], op["pairs"], shorts)
+            self._fief_answer(token, [48, token, op["center"], 1 if n >= 0 else 0, max(n, 0)] + shorts, op["key"])
+
+    def _fief_garrison_known(self, center, pairs, shorts):
+        """The bridge's copy of a fief's garrison follows a change, until the world server reports it anew."""
+        known = self.troops.get(center)
+        if known is None:
+            return
+        men = {t: c for t, c in known[1]}
+        short = {shorts[k]: shorts[k + 1] for k in range(0, len(shorts) - 1, 2)}
+        for k in range(0, len(pairs) - 1, 2):
+            troop, change = pairs[k], pairs[k + 1]
+            if change < 0:
+                change += short.get(troop, 0)
+            men[troop] = max(0, men.get(troop, 0) + change)
+        self.version += 1
+        self.troops[center] = (self.version, [(t, c) for t, c in men.items() if c > 0])
+
     def ping(self, cid, now):
         """A game off the map asks. Only an invitation comes back; the player stays silent for the
         world, which it holds as before."""
@@ -705,7 +1150,7 @@ class World:
                 return [33]
             p.pinged = now
             for nums in p.mp_out:
-                if nums[0] == 6:
+                if isinstance(nums, list) and nums[0] == 6:
                     p.mp_out.remove(nums)
                     self._act(p, "invite_off_map", battle=nums[1], type=nums[2])
                     return nums
@@ -783,8 +1228,38 @@ class World:
             self._base(p, together["base"])
         if together.get("treasury") is not None:
             self._treasury(p, *together["treasury"])
+        if together.get("camp_work") is not None:
+            token, index, op, *values = together["camp_work"]
+            self._camp_work(p, token, index, op, values)
+        if together.get("camp_open") is not None:
+            self._camp_open(p, together["camp_open"], now)
+        if together.get("camp_put") is not None:
+            self._camp_put(p, together["camp_put"])
+        if together.get("caravan") is not None:
+            self._caravan_new(p, together["caravan"])
+        if together.get("cv_alive") is not None and p.on_server:
+            self._caravans_alive(together["cv_alive"])
+        if together.get("cv_end") is not None and p.on_server:
+            self._caravan_end(p, together["cv_end"])
         if together.get("anew") and p.on_server:
             p.together_told = False
+        if together.get("vassal") is not None:
+            self._vassal(p, together["vassal"])
+        if together.get("fief_paid") is not None:
+            self._fief_paid(p, together["fief_paid"])
+        if together.get("fief_ask") is not None:
+            self._fief_ask(p, *together["fief_ask"])
+        if together.get("fief_list") is not None:
+            self._fief_list(p, *together["fief_list"])
+        if together.get("fief_change") is not None:
+            token, center, *values = together["fief_change"]
+            self._fief_ask(p, token, center, values)
+        if together.get("fief_gift") is not None:
+            self._fief_gift(p, *together["fief_gift"])
+        if together.get("fief_income") is not None and p.on_server:
+            self._fief_income(together["fief_income"])
+        if (together.get("fief_granted") or together.get("fief_changed")) and p.on_server:
+            self._fief_host_answers(together.get("fief_granted") or [], together.get("fief_changed") or [])
         if together.get("loaded") is not None and p.on_server:
             if together["loaded"] == 0:
                 self._new_campaign(now)
@@ -834,6 +1309,254 @@ class World:
         known, self.srv_hours = self.srv_hours, hours
         if known is not None and hours < known:
             self._host_loaded(self.srv_stamp or 0, now)
+        self._week(hours)
+
+    def _week(self, hours):
+        """A week of the world went by: each mine pays for its prisoners, the men left at each camp cost half their wage,
+        out of the treasury. Men the treasury cannot pay leave, the cheapest first. A clock gone back (a save loaded) only
+        sets the count, as the treasury went back with it."""
+        week = hours // WEEK_H
+        last = self.shared.get("week")
+        if last is None or week <= last:
+            if last is None or week < last:
+                self.shared["week"] = week
+                self._save_shared()
+            return
+        income = wages = deserted = 0
+        for _ in range(min(week - last, 4)):  # a world asleep for months pays a month at most
+            for camp in self.shared["bases"]:
+                if not camp:
+                    continue
+                income += MINE_PAY * sum(n for _, n in camp.get("mine") or [])
+                self.shared["gold"] += MINE_PAY * sum(n for _, n in camp.get("mine") or [])
+            for camp in self.shared["bases"]:
+                men = camp.get("garrison") if camp else None
+                if not men:
+                    continue
+                due = camp_wages(men)
+                while men and due > self.shared["gold"]:
+                    men.sort(key=lambda s: s[2])
+                    men[0][1] -= 1
+                    deserted += 1
+                    if men[0][1] <= 0:
+                        men.pop(0)
+                    due = camp_wages(men)
+                self.shared["gold"] -= due
+                wages += due
+        self.shared["week"] = week
+        self._save_shared()
+        if income or wages or deserted:
+            self.log(f"a week went by: the mines brought {income}, the men at the camps cost {wages}"
+                     + (f", {deserted} left unpaid" if deserted else "") + f"; treasury {self.shared['gold']}")
+            for q in self.players.values():
+                q.mp_out.append([27, TELL_WEEK, 0, income, wages])
+                if deserted:
+                    q.mp_out.append([27, TELL_DESERTED, 0, deserted, 0])
+                q.mp_out.append([29, 0, 0, self.shared["gold"]])
+            self._camps_out()
+
+    def _camp_reply(self, index):
+        camp = self.shared["bases"][index]
+        if not camp:
+            return [39, index, 0, 0, 0, 0]
+        men = camp.get("garrison") or []
+        return [39, index, 1 if camp.get("mine") is not None else 0, sum(n for _, n in camp.get("mine") or []),
+                sum(s[1] for s in men), camp_wages(men)]
+
+    def _camps_replies(self):
+        return [self._camp_reply(i) for i, camp in enumerate(self.shared["bases"]) if camp]
+
+    def _camps_out(self, index=None):
+        for q in self.players.values():
+            if index is None:
+                q.mp_out.extend(self._camps_replies())
+            else:
+                q.mp_out.append(self._camp_reply(index))
+
+    def _camp_work(self, p, token, index, op, values):
+        """A mine built at the player's own camp (op 1), or prisoners sent into a camp's mine (op 2, gone from the hero
+        already). The game repeats the token until it hears back: nothing happens twice."""
+        if token in self.camp_done:
+            p.mp_out.append([38, token, self.camp_done[token]])
+            return
+        bases = self.shared["bases"]
+        camp = bases[index] if 0 <= index < len(bases) else None
+        done = 0
+        if camp and op == 1 and camp.get("mine") is None and (
+                camp["who"] == self._camp_key(p) or (camp["who"] is None and p.on_server)):
+            camp["mine"] = []
+            done = 1
+            self._act(p, "mine_built", camp=index)
+        elif camp and op == 2 and camp.get("mine") is not None:
+            stacks = parse_stacks(values) or []
+            camp["mine"] = add_stacks(camp["mine"], stacks)
+            done = 1
+            self._act(p, "mine_prisoners", camp=index, men=sum(n for _, n in stacks))
+        self.camp_done[token] = done
+        while len(self.camp_done) > CAMP_TOKENS:
+            del self.camp_done[next(iter(self.camp_done))]
+        p.mp_out.append([38, token, done])
+        if done:
+            self._save_shared()
+            self._camps_out(index)
+
+    def _camp_open(self, p, index, now):
+        """The men left at a camp go to p's game, and stay with p until they come back: one at a time."""
+        bases = self.shared["bases"]
+        camp = bases[index] if 0 <= index < len(bases) else None
+        if not camp:
+            p.mp_out.append([40, index, 1, 0])  # no camp there: nothing to open
+            return
+        lock = self.camp_locks.get(index)
+        if lock is not None and lock[0] != p.cid and lock[0] in self.players and now - lock[1] < STORE_LOCK_S:
+            holder = self.players[lock[0]]
+            p.mp_out.append([40, index, 0, holder.slot if holder.slot is not None else 0])
+            return
+        self.camp_locks[index] = (p.cid, now)
+        men = [(t, n) for t, n, _ in camp.get("garrison") or []]
+        self._act(p, "camp_men_open", camp=index, men=sum(n for _, n in men))
+        for at in range(0, max(1, len(men)), CAMP_CHUNK):
+            part = men[at:at + CAMP_CHUNK]
+            p.mp_out.append([41, index, at, len(men), len(part)] + flat(part))
+
+    def _caravans(self):
+        return self.shared.setdefault("caravans", {})
+
+    def _caravans_done(self):
+        return self.shared.setdefault("caravans_done", {})
+
+    def _remember_done(self, token, answer):
+        done = self._caravans_done()
+        done[str(token)] = answer
+        while len(done) > CARAVANS_DONE:
+            del done[next(iter(done))]
+
+    def _tell_all(self, nums):
+        for q in self.players.values():
+            q.mp_out.append(list(nums))
+
+    def _caravan_new(self, p, values):
+        """A caravan bought: its men and denars left the player's game already; the host's game sends it off."""
+        token, kind, gold, x, y, enemies = values[:6]
+        key = str(token)
+        if key in self._caravans() or key in self._caravans_done():
+            p.mp_out.append([44, token, 1 if key in self._caravans() else self._caravans_done()[key]])
+            return
+        owner = self._camp_key(p)
+        mine = sum(1 for c in self._caravans().values() if c["owner"] == owner)
+        if kind not in (1, 2) or gold < 0 or mine >= CARAVAN_MAX or p.slot is None:
+            self._remember_done(token, 0)
+            self._save_shared()
+            p.mp_out.append([44, token, 0])
+            return
+        men = [list(s) for s in parse_stacks(values[6:]) or []][:MAX_STACKS]
+        self._caravans()[key] = {"owner": owner, "slot": p.slot, "type": kind, "gold": gold, "x": x, "y": y,
+                                 "enemies": enemies, "men": men, "state": "new", "misses": 0}
+        self._save_shared()
+        self._act(p, "caravan_off", token=token, type=kind, gold=gold, men=sum(n for _, n in men))
+        p.mp_out.append([44, token, 1])
+        self._tell_all([27, TELL_CARAVAN_OFF, p.slot, kind, gold])
+
+    def _caravans_host(self, p, now):
+        """The host's game hears of the caravans it is to send off, again until it shows them on its map."""
+        for key, c in self._caravans().items():
+            if c["state"] == "new" and now - self.cv_sent.get(key, -CARAVAN_RESEND_S) >= CARAVAN_RESEND_S:
+                self.cv_sent[key] = now
+                p.mp_out.append([42, int(key), c["slot"], c["type"], c["gold"], c["x"], c["y"], c["enemies"],
+                                 len(c["men"])] + flat(c["men"]))
+
+    def _caravans_alive(self, tokens):
+        """The caravans on the host's map: one it showed and shows no more for a while was destroyed."""
+        alive = {str(t) for t in tokens}
+        changed = False
+        for key, c in list(self._caravans().items()):
+            if key in alive:
+                if c["state"] != "running" or c["misses"]:
+                    c["state"], c["misses"], changed = "running", 0, True
+            elif c["state"] == "running":
+                c["misses"] += 1
+                changed = True
+                if c["misses"] >= CARAVAN_MISSES:
+                    del self._caravans()[key]
+                    self._remember_done(int(key), 1)
+                    self.log(f"together: caravan {key} of {c['owner']} was destroyed")
+                    self._tell_all([27, TELL_CARAVAN_LOST, c["slot"], 0, 0])
+        if changed:
+            self._save_shared()
+
+    def _caravan_end(self, p, values):
+        """A caravan home: its denars go into the treasury, its men to its owner's camp (the host's, or any, when the
+        owner has none), the highest first, as long as there is room; the rest go home."""
+        token, gold, quads = values[0], values[1], values[2:]
+        key = str(token)
+        p.mp_out.append([43, token])
+        c = self._caravans().pop(key, None)
+        if c is None:
+            return  # counted already, or from a world before a save the host loaded
+        self._remember_done(token, 1)
+        men = sorted(([quads[k], quads[k + 1], quads[k + 2], quads[k + 3]] for k in range(0, len(quads), 4)
+                      if quads[k] > 0 and quads[k + 1] > 0), key=lambda m: -m[2])
+        bases = self.shared["bases"]
+        index = next((i for i, b in enumerate(bases) if b and b["who"] == c["owner"]), None)
+        if index is None:
+            index = next((i for i, b in enumerate(bases) if b and b["host"]), None)
+        if index is None:
+            index = next((i for i, b in enumerate(bases) if b), None)
+        kept = gone = 0
+        if index is not None:
+            garrison = bases[index].setdefault("garrison", [])
+            room = CAMP_MEN - sum(s[1] for s in garrison)
+            for troop, count, _, wage in men:
+                stay = max(0, min(count, room))
+                room -= stay
+                kept += stay
+                gone += count - stay
+                if stay:
+                    same = next((s for s in garrison if s[0] == troop), None)
+                    if same:
+                        same[1] += stay
+                    else:
+                        garrison.append([troop, stay, wage])
+        else:
+            gone = sum(m[1] for m in men)
+        self.shared["gold"] += max(0, gold)
+        self._save_shared()
+        self.log(f"together: caravan {key} of {c['owner']} came home with {gold} denars, {kept} men to camp {index}"
+                 + (f", {gone} went home" if gone else "") + f"; treasury {self.shared['gold']}")
+        self._tell_all([27, TELL_CARAVAN_HOME, c["slot"], gold, kept])
+        if gone:
+            self._tell_all([27, TELL_CARAVAN_DISBANDED, c["slot"], gone, 0])
+        self._tell_all([29, 0, 0, self.shared["gold"]])
+        if index is not None:
+            self._camps_out(index)
+
+    def _camp_put(self, p, values):
+        """The men left at a camp come back from p's game: token, camp, offset, total, (troop, count, wage)..."""
+        token, index, offset, total, triples = values[0], values[1], values[2], values[3], values[4:]
+        bases = self.shared["bases"]
+        camp = bases[index] if 0 <= index < len(bases) else None
+        if token == p.camp_done_token or not camp:
+            p.mp_out.append([40, index, 1, p.slot if p.slot is not None else 0])
+            return
+        if p.camp_in is None or p.camp_in[0] != token:
+            p.camp_in = [token, {}]
+        p.camp_in[1][offset] = triples
+        expected, men = 0, []
+        for at, part in sorted(p.camp_in[1].items()):
+            if at != expected:
+                return
+            expected += len(part) // 3
+            men += [list(part[k:k + 3]) for k in range(0, len(part), 3)]
+        if expected != total:
+            return
+        camp["garrison"] = cap_men([m for m in men if m[0] > 0 and m[1] > 0], CAMP_MEN)
+        p.camp_in, p.camp_done_token = None, token
+        if self.camp_locks.get(index, (None,))[0] == p.cid:
+            del self.camp_locks[index]
+        self._save_shared()
+        self._act(p, "camp_men_saved", camp=index, men=sum(m[1] for m in camp["garrison"]))
+        p.mp_out.append([40, index, 1, p.slot if p.slot is not None else 0])
+        self._camps_out(index)
 
     def _host_loaded(self, stamp, now):
         """The host's game loaded a save. Nothing of the army is in a save file, so its game hears all of it again.
@@ -889,7 +1612,7 @@ class World:
         self.loaded = (0, now)
         self.sync_open = None
         old = (self.profiles or self.shared["gold"] or self.shared["items"] or any(self.shared["bases"])
-               or any(self.army.values()))
+               or self.shared.get("vassals") or any(self.army.values()))
         folder = self._keep_campaign() if old else None  # before the count goes up: the copy is that campaign's
         self.campaign += 1
         self._save_sync()
@@ -938,14 +1661,23 @@ class World:
 
     def pause_cause(self, now, but=None):
         """(slot, why) of a player holding the world still, other than `but`, or None.
-        why: 1 in an encounter or battle, 2 silent (a menu, a screen, loading)."""
+        why: 1 in an encounter or battle, 2 silent (a menu, a screen, loading). Only the host (its game is the world)
+        and a player in a battle (joint, or its game's own) hold it: a friend in a menu, a talk or a trade does not -
+        the world holds only its party and the one it meets (puppets' fifth number)."""
         for p in sorted(self.players.values(), key=lambda q: (q.slot is None, q.slot)):
             if p.slot is None or p.last is None or p is but:
                 continue
             silent = now - p.last
-            if silent < BUSY_TIMEOUT_S and (p.busy or silent > SILENT_PAUSE_S):
+            if not (silent < BUSY_TIMEOUT_S and (p.busy or silent > SILENT_PAUSE_S)):
+                continue
+            if p.on_server or self._fighting(p):
                 return p.slot, 1 if p.busy else 2
         return None
+
+    def _fighting(self, p):
+        """Whether the player is in a battle: a joint one (gathering, loading or fought), or its own game's."""
+        b = self.battle
+        return p.fight or (b is not None and p.cid in b.sides)
 
     # ---- server
 
@@ -1009,7 +1741,9 @@ class World:
                 if all(r[0] != sid for r in self.results) and self.troops.get(sid, (0, None))[1] != stacks:
                     self.version += 1
                     self.troops[sid] = (self.version, stacks)
-            puppets = [(p.slot, p.pos[0], p.pos[1], p.faction) for p in self.players.values()
+            # the fifth number: the party that player meets, + 1 (0 none) - the world holds it still meanwhile
+            puppets = [(p.slot, p.pos[0], p.pos[1], p.faction, p.meet + 1 if p.busy and p.meet > 0 else 0)
+                       for p in self.players.values()
                        if p.slot is not None and p.pos is not None and not p.on_server]
             name = None
             pending_troops = [p for p in self.players.values() if p.slot is not None and p.stacks is not None]
@@ -1150,9 +1884,13 @@ class World:
                 + [([36, kind, level], None) for kind, level in sorted(self.army["levels"].items())])
 
     def player_request(self, cid, x, y, busy, result, me, now, hello=False, bye=False, name=None, mp=None,
-                       on_server=False, faction=None, profile=None, together=None, profile_ask=False,
-                       build=None, hours=None, lord=None):
-        """Returns (reply numbers after the marker, trailing string or None)."""
+                       on_server=None, faction=None, profile=None, together=None, profile_ask=False,
+                       build=None, hours=None, lord=None, meet=None, fight=False):
+        """Returns (reply numbers after the marker, trailing string or None). on_server: srvp of the request, None
+        when it has none (a joint battle's requests, an encounter's): the player stays what it was. Such requests
+        made the host a friend for the whole battle, and walls stormed with nobody in a kingdom went to nobody (11-05)."""
+        told = on_server
+        on_server = bool(on_server)
         with self.lock:
             self.stats["cli"] += 1
             if bye:
@@ -1164,7 +1902,8 @@ class World:
                 # game that loaded the host's save (still in the host's role): it is a copy, a client
                 return [24], None
             p = self._player(cid)
-            p.on_server = on_server
+            if told is not None:
+                p.on_server = told
             if build is not None and build != p.build:
                 p.build = build
                 host = next((q.build for q in self.players.values() if q.on_server and q.build), None)
@@ -1177,6 +1916,12 @@ class World:
             p.requests += 1
             p.pos = (x, y)
             p.busy = busy
+            if not busy:
+                p.meet, p.fight = -1, False
+            elif meet is not None:
+                p.meet = meet
+            if busy and fight:
+                p.fight = True
             p.last = now
             if hours is not None:
                 p.hours = hours
@@ -1198,6 +1943,24 @@ class World:
                 self._profile_part(p, profile, now)
             if together:
                 self._together(p, together, now)
+            if on_server:
+                if together and "realm" in together:  # the map's requests say it (a menu's do not)
+                    self.realm = together["realm"]
+                wars = (together or {}).get("wars")
+                if wars is not None and wars != self.host_wars:
+                    self.host_wars = wars
+                    for q in self.players.values():
+                        if not q.on_server:
+                            q.mp_out.append([52, wars])
+                self._caravans_host(p, now)
+                self._fiefs_host(p, now)
+                if p.name and (p.faction, p.name) != self.fief_host_told:
+                    self.fief_host_told = (p.faction, p.name)  # the host's image in the clients' games
+                    for q in self.players.values():
+                        if not q.on_server:
+                            q.mp_out.append(([45, FIEF_VASSALS, p.faction, 0], p.name))
+            else:
+                self._fief_pay(p, now)
             if on_server and p.stamp_told != self.save_stamp:
                 p.stamp_told = self.save_stamp
                 p.mp_out.append([37, self.save_stamp, p.loaded_told])
@@ -1206,7 +1969,10 @@ class World:
                 p.together_told = True
                 p.army_out = self._army_replies()
                 if self.shared["gold"] or any(self.shared["bases"]) or on_server:  # a host's save may hold an old camp
-                    p.shared_out = [self._marks_reply(p), [29, 0, 0, self.shared["gold"]]]
+                    p.shared_out = [self._marks_reply(p), [29, 0, 0, self.shared["gold"]]] + self._camps_replies()
+                p.shared_out += self._vassal_replies(p)
+                if not on_server and self.host_wars:
+                    p.shared_out.append([52, self.host_wars])
             back = self.returns.pop(self._profile_key(cid) or "", None)
             if back:
                 p.mp_out.append([16, 0, 0, len(back)] + flat(back[:MAX_STACKS]))
@@ -1221,6 +1987,8 @@ class World:
             wanted = f'"{wanted}"' if wanted else None  # quoted: a name like "1" stays a string
             if p.mp_out:
                 nums = p.mp_out.pop(0)
+                if isinstance(nums, tuple):  # (numbers, its string)
+                    return nums
                 return nums, wanted if nums[0] == 7 else None
             if p.army_out:
                 return p.army_out.pop(0)
@@ -1280,7 +2048,8 @@ class World:
             if p.profile_out:  # the kept hero, right after the first word on the world
                 return p.profile_out.pop(0), None
             if p.shared_out:
-                return p.shared_out.pop(0), None
+                nums = p.shared_out.pop(0)
+                return nums if isinstance(nums, tuple) else (nums, None)
             # every other reply: troops of the nearest party whose troops this player has not seen
             if p.requests % 2 == 0:
                 for sid, _ in by_distance[:NEAREST_PER_REPLY]:
@@ -1358,8 +2127,11 @@ class World:
 
     def _mp_op(self, p, mp, now):
         op, bid, b = mp["op"], mp["bid"], self.battle
-        if op in (1, 3, 4):
-            what = {1: "starts a joint battle", 3: "accepts the invitation", 4: "declines / cancels"}[op]
+        if op == 5 and (b is None or b.bid != bid or b.center is None or b.event):
+            op = 3  # only a siege has another side to join
+        if op in (1, 3, 4, 5):
+            what = {1: "starts a joint battle", 3: "accepts the invitation", 4: "declines / cancels",
+                    5: "accepts the invitation on the other side"}[op]
             self.log(f"joint battle: {self._who(p)} {what} (battle {bid}, enemy party {mp['sid']}, "
                      f"player slot {mp['slot']}, center {mp['center']}{', defence' if mp.get('defend') else ''})")
         if mp.get("hero"):
@@ -1407,6 +2179,8 @@ class World:
                 return
             self.battle_seq += 1
             b = Battle(self.battle_seq, p.cid, now)
+            b.seen = mp.get("party_troops") or {}
+            b.seen_first = p.on_server
             b.kind = mp.get("kind", 0)
             defender = None
             if event:
@@ -1429,18 +2203,43 @@ class World:
                 b.center, b.defence, b.player_team = mp["center"], True, 0
                 b.sides = {p.cid: 0}
                 b.enemy_sid = mp["sid"]  # who takes the defeated defenders prisoner
-                garrison = self.troops.get(b.center, (0, None))[1] or []
+                b.enemy_faction = mp.get("enemy_faction", 0)
+                garrison = self._men(b, b.center)
+                if not garrison:
+                    self.log(f"joint battle: the garrison of {b.center} is not known: the walls are the players' alone")
                 b.npc_stacks = [(0, b.center, t, n) for t, n in garrison]
-                army = [mp["sid"]] + sorted(s for s, e in self.parties.items() if e[6] == mp["sid"] + 1)
+                army = [mp["sid"]] + self._army(b, mp["sid"])
                 for sid in army:
-                    stacks = self.troops.get(sid, (0, None))[1] or (mp["troops"] if sid == mp["sid"] else [])
+                    stacks = self._men(b, sid) or (mp["troops"] if sid == mp["sid"] else [])
                     b.npc_stacks += [(1, sid, t, n) for t, n in stacks]
+                ally = mp.get("ally", -1)
+                if ally >= 0 and ally not in army and ally != b.center:
+                    # the lord the player serves (Freelancer) holds the walls beside the players
+                    b.ally_sid = ally
+                    stacks = self._men(b, ally) or mp.get("ally_troops") or []
+                    b.npc_stacks += [(0, ally, t, n) for t, n in stacks]
+                for sid in self._inside(b.center, but=set(army) | {ally}, seen=b.seen):
+                    b.npc_stacks += [(0, sid, t, n) for t, n in self._men(b, sid)]
             elif mp.get("center", -1) > 0:  # center ids are never 0 (the player's party)
                 # a siege: the players storm the walls (team 1), the garrison holds them (team 0)
                 b.center = mp["center"]
                 b.player_team = 1
                 b.sides = {p.cid: 1}
-                b.enemy_stacks = self.troops.get(b.center, (0, None))[1] or mp["troops"] or []
+                b.enemy_stacks = self._men(b, b.center) or mp["troops"] or []
+                if not b.enemy_stacks:
+                    self.log(f"joint battle: the garrison of {b.center} is not known: the walls stand empty")
+                ally = mp.get("ally", -1)
+                if ally >= 0 and ally != b.center:
+                    # the lord the player serves (Freelancer) besieges it: he and the army camped with
+                    # him storm the walls beside the players, and the walls go to his kingdom
+                    b.ally_sid, b.ally_faction = ally, mp.get("ally_faction", 0)
+                    army = [ally] + self._army(b, ally)
+                    for sid in army:
+                        stacks = self._men(b, sid) or (mp.get("ally_troops") or [] if sid == ally else [])
+                        b.npc_stacks += [(1, sid, t, n) for t, n in stacks]
+                # the lords and others inside hold the walls beside the garrison
+                for sid in self._inside(b.center, but={ally}, seen=b.seen):
+                    b.npc_stacks += [(0, sid, t, n) for t, n in self._men(b, sid)]
             elif mp["slot"] >= 0:
                 defender = next((q for q in self.players.values() if q.slot == mp["slot"] and q is not p), None)
                 if defender is None:
@@ -1457,18 +2256,19 @@ class World:
                 b.npc_stacks = [(b.player_team, mp.get("ally", -1), t, n) for t, n in mp.get("ally_troops") or []]
             elif mp["sid"] >= 0:
                 b.enemy_sid = mp["sid"]
-                b.enemy_stacks = mp["troops"] or (self.troops.get(mp["sid"], (0, None))[1] or [])
+                b.enemy_stacks = mp["troops"] or self._men(b, mp["sid"])
                 ally = mp.get("ally", -1)
                 if ally >= 0 and ally != mp["sid"]:
                     # the lord the player serves: his men fight on the players' side (the world
                     # server's view of them first, the player's otherwise)
                     b.ally_sid = ally
-                    stacks = self.troops.get(ally, (0, None))[1] or mp.get("ally_troops") or []
+                    stacks = self._men(b, ally) or mp.get("ally_troops") or []
                     b.npc_stacks = [(b.player_team, ally, t, n) for t, n in stacks]
             else:
                 self.log("joint battle: refused - the enemy is not a party of the world (no server id)")
                 p.mp_out.append([7, 0, 2, 0])
                 return
+            self._add_joiners(b, mp)
             for q in self.players.values():
                 if q is p or q is defender or q.slot is None or q.pos is None or p.pos is None:
                     continue
@@ -1477,8 +2277,10 @@ class World:
                 if (q.pos[0] - p.pos[0]) ** 2 + (q.pos[1] - p.pos[1]) ** 2 <= INVITE_DIST ** 2:
                     b.invited.add(q.cid)
                     target = b.enemy_sid if b.enemy_sid is not None else (b.center if b.center is not None else -1)
-                    q.mp_out.append([6, b.bid, 3 + b.event if b.event else 1, p.slot, target])
+                    siege = 1 if b.center is not None and not b.event else 0
+                    q.mp_out.append([6, b.bid, 3 + b.event if b.event else 1, p.slot, target, siege])
             b.terrain = mp.get("terrain", 0)
+            b.steppe = bool(mp.get("steppe")) and b.center is not None
             if b.kind == KIND_LAIR and b.terrain in PLAIN_TERRAINS:
                 b.terrain = LAIR_TERRAIN
             if b.kind in KIND_NAMES:
@@ -1491,9 +2293,12 @@ class World:
             # waiting without the battle's number (the answer to the start got lost): tell it
             p.mp_out.append([7, b.bid, b.fighting, b.sides[p.cid]])
         elif b is None or b.bid != bid:
-            if op in (2, 3):
+            if op in (2, 3, 5):
                 p.mp_out.append([7, bid, 2, 0])  # that battle is gone
-        elif op == 3:
+        elif op in (3, 5):
+            # an invited player fights on the starter's side; in a siege it may take the other (op 5): the walls'
+            # friends defend them, the besiegers' friends storm them, all in one battle
+            team = b.player_team if op == 3 else 1 - b.player_team
             if b.state != "gathering" and p.cid not in b.sides:
                 if p.cid not in b.invited:
                     self.log(f"joint battle {b.bid}: {self._who(p)} accepted too late - the battle began without that player")
@@ -1502,13 +2307,16 @@ class World:
                 # the armies are on their way: the player still fights, as its hero, on the
                 # starter's side; its troops and companions stay out of this battle
                 b.invited.discard(p.cid)
-                b.sides[p.cid] = b.player_team
-                self.log(f"joint battle {b.bid}: {self._who(p)} accepted late - joins the battle as its hero; "
-                         "its troops stay out of it")
-                p.mp_out.append([7, b.bid, b.fighting, b.player_team])
+                b.sides[p.cid] = team
+                self.log(f"joint battle {b.bid}: {self._who(p)} accepted late - joins the battle (team {team}) as "
+                         "its hero; its troops stay out of it")
+                p.mp_out.append([7, b.bid, b.fighting, team])
                 return
             b.invited.discard(p.cid)
-            b.sides.setdefault(p.cid, b.player_team)  # an invited player fights on the starter's side
+            if p.cid not in b.sides or op == 5:
+                b.sides[p.cid] = team
+            if team != b.player_team:
+                self.log(f"joint battle {b.bid}: {self._who(p)} fights on the other side (team {team})")
         elif op == 4:
             b.invited.discard(p.cid)
             if b.state == "running":
@@ -1547,16 +2355,12 @@ class World:
                 stacks.append([team, cid, troop, 1, 0])
                 b.hero_troops.add(troop)
                 b.companion_data.append((troop, numbers))
-        if b.defence:
-            stacks += [[team, ("npc", sid), troop, n, 0] for team, sid, troop, n in b.npc_stacks]
-        else:
-            enemy = [[1 - b.player_team, None, troop, n, 0] for troop, n in b.enemy_stacks if n > 0]
-            # the lord's men: as many stacks as leave room for the enemy, the biggest first
-            room = max(0, MP_MAX_STACKS - len([s for s in stacks if s[3] > 0]) - len(enemy))
-            allies = sorted(([team, ("npc", sid), troop, n, 0] for team, sid, troop, n in b.npc_stacks if n > 0),
-                            key=lambda s: -s[3])[:room]
-            stacks += allies + enemy
-        stacks = [s for s in stacks if s[3] > 0][:MP_MAX_STACKS]
+        # the world's parties: those of one side share a stack of each troop (beside a lord the biggest first);
+        # the enemy party of a field battle, or a siege's garrison, last
+        others = self._merged(b.npc_stacks, biggest_first=not b.defence)
+        if not b.defence:
+            others += [[1 - b.player_team, None, troop, n, 0] for troop, n in b.enemy_stacks if n > 0]
+        stacks, b.left_out = self._fit(b, stacks, others)
         # a player on the other side is an enemy too, with no soldiers at all (heroes against each other)
         foes = any(team != b.player_team for team in b.sides.values())
         if b.center is None and not foes and not any(s[0] != b.player_team for s in stacks):
@@ -1577,6 +2381,156 @@ class World:
         self.log(f"joint battle {b.bid}: going to the battle server ({len(stacks)} stacks, sides "
                  + ", ".join(f"{self._who(self.players[c])}=team {t}" for c, t in b.sides.items() if c in self.players)
                  + ")")
+
+    def _own_factions(self, p):
+        """The kingdoms p fights for as its own: the one it serves, the host's own realm for the host and for those who
+        hold its fiefs"""
+        if p is None:
+            return set()
+        own = {p.faction} if p.faction else set()
+        _, entry = self._vassal_of(p)
+        if entry and entry.get("faction"):
+            own.add(entry["faction"])
+        if p.on_server:
+            own.add(HOST_REALM)
+        return own
+
+    def _helping(self, b, cid, team):
+        """A siege fought for another's kingdom: the player came to help (11-07, less experience). Team 0 holds the
+        walls for the center's kingdom; team 1 storms them for the besiegers' (a defence's besieger, the lord stormed
+        beside), or for the player who began the storm. A kingdom not known: its own fight."""
+        if b.center is None or b.event:
+            return False
+        p = self.players.get(cid)
+        if team == 0:
+            side = (self.centers.get(b.center) or (0,))[0]
+        elif b.defence:
+            side = b.enemy_faction
+        elif b.ally_faction > 0:
+            side = b.ally_faction
+        else:  # a player's own storm: the others help it, unless they serve its kingdom
+            if cid == b.starter:
+                return False
+            return not (self._own_factions(p) & self._own_factions(self.players.get(b.starter)))
+        return bool(side) and side not in self._own_factions(p)
+
+    def _storm_kingdom(self, p):
+        """(kingdom, vassal index + 1 or 0) the walls a client stormed go to: its own kingdom (its stand-in holds
+        them), else the host's own realm it holds fiefs of (its stand-in too), else the host's kingdom (whose king
+        grants them), else, with nobody in a kingdom, the host (its game founds its own realm with them, as Native
+        does for a player of no kingdom who takes walls: 11-05, the user's wish); (0, 0) with no host."""
+        if p is None:
+            return 0, 0
+        _, entry = self._vassal_of(p)
+        if p.faction:
+            return p.faction, (entry["index"] + 1 if entry and entry["faction"] == p.faction else 0)
+        if entry and entry.get("realm") and entry["faction"]:
+            return entry["faction"], entry["index"] + 1
+        host = next((q for q in self.players.values() if q.on_server), None)
+        if host is None:
+            return 0, 0
+        return (host.faction or HOST_REALM), 0
+
+    def _add_joiners(self, b, mp):
+        """The parties nearby that join the battle, as in the single player game (11-07): the starter's game picks
+        them by Native's rules (mpj), each with the parties attached to it (its army). In a field battle the armies of
+        the enemy party and of the lord the player serves come along too. A party whose men the world server never
+        reported, nor the starter's game told of, stays out (its men are not known here)."""
+        if b.event or (b.enemy_sid is None and b.center is None):
+            return
+        taken = {sid for _, sid, _, _ in b.npc_stacks} | ({b.enemy_sid, b.center, b.ally_sid} - {None})
+        leaders = []
+        if b.center is None:
+            leaders = [(b.enemy_sid, 0)] + ([(b.ally_sid, 1)] if b.ally_sid is not None and b.kind != KIND_VILLAGE else [])
+        for sid, side in leaders + [j for j in mp.get("joiners") or [] if j[0] not in taken]:
+            team = b.player_team if side == 1 else 1 - b.player_team
+            army = ([] if (sid, side) in leaders else [sid]) + [s for s in self._army(b, sid) if s != b.center]
+            for s in army:
+                if s in taken:
+                    continue
+                taken.add(s)
+                stacks = self._men(b, s)
+                if not stacks:
+                    self.log(f"joint battle: party {s} would join (team {team}), but its men are not known: it stays out")
+                    continue
+                b.npc_stacks += [(team, s, t, n) for t, n in stacks]
+                b.joiners[s] = team
+        if b.joiners:
+            told = ", ".join(f"{s} (team {t})" for s, t in sorted(b.joiners.items()))
+            self.log(f"joint battle: parties nearby join: {told}")
+
+    @staticmethod
+    def _merged(npc_stacks, biggest_first=False):
+        """Stacks of world parties (team, sid, troop, count) as battle stacks: one for each side's troop, owned
+        by ("npc", ((sid, count), ...)), in the order they come (or the biggest first)."""
+        merged = {}
+        for team, sid, troop, n in npc_stacks:
+            if n > 0:
+                merged.setdefault((team, troop), []).append((sid, n))
+        stacks = [[team, ("npc", tuple(parts)), troop, sum(n for _, n in parts), 0]
+                  for (team, troop), parts in merged.items()]
+        return sorted(stacks, key=lambda s: -s[3]) if biggest_first else stacks
+
+    @staticmethod
+    def _fit(b, mine, others):
+        """The stacks for the battle server, MP_MAX_STACKS at most: the players' first (their smallest troops
+        give way when they alone would leave too little room, never a companion), then each side's biggest of
+        the others, MP_SIDE_STACKS at least of each side that has them. Returns (stacks, left out)."""
+        mine = [s for s in mine if s[3] > 0]
+        others = [s for s in others if s[3] > 0]
+        if len(mine) + len(others) <= MP_MAX_STACKS:
+            return mine + others, []
+        teams = sorted({s[0] for s in others})
+        floor = sum(min(MP_SIDE_STACKS, sum(1 for s in others if s[0] == t)) for t in teams)
+        left_out = []
+        if len(mine) > MP_MAX_STACKS - floor:
+            regular = sorted((k for k, s in enumerate(mine) if s[2] not in b.hero_troops), key=lambda k: mine[k][3])
+            drop = set(regular[:len(mine) - max(0, MP_MAX_STACKS - floor)])
+            left_out += [s for k, s in enumerate(mine) if k in drop]
+            mine = [s for k, s in enumerate(mine) if k not in drop][:MP_MAX_STACKS]
+        room = MP_MAX_STACKS - len(mine)
+        order = sorted(range(len(others)), key=lambda k: -others[k][3])
+        keep = set()
+        for t in teams:
+            share = min(MP_SIDE_STACKS, room // max(1, len(teams)))
+            keep |= set([k for k in order if others[k][0] == t][:share])
+        for k in order:
+            if len(keep) >= room:
+                break
+            keep.add(k)
+        left_out += [s for k, s in enumerate(others) if k not in keep]
+        return mine + [s for k, s in enumerate(others) if k in keep], left_out
+
+    @staticmethod
+    def _shares(parts, lost):
+        """A shared stack's losses among its parties ((sid, count), ...): [(sid, count, lost)], in proportion
+        to their men, the largest remainders taking the rest."""
+        total = sum(n for _, n in parts) or 1
+        out = [[sid, n, lost * n // total, lost * n % total] for sid, n in parts]
+        rest = lost - sum(e[2] for e in out)
+        for e in sorted(out, key=lambda e: -e[3])[:max(0, rest)]:
+            e[2] += 1
+        return [(sid, n, gone) for sid, n, gone, _ in out]
+
+    def _inside(self, center, but=(), seen=None):
+        """The world parties inside a town or castle (lords, caravans): they hold its walls beside the garrison,
+        as in a siege of Native's. Those whose men are known: the world server's view, or the starter's game's
+        (seen)."""
+        seen = seen or {}
+        return sorted(sid for sid, e in self.parties.items()
+                      if e[6] == center + 1 and sid != center and sid not in but
+                      and (self.troops.get(sid, (0, None))[1] or seen.get(sid)))
+
+    def _men(self, b, sid):
+        """A world party's men for battle b: the world server's view, or the starter's game's when the server has none
+        (it reports the parties near players only); the host's own start is the world itself, its view comes first."""
+        known = self.troops.get(sid, (0, None))[1] or []
+        seen = b.seen.get(sid) or []
+        return (seen or known) if b.seen_first else (known or seen)
+
+    def _army(self, b, sid):
+        """The parties attached to world party sid (its army), as the world server has them"""
+        return sorted(s for s, e in self.parties.items() if e[6] == sid + 1)
 
     def _event_tick(self, b, now):
         """A joint event is fought by the heroes alone, no troops stand in for a player: it starts
@@ -1765,16 +2719,26 @@ class World:
             if owner is None:
                 if count - lost > 0:
                     enemy_left.append((troop, count - lost))
-            elif isinstance(owner, tuple):  # a defence: a world party, the garrison or a besieger
-                npc_left.setdefault(owner[1], [])
-                if count - lost > 0:
-                    npc_left[owner[1]].append((troop, count - lost))
+            elif isinstance(owner, tuple):  # world parties: a garrison, besiegers, lords, the lord the player serves
+                for sid, n, gone in self._shares(owner[1], lost):
+                    npc_left.setdefault(sid, [])
+                    if n - gone > 0:
+                        npc_left[sid].append((troop, n - gone))
             else:
                 wounded = lost if troop in b.hero_troops else lost * WOUNDED_PCT // 100
                 if lost:
                     losses.setdefault(owner, []).append((troop, lost - wounded, wounded))
                 if count - (lost - wounded) > 0:
                     left.setdefault(owner, []).append((troop, count - (lost - wounded)))
+        # the stacks that found no room on the battle server keep their men: a world party that fought, and the
+        # enemy party (a party none of whose stacks fought hears of nothing)
+        for team, owner, troop, count, _ in b.left_out:
+            if owner is None:
+                enemy_left.append((troop, count))
+            elif isinstance(owner, tuple):
+                for sid, n in owner[1]:
+                    if sid in npc_left:
+                        npc_left[sid].append((troop, n))
         # the defeated side's players: their troops are taken prisoner, by the world party or by
         # the winning player (the starter, or the attacked player)
         defeated = [cid for cid, team in b.sides.items() if winner in (0, 1) and team != winner]
@@ -1792,6 +2756,14 @@ class World:
                 share = [(troop, n) for troop, n in share if n > 0][:MAX_STACKS]
                 if share:
                     shares[cid] = share
+        starter = self.players.get(b.starter)
+        host_storm = (b.center is not None and not b.defence and winner == b.player_team
+                      and not (b.ally_sid is not None and b.ally_faction > 0)
+                      and starter is not None and starter.on_server)
+        if host_storm:
+            # first of all: the host's game knows the walls are its own before it hears the battle is over (a
+            # player who left the battle's menu at once took nothing)
+            starter.mp_out.append([13, b.bid, b.center])
         for cid, lost in losses.items():
             q = self.players.get(cid)
             if q is None:
@@ -1804,42 +2776,57 @@ class World:
             xp = fell_by_team.get(1 - team, 0) * XP_PER_ENEMY // max(1, side_players)
             if not won:
                 xp //= 3
-            if cid in shares:  # before the result: the spoils are there while the battle menu still is
-                q.mp_out.append([21, b.bid, len(shares[cid])] + flat(shares[cid]))
-            q.mp_out.append([8, b.bid, won, xp, len(lost)] + [v for entry in lost for v in entry])
+            if self._helping(b, cid, team):
+                xp = xp * HELP_XP_PCT // 100
             no = self._mp_player_number(cid)
-            used = [(wpt, hits, damage) for player, wpt, hits, damage in weapons if player == no >= 0]
-            if used:
-                q.mp_out.append([9, b.bid, len(used)] + [v for entry in used for v in entry])
-            # last: the hero's wounds, and the capture (after which the player is in captivity)
+            # first: the hero's wounds, and the capture. Its game learns who takes it prisoner before the result
+            # ends the battle's wait: told after it (11-06), the host's menu offered "Back to the map" for a moment,
+            # the captor on the map talked to the player again and took it in Native's own way, and that captivity
+            # stood still. The capture itself begins only once the result is in (the battle menu, or the map).
             hp = (health or {}).get(no, -1) if no >= 0 else -1
-            captor = b.enemy_sid if cid in defeated and b.enemy_sid is not None else -1  # a failed storm: no capture
+            captor = -1  # a failed storm: no capture; the other side's player of a defence gets away with the besiegers
+            if cid in defeated and b.enemy_sid is not None and team == b.player_team:
+                captor = b.enemy_sid
             if captor >= 0:
                 self.captors.setdefault(captor, set()).add(self._who(q))
             if hp >= 0 or captor >= 0:
                 q.mp_out.append([10, b.bid, hp, captor])
+            if cid in shares:  # before the result: the spoils are there while the battle menu still is
+                q.mp_out.append([21, b.bid, len(shares[cid])] + flat(shares[cid]))
+            q.mp_out.append([8, b.bid, won, xp, len(lost)] + [v for entry in lost for v in entry])
+            used = [(wpt, hits, damage) for player, wpt, hits, damage in weapons if player == no >= 0]
+            if used:
+                q.mp_out.append([9, b.bid, len(used)] + [v for entry in used for v in entry])
         if b.defence:
             # the besiegers keep what survived (a party with nobody left is gone); the garrison too,
             # unless the walls fell: then the center goes to the besiegers' kingdom
             for sid, kept in sorted(npc_left.items()):
                 if sid == b.center:
                     continue
-                self._record_result((sid, 0 if kept else 1, kept, []), None, now)
+                # the lord the player serves is never destroyed (see a field battle's end)
+                self._record_result((sid, 0 if kept or sid == b.ally_sid else 1, kept, []), None, now)
             if winner == b.player_team:
                 self._record_result((b.center, 0, npc_left.get(b.center, []), []), None, now)
             else:
-                self.captures.append((b.center, -1))
+                self.captures.append((b.center, -1, 0))
         elif b.center is not None:
-            starter = self.players.get(b.starter)
+            for sid, kept in sorted(npc_left.items()):
+                # the lord the player serves and his army keep what survived the storm; so do the lords inside
+                self._record_result((sid, 0 if kept or sid == b.ally_sid else 1, kept, []), None, now)
             if winner == b.player_team:
-                # the walls are taken: the host's own game takes the center as Native does; a
-                # client's kingdom gets it on the world server
-                if starter is not None and starter.on_server:
-                    starter.mp_out.append([13, b.bid, b.center])
-                elif starter is not None and starter.faction:
-                    self.captures.append((b.center, starter.faction))
-                else:
-                    self._record_result((b.center, 0, [], []), None, now)  # no kingdom to give it to
+                # the walls are taken: the host's own game takes the center as Native does (kind 13 above); a
+                # client's kingdom gets it on the world server (a vassal of it holds it at once); beside a lord
+                # (Freelancer), his kingdom
+                if b.ally_sid is not None and b.ally_faction > 0:
+                    self.captures.append((b.center, b.ally_faction, 0))
+                elif not host_storm:
+                    kingdom, vassal = self._storm_kingdom(starter)
+                    if kingdom:
+                        self.captures.append((b.center, kingdom, vassal))
+                    else:
+                        self.log(f"joint battle {b.bid}: the walls are taken, but neither the player nor the host "
+                                 "serves a kingdom: the garrison is gone, the center stays as it was")
+                        self._record_result((b.center, 0, [], []), None, now)  # no kingdom to give it to
             else:
                 self._record_result((b.center, 0, enemy_left, []), None, now)  # what the garrison kept
         elif b.enemy_sid is not None:
@@ -1852,6 +2839,13 @@ class World:
                 kept = npc_left[b.ally_sid]
                 self._record_result((b.ally_sid, 1 if b.kind == KIND_CARAVAN and not kept else 0, kept, []),
                                     None, now)
+            # the parties that joined (11-07): the beaten enemy's are gone with it, the others keep what survived
+            for sid, team in sorted(b.joiners.items()):
+                if sid not in npc_left:
+                    continue  # none of its men found room on the battle server: nothing changed
+                kept = npc_left[sid]
+                destroyed = 1 if not kept or (team != b.player_team and winner == b.player_team) else 0
+                self._record_result((sid, destroyed, kept, []), None, now)
             if b.kind in KIND_NAMES and b.starter in self.players:
                 self._act(self.players[b.starter], "battle_end", kind=KIND_NAMES[b.kind], battle=b.bid,
                           won=1 if winner == b.player_team else 0)
@@ -1929,6 +2923,8 @@ class World:
                         q.mp_out.append([7, b.bid, 1, team])
                 mode = 1 if b.center is not None else 0
                 hint = b.center if b.center is not None else b.terrain
+                if b.steppe:
+                    hint += STEPPE_HINT  # a Khergit town: the battle server takes its steppe map (11-07)
                 if b.event:
                     mode = b.event + 1
                     hint = b.round + 10 * b.teams if b.event == EVENT_TOURNAMENT else ARENA_AT_ONCE * len(b.sides)
@@ -2050,6 +3046,24 @@ def parse_together(q):
         out["treasury"] = (v[0], v[1])
     if q.get("st") == "1":
         out["store_open"] = True
+    v = parse_ints(q.get("cw", "")) if "cw" in q else None
+    if v and len(v) >= 3 and v[0] > 0 and (v[2] == 1 and len(v) == 3 or v[2] == 2 and len(v) % 2 == 1):
+        out["camp_work"] = v
+    if q.get("go", "").isdigit():
+        out["camp_open"] = int(q["go"])
+    v = parse_ints(q.get("gi", "")) if "gi" in q else None
+    if v and len(v) >= 4 and (len(v) - 4) % 3 == 0:
+        out["camp_put"] = v
+    v = parse_ints(q.get("cv", "")) if "cv" in q else None
+    if v and len(v) >= 6 and v[0] > 0 and len(v) % 2 == 0:
+        out["caravan"] = v
+    if "cvl" in q:
+        v = parse_ints(q["cvl"]) if q["cvl"] else []
+        if v is not None:
+            out["cv_alive"] = v
+    v = parse_ints(q.get("cve", "")) if "cve" in q else None
+    if v and len(v) >= 2 and len(v) % 4 == 2:
+        out["cv_end"] = v
     v = parse_ints(q.get("sti", "")) if "sti" in q else None
     if v and len(v) >= 3 and len(v) % 2 == 1:
         out["store_put"] = v
@@ -2068,6 +3082,36 @@ def parse_together(q):
         out["anew"] = True
     if q.get("ld", "").isdigit():
         out["loaded"] = int(q["ld"])
+    if q.get("vas") in ("0", "1"):
+        out["vassal"] = q["vas"] == "1"
+    v = parse_ints(q.get("va", "")) if "va" in q else None
+    if v and len(v) == 1 and v[0] > 0:
+        out["fief_paid"] = v[0]
+    v = parse_ints(q.get("vr", "")) if "vr" in q else None
+    if v and len(v) == 2 and v[0] > 0:
+        out["fief_ask"] = (v[0], v[1])
+    v = parse_ints(q.get("vgl", "")) if "vgl" in q else None
+    if v and len(v) == 2 and v[0] > 0:
+        out["fief_list"] = (v[0], v[1])
+    v = parse_ints(q.get("vgd", "")) if "vgd" in q else None
+    if v and len(v) >= 4 and v[0] > 0 and len(v) % 2 == 0 and len(v) - 2 <= 2 * FIEF_PAIRS:
+        out["fief_change"] = v
+    v = parse_ints(q.get("vi", "")) if "vi" in q else None
+    if v and len(v) % 2 == 0:
+        out["fief_income"] = v
+    v = parse_ints(q.get("fv", "")) if "fv" in q else None
+    if v and len(v) % 2 == 0:
+        out["fief_granted"] = v
+    v = parse_ints(q.get("fg", "")) if "fg" in q else None
+    if v and len(v) >= 2:
+        out["fief_changed"] = v
+    v = parse_ints(q.get("fgv", "")) if "fgv" in q else None
+    if v and len(v) == 3 and v[0] > 0:
+        out["fief_gift"] = (v[0], v[1], v[2])
+    if q.get("rlm", "").isdigit():
+        out["realm"] = int(q["rlm"])
+    if q.get("hw", "").isdigit():
+        out["wars"] = int(q["hw"])
     return out or None
 
 
@@ -2084,6 +3128,30 @@ def parse_center(text):
         v += [0] * (5 - len(v))
         return tuple(v)
     return None
+
+
+STEPPE_HINT = 1000  # src/coop/constants.py coop_mp_steppe_hint
+
+
+def parse_joiners(text):
+    """',sid,side,...' -> [(sid, side)]: the parties nearby that join a joint battle (side 1 the players', 0 the
+    enemy's), as the starter's game picked them by Native's rules"""
+    v = parse_ints(text.lstrip(",")) if text and text.lstrip(",") else []
+    return [(v[k], v[k + 1]) for k in range(0, len(v) - 1, 2) if v[k] > 0 and v[k + 1] in (0, 1)]
+
+
+def parse_party_troops(text):
+    """';sid,t1,n1,...;...' -> {sid: [(t1, n1), ...]}: the men of the parties in a battle as the starter's game has
+    them"""
+    out = {}
+    for chunk in text.split(";") if text else []:
+        v = parse_ints(chunk.strip(","))
+        if not v or len(v) < 3 or v[0] <= 0 or len(v) % 2 == 0:
+            continue
+        stacks = parse_stacks(v[1:])
+        if stacks:
+            out[v[0]] = [(t, n) for t, n in stacks if t > 0 and n > 0]
+    return out
 
 
 def parse_battles(text):
@@ -2337,8 +3405,8 @@ def _handle_request(world, role, target, now, cid="local"):
             center=parse_center(q.get("cf", "")), hours=parse_hours(q), battles=parse_battles(q.get("lb", "")),
             stamp=int(q["sv"]) if q.get("sv", "").isdigit() else None)
         nums = [MARKER, 1, int(pause), joins, len(puppets)]
-        for slot, x, y, faction in puppets:
-            nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, faction]
+        for slot, x, y, faction, meet in puppets:
+            nums += [slot, x + COORD_OFFSET, y + COORD_OFFSET, faction, meet]
         return reply_text(nums + payload, name)
     if role == "cli" and url.path == "/pg":
         return reply_text([MARKER] + world.ping(cid, now))
@@ -2373,16 +3441,23 @@ def _handle_request(world, role, target, now, cid="local"):
                   "troops": (parse_stacks(parse_ints(troops)) or []) if troops else [],
                   "ally": query_int(q, "mpa", -1),
                   "ally_troops": parse_stacks(parse_ints(q.get("mpat", "").lstrip(","))) or [],
+                  "ally_faction": query_int(q, "mpaf", 0),
+                  "enemy_faction": query_int(q, "mpef", 0),
+                  "joiners": parse_joiners(q.get("mpj", "")),
+                  "party_troops": parse_party_troops(q.get("mpjt", "")),
+                  "steppe": q.get("mps") == "1",
                   "hero": hero if hero and len(hero) == HERO_NUMBERS else None}
         together = parse_together(q)
         nums, string = world.player_request(cid, x, y, busy, parse_result(q.get("res", "")), me, now,
                                             hello=q.get("hello") == "1", bye=q.get("bye") == "1", name=name, mp=mp,
-                                            on_server=q.get("srvp") == "1",
+                                            on_server=q.get("srvp") == "1" if "srvp" in q else None,
                                             faction=query_int(q, "fac", 0) if "fac" in q else None,
                                             profile=parse_profile(q.get("pf", "")),
                                             profile_ask=q.get("pfq") == "1", together=together,
                                             build=query_int(q, "ver", 0) if "ver" in q else None,
-                                            hours=parse_hours(q), lord=query_int(q, "lord", -1))
+                                            hours=parse_hours(q), lord=query_int(q, "lord", -1),
+                                            meet=query_int(q, "enc", -1) if "enc" in q else None,
+                                            fight=q.get("fight") == "1")
         return reply_text([MARKER] + nums, string)
     if role == "mp" and url.path == "/mp":
         nums = world.mp_request(query_int(q, "st", 0), query_int(q, "bid", 0), query_int(q, "w", -1),
@@ -2489,8 +3564,32 @@ def sound_the_call(text, log):
         pass
 
 
+
+def link_report(samples):
+    """A line on a minute of pings to the host (ms, None for one lost), or None with nothing measured."""
+    got = sorted(ms for ms in samples if ms is not None)
+    lost = sum(1 for ms in samples if ms is None)
+    if not got and not lost:
+        return None
+    if not got:
+        return (f"link: no answer from the host to {lost} pings in the last minute / "
+                f"хост не ответил ни на один из {lost} замеров пинга за минуту")
+    middle, worst = got[len(got) // 2], got[-1]
+    line = f"link: ping to the host {middle} ms, worst {worst} ms" + (f", {lost} lost" if lost else "") +         " in the last minute"
+    if worst >= LINK_SLOW_MS or lost:
+        line += (f" - the map and the answers lag behind / пинг до хоста {middle} мс, худший {worst} мс"
+                 + (f", потеряно {lost}" if lost else "")
+                 + ": карта и ответы хоста запаздывают (Wi-Fi, загрузки, VPN через ретранслятор)")
+    return line
+
 def keep_alive(sock):
-    """Let the system notice a link that died without a word (a VPN dropping the route)."""
+    """Let the system notice a link that died without a word (a VPN dropping the route); and send each message at
+    once: with Nagle's batching a small message waited for the answer to the one before, which Windows delays up to
+    200 ms (players far from the host, 11-05)."""
+    try:
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+    except (OSError, ValueError, AttributeError):
+        pass
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         if hasattr(socket, "SIO_KEEPALIVE_VALS"):
@@ -2670,7 +3769,7 @@ def serve_relays(addr, world, key, save_dir, log):
             again = cid in owners
             owners[cid] = conn
             links[cid] = (conn, lock)
-            send_msg(conn, lock, {"t": "welcome", "cid": cid})
+            send_msg(conn, lock, {"t": "welcome", "cid": cid, "pong": 1})  # pong: it answers the relay's pings
             world.set_mp_name(cid, hello.get("mp_name"))
             log(f"net: player {cid} {'connected again' if again else 'connected'}"
                 + (f", multiplayer name '{hello['mp_name']}'" if hello.get("mp_name") else ""))
@@ -2688,6 +3787,8 @@ def serve_relays(addr, world, key, save_dir, log):
                 elif msg.get("t") == "req":
                     body = handle_request(world, "cli", msg.get("target", "/"), time.time(), cid=cid)
                     send_msg(conn, lock, {"t": "rep", "id": msg.get("id"), "body": body})
+                elif msg.get("t") == "ping":  # the friend's relay measures the link
+                    send_msg(conn, lock, {"t": "pong", "n": msg.get("n")})
                 elif msg.get("t") == "sig":
                     send_msg(conn, lock, {"t": "sig", "text": world.signal_text(cid)})
                 elif msg.get("t") == "save":
@@ -2741,6 +3842,10 @@ class Relay:
         self.incoming = None    # {"stamp", "at", "parts": {i: text}}: the host's save coming in parts
         self.trail = lambda cid, query: None  # run_join: this player's own trail.log
         self.late = []          # replies with news that came after their request gave up: next ones
+        self.pings_out = {}     # ping number -> when it went (the link to the host)
+        self.ping_n = 0
+        self.pings = []         # (when, ms or None: lost) of the last LINK_REPORT_S
+        self.pinger = False
 
     def log(self, msg):
         """This relay's log, and the host's: a line goes over the link too (kept until it is up)."""
@@ -2776,12 +3881,45 @@ class Relay:
         self._flush_log()
         self.log(f"relay: connected to the host as {first.get('cid')}")
         threading.Thread(target=self._reader, args=(msgs, sock), daemon=True).start()
+        if not self.pinger and first.get("pong"):  # a host's bridge of an earlier package never answers one
+            self.pinger = True
+            threading.Thread(target=self._ping_loop, daemon=True).start()
+
+    def _ping_loop(self):
+        """The link to the host: a ping every LINK_PING_S, and every LINK_REPORT_S a line on what it was (the
+        friend's window, its log and the host's), so a lagging map can be put down to the link or not."""
+        told = time.time()
+        while True:
+            time.sleep(LINK_PING_S)
+            now = time.time()
+            for n, went in list(self.pings_out.items()):  # no answer in time: lost on the way (or the link died)
+                if time.monotonic() - went > LINK_PING_S:
+                    self.pings_out.pop(n, None)
+                    self.pings.append((now, None))
+            if self.connected.is_set() and self.sock is not None and now >= self.quiet_until:
+                self.ping_n += 1
+                self.pings_out[self.ping_n] = time.monotonic()
+                try:
+                    send_msg(self.sock, self.lock, {"t": "ping", "n": self.ping_n})
+                except OSError:
+                    self.pings_out.pop(self.ping_n, None)
+            if now - told >= LINK_REPORT_S:
+                told = now
+                line = link_report([ms for at, ms in self.pings if at > now - LINK_REPORT_S])
+                self.pings = [(at, ms) for at, ms in self.pings if at > now - LINK_REPORT_S]
+                if line:
+                    self.log(line)
 
     def _reader(self, msgs, sock):
         try:
             for msg in msgs:
                 if msg.get("t") == "save_part":
                     self._take_save_part(msg)
+                    continue
+                if msg.get("t") == "pong":
+                    went = self.pings_out.pop(msg.get("n"), None)
+                    if went is not None:
+                        self.pings.append((time.time(), round((time.monotonic() - went) * 1000)))
                     continue
                 waiter = self.waiting.pop(msg.get("id"), None) if msg.get("t") == "rep" else \
                     self.waiting.pop(msg["t"], None) if msg.get("t") in ("save", "sig") else None

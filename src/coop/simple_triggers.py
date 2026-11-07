@@ -102,3 +102,8 @@ def merge(orig_simple_triggers):
   quieted = sum(quiet_block(t[1]) for t in orig_simple_triggers)
   if quieted == 0:
     raise MergeError("no window operations found in the simple triggers")
+  # the players' trade caravans ride in the world's game (coop/caravans.py)
+  from coop.constants import coop_role_client
+  orig_simple_triggers.append((0.5, [(neq, "$coop_role", coop_role_client), (call_script, "script_coop_cv_tick")]))
+  # the clients' fiefs in the host's world: their rents and wages counted each week (coop/fiefs.py)
+  orig_simple_triggers.append((24, [(neq, "$coop_role", coop_role_client), (call_script, "script_coop_fief_week")]))

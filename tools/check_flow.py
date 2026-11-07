@@ -60,6 +60,7 @@ KNOWN = {
     ("S2", ("script cf_freelancer_player_can_upgrade", "troop_can_use_item")): "Freelancer passes a modifier, which is ignored",
     ("S2", ("script freelancer_equip_troop", "troop_can_use_item")): "Freelancer passes a modifier, which is ignored",
     ("M2", "upgrade_path"): "its only jump stands behind (gt, the first upgrade, 1), and the first option wants just that upgrade",
+    ("P1", ("multiplayer_escape_menu", 1)): "Native's own escape menu opens its windows so; ours (the retreat) only adds a button and opens nothing",
 }
 
 

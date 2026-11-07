@@ -92,7 +92,7 @@ def test_players_and_puppets():
     req(w, "a", 100, 200, now=1.0, hello=True, name="Anna")
     req(w, "b", 300, 400, now=1.0, hello=True, name="Boris Bek")
     pause, joins, puppets, payload, name = w.server_report([], None, 1.1)
-    check(joins == 2 and sorted(puppets) == [(0, 100, 200, 0), (1, 300, 400, 0)], "two players: two puppets, two joins")
+    check(joins == 2 and sorted(puppets) == [(0, 100, 200, 0, 0), (1, 300, 400, 0, 0)], "two players: two puppets, two joins")
     check(payload == [3, 0] and name == "Anna", "the server learns the first player's name")
     check(w.server_report([], None, 1.2)[3:] == ([3, 1], "Boris Bek"), "then the second's")
     check(w.server_report([], None, 1.3)[3] == [0], "then nothing")
@@ -119,17 +119,42 @@ def statuses(w, cid, now, n=4, **kw):
 
 def test_shared_pause():
     w = cb.World()
+    req(w, "h", now=1.0, on_server=True)  # the host, playing in the world's own game
     req(w, "a", now=1.0)
     req(w, "b", now=1.0)
     check(statuses(w, "b", 1.1) == [], "nothing new: no status reply")
-    req(w, "a", now=2.0, busy=True)
-    check(statuses(w, "b", 2.1) == [[5, 1, 0, 1, 0]], "player b is told at once: the world stands, player 0 is in battle")
-    check(statuses(w, "a", 2.1, busy=True) in ([], [[5, 0, 0, 0, 0]]),
-          "the player in battle is not paused by itself")
-    req(w, "a", now=3.0)
-    check(statuses(w, "b", 3.1) == [[5, 0, 0, 0, 0]], "the battle is over: the world runs again for b")
-    check(statuses(w, "b", 3.0 + cb.SILENT_PAUSE_S + 0.2)[:1] == [[5, 1, 0, 2, 0]],
-          "player a silent in a menu: b stands still too (why 2)")
+    # a friend in a talk, a menu or a trade (11-07): the world runs on, only the party it meets is held
+    req(w, "h", now=2.0, on_server=True)
+    req(w, "a", now=2.0, busy=True, meet=600)
+    check(statuses(w, "b", 2.1) == [] and w.pause_cause(2.1) is None, "a friend's talk pauses nobody")
+    puppets = {slot: rest for slot, *rest in w.server_report([], None, 2.2)[2]}
+    check(puppets[w.players["a"].slot][-1] == 601, f"the server holds the party it meets still: {puppets}")
+    check(w.pause_cause(2.0 + cb.SILENT_PAUSE_S + 0.5, but=w.players["h"]) is None, "nor does its silence in the menus")
+    req(w, "h", now=3.0, on_server=True)
+    # a battle of its own game: the world pauses as before
+    req(w, "a", now=3.0, busy=True, fight=True)
+    check(statuses(w, "b", 3.1) == [[5, 1, w.players["a"].slot, 1, 0]],
+          "player b is told at once: the world stands, player a is in battle")
+    check(statuses(w, "a", 3.1, busy=True) in ([], [[5, 0, 0, 0, 0]]), "the player in battle is not paused by itself")
+    req(w, "h", now=4.0, on_server=True)
+    req(w, "a", now=4.0)
+    check(w.players["a"].meet == -1 and not w.players["a"].fight, "back on the map: nothing held")
+    puppets = {slot: rest for slot, *rest in w.server_report([], None, 4.05)[2]}
+    check(puppets[w.players["a"].slot][-1] == 0, "and the party met goes its way")
+    check(statuses(w, "b", 4.1) == [[5, 0, 0, 0, 0]], "the battle is over: the world runs again for b")
+    # the host: its game is the world - its menus stop it for everybody
+    req(w, "h", now=5.0, on_server=True)
+    req(w, "a", now=5.0 + cb.SILENT_PAUSE_S + 0.2)
+    check(statuses(w, "b", 5.0 + cb.SILENT_PAUSE_S + 0.2)[:1] == [[5, 1, w.players["h"].slot, 2, 0]],
+          "the host silent in a menu: b stands still too (why 2)")
+    # a joint battle: its players hold the world while it is fought
+    w3 = cb.World()
+    req(w3, "a", now=0.0)
+    req(w3, "b", now=0.0)
+    req(w3, "a", now=1.0, busy=True)
+    w3.battle = cb.Battle(1, "a", 0.0)
+    w3.battle.sides, w3.battle.state = {"a": 0}, "running"
+    check(w3.pause_cause(1.1, but=w3.players["b"]) == (w3.players["a"].slot, 1), "a player in a joint battle holds it")
     w2 = cb.World()
     req(w2, "a", now=0.0)
     got = [r[0] for r in (req(w2, "a", now=0.0) for _ in range(cb.STATUS_EVERY + 2)) if r[0][0] == 5]
@@ -156,7 +181,7 @@ def test_clock_sync():
     check(statuses(w, "a", 1.0, hours=104) == [], "until it is within an hour")
     check(statuses(w, "a", 1.1, hours=105) == [[5, 0, 0, 0, 0]], "caught up")
     req(w, "b", now=1.2)
-    req(w, "b", now=1.2, busy=True)
+    req(w, "b", now=1.2, busy=True, fight=True)  # a battle of its own game
     check(statuses(w, "a", 1.3, hours=110) == [[5, 1, 1, 1, -1]], "a pause of the world says the clock too")
     check(statuses(w, "a", 1.4, hours=200) == [[5, 1, 1, 1, 0]], "a day apart and more is another save: left alone")
     req(w, "host", now=1.5, on_server=True, hours=50)
@@ -181,7 +206,8 @@ def test_lord_battle():
           "the other soldier, starting against the same enemy, joins that battle")
     check(req(w, "b", x=100, now=1.3, busy=True, mp=mp(2, bid))[0] == [7, bid, 0, 0], "and is told so")
     w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.4)
-    check([s[:4] for s in w.battle.stacks] == [[0, ("npc", 700), 51, 30], [0, ("npc", 700), 50, 1], [1, None, 60, 25]],
+    check([s[:4] for s in w.battle.stacks] == [[0, ("npc", ((700, 30),)), 51, 30], [0, ("npc", ((700, 1),)), 50, 1],
+                                                [1, None, 60, 25]],
           f"the lord's men (as the world server knows them) on the players' side: {w.battle.stacks}")
     w.battle.state = "running"
     w.mp_request(4, bid, 0, {0: 10, 2: 5}, {0: "ivan", 1: "olga"}, 5.0)
@@ -217,13 +243,19 @@ def test_lord_battle():
 def test_pause():
     w = cb.World()
     req(w, "a", now=10.0, busy=True)
-    check(w.server_report([], None, 10.1)[0] is True, "a busy player pauses the world")
+    check(w.server_report([], None, 10.1)[0] is False, "a friend busy in a talk pauses nothing (11-07)")
+    req(w, "a", now=10.0, busy=True, fight=True)
+    check(w.server_report([], None, 10.1)[0] is True, "a friend in a battle of its own game pauses the world")
     req(w, "a", now=10.2)
     req(w, "b", now=10.2)
     check(w.server_report([], None, 10.3)[0] is False, "everyone on the map: the world runs")
     req(w, "a", now=10.9)
-    check(w.server_report([], None, 10.2 + cb.SILENT_PAUSE_S + 0.1)[0] is True,
-          "one player gone silent (a menu) pauses the world for all")
+    check(w.server_report([], None, 10.2 + cb.SILENT_PAUSE_S + 0.1)[0] is False,
+          "a friend gone silent (a menu) pauses nothing")
+    w.players["b"].fight = True
+    w.players["b"].busy = True
+    check(w.server_report([], None, 10.2 + cb.SILENT_PAUSE_S + 0.1)[0] is True, "one in a battle pauses it for all")
+    w.players["b"].fight = w.players["b"].busy = False
     req(w, "b", now=12.0, bye=True)
     req(w, "a", now=12.0)
     check(w.server_report([], None, 12.1)[0] is False, "a player that said bye pauses nothing")
@@ -318,6 +350,17 @@ def test_hub_and_relay():
 
     relay = cb.Relay(net, "secret", log)
     relay.connect()
+    check(relay.sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY) != 0,
+          "the link sends each message at once (no Nagle batching)")
+    relay.ping_n += 1
+    relay.pings_out[relay.ping_n] = time.monotonic()
+    cb.send_msg(relay.sock, relay.lock, {"t": "ping", "n": relay.ping_n})
+    for _ in range(100):
+        if relay.pings:
+            break
+        time.sleep(0.02)
+    check(len(relay.pings) == 1 and relay.pings[0][1] is not None and relay.pings[0][1] < 1000,
+          f"the host answers a ping at once: {relay.pings}")
     remote_dir = Path(tempfile.mkdtemp())
     (remote_dir / "sg90.sav").write_bytes(b"friend's own")
     path, name = relay.fetch_save(remote_dir, "sg90.sav")
@@ -344,7 +387,7 @@ def test_hub_and_relay():
     check(r[0] == "7777", f"a friend's game is answered through the relay: {r[:3]}")
     r = get("http://127.0.0.3:18090/srv?seq=2&n=0&d=").split("|")
     check(r[2:5] == ["0", "2", "2"], f"server: running, two joins, two players' parties: {r[:5]}")
-    positions_at_server = sorted((int(r[6 + 4 * i]) - OFF, int(r[7 + 4 * i]) - OFF) for i in range(2))
+    positions_at_server = sorted((int(r[6 + 5 * i]) - OFF, int(r[7 + 5 * i]) - OFF) for i in range(2))
     check(positions_at_server == [(100, -400), (5000, 5000)], "both players' positions reach the server")
     names = set()
     for _ in range(8):
@@ -403,7 +446,7 @@ def test_joint_battle():
     nums, _ = req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)], hero=HERO))
     bid = w.battle.bid
     check(nums == [7, bid, 0, 0], "a battle is gathering")
-    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 1, w.players["a"].slot, 600],
+    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 1, w.players["a"].slot, 600, 0],
           "a player nearby is invited, told which world party it would fight")
     check("c" not in w.battle.invited, "a player far away is not")
     check(w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "Olga "}, 2.2) == [0], "nothing goes to the server while gathering")
@@ -424,16 +467,18 @@ def test_joint_battle():
           "the outcome is acknowledged")
     check(w.battle is None, "the battle is over")
     xp = 20 * cb.XP_PER_ENEMY // 2
-    check(req(w, "a", now=9.1)[0][0] == 21, "first the spoils, while the joint battle menu is still open")
+    check(req(w, "a", now=9.1)[0] == [10, bid, 40, -1],
+          "first the hero's health (and a capture, if any: known before the result ends the wait); the winner is not captured")
+    check(req(w, "a", now=9.1)[0][0] == 21, "then the spoils, while the joint battle menu is still open")
     check(req(w, "a", now=9.1)[0] == [8, bid, 1, xp, 2, 31, 2, 2, 32, 1, 1],
           "the starter gets the losses (half wounded) and half the experience (two players won)")
     check(req(w, "a", now=9.1)[0] == [9, bid, 2, 0, 7, 180, 3, 2, 60],
           "and how the hero fought, by weapon proficiency (another player's blows are not the starter's)")
-    check(req(w, "a", now=9.1)[0] == [10, bid, 40, -1], "and the hero's health; the winner is not captured")
-    check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0] and req(w, "b", x=300, now=9.1)[0][0] == 21
+    check(req(w, "b", x=300, now=9.1)[0] == [7, bid, 1, 0]
+          and req(w, "b", x=300, now=9.1)[0] == [10, bid, 0, -1]
+          and req(w, "b", x=300, now=9.1)[0][0] == 21
           and req(w, "b", x=300, now=9.1)[0] == [8, bid, 1, xp, 0],
-          "a player who lost nobody still hears the outcome, after the news it was fought")
-    check(req(w, "b", x=300, now=9.1)[0] == [10, bid, 0, -1], "a hero who fell comes back with 0 health")
+          "a player who lost nobody still hears the outcome, after the news it was fought; a fallen hero has 0 health")
     check(w.results[-1] == (600, 1, [], []) and 600 in w.tombstones, "the defeated world party is destroyed")
     for _ in range(6):
         req(w, "a", now=9.2)
@@ -545,6 +590,208 @@ def test_base():
               "the one camp of an older shared.json is the host's")
         check(replies(w2, "a", 0.1, 28, me=[], name="Ivan")[0] == [28, 1, cb.BASE_SLOT, 7 + OFF, 8 + OFF, 2],
               "and a game coming in hears of it")
+
+
+def test_camp_mine_and_men():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[], name="Ivan")
+    req(w, "b", x=100, now=0.0, me=[], name="Olga")
+    replies(w, "a", 1.0, 28, together={"base": (10, 10)})
+    replies(w, "b", 1.0, 28, together={"base": (20, 20)})
+    check(cb.parse_together({"cw": "5,0,1"}) == {"camp_work": [5, 0, 1]}
+          and cb.parse_together({"cw": "6,0,2,30,4,31,2"}) == {"camp_work": [6, 0, 2, 30, 4, 31, 2]}
+          and cb.parse_together({"cw": "6,0,2,30"}) is None, "camp works are read, malformed ones not")
+    check(replies(w, "b", 2.0, 38, together={"camp_work": [7, 0, 1]}) == [[38, 7, 0]],
+          "a mine is built only at the player's own camp")
+    check(replies(w, "a", 2.1, 38, together={"camp_work": [8, 0, 1]}) == [[38, 8, 1]]
+          and w.shared["bases"][0]["mine"] == [], "the owner builds it")
+    check(replies(w, "a", 2.2, 38, together={"camp_work": [8, 0, 1]}) == [[38, 8, 1]], "a repeated word: the same answer")
+    check(replies(w, "a", 2.3, 38, together={"camp_work": [9, 0, 1]}) == [[38, 9, 0]], "one mine a camp")
+    replies(w, "b", 2.4, 38, together={"camp_work": [10, 0, 2, 30, 4, 31, 2]})
+    replies(w, "b", 2.5, 38, together={"camp_work": [11, 0, 2, 30, 1]})
+    check(sorted(w.shared["bases"][0]["mine"]) == [[30, 5], [31, 2]], "any player sends prisoners into a camp's mine")
+    check([39, 0, 1, 7, 0, 0] in replies(w, "a", 2.6, 39, tries=20), "and every game hears what the camp holds")
+    # the men left at a camp: one player at a time
+    opened = replies(w, "a", 3.0, 41, together={"camp_open": 1})
+    check(opened == [[41, 1, 0, 0, 0]], f"an empty camp's men: {opened}")
+    check(replies(w, "b", 3.1, 40, together={"camp_open": 1}) == [[40, 1, 0, w.players["a"].slot]],
+          "another player waits while they are open")
+    men = [50, 70, 4, 51, 30, 10]  # 70 + 30 men: 80 stay
+    check(cb.parse_together({"gi": "3,1,0,2," + ",".join(map(str, men))}) == {"camp_put": [3, 1, 0, 2] + men}, "read back")
+    saved = replies(w, "a", 3.2, 40, together={"camp_put": [3, 1, 0, 2] + men})
+    check(saved == [[40, 1, 1, w.players["a"].slot]] and w.shared["bases"][1]["garrison"] == [[50, 70, 4], [51, 10, 10]],
+          f"they come back, {cb.CAMP_MEN} men at most: {w.shared['bases'][1]}")
+    check(cb.camp_wages(w.shared["bases"][1]["garrison"]) == (70 * 4 + 10 * 10) // 2, "half their wage a week")
+    check(replies(w, "b", 3.3, 41, together={"camp_open": 1}) == [[41, 1, 0, 2, 2, 50, 70, 51, 10]],
+          "and the next player opens them")
+    # a week of the world
+    w.shared["gold"] = 100
+    w._week(10)
+    check(w.shared["gold"] == 100 and w.shared["week"] == 0, "the first report only sets the week")
+    w._week(cb.WEEK_H + 1)
+    garrison = w.shared["bases"][1]["garrison"]
+    check(sorted(garrison) == [[50, 60, 4], [51, 10, 10]] and w.shared["gold"] == 0,
+          f"the mine pays 70, the men cost 190: the cheapest leave until the treasury can pay: {garrison} {w.shared['gold']}")
+    heard = replies(w, "a", 4.0, 27, tries=20)
+    check([27, cb.TELL_WEEK, 0, 70, 170] in heard and [27, cb.TELL_DESERTED, 0, 10, 0] in heard,
+          f"the players hear of the week: {heard}")
+    w.shared["gold"] = 500
+    w._week(10)
+    check(w.shared["gold"] == 500 and w.shared["week"] == 0, "a clock gone back (a save) only sets the week again")
+    # taking a camp down
+    replies(w, "b", 5.0, 28, together={"base": ()})
+    check(w.shared["bases"][1] is not None, "a camp with men left there stays up")
+    replies(w, "a", 5.1, 28, together={"base": ()})
+    check(w.shared["bases"][0] is None and w.shared["mines"] == {"ivan": [[30, 5], [31, 2]]},
+          f"a camp taken down keeps its mine for the owner: {w.shared.get('mines')}")
+    replies(w, "a", 5.2, 28, together={"base": (30, 30)})
+    camp = next(c for c in w.shared["bases"] if c and c["x"] == 30)
+    check(camp.get("mine") == [[30, 5], [31, 2]] and w.shared["mines"] == {}, f"and it is there at the next one: {camp}")
+
+
+def test_caravans():
+    w = cb.World()
+    w.log = lambda m: None
+    req(w, "h", now=0.0, on_server=True, name="Host", me=[])
+    req(w, "a", now=0.0, me=[], name="Ivan")
+    req(w, "h", now=0.1, on_server=True, together={"base": (5, 5)})
+    check(cb.parse_together({"cv": "77,2,500,10,20,4,50,3"}) == {"caravan": [77, 2, 500, 10, 20, 4, 50, 3]}
+          and cb.parse_together({"cvl": ""}) == {"cv_alive": []}
+          and cb.parse_together({"cve": "77,900,50,3,12,6"}) == {"cv_end": [77, 900, 50, 3, 12, 6]}
+          and cb.parse_together({"cv": "77,2,500,10,20"}) is None, "caravan words are read, malformed ones not")
+    heard = replies(w, "a", 1.0, 44, together={"caravan": [77, 2, 500, 10, 20, 4, 50, 3, 51, 2]})
+    check(heard == [[44, 77, 1]], f"a caravan sets out: {heard}")
+    check(replies(w, "a", 1.1, 44, together={"caravan": [77, 2, 500, 10, 20, 4, 50, 3, 51, 2]}) == [[44, 77, 1]]
+          and len(w.shared["caravans"]) == 1, "a repeated word: the same answer, one caravan")
+    host = [req(w, "h", now=1.2, on_server=True)[0] for _ in range(6)]
+    check([42, 77, w.players["a"].slot, 2, 500, 10, 20, 4, 2, 50, 3, 51, 2] in host, f"the host's game sends it off: {host}")
+    host = [req(w, "h", now=1.3, on_server=True)[0] for _ in range(6)]
+    check(not [h for h in host if h[0] == 42], "not again at once")
+    req(w, "h", now=2.0, on_server=True, together={"cv_alive": [77]})
+    check(w.shared["caravans"]["77"]["state"] == "running", "the host shows it on its map")
+    host = [req(w, "h", now=20.0, on_server=True)[0] for _ in range(6)]
+    check(not [h for h in host if h[0] == 42], "and hears of it no more")
+    for k in range(3):
+        check(replies(w, "a", 2.1 + k, 44, together={"caravan": [80 + k, 1, 100, 0, 0, 0]}) == [[44, 80 + k, k < 2]],
+              "three caravans a player at most")
+    # home: 900 denars, men the highest first, 80 at a camp
+    w.shared["bases"][0]["garrison"] = [[60, 70, 5]]
+    w.shared["gold"] = 0
+    host = [req(w, "h", now=3.0, on_server=True, together={"cv_end": [77, 900, 50, 3, 12, 6, 51, 9, 20, 9]})[0]]
+    host += [req(w, "h", now=3.0, on_server=True)[0] for _ in range(4)]
+    check([43, 77] in host, f"the host's game hears it is counted: {host}")
+    check(w.shared["gold"] == 900 and w.shared["bases"][0]["garrison"] == [[60, 70, 5], [51, 9, 9], [50, 1, 6]]
+          and "77" not in w.shared["caravans"],
+          f"its denars go into the treasury, its men to the camp, the highest first: {w.shared['bases'][0]}")
+    heard = replies(w, "a", 3.1, 27, tries=20)
+    check([27, cb.TELL_CARAVAN_HOME, w.players["a"].slot, 900, 10] in heard
+          and [27, cb.TELL_CARAVAN_DISBANDED, w.players["a"].slot, 2, 0] in heard, f"the players hear: {heard}")
+    req(w, "h", now=3.2, on_server=True, together={"cv_end": [77, 900]})
+    check(w.shared["gold"] == 900, "a repeated word counts nothing twice")
+    # destroyed: shown, then missing from the host's reports
+    req(w, "h", now=4.0, on_server=True, together={"cv_alive": [80, 81]})
+    for k in range(cb.CARAVAN_MISSES):
+        req(w, "h", now=4.1 + k, on_server=True, together={"cv_alive": [81]})
+    check("80" not in w.shared["caravans"] and "81" in w.shared["caravans"], "a caravan gone from the host's map is lost")
+    heard = replies(w, "a", 8.0, 27, tries=20)
+    check([27, cb.TELL_CARAVAN_LOST, w.players["a"].slot, 0, 0] in heard, f"and the players hear it: {heard}")
+
+
+def test_fiefs():
+    w = cb.World()
+    w.log = lambda m: None
+    req(w, "h", now=0.0, on_server=True, name="Host", me=[], faction=3)
+    req(w, "a", now=0.0, me=[], name="Ivan")
+    check(cb.parse_together({"vas": "1", "va": "5", "vr": "9,40", "vgl": "8,40", "vgd": "7,40,50,3,51,-2",
+                             "vi": "100,20,0,0,0,0", "fv": "9,1", "fg": "7,1,51,1"})
+          == {"vassal": True, "fief_paid": 5, "fief_ask": (9, 40), "fief_list": (8, 40),
+              "fief_change": [7, 40, 50, 3, 51, -2], "fief_income": [100, 20, 0, 0, 0, 0], "fief_granted": [9, 1],
+              "fief_changed": [7, 1, 51, 1]}
+          and cb.parse_together({"vas": "x", "vr": "9", "vgd": "7,40,50"}) is None, "fief words are read, malformed ones not")
+
+    def heard(cid, now, tries=24, **first):
+        return [req(w, cid, now=now, **first)] + [req(w, cid, now=now) for _ in range(tries)]
+
+    told = heard("a", 1.0, faction=4, together={"vassal": True})
+    check(([45, 0, 4, 1], "Ivan") in told, f"an oath: the vassal gets the first stand-in, its own: {told}")
+    check(([45, cb.FIEF_VASSALS, 3, 0], "Host") in told, "and hears whose image the host's fiefs show")
+    host = heard("h", 1.0, on_server=True)
+    check(([45, 0, 4, 0], "Ivan") in host, "the host's game names the stand-in")
+    req(w, "b", now=1.0, me=[], name="Olga")
+    told = heard("b", 1.1, faction=4, together={"vassal": True})
+    check(([45, 1, 4, 1], "Olga") in told and ([45, 0, 4, 0], "Ivan") in told, "a second vassal: the next stand-in")
+    check(w.shared["vassals"]["ivan"]["index"] == 0 and len(heard("a", 1.2, faction=4, together={"vassal": True})) == 25
+          and len(w.shared["vassals"]) == 2, "the same word again changes nothing")
+
+    # a grant: a center of the vassal's kingdom without a lord
+    w.centers[40] = (4, -1, 0, 0)
+    w.centers[41] = (4, 210, 0, 0)
+    req(w, "a", now=2.0, together={"fief_ask": (55, 40)})
+    check(w.shared["fief_ops"]["55"]["kind"] == 50, "a grant asked goes on its way")
+    host = [nums for nums, _ in heard("h", 2.0, on_server=True)]
+    check([50, 55, 40, 0, 4] in host, f"to the host's game: {host}")
+    check(not [n for n, _ in heard("h", 3.0, on_server=True) if n[0] == 50], "not again at once")
+    check([50, 55, 40, 0, 4] in [n for n, _ in heard("h", 8.0, on_server=True)], "again after a while, unanswered")
+    req(w, "h", now=8.1, on_server=True, together={"fief_granted": [55, 1]})
+    check([46, 55, 40, 1] in [n for n, _ in heard("a", 8.2)], "the host grants it: the vassal hears")
+    check([n for n, _ in heard("a", 8.3, together={"fief_ask": (55, 40)}) if n[0] == 46] == [[46, 55, 40, 1]]
+          and not w.shared["fief_ops"], "asked again: the same answer, nothing goes twice")
+    check([46, 56, 41, 0] in [n for n, _ in heard("a", 8.4, together={"fief_ask": (56, 41)})]
+          and not w.shared["fief_ops"], "a center with a lord: refused at once")
+    check([46, 57, 40, 0] in [n for n, _ in heard("h", 8.5, together={"fief_ask": (57, 40)})],
+          "the host is no vassal")
+
+    # the garrison
+    w.troops[40] = (1, [(50, 10), (51, 4)])
+    check([49, 60, 40, 1, 2, 50, 10, 51, 4] in [n for n, _ in heard("a", 9.0, together={"fief_list": (60, 40)})],
+          "a fief's garrison, as the world server reported it")
+    check([49, 61, 42, 0, 0] in [n for n, _ in heard("a", 9.1, together={"fief_list": (61, 42)})],
+          "one not reported yet: not known")
+    req(w, "a", now=9.2, together={"fief_change": [62, 40, 50, -3, 52, 5]})
+    host = [n for n, _ in heard("h", 9.3, on_server=True)]
+    check([51, 62, 40, 0, 2, 50, -3, 52, 5] in host, f"the change goes to the host's game: {host}")
+    req(w, "h", now=9.4, on_server=True, together={"fief_changed": [62, 1, 50, 1]})
+    check([48, 62, 40, 1, 1, 50, 1] in [n for n, _ in heard("a", 9.5)], "the answer: one man taken was not there")
+    check(sorted(w.troops[40][1]) == [(50, 8), (51, 4), (52, 5)], f"the bridge's copy follows: {w.troops[40]}")
+    req(w, "a", now=9.6, together={"fief_change": [63, 40, 51, 2]})
+    heard("h", 9.7, on_server=True)
+    req(w, "h", now=9.8, on_server=True, together={"fief_changed": [63, -1]})
+    check([48, 63, 40, 0, 0] in [n for n, _ in heard("a", 9.9)], "refused: all stays as it was")
+    req(w, "a", now=10.0, together={"fief_change": [62, 40, 50, -3, 52, 5]})
+    check("62" not in w.shared["fief_ops"], "a change answered already is never sent twice")
+
+    # the income: totals since the campaign began, the difference into the purse, paid until the game says it came
+    req(w, "h", now=11.0, on_server=True, together={"fief_income": [1000, 200, 0, 0, 0, 0]})
+    check(w.shared["purses"] == {"ivan": 800}, f"a week: rents less wages into the vassal's purse: {w.shared['purses']}")
+    paid = [n for n, _ in heard("a", 11.1) if n[0] == 47]
+    check(len(paid) == 1 and paid[0][2] == 800, f"its game hears it: {paid}")
+    check([n for n, _ in heard("a", 20.0) if n[0] == 47] == paid, "again until it says it came")
+    req(w, "a", now=20.1, together={"fief_paid": paid[0][1]})
+    check(not w.shared["fief_pay"] and not [n for n, _ in heard("a", 30.0) if n[0] == 47], "then no more")
+    req(w, "h", now=31.0, on_server=True, together={"fief_income": [1000, 200, 0, 0, 0, 0]})
+    req(w, "h", now=31.1, on_server=True, together={"fief_income": [1500, 300, 50, 400, 0, 0]})
+    check(w.shared["purses"] == {"ivan": 400, "olga": -350}, f"only what came since: {w.shared['purses']}")
+    req(w, "h", now=31.2, on_server=True, together={"fief_income": [100, 0, 50, 400, 0, 0]})
+    check(w.shared["purses"] == {"ivan": 400, "olga": -350}, "a count gone back (a save loaded) pays nothing")
+
+    # no longer sworn: its stand-in serves none, its fiefs go back to their king in the host's game
+    told = heard("a", 40.0, faction=0, together={"vassal": False})
+    check(([45, 0, 0, 1], "Ivan") in told, "the vassal leaves its kingdom")
+    check(([45, 0, 0, 0], "Ivan") in heard("h", 40.1, on_server=True), "the host's game hears")
+    for cid, name in (("c", "Petr"), ("d", "Anna")):
+        req(w, cid, now=41.0, me=[], name=name)
+        heard(cid, 41.0, faction=5, together={"vassal": True})
+    check(w.shared["vassals"]["petr"]["index"] == 2 and w.shared["vassals"]["anna"]["index"] == 0
+          and "ivan" not in w.shared["vassals"], "three stand-ins: one that serves none is taken over")
+
+    # a vassal storms walls: its stand-in holds them
+    w2 = cb.World()
+    w2.log = lambda m: None
+    req(w2, "a", now=0.0, me=[], name="Ivan")
+    req(w2, "a", now=0.1, faction=4, together={"vassal": True})
+    starter = w2.players["a"]
+    _, entry = w2._vassal_of(starter)
+    check(entry == {"index": 0, "faction": 4, "name": "Ivan"}, "the stand-in is kept with the treasury")
 
 
 def test_save_sync():
@@ -821,7 +1068,8 @@ def test_ping():
     w.players["b"].last = 1.0
     check(cb.handle_request(w, "cli", target, 5.0, cid="b") == "7777|33", "a ping with nothing to tell")
     check(w.players["b"].last == 1.0 and w.players["b"].pinged == 5.0, "keeps the player silent for the world")
-    check(w.pause_cause(5.0, but=w.players["a"]) == (1, 2), "so its menu still holds the world")
+    w.players["b"].fight = True  # (a friend's menu alone holds nothing: only a battle does, 11-07)
+    check(w.pause_cause(5.0, but=w.players["a"]) == (1, 2), "so its battle still holds the world")
     check(not any(r[1].startswith("/pg") for r in w.players["b"].recent), "and stays out of the last requests")
     check(not cb.worth_tracing("cli", target, "7777|33") and not cb.carries_news("7777|33"), "it is not news")
     w.mp_last = 5.0
@@ -912,6 +1160,144 @@ def test_lair_caravan_village():
           f"a village is no party of the world: {w.results}")
 
 
+def test_joiners():
+    check(cb.parse_joiners(",501,0,502,1,0,1,503,7") == [(501, 0), (502, 1)], "the parties that join, as the game sends them")
+    w, lines = two_players()
+    w.mp_last = 0.0
+    w.mp_players = {0: "ivan", 1: "olga"}
+    for sid, troop, n in ((500, 10, 8), (501, 11, 4), (502, 12, 6), (504, 13, 3), (505, 14, 2)):
+        w.troops[sid] = (1, [(troop, n)])
+    w.parties[504] = [3, 0, 0, 0.0, 0, 0, 501]  # in the enemy's army (attached to 500)
+    w.parties[505] = [3, 0, 0, 0.0, 0, 0, 503]  # in the army of a lord who joins on the players' side
+    req(w, "a", now=0.0, me=[(1, 5)])
+    fight = {**mp(1, sid=500, troops=[(10, 8)], hero=HERO), "kind": 0, "ally": -1, "ally_troops": [], "terrain": 3,
+             "joiners": [(501, 0), (502, 1), (506, 1)]}
+    req(w, "a", now=1.0, busy=True, mp=fight)
+    b = w.battle
+    check(b.joiners == {501: 1, 504: 1, 502: 0, 505: 0},
+          f"the parties nearby join their sides, each with its army; so does the enemy's army: {b.joiners}")
+    check(any("506" in s and "not known" in s for s in lines), "a party whose men are not known stays out")
+    req(w, "a", now=1.0 + cb.GATHER_S + 1, busy=True, mp=mp(2, bid=b.bid))
+    friend = next(i for i, s in enumerate(b.stacks) if s[2] == 12)
+    run_battle(w, 100.0, 0, {friend: 6})
+    got = {r[0]: r[:3] for r in w.results}
+    check(got.get(501) == (501, 1, [(11, 4)]) and got.get(504, (0, 0))[1] == 1,
+          f"the players won: the enemy's helpers are beaten with it: {w.results}")
+    check(got.get(502) == (502, 1, []) and got.get(505) == (505, 0, [(14, 2)]),
+          f"the players' helpers keep what survived (a party with nobody left is gone): {w.results}")
+
+
+def test_seen_troops():
+    """A garrison and parties the world server never reported: the starter's game tells their men (11-07: the
+    garrison did not help, the parties nearby stayed out)"""
+    check(cb.parse_party_troops(";40,80,12,81,3;650,90,40;bad;7,1") == {40: [(80, 12), (81, 3)], 650: [(90, 40)]},
+          "the men of the parties, as the game sends them")
+    w = cb.World()
+    lines = []
+    w.log = lines.append
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan", faction=5)
+    w.server_report([(650, 9, 0, 0), (651, 9, 0, 0, 0, 0, 651), (670, 9, 0, 0)], None, 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    seen = {40: [(80, 12)], 650: [(90, 40)], 651: [(91, 20)], 670: [(92, 5)]}
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, sid=650, center=40), "defend": True, "party_troops": seen,
+                                       "joiners": [(670, 1)]})
+    b = w.battle
+    got = sorted((t, sid, tr, n) for t, sid, tr, n in b.npc_stacks)
+    check(got == [(0, 40, 80, 12), (0, 670, 92, 5), (1, 650, 90, 40), (1, 651, 91, 20)],
+          f"the garrison holds the walls, its friend comes to help, the besieger's army storms: {got}")
+    # the world server's view comes first for a client's start; the host's own start is the world itself
+    w.server_report([], (40, [(80, 30)]), 1.5)
+    w.battle = None
+    req(w, "a", now=2.0, busy=True, mp={**mp(1, sid=650, center=40), "defend": True, "party_troops": seen})
+    check((0, 40, 80, 30) in w.battle.npc_stacks, "a client's start: the world server's garrison")
+    w.battle = None
+    w.players["a"].on_server = True
+    req(w, "a", now=3.0, busy=True, mp={**mp(1, sid=650, center=40), "defend": True, "party_troops": seen})
+    check((0, 40, 80, 12) in w.battle.npc_stacks, "the host's start: its own game's garrison")
+    w.battle = None
+    w.players["a"].on_server = False
+    req(w, "a", now=4.0, busy=True, mp={**mp(1, center=41), "party_troops": {41: [(85, 9)]}})
+    check(w.battle.enemy_stacks == [(85, 9)], f"a storm: the garrison the game told: {w.battle.enemy_stacks}")
+
+
+def test_help_xp():
+    """A siege fought for another's kingdom: less experience (11-07)"""
+    def defence(faction, center_faction=3):
+        w = cb.World()
+        req(w, "a", now=0.0, me=[(31, 10)], name="Ivan", faction=faction)
+        w.server_report([(650, 9, 0, 0)], (40, [(80, 12)]), 0.0, center=(40, center_faction, 0, 651, 0))
+        w.server_report([], (650, [(90, 40)]), 0.0)
+        w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+        req(w, "a", now=1.0, busy=True, mp={**mp(1, sid=650, center=40), "defend": True, "enemy_faction": 4})
+        b = w.battle
+        w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1)
+        w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.2)
+        w.mp_request(4, b.bid, 0, {2: 10}, {}, 9.0)
+        return next(r for r in replies(w, "a", 10.0, 8))[3], w, b
+    own, w, b = defence(3)
+    helped, _, _ = defence(5)
+    check(own == 10 * cb.XP_PER_ENEMY and helped == own * cb.HELP_XP_PCT // 100,
+          f"the walls of one's own kingdom: all of it; another's: {cb.HELP_XP_PCT}%: {own}, {helped}")
+    w.players["a"].faction = 4
+    check(not w._helping(b, "a", 1) and w._helping(b, "a", 0), "the besiegers' side is the besieger's kingdom's")
+    b.defence, b.enemy_faction = False, 0
+    check(not w._helping(b, "a", 1), "one's own storm: one's own fight")
+    req(w, "b", x=300, now=11.0, name="Olga", faction=6)
+    b.sides["b"] = 1
+    check(w._helping(b, "b", 1), "a friend of another kingdom who joins the storm helps")
+    w.players["b"].faction = 4
+    check(not w._helping(b, "b", 1), "one of the starter's kingdom storms for its own")
+
+
+def test_siege_other_side():
+    """A siege's invitation may be taken on the other side (11-07): the walls' friends defend, the others storm"""
+    w = cb.World()
+    lines = []
+    w.log = lines.append
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    w.server_report([], (40, [(80, 12)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, center=40)})
+    b = w.battle
+    invite = req(w, "b", x=300, now=1.1)[0]
+    check(invite[:2] == [6, b.bid] and invite[5] == 1, f"a siege's invitation says so: {invite}")
+    req(w, "b", x=300, now=1.2, busy=True, mp=mp(5, bid=b.bid, hero=HERO))
+    check(b.sides == {"a": 1, "b": 0}, f"the friend holds the walls against the stormers: {b.sides}")
+    check(any("other side" in s for s in lines), "logged")
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.0 + cb.GATHER_S + 1)
+    check([0, "b", 33, 6] in [s[:4] for s in b.stacks], f"its men stand on the walls: {b.stacks}")
+    # a field battle has no other side: the same as an acceptance
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)]))
+    b = w.battle
+    check(req(w, "b", x=300, now=1.1)[0][5] == 0, "a field battle's invitation: one side")
+    req(w, "b", x=300, now=1.2, busy=True, mp=mp(5, bid=b.bid, hero=HERO))
+    check(b.sides.get("b") == b.player_team, f"a field battle: the starter's side: {b.sides}")
+    # a defence: the friend of the besiegers storms; beaten, it is no prisoner of its own friends
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=300, now=0.0, me=[(33, 6)], name="Olga")
+    w.server_report([(650, 9, 0, 0)], (40, [(80, 12)]), 0.0)
+    w.server_report([], (650, [(90, 40)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, sid=650, center=40), "defend": True})
+    b = w.battle
+    req(w, "b", x=300, now=1.1)
+    req(w, "b", x=300, now=1.2, busy=True, mp=mp(5, bid=b.bid, hero=HERO))
+    check(b.sides == {"a": 0, "b": 1}, f"the besiegers' friend storms: {b.sides}")
+    for k in range(4):
+        w.mp_request(0, 0, -1, {}, {0: "ivan", 1: "olga"}, 1.0 + cb.GATHER_S + 1 + k * 0.1)
+    check(b.state == "running", f"the battle runs: {b.state}")
+    w.mp_request(4, b.bid, 0, {}, {0: "ivan", 1: "olga"}, 30.0)
+    heard = [req(w, "b", x=300, now=30.1)[0] for _ in range(6)]
+    check(not any(r[0] == 10 and r[3] == 650 for r in heard) and any(r[0] == 8 and r[2] == 0 for r in heard),
+          f"the storm failed: it lost, and its own friends take it nowhere: {heard}")
+
+
 def duel(w, stake=500):
     w.mp_last = 0.0
     w.mp_players = {0: "ivan", 1: "olga"}
@@ -993,7 +1379,7 @@ def test_joint_arena():
     nums = start_event(w, "a", 0, 2.0, cb.EVENT_ARENA)
     bid = w.battle.bid
     check(nums == [7, bid, 0, 0] and w.battle.event == cb.EVENT_ARENA, "an arena fight gathers")
-    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 4, w.players["a"].slot, -1],
+    check(req(w, "b", x=300, now=2.1)[0] == [6, bid, 4, w.players["a"].slot, -1, 0],
           "a player nearby is invited to the arena, not called in")
     req(w, "b", x=300, now=3.0, busy=True, mp=mp(3, bid, hero=HERO))
     check(w.battle.sides == {"a": 0, "b": 0}, "the players stand on one side")
@@ -1221,7 +1607,7 @@ def test_factions():
     req(w, "a", now=0.0, name="Ivan", faction=5)
     req(w, "b", x=100, now=0.0, name="Olga", faction=7)
     puppets = sorted(w.server_report([], None, 0.1)[2])
-    check([f for *_, f in puppets] == [5, 7], "the server learns whom each player serves")
+    check([f for *_, f, _ in puppets] == [5, 7], "the server learns whom each player serves")
     seen = [req(w, "b", x=100, now=0.2 + i * 0.01)[0] for i in range(8)]
     shown = [r for r in seen if r[0] == 4]
     check(shown and shown[0][5] == 5, f"the other players see it: {shown[:1]}")
@@ -1240,7 +1626,7 @@ def test_joint_siege():
     req(w, "a", now=1.0, busy=True, mp=mp(1, center=40, troops=[(70, 99)]))
     b = w.battle
     check(b.center == 40 and b.sides == {"a": 1}, "a siege: the starter storms the walls")
-    check(req(w, "h", x=100, now=1.1, on_server=True)[0] == [6, b.bid, 1, w.players["a"].slot, 40],
+    check(req(w, "h", x=100, now=1.1, on_server=True)[0] == [6, b.bid, 1, w.players["a"].slot, 40, 1],
           "a player nearby is called to the siege of that center")
     req(w, "h", x=100, now=1.2, on_server=True, mp=mp(3, b.bid))
     check(b.sides == {"a": 1, "h": 1}, "and joins the stormers")
@@ -1250,8 +1636,8 @@ def test_joint_siege():
     nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.4)
     check(nums == [1, b.bid, 3, 1, 40, 1, 0, 1], f"the start says it is a siege of center 40: {nums}")
     w.mp_request(4, b.bid, 1, {2: 30}, {}, 9.0)
-    check(w.captures == [(40, 5)], "the walls are taken: the center goes to the stormer's kingdom")
-    check(w.server_report([], None, 9.1)[3] == [4, 40, 5], "the world server is told")
+    check(w.captures == [(40, 5, 0)], "the walls are taken: the center goes to the stormer's kingdom")
+    check(w.server_report([], None, 9.1)[3] == [4, 40, 5, 0], "the world server is told")
     replies = [req(w, "a", now=9.2)[0] for _ in range(6)]
     check(not any(r[0] == 10 and r[3] >= 0 for r in replies), "nobody is captured in a siege")
     # the host storms: its own game takes the center
@@ -1297,9 +1683,306 @@ def test_joint_defence():
     w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.1)
     w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.2)
     w.mp_request(4, b.bid, 1, {}, {0: "ivan"}, 30.0)
-    check(w.captures == [(40, -1)], "the walls fell: the center goes to the besiegers")
+    check(w.captures == [(40, -1, 0)], "the walls fell: the center goes to the besiegers")
     replies = [req(w, "a", now=30.1)[0] for _ in range(6)]
     check(any(r[0] == 10 and r[3] == 660 for r in replies), f"the defender is captured by the besieger: {replies}")
+    kinds = [r[0] for r in replies]
+    at = next(k for k, r in enumerate(replies) if r[0] == 10 and r[3] == 660)
+    check(8 in kinds[at:], f"the capture is told before the result ends the battle's wait: {kinds}")
+
+
+def test_steppe_siege():
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 20)], name="Ivan")
+    w.server_report([], (40, [(70, 30)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, center=40), "steppe": True})
+    start = next(n for n in (w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1 + k / 10) for k in range(12)) if n[0] == 1)
+    check(start[3:5] == [1, 40 + cb.STEPPE_HINT], f"a Khergit town: a siege on the steppe map (hint + 1000): {start[:6]}")
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 20)], name="Ivan")
+    w.server_report([], (40, [(70, 30)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp=mp(1, center=40))
+    start = next(n for n in (w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1 + k / 10) for k in range(12)) if n[0] == 1)
+    check(start[3:5] == [1, 40], f"another town: the map by the center as before: {start[:6]}")
+
+
+def test_lord_siege():
+    # Freelancer: the lord the player serves (650, with 660 camped with him) besieges center 40
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 20)], name="Ivan")
+    w.server_report([(650, 9, 0, 0), (660, 9, 0, 0, 0, 0, 651)], (40, [(70, 30)]), 0.0)
+    w.server_report([], (650, [(90, 40)]), 0.0)
+    w.server_report([], (660, [(91, 20)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True,
+        mp={**mp(1, center=40), "ally": 650, "ally_faction": 3, "ally_troops": [(90, 1)]})
+    b = w.battle
+    check(b.center == 40 and b.sides == {"a": 1} and b.ally_sid == 650 and b.ally_faction == 3,
+          "a siege beside the lord: the player storms with him")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1)
+    check(nums[4:] == [1, 0, 31, 20, 1, -1, 90, 40, 1, -1, 91, 20, 0, -1, 70, 30],
+          f"the lord and the army camped with him storm beside the player, the garrison holds: {nums}")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.2)
+    w.mp_request(4, b.bid, 1, {1: 10}, {}, 9.0)
+    check(w.captures == [(40, 3, 0)], f"the walls are taken: the center goes to the lord's kingdom: {w.captures}")
+    check((650, 0, [(90, 30)], []) in w.results and (660, 0, [(91, 20)], []) in w.results,
+          f"the lord and his army keep what survived: {w.results}")
+    # a failed storm: the lord is never destroyed, the siege is his
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 19.9)
+    req(w, "a", now=20.0, busy=True, mp={**mp(1, center=40), "ally": 650, "ally_faction": 3})
+    b = w.battle
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.1)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.2)
+    w.mp_request(4, b.bid, 0, {1: 999}, {}, 30.0)
+    check((650, 0, [], []) in w.results, f"the lord's party stays though all his men fell: {w.results[-3:]}")
+    check(w.captures == [(40, 3, 0)], "the walls held: nothing more is taken")
+
+
+def test_lord_defence():
+    # Freelancer: the lord the player serves (650) is inside center 40, which 700 besieges
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    w.server_report([(650, 9, 0, 0), (700, 9, 0, 0)], (40, [(80, 12)]), 0.0)
+    w.server_report([], (650, [(90, 40)]), 0.0)
+    w.server_report([], (700, [(95, 60)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, sid=700, center=40), "defend": True, "ally": 650})
+    b = w.battle
+    check(b.defence and b.ally_sid == 650, "a defence beside the lord")
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1)
+    check(nums[4:] == [0, 0, 31, 10, 0, -1, 80, 12, 1, -1, 95, 60, 0, -1, 90, 40],
+          f"the lord's men hold the walls with the player and the garrison: {nums}")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.2)
+    w.mp_request(4, b.bid, 1, {3: 999}, {0: "ivan"}, 9.0)
+    check(w.captures == [(40, -1, 0)], "the walls fell: the center goes to the besiegers")
+    check((650, 0, [], []) in w.results, f"the lord's party stays though all his men fell: {w.results}")
+
+
+def test_lords_inside_and_shared_stacks():
+    # 05.11: a joint siege had the garrison alone on the walls; the lords inside hold them too, in stacks shared by troop
+    w = cb.World()
+    w.log = lambda m: None
+    req(w, "a", now=0.0, me=[(31, 20)], name="Ivan", faction=5)
+    w.server_report([(650, 9, 0, 0, 0, 0, 41), (660, 9, 0, 0, 0, 0, 41), (670, 9, 0, 0)], (40, [(70, 30)]), 0.0)
+    w.server_report([], (650, [(70, 10), (71, 5)]), 0.0)
+    w.server_report([], (660, [(70, 20)]), 0.0)
+    w.server_report([], (670, [(72, 9)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp=mp(1, center=40))
+    b = w.battle
+    nums = w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1)
+    check(nums[4:] == [1, 0, 31, 20, 0, -1, 70, 30, 0, -1, 71, 5, 0, -1, 70, 30],
+          f"the lords inside hold the walls beside the garrison, one stack for each troop: {nums}")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.2)
+    w.mp_request(4, b.bid, 0, {1: 16, 2: 5, 3: 3}, {}, 9.0)
+    check((650, 0, [(70, 5)], []) in w.results and (660, 0, [(70, 9)], []) in w.results,
+          f"a shared stack's losses in proportion, the largest remainder taking the rest: {w.results}")
+    check(w.results[-1] == (40, 0, [(70, 27)], []), "the walls held: the garrison keeps what survived")
+    check(not [r for r in w.results if r[0] == 670], "a party outside fought nothing")
+    # the walls fall: the lords inside lost every man
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 19.9)
+    req(w, "a", now=20.0, busy=True, mp=mp(1, center=40))
+    b = w.battle
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.1)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 20.2)
+    w.mp_request(4, b.bid, 1, {1: 99, 2: 99, 3: 99}, {}, 30.0)
+    check((650, 1, [], []) in w.results and (660, 1, [], []) in w.results, "the lords inside lost their men")
+    check(w.captures == [(40, 5, 0)], "and the center goes to the stormer's kingdom")
+    check(w.server_report([], None, 30.1)[3][:2] == [1, 650], "the results go to the world before the capture")
+
+
+def test_many_stacks():
+    # each side keeps its share of the battle server's stacks; those left out keep their men
+    w = cb.World()
+    w.log = lambda m: None
+    req(w, "a", now=0.0, me=[(31 + k, 10) for k in range(5)], name="Ivan", faction=5)
+    w.server_report([(650, 9, 0, 0)], (40, [(100 + k, k + 1) for k in range(50)]), 0.0)
+    w.server_report([], (650, [(200 + k, 100 + k) for k in range(50)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 0.0)
+    req(w, "a", now=1.0, busy=True, mp={**mp(1, sid=650, center=40), "defend": True})
+    b = w.battle
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.1)
+    check(len(b.stacks) == cb.MP_MAX_STACKS, f"no more stacks than the battle server takes: {len(b.stacks)}")
+    garrison = [s for s in b.stacks if s[0] == 0 and isinstance(s[1], tuple)]
+    besiegers = [s for s in b.stacks if s[0] == 1]
+    check(len([s for s in b.stacks if s[1] == "a"]) == 5, "the player's own troops all fight")
+    check(len(garrison) == cb.MP_SIDE_STACKS and sorted(s[3] for s in garrison) == list(range(36, 51)),
+          f"the smaller side keeps its biggest stacks: {[s[3] for s in garrison]}")
+    check(len(besiegers) == cb.MP_MAX_STACKS - 5 - cb.MP_SIDE_STACKS, "the other side the rest")
+    check(len(b.left_out) == 100 - len(garrison) - len(besiegers), "the others stay out")
+    total = sum(s[3] for s in b.stacks)
+    check(sum(s[4] for s in b.stacks) <= cb.MP_MAX_BOTS + len(b.stacks) and total > cb.MP_MAX_BOTS,
+          "a big battle is scaled down to the battle server's men")
+    while w.battle.sent < len(w.battle.stacks):
+        w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.2)
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.3)
+    w.mp_request(4, b.bid, 0, {}, {}, 9.0)
+    kept = {r[0]: sorted(r[2]) for r in w.results}
+    check(kept.get(40) == sorted((100 + k, k + 1) for k in range(50)), "the garrison keeps the men left out")
+    check(kept.get(650) == sorted((200 + k, 100 + k) for k in range(50)), "so does the besieger")
+
+
+def test_storm_capture():
+    # 05.11: after a joint storm nothing happened: the host's word of the walls came after the battle's end
+    w = cb.World()
+    w.log = lambda m: None
+    req(w, "h", now=0.0, me=[(33, 5)], name="Host", on_server=True, faction=14, together={"realm": 14})
+    w.server_report([], (41, [(70, 10)]), 0.0)
+    w.mp_request(0, 0, -1, {}, {}, 0.0)
+    req(w, "h", now=1.0, on_server=True, busy=True, mp=mp(1, center=41))
+    b = w.battle
+    w.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    w.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    w.mp_request(4, b.bid, 1, {}, {}, 60.0)
+    replies = [req(w, "h", now=60.1, on_server=True)[0] for _ in range(8)]
+    kinds = [r[0] for r in replies]
+    check(13 in kinds and 8 in kinds and kinds.index(13) < kinds.index(8),
+          f"the host hears the walls are its own before the battle's end: {kinds}")
+    check(not w.captures, "its own game takes them")
+
+    def storm(cid, center, now):
+        w.server_report([], (center, [(70, 10)]), now)
+        w.mp_request(0, 0, -1, {}, {}, now)  # the battle server is on
+        req(w, cid, now=now, busy=True, mp=mp(1, center=center))
+        b = w.battle
+        w.mp_request(0, 0, -1, {}, {}, now + cb.GATHER_S + 1)
+        w.mp_request(0, 0, -1, {}, {}, now + cb.GATHER_S + 1)
+        w.mp_request(4, b.bid, 1, {}, {}, now + 60.0)
+
+    # a client sworn to no kingdom: the walls go to the host's kingdom (its own realm here)
+    req(w, "a", now=70.0, me=[(31, 20)], name="Ivan")
+    storm("a", 42, 70.0)
+    check(w.captures[-1] == (42, 14, 0), f"a friend of no kingdom storms for the host's: {w.captures}")
+    # a vassal of the host's realm by a fief of it: its stand-in holds them
+    w.shared["vassals"]["ivan"] = {"index": 1, "faction": 14, "name": "Ivan", "realm": True}
+    storm("a", 43, 200.0)
+    check(w.captures[-1] == (43, 14, 2), f"a vassal of the host's realm holds what it storms: {w.captures}")
+    # sworn to a kingdom of its own: that one's, as before
+    req(w, "a", now=330.0, faction=4, together={"vassal": True})
+    storm("a", 44, 330.0)
+    check(w.captures[-1] == (44, 4, 2), f"a client's own kingdom: {w.captures}")
+    # nobody serves a kingdom: the walls go to the host (its game founds its own realm with them)
+    w2 = cb.World()
+    w2.log = lambda m: None
+    req(w2, "h", now=0.0, me=[], name="Host", on_server=True, faction=0)
+    req(w2, "a", now=0.0, me=[(31, 20)], name="Ivan")
+    w2.server_report([], (45, [(70, 10)]), 0.0)
+    w2.mp_request(0, 0, -1, {}, {}, 0.0)
+    req(w2, "a", now=1.0, busy=True, mp=mp(1, center=45))
+    b = w2.battle
+    w2.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    w2.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    w2.mp_request(4, b.bid, 1, {}, {}, 60.0)
+    check(w2.captures == [(45, 14, 0)], f"nobody serves a kingdom: the walls go to the host, whose game founds its realm: {w2.captures}")
+    # 05.11 evening, as the games send it: a joint battle's requests carry no srvp, and the host stayed a friend
+    # for the whole battle, so the walls a client stormed with nobody in a kingdom went to nobody
+    w3 = cb.World()
+    w3.log = lambda m: None
+    req(w3, "h", now=0.0, me=[], name="Host", on_server=True, faction=0)
+    req(w3, "a", now=0.0, me=[(31, 20)], name="Ivan")
+    w3.server_report([], (46, [(70, 10)]), 0.0)
+    w3.mp_request(0, 0, -1, {}, {}, 0.0)
+    req(w3, "a", now=1.0, busy=True, mp=mp(1, center=46))
+    b = w3.battle
+    req(w3, "h", now=1.5, busy=True, mp=mp(2, bid=b.bid))  # the host's game in the battle: no srvp
+    check(w3.players["h"].on_server, "a battle's request (no srvp) leaves the host the host")
+    w3.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    w3.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    req(w3, "h", now=30.0, busy=True, mp=mp(2, bid=b.bid))
+    w3.mp_request(4, b.bid, 1, {}, {}, 60.0)
+    check(w3.captures == [(46, 14, 0)], f"the host in the battle too: the walls go to it: {w3.captures}")
+    req(w3, "a", now=61.0)
+    check(not w3.players["a"].on_server, "a client's requests never make it the host")
+    # the host's own storm, as its game sends it: its word of the walls comes first
+    w4 = cb.World()
+    w4.log = lambda m: None
+    req(w4, "h", now=0.0, me=[(33, 5)], name="Host", on_server=True, faction=0)
+    w4.server_report([], (47, [(70, 10)]), 0.0)
+    w4.mp_request(0, 0, -1, {}, {}, 0.0)
+    req(w4, "h", now=1.0, busy=True, mp=mp(1, center=47))
+    b = w4.battle
+    w4.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    w4.mp_request(0, 0, -1, {}, {}, 1.0 + cb.GATHER_S + 1)
+    w4.mp_request(4, b.bid, 1, {}, {}, 60.0)
+    kinds = [req(w4, "h", now=60.1, busy=True, mp=mp(2, bid=b.bid))[0][0] for _ in range(8)]
+    check(13 in kinds and 8 in kinds and kinds.index(13) < kinds.index(8) and not w4.captures,
+          f"the host's storm (no srvp in its battle's requests): the walls are its own first: {kinds}, {w4.captures}")
+
+
+def test_fief_gift():
+    # 05.11: the host who founded its own realm could not give a fief to a friend
+    w = cb.World()
+    w.log = lambda m: None
+    check(cb.parse_together({"fgv": "77,1,40", "rlm": "14", "hw": "5"}) == {"fief_gift": (77, 1, 40), "realm": 14,
+                                                                            "wars": 5}
+          and cb.parse_together({"fgv": "77,1"}) is None, "the gift's words are read, malformed ones not")
+
+    def heard(cid, now, tries=24, **first):
+        return [req(w, cid, now=now, **first)[0]] + [req(w, cid, now=now)[0] for _ in range(tries)]
+
+    host = heard("h", 0.0, on_server=True, name="Host", me=[], faction=14, together={"realm": 14, "wars": 5})
+    check(w.realm == 14 and w.host_wars == 5, "the host's realm and its wars are known")
+    told = heard("a", 0.0, me=[], name="Ivan")
+    check([52, 5] in told, f"a friend hears whom the host's side fights: {told}")
+    heard("h", 0.5, on_server=True, together={"realm": 14, "wars": 1})
+    check([52, 1] in heard("a", 0.6), "and when it changes")
+    heard("h", 0.7, on_server=True, together={})
+    check(w.realm == 14, "a menu's request without the realm changes nothing")
+    slot_a, slot_h = w.players["a"].slot, w.players["h"].slot
+    w.centers[40] = (14, 0, 0, 0)
+    host = heard("h", 1.0, on_server=True, together={"fief_gift": (77, slot_a, 40)})
+    entry = w.shared["vassals"]["ivan"]
+    check(entry == {"index": 0, "faction": 14, "name": "Ivan", "realm": True},
+          f"a friend of no kingdom becomes a vassal of the host's realm: {entry}")
+    check([53, 77, 40, -1, 0] in host, f"the gift goes to the host's game: {host}")
+    check([45, 0, 14, 0] in host and host.index([45, 0, 14, 0]) < host.index([53, 77, 40, -1, 0]),
+          "after the stand-in it is given to")
+    check([45, 0, 14, 1] in heard("a", 1.2), "the friend's game hears its stand-in")
+    check([54, 77, 40, 1, 0, slot_a] in heard("h", 1.3, on_server=True, together={"fief_granted": [77, 1]}),
+          "the giver hears it is done")
+    check([54, 77, 40, 1, 1, slot_h] in heard("a", 1.5), "and the friend that the fief is its own")
+    check([54, 77, 40, 1, 0, slot_a] in heard("h", 1.6, on_server=True, together={"fief_gift": (77, slot_a, 40)})
+          and not w.shared["fief_ops"], "given again: the same answer, nothing twice")
+    heard("a", 2.0, together={"vassal": False})
+    check(w.shared["vassals"]["ivan"]["faction"] == 14, "its own game swears to nothing: it stays the host's vassal")
+
+    # refused
+    w.centers[41] = (14, 0, 0, 0)
+    req(w, "b", now=3.0, me=[], name="Olga")
+    heard("b", 3.0, faction=4, together={"vassal": True})
+    slot_b = w.players["b"].slot
+    check([54, 78, 41, 2, 0, slot_b] in heard("h", 3.1, on_server=True, together={"fief_gift": (78, slot_b, 41)}),
+          "a friend sworn to another kingdom cannot hold it")
+    check([54, 79, 41, 3, 0, 9] in heard("h", 3.2, on_server=True, together={"fief_gift": (79, 9, 41)}),
+          "nobody in that slot")
+    check([54, 80, 99, 4, 0, slot_a] in heard("h", 3.3, on_server=True, together={"fief_gift": (80, slot_a, 99)}),
+          "a center the host's world has not reported")
+    req(w, "c", now=4.0, me=[], name="Petr")
+    slot_c = w.players["c"].slot
+    check([54, 82, 41, 0, 0, slot_a] in heard("c", 4.1, together={"fief_gift": (82, slot_a, 41)}),
+          "a client with no fiefs has none to give")
+    # the host's game refuses: the stand-in made for it serves nothing again
+    host = heard("h", 5.0, on_server=True, together={"fief_gift": (83, slot_c, 41)})
+    check(w.shared["vassals"]["petr"]["faction"] == 14 and [53, 83, 41, -1, 2] in host, "a stand-in for the gift")
+    host = heard("h", 5.2, on_server=True, together={"fief_granted": [83, 0]})
+    check(w.shared["vassals"]["petr"]["faction"] == 0 and "realm" not in w.shared["vassals"]["petr"],
+          "refused: it serves nothing again")
+    check([54, 83, 41, 0, 0, slot_c] in host, "the giver hears why")
+    # a client gives its fief on to another
+    w.centers[42] = (14, 0, 0, 0)
+    w.centers[42] = (14, 0, 0, 0)
+    heard("h", 5.9, on_server=True, together={"fief_gift": (85, slot_c, 42)})
+    heard("h", 5.95, on_server=True, together={"fief_granted": [85, 1]})
+    heard("c", 6.0, together={"fief_gift": (84, slot_a, 42)})
+    op = w.shared["fief_ops"]["84"]
+    check((op["from"], op["to"]) == (2, 0), f"from one stand-in to another: {op}")
+    check([53, 84, 42, 2, 0] in heard("h", 16.1, on_server=True), "the host's game moves it")
+    # sworn to a kingdom: no longer the host's vassal
+    heard("a", 7.0, faction=4, together={"vassal": True})
+    check(w.shared["vassals"]["ivan"]["faction"] == 4 and "realm" not in w.shared["vassals"]["ivan"],
+          "a vassal of the realm who swears to a kingdom serves that one")
 
 
 def test_profiles():
@@ -1533,6 +2216,19 @@ def test_giving():
           {"give": (1, [(31, 2), (32, 1)]), "giveans": (2, 1)}, "the request's parts are read")
     check(cb.parse_together({"join": "1", "joinans": "2,1", "leave": "1", "release": "1"}) is None,
           "a party cannot be joined any more")
+    # a trade (11-07): denars and items go in the same offer, and come back the same way
+    w = cb.World()
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    req(w, "b", x=50000, now=0.0, me=[(33, 4)], name="Olga")
+    slot_a, slot_b = w.players["a"].slot, w.players["b"].slot
+    got = cb.parse_together({"give": f"{slot_b},99999,2500,31,3,100417,1205"})["give"]
+    check(got == (slot_b, [(99999, 2500), (31, 3), (100417, 1205)]), f"denars, troops and items are read: {got}")
+    req(w, "a", now=1.0, together={"give": got})
+    nums = req(w, "b", x=50000, now=1.1)[0]
+    check(nums[2:] == [slot_a, 3, 99999, 2500, 31, 3, 100417, 1205], f"the receiver sees all of it: {nums}")
+    req(w, "b", x=50000, now=1.2, together={"giveans": (nums[1], 0)})
+    check([16, nums[1], 0, 3, 99999, 2500, 31, 3, 100417, 1205] in [req(w, "a", now=1.3)[0] for _ in range(4)],
+          "declined: all of it goes back")
 
 
 def test_companions_spoils_terrain():
@@ -1598,20 +2294,26 @@ def test_multiplayer_names():
 
 def test_joint_battle_scaled_and_lost():
     w = cb.World()
-    req(w, "a", now=0.0, me=[(31, 300)], name="Ivan")
+    army = 2000  # each side: more than the battle server takes
+    req(w, "a", now=0.0, me=[(31, army)], name="Ivan")
     w.mp_request(0, 0, -1, {}, {}, 0.0)
-    req(w, "a", now=1.0, busy=True, mp=mp(1, sid=700, troops=[(40, 300)]))
+    req(w, "a", now=1.0, busy=True, mp=mp(1, sid=700, troops=[(40, army)]))
     nums = w.mp_request(0, 0, -1, {}, {}, 1.1)
-    check(nums[2:] == [0, 2, 0, -1, 31, 75, 1, -1, 40, 75], f"big armies are scaled down: {nums}")
+    half = cb.MP_MAX_BOTS // 2  # half of them each side
+    check(nums[2:] == [0, 2, 0, -1, 31, half, 1, -1, 40, half], f"big armies are scaled down: {nums}")
     bid = nums[1]
     w.mp_request(0, 0, -1, {}, {}, 1.2)
-    w.mp_request(4, bid, 1, {0: 75, 1: 15}, {}, 5.0)
-    check(req(w, "a", now=5.1)[0][0] == 7 and req(w, "a", now=5.1)[0] == [8, bid, 0, 60 * cb.XP_PER_ENEMY // 3, 1, 31, 150, 150],
+    w.mp_request(4, bid, 1, {0: half, 1: half // 5}, {}, 5.0)  # all of the player's, a fifth of the enemy
+    fell = army // 5
+    check(req(w, "a", now=5.1)[0][0] == 7, "the battle was fought")
+    check(req(w, "a", now=5.1)[0] == [10, bid, -1, 700],
+          "the defeated player is taken prisoner by the world party (told before the result)")
+    check(req(w, "a", now=5.1)[0] == [8, bid, 0, fell * cb.XP_PER_ENEMY // 3, 1, 31, army // 2, army // 2],
           "and their losses scaled up; the battle is lost (a third of the experience)")
-    check(req(w, "a", now=5.1)[0] == [10, bid, -1, 700], "the defeated player is taken prisoner by the world party")
-    check(w.results[-1] == (700, 0, [(40, 240)], [(31, 150)]),
+    check(w.results[-1] == (700, 0, [(40, army - fell)], [(31, army // 2)]),
           "the world party keeps what survived and takes the player's troops (wounded too) prisoner")
-    check(w.server_report([], None, 5.2)[3] == [1, 700, 0, 1, 40, 240, 1, 31, 150], "the server gets the prisoners")
+    check(w.server_report([], None, 5.2)[3] == [1, 700, 0, 1, 40, army - fell, 1, 31, army // 2],
+          "the server gets the prisoners")
 
 
 def test_joint_battle_decline_cancel_pvp():
@@ -1721,6 +2423,42 @@ def test_no_enemy_left():
     check(w.players["a"].mp_out == [[7, bid, 2, 0]] and [7, bid, 2, 0] in [answer] + w.players["b"].mp_out,
           f"both players are told the battle is off: {w.players['a'].mp_out}, {answer}")
 
+
+
+def test_retreat():
+    # 05.11: the escape menu's retreat, in every joint battle: the battle server ends it with nobody the winner (-1).
+    # Nobody is taken prisoner, the enemy party keeps its standing men; a defence leaves the walls to the besiegers
+    w = cb.World()
+    w.log = lambda m: None
+    req(w, "a", now=0.0, me=[(31, 10)], name="Ivan")
+    w.mp_request(0, 0, -1, {}, {0: "ivan"}, 1.0)
+    req(w, "a", now=2.0, busy=True, mp=mp(1, sid=600, troops=[(40, 20)], hero=HERO))
+    bid = w.battle.bid
+    for _ in range(4):
+        w.mp_request(0, 0, -1, {}, {0: "ivan"}, 2.0 + cb.GATHER_S + 1)
+    check(w.battle is not None and w.battle.state == "running", f"the battle runs: {w.battle and w.battle.state}")
+    w.mp_request(4, bid, -1, {0: 3, 1: 5}, {0: "ivan"}, 60.0, (), {0: 70}, {})
+    heard = [req(w, "a", now=60.1)[0] for _ in range(10)]
+    result = next((n for n in heard if n[0] == 8), None)
+    after = next((n for n in heard if n[0] == 10), None)
+    check(result is not None and result[2] == 0, f"the battle is not won: {result}")
+    check(after == [10, bid, 70, -1], f"the hero keeps its health and is not taken prisoner: {after}")
+    check(not any(n[0] == 11 for n in heard), "nobody takes the player's men")
+    enemy = next((r for r in w.results if r[0] == 600), None)
+    check(enemy is not None and enemy[1] == 0 and enemy[2] == [(40, 15)] and enemy[3] == [],
+          f"the enemy party stays, with its standing men and no prisoners: {enemy}")
+
+
+
+def test_link_report():
+    check(cb.link_report([]) is None, "nothing measured: nothing said")
+    line = cb.link_report([40, 60, 50])
+    check(line == "link: ping to the host 50 ms, worst 60 ms in the last minute", f"a good link, one short line: {line}")
+    line = cb.link_report([90, 400, 100, None])
+    check("worst 400 ms, 1 lost" in line and "пинг до хоста 100 мс, худший 400 мс, потеряно 1" in line,
+          f"a slow link is called out, in both languages: {line}")
+    line = cb.link_report([None, None])
+    check("no answer from the host to 2 pings" in line, f"no answer at all: {line}")
 
 def test_players_fight_without_soldiers():
     # session 15:51, 2.11: a player attacked another, both heroes with no soldiers: "the battle was cancelled"
@@ -2041,6 +2779,9 @@ if __name__ == "__main__":
     test_lord_battle()
     test_tournament_teams()
     test_base()
+    test_camp_mine_and_men()
+    test_caravans()
+    test_fiefs()
     test_troops_results_tombstones()
     test_clock()
     test_host_plays_on_server()
@@ -2058,6 +2799,12 @@ if __name__ == "__main__":
     test_giving()
     test_profiles()
     test_joint_defence()
+    test_lord_siege()
+    test_lord_defence()
+    test_lords_inside_and_shared_stacks()
+    test_many_stacks()
+    test_storm_capture()
+    test_fief_gift()
     test_centers_reach_players()
     test_joint_battle_scaled_and_lost()
     test_joint_battle_decline_cancel_pvp()
@@ -2092,5 +2839,12 @@ if __name__ == "__main__":
     test_ping()
     test_map_battles_told()
     test_lair_caravan_village()
+    test_joiners()
+    test_seen_troops()
+    test_help_xp()
+    test_siege_other_side()
+    test_steppe_siege()
     test_duel()
+    test_retreat()
+    test_link_report()
     print("ALL OK")

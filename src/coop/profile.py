@@ -14,13 +14,14 @@ from coop.constants import *
 #
 # Layout (numbers): version, gold, xp, renown, honor, right to rule, kingdom, x, y, HERO,
 #   members n, (troop, count, wounded) * n, prisoners n, (troop, count) * n,
-#   and from version 2: health, companions n, (troop, health, xp, HERO) * n
+#   and from version 2: health, companions n, (troop, health, xp, HERO) * n,
+#   and from version 3: homage, relations n, (the relation of each king and lord, from kings_begin) * n
 # HERO: 4 attributes, NUM_SKILLS skills, 7 proficiencies, inventory capacity, (item, modifier, amount) * capacity
 # Each holder keeps this and nothing else: the notes and the debug trail sit on trp_tutorial_student_3, the party
 # store on trp_tutorial_student_4, and a number of theirs read as an item here takes the game down: the engine does
 # not check an item's number (tools/test_check_flow.py keeps the holders apart).
 
-PROFILE_VERSION = 2
+PROFILE_VERSION = 3
 NUM_SKILLS = 42
 PROFILE_IN = "trp_tutorial_master_archer"
 PROFILE_OUT = "trp_tutorial_master_horseman"
@@ -60,6 +61,45 @@ def hero_out(hero):
         (troop_inventory_slot_get_item_amount, ":amount", hero, ":i"),
       (try_end),
       ] + put(":item") + put(":modifier") + put(":amount") + [
+    (try_end),
+  ]
+
+
+def real_skills():
+  """(skill, attribute it rests on) of the skills a player can raise (not the reserved ones)."""
+  from module_skills import skills
+  return [(i, s[2] & 0xF) for i, s in enumerate(skills[:NUM_SKILLS]) if not s[0].startswith("reserved")]
+
+
+def take_back(hero, before, taken):
+  """Ops: the hero was put on the host's hero of the save, whose levels up to the profile's experience
+  (add_xp_to_troop) gave it a skill point each that the profile's skills spent long ago, and no operation
+  takes free points away. So as many skill levels go back to free points: one at a time from the highest
+  skill the player can raise again (no higher than its attribute / 3). before: the level before the
+  experience came; taken: a variable that grows by the points taken back."""
+  ops = [
+    (store_character_level, ":after", hero),
+    (store_sub, ":owed", ":after", before),
+    (try_for_range, ":unused", 0, ":owed"),
+      (assign, ":best", -1),
+      (assign, ":best_level", 0),
+  ]
+  for skill, attribute in real_skills():
+    ops += [
+      (try_begin),
+        (store_skill_level, ":s", skill, hero),
+        (gt, ":s", ":best_level"),
+        (store_attribute_level, ":a", hero, attribute),
+        (val_div, ":a", 3),
+        (le, ":s", ":a"),
+        (assign, ":best_level", ":s"),
+        (assign, ":best", skill),
+      (try_end),
+    ]
+  return ops + [
+      (ge, ":best", 0),
+      (troop_raise_skill, hero, ":best", -1),
+      (val_add, taken, 1),
     (try_end),
   ]
 
@@ -164,6 +204,13 @@ profile_scripts = [
        (val_add, ":n", 1),
      (try_end),
      (troop_set_slot, PROFILE_OUT, ":count_at", ":n"),
+     ] + put("$player_has_homage") + [
+     (store_sub, ":n", lords_end, kings_begin),
+     ] + put(":n") + [
+     (try_for_range, ":hero", kings_begin, lords_end), #the save is the host's: these are this player's own
+       (troop_get_slot, ":v", ":hero", slot_troop_player_relation),
+       ] + put(":v") + [
+     (try_end),
      (assign, "$coop_profile_len", ":at"),
      (assign, "$coop_profile_sent", 0),
      (val_add, "$coop_profile_seq", 1),
@@ -236,6 +283,9 @@ profile_scripts = [
        (troop_remove_gold, "trp_player", ":gold"),
        (troop_add_gold, "trp_player", ":v"),
        ] + take(":v") + [
+       (store_character_level, ":level_before", "trp_player"),
+       (assign, ":taken", 0),
+       (assign, ":hero_taken", 0), #the companions': their own character screens
        (troop_get_xp, ":xp", "trp_player"),
        (try_begin),
          (gt, ":v", ":xp"),
@@ -260,7 +310,7 @@ profile_scripts = [
        (position_set_x, pos1, ":x"),
        (position_set_y, pos1, ":y"),
        (party_set_position, "p_main_party", pos1),
-       ] + hero_in("trp_player") + [
+       ] + hero_in("trp_player") + take_back("trp_player", ":level_before", ":taken") + [
        # the party: the host's men out, the player's own in
        (party_get_num_companion_stacks, ":stacks", "p_main_party"),
        (try_for_range_backwards, ":stack", 0, ":stacks"),
@@ -298,16 +348,45 @@ profile_scripts = [
            ] + take(":hero") + take(":v") + [
            (troop_set_health, ":hero", ":v"),
            ] + take(":v") + [
+           (store_character_level, ":hero_before", ":hero"),
            (troop_get_xp, ":xp", ":hero"),
            (try_begin),
              (gt, ":v", ":xp"),
              (store_sub, ":more", ":v", ":xp"),
              (add_xp_to_troop, ":more", ":hero"),
            (try_end),
-           ] + hero_in(":hero") + [
+           ] + hero_in(":hero") + take_back(":hero", ":hero_before", ":hero_taken") + [
+         (try_end),
+       (try_end),
+       (try_begin),
+         (ge, ":version", 3),
+         ] + take(":v") + [
+         (assign, "$player_has_homage", 0),
+         (try_begin),
+           (eq, ":v", 1),
+           (is_between, "$players_kingdom", npc_kingdoms_begin, npc_kingdoms_end),
+           (assign, "$player_has_homage", 1),
+         (try_end),
+         ] + take(":n") + [
+         (val_clamp, ":n", 0, 1000),
+         (try_for_range, ":k", 0, ":n"),
+           ] + take(":v") + [
+           (store_add, ":hero", ":k", kings_begin),
+           (lt, ":hero", lords_end),
+           (troop_set_slot, ":hero", slot_troop_player_relation, ":v"),
          (try_end),
        (try_end),
        (display_message, "@CoopWorld: your own hero is back - gold, skills, gear, troops, companions and prisoners as you left them.", 0x66FF66),
+       (try_begin),
+         (gt, ":taken", 0),
+         (assign, reg1, ":taken"),
+         (display_message, "@CoopWorld: {reg1} skill points are free again: the levels the hero regained on loading gave them a second time. Spend them in the character screen.", 0xFFDD66),
+       (try_end),
+       (try_begin),
+         (gt, ":hero_taken", 0),
+         (assign, reg1, ":hero_taken"),
+         (display_message, "@CoopWorld: the companions' skills too: {reg1} points are free again in their character screens.", 0xFFDD66),
+       (try_end),
      (else_try),
        (display_message, "@CoopWorld: the hero kept for you is from another version of CoopWorld and was not put back.", 0xFF6666),
      (try_end),

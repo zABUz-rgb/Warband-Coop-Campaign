@@ -279,6 +279,22 @@ def net_triggers(first_dynamic):
        (val_max, reg19, -1),
        (val_add, reg19, 1), #+ 1: 0 when nobody besieges it
        (assign, reg20, 0),
+       # a town or castle: its fifth number tells the players its besiegers' assault waits for them (11-07)
+       (try_begin),
+         (is_between, "$coop_center_cursor", walled_centers_begin, walled_centers_end),
+         (try_begin),
+           (eq, reg19, 0),
+           (party_set_slot, "$coop_center_cursor", slot_center_coop_storm_since, 0), #the siege is over
+         (try_end),
+         (gt, reg19, 0),
+         (party_get_slot, ":since", "$coop_center_cursor", slot_center_coop_storm_since),
+         (gt, ":since", 0),
+         (store_current_hours, ":waited"),
+         (val_sub, ":waited", ":since"),
+         (lt, ":waited", coop_storm_wait_hours),
+         (call_script, "script_cf_coop_player_at_walls", "$coop_center_cursor"),
+         (assign, reg20, 1),
+       (try_end),
        (try_begin),
          (is_between, "$coop_center_cursor", villages_begin, villages_end),
          (party_get_slot, reg20, "$coop_center_cursor", slot_village_infested_by_bandits),

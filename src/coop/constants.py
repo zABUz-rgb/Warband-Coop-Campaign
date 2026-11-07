@@ -54,16 +54,37 @@ coop_mp_marker = 7778
 # Joint battles on the multiplayer server (coop/mp.py, coop/mp_campaign.py)
 coop_mp_max_stacks = 60          # troop stacks of one battle, both sides
 coop_mp_stride = 8               # slots per stack on the multiplayer server
-coop_mp_round_seconds = 3600     # a campaign battle's round has no practical time limit
+coop_mp_round_seconds = 7200     # a campaign battle's round has no practical time limit (1500 men come in waves)
 slot_agent_coop_stack = 40       # on a bot of the multiplayer server: its stack + 1 (Native agent slots end at 28)
-slot_agent_coop_x = 41           # a storming bot: where it stood at the last look (cm)
+slot_agent_coop_x = 41           # a bot of a siege: where it stood at the last look (cm)
 slot_agent_coop_y = 42
-slot_agent_coop_still = 43       # seconds it has stood there without an enemy near
-slot_agent_coop_ladder = 44      # the ladder it is sent to + 1, 0 none
-slot_agent_coop_tries = 45       # ladders it was sent to so far
-coop_mp_storm_still_s = 8        # a storming bot standing this long without a fight is sent to a ladder
-coop_mp_storm_walk_s = 20        # one that has not reached its ladder in this time tries the next
+slot_agent_coop_still = 43       # seconds: it stood idle, or walked to the point it was sent to, or stood in a fight
+slot_agent_coop_ladder = 44      # a storming bot: the way up the walls it went to + 1 (a ladder, a siege tower), 0 none
+slot_agent_coop_calm = 45        # seconds left in which only an enemy within coop_mp_reach makes it fight (it stood at
+                                 # one it could not reach: behind the bars of a gate)
+slot_agent_coop_stage = 46       # a storming bot: 0 under the walls, 1 to the foot of its way up, 2 up it, 3 on the
+                                 # walls (its own AI leads it), 4 to the flag
+slot_agent_coop_sent = 47        # 1 while it walks to the point it was sent to (scripted), or stands at its post
+coop_mp_storm_still_s = 8        # a bot of a siege standing this long with no fight goes on (up the walls, to the flag)
+coop_mp_storm_walk_s = 60        # one that has not reached the foot of its way up (or the flag) by then goes another way
+coop_mp_storm_climb_s = 30       # nor the top of the wall from there
+coop_mp_storm_shoot_s = 40       # a storming archer shoots from where it stands this long before it climbs too
+coop_mp_fight_near = 600         # cm: a storming bot with an enemy this close on its level fights it (its own AI leads)
+coop_mp_hold_near = 1500         # cm: a defender fights an enemy this close on its level, else it goes back to its post
+coop_mp_hold_level = 350         # cm: "on its level": this much higher or lower at most
+coop_mp_reach = 300              # cm: an enemy this close is fought whatever else
+coop_mp_calm_s = 30              # seconds a bot that stood at an enemy out of its reach goes its way
+coop_mp_way_crowd = 1000         # cm: a way up the walls counts this much farther for every bot already going there
 coop_mp_ladders_s = 30           # a ladder found down (pushed off the wall) is raised again this often
+coop_mp_field_bots = 150         # bots of the campaign's armies on the field at once; the others come as reinforcements
+coop_mp_field_least = 30         # a side's place on the field: never less than this (or all it has)
+coop_mp_wave_pct = 25            # a side's reinforcements come once it has lost this share of its place on the field
+coop_mp_wave_tell_s = 30         # a side's reinforcements are told on the server at most this often
+coop_mp_ways_slot = 1000         # on the battle server (trp_temp_array_a): a siege's ways up the walls, 8 slots each:
+                                 # kind (0 ladder, 1 siege tower), scene prop, foot x y z, top x y z (cm)
+coop_mp_max_ways = 12
+coop_mp_entries_slot = 1100      # the garrison's spawn points on this map (mp.py DEFENDER_ENTRIES)
+coop_mp_crowd_slot = 1200        # the storming bots going to each way up (script_coop_mp_storm)
 slot_troop_coop_mp_hp = 300      # on the battle server: a hero's or companion's hit points from the campaign
 slot_troop_coop_mp_hp_max = 301  # and its most hit points (0: not from the campaign)
 coop_mp_heroes_slot = 950        # on the battle server: the player number of each borrowed hero troop
@@ -103,6 +124,9 @@ coop_net_max_stacks = 30         # troop stacks per party sent in one message
 coop_enc_max_parties = 20        # mirrors remembered around the player when an encounter starts
 coop_enc_radius = 600            # map units * 100: mirrors this close may take part in the battle
 coop_give_distance = 3          # map distance up to which troops are given from the camp menu
+coop_trade_gold = 99999         # a trade's entry (code, value): denars, value the amount (11-07, the user's ask)
+coop_trade_item = 100000        # code - this: an item, value amount * 100 + its modifier (amount 0: whole);
+                                # any other code is a troop, value its count
 coop_own_troops_frames = 120     # client trigger runs between reports of the player's own troops
 coop_srv_troops_radius = 1500    # map units * 100: the server reports troops of parties this close to the puppet
 slot_party_coop_seen = 302       # on a client mirror: the request number of its last update from the server
@@ -127,12 +151,29 @@ coop_hero_profs = 7              # wpt_one_handed_weapon .. wpt_firearm
 coop_hero_items = 9              # ek_item_0 .. ek_horse
 coop_hero_numbers = 9 + 4 + 9 + 7 + 2
 slot_player_coop_hero = 100      # on the battle server: which borrowed troop is this player's hero, + 1
-coop_mp_event_hero_stat = 140    # network event: (troop, stat code, value) so every game knows the hero's stats
+coop_mp_event_hero_stat = 125    # network event: (troop, stat code, value) so every game knows the hero's stats.
+                                 # Below 128 (11-07): 140 never reached the clients, as no event above 127 does (the
+                                 # counter and the Retreat were the server's own player's only); Native's go up to 124
 slot_player_coop_hits = 110      # on the battle server: a hero's hits on enemies by weapon proficiency (+ wpt)
 slot_player_coop_damage = 120    # and the damage they did (+ wpt)
 slot_player_coop_health = 130    # a hero's health at the end of the battle in percent + 1 (0: not a hero)
 slot_player_coop_fallen = 131    # 1: the player's hero fell in this battle and does not come back (as in the campaign)
 slot_player_coop_kills = 132     # a joint event: the opponents this player's hero beat
+slot_player_coop_orders = 133    # a siege: 1 while the player leads its men by orders (the storm and the hold leave
+                                 # them be); a charge gives them back
+coop_mp_event_retreat = 126      # network event, a player to the battle server: its side sounds the retreat (< 128)
+coop_mp_stat_campaign = 1001     # the code in coop_mp_event_hero_stat: 1 while a campaign battle runs (field or siege), 0 after
+coop_mp_stat_foes = 1002        # the code in coop_mp_event_hero_stat: the opponents still standing in a joint event (-1: the counter goes)
+coop_mp_stat_kills = 1003       # the same: the opponents this player beat in it
+coop_mp_stat_own_side = 1004    # the same, in a battle of the campaign: troop field = this player's side standing, value = its reserve
+coop_mp_stat_enemy_side = 1005  # and the other side's
+slot_agent_coop_stuck = 48       # a storming bot sent to a point: seconds it stood still on the way
+coop_mp_storm_nudge_s = 6        # one that stood still this long is sent there again (a new path)
+coop_mp_tower_foot = 800         # cm: at a siege tower a bot this close to its foot goes up (the crowd at it waits there)
+coop_mp_tower_climb_s = 60       # and has this long to get up (a crowd goes up the tower's stairs one by one)
+coop_mp_tower_cap = 24           # bots going to one siege tower before it counts as crowded (a ladder: coop_mp_ladder_cap)
+coop_mp_ladder_cap = 8
+coop_mp_way_full = 5000          # cm: a way up counts this much farther for every bot past its cap
 # Joint events on the battle server: fought by the players' heroes alone, in practice gear, with no
 # wounds, no spoils, nothing changing in the world. An event's number goes in the player's request,
 # the battle server hears it as a mode (1 is a siege)
@@ -159,6 +200,8 @@ coop_arena_xp = 10                # and for the prizes under it (the lowest give
 coop_prisoner_chance_first = 10
 coop_prisoner_chance_step = 5
 coop_hero_knocked_out_health = 5 # a hero who fell in a joint battle comes back to the map wounded, as in Native
+coop_truce_hours = 24 # a party that took a player prisoner leaves it alone this long after the escape
+coop_truce_battle_hours = 6 # and the party a player fought in a joint battle, this long after it
 coop_beaten_hours = 24            # the host: a party beaten in a joint battle is no lord's foe for so long (its removal comes later)
 # Weapon proficiency from a joint battle, as Native raises it in battle: for each kind of weapon used,
 # (damage + coop_wpt_hit_bonus * hits) * coop_wpt_gain / (proficiency + coop_wpt_softness) points, so
@@ -213,6 +256,75 @@ coop_tell_bandits = 8
 coop_tell_save_loaded = 9
 coop_tell_base_up = 10
 coop_tell_save_again = 11
+coop_tell_week = 12               # a, b: the mines' income and the camps' wages of a week
+coop_tell_deserted = 13           # a: men who left the camps unpaid
+coop_mine_cost = 2000             # denars a mine at the player's own camp costs, paid once the bridge says yes
+coop_mine_pay = 10                # as MINE_PAY in tools/coop_bridge.py: denars a prisoner in it brings a week
+coop_camp_men = 80                # as CAMP_MEN: men that may stay at one camp
+coop_camp_info = 100              # slots of the notes' troop: what the bridge said of camp k, 4 from here + 4 * k:
+                                  # a mine (1), prisoners in it, men left there, their wages a week
+coop_mine_pairs = 120             # and from here the prisoners on their way to a mine, 2 slots each
+coop_mine_stacks = 30             # prisoner stacks sent at once
+coop_gar_slots = 200              # and from here the men left at a camp on their way back, 3 slots each
+coop_gar_stacks = 90              # of them at most
+coop_gar_chunk = 20               # of them sent with one request
+coop_hold_tag = 1000              # slot_party_coop_mark of the party holding a camp's men while they are shown:
+                                  # no camp (camps are coop_base_tag up to it), no party of the world
+
+# Trade caravans of the players (coop/caravans.py)
+coop_tell_caravan_off = 14        # kind 27: as TELL_CARAVAN_... in tools/coop_bridge.py
+coop_tell_caravan_home = 15
+coop_tell_caravan_lost = 16
+coop_tell_caravan_disbanded = 17
+coop_cv_fee_near = 0              # denars a caravan for the towns nearby costs (free since 11-05, the user's wish)
+coop_cv_fee_round = 0             # and one round the world (free too)
+coop_cv_towns_near = 5            # towns each rides to
+coop_cv_towns_round = 18
+coop_cv_near_towns = 6            # the one nearby trades among the towns nearest its first
+coop_cv_cargo_near = 30           # units of a good each buys at once
+coop_cv_cargo_round = 60
+coop_cv_spread = 10               # per cent a caravan pays over a town's price, and gets under it
+coop_cv_pairs = 480               # slots of the notes' troop: the guards of a caravan sent off, 2 each
+coop_cv_stacks = 30               # of them at most
+coop_cv_ends = 540                # and (the host's game) from here the caravans home, waiting to be counted:
+coop_cv_end_size = 124            # token, denars, n, (troop, count, level, wage) * n each
+coop_cv_ends_max = 4
+slot_party_coop_cv_token = 320    # on a caravan of the players (the host's game): its bridge token
+slot_party_coop_cv_owner = 321    # its player's slot + 1
+slot_party_coop_cv_type = 322     # 1 the towns nearby, 2 round the world
+slot_party_coop_cv_towns = 323    # towns still to ride to
+slot_party_coop_cv_good = 324     # the good it carries
+slot_party_coop_cv_qty = 325      # and how much
+slot_party_coop_cv_target = 326   # the town it rides to
+slot_party_coop_cv_enemies = 327  # the kingdoms at war with its owner, one bit each
+slot_party_coop_cv_gold = 328     # denars it carries
+slot_party_coop_cv_home = 329     # the first town it rode to
+# a friend in a talk, a menu or a trade no longer pauses the world (11-07): the host's game holds only the party met
+coop_mp_joiners_max = 8           # parties nearby that may join a joint battle (Native's rules, 11-07)
+coop_mp_join_lord_reach = 5       # map distance: a lord this close joins (Native: 4..7 by day)
+coop_mp_jt_max = 8                # parties whose men a battle's start tells the bridge (&mpjt, URL length)
+coop_mp_jt_stacks = 10            # stacks of each
+coop_mp_join_bandit_reach = 3     # bandits (Native: 3 by day)
+coop_storm_wait_hours = 6         # an assault of the world's besiegers waits this long for the players at its walls
+coop_storm_near = 3               # map distance: a player this close to a town or castle is at its walls
+slot_center_coop_storm_since = 345  # on a town or castle (the host's game): the hour + 1 its assault began to wait
+slot_center_coop_storm_told = 346   # on a town or castle: 1 once the players heard of the assault (any game)
+slot_agent_coop_rider = 49       # a siege's horseman: 1 the garrison's (out at the horse spawns, free of the hold),
+                                 # 2 the attackers' (gets off its horse at the walls)
+coop_mp_acav_slot = 1320          # MP_ARR: the storming horsemen's spawns of the siege map
+coop_mp_dismount_near = 700       # cm: a storming horseman this close to a way up (or the flag) gets off its horse
+slot_agent_coop_kite = 50        # a horse archer riding away from an enemy too close, 1 while it does (scripted)
+coop_mp_steppe_hint = 1000        # a siege's map hint past this: a Khergit town (the steppe storm, 11-07)
+coop_mp_cav_slot = 1300           # MP_ARR: the horse spawns of the siege map (coop_mp_siege_entries)
+coop_mp_ha_near = 2200            # cm: a horse archer with arrows rides away from an enemy this close
+coop_mp_ha_away = 3500            # cm: and this far from it
+coop_mp_lord_wait_s = 60          # a lord's infantry holds its ground this long, unless the enemy comes near
+coop_mp_lord_near = 4000          # cm: an enemy this close to a lord's held infantry: it charges
+slot_party_coop_held = 340        # on a player's puppet (the host's game): the world party it meets + 1, held still
+slot_party_coop_hold_bhvr = 341   # on that party: its AI behaviour before the hold, given back after
+slot_party_coop_hold_object = 342 # its AI object
+slot_party_coop_hold_x = 343      # its AI target position
+slot_party_coop_hold_y = 344
 coop_load_mark_troop = "trp_tutorial_student_4"  # a regular troop's inventory is in no save: an item given to it
 coop_load_mark_item = "itm_smoked_fish"          # in this process is gone after a load, whatever came before
 coop_note_cap = 16                # notes for the bridge's log kept while no request can carry them
@@ -230,3 +342,26 @@ coop_note_caravan = 11
 coop_note_duel = 12
 coop_note_follow_end = 13
 coop_note_bandits = 14
+
+# A client's fiefs (coop/fiefs.py): a vassal of a kingdom holds centers in the host's world through a stand-in lord
+coop_fief_proxy = "trp_tutorial_fighter_1"  # the stand-ins of the vassals 0 to 2 (Native's tutorial only uses them),
+coop_fief_vassals = 3                     # and fighter 4 (a client's game): the host as lord of its own fiefs
+coop_fief_host = "trp_tutorial_fighter_4"
+coop_fief_list = 1100             # slots of the notes' troop: a fief's garrison as the bridge listed it, 2 each
+coop_fief_stacks = 30             # of them at most (MAX_STACKS in tools/coop_bridge.py)
+coop_fief_delta = 1220            # and what the player changed in it, 2 each, up to twice as many
+coop_fief_cands = 1340            # the lordless centers a king may grant, up to coop_fief_cands_max
+coop_fief_cands_max = 10
+coop_fief_gifts = 1350            # the fiefs this player may give to another, up to coop_fief_gifts_max
+coop_fief_gifts_max = 20
+coop_fief_gift_asks = 30          # a gift nobody answers after this many words is given up
+coop_fief_totals = 1400           # (the host's game) the stand-ins' rents and wages since the campaign began, 2 each
+coop_fief_grants = 1410           # (the host's game) grants answered, to tell the bridge: token, done, up to 4
+coop_fief_grants_max = 4
+coop_fief_ring = 1500             # (the host's game) garrison changes applied: token, n, (troop, short) * n
+coop_fief_ring_size = 42
+coop_fief_ring_max = 4
+coop_fief_short_max = 20
+coop_fief_week_h = 24 * 7
+coop_fief_worth = 200             # a king grants a fief to renown + relation * 20 at least this,
+coop_fief_worth_more = 250        # and this much more for each fief the vassal holds already

@@ -19,6 +19,14 @@ def kind_of(branch, tier):
   return KINDS.index(("t%d_%s" % (tier, branch), tier, branch))
 
 
+TRAIN_TIERS = (1,) + TIERS          # John trains a whole tier at once: the recruits, or infantry, archers and riders of it
+
+
+def tier_kinds(tier):
+  """The kinds a tier holds: the recruit alone, or one of each branch."""
+  return [0] if tier == 1 else [kind_of(branch, tier) for branch in BRANCH_NAMES]
+
+
 custom_first = "trp_" + troop_id(0, 1)
 custom_holder = "trp_custom_army"   # its name is the army's; its slots say what the other games still have to hear
 custom_npc = coop_blackborn
@@ -40,7 +48,8 @@ custom_gear_factor = 4              # what soldiers' gear costs, times the item'
 custom_sell_percent = 50
 custom_gear_max = 24                # items a kind may carry
 custom_train_cost = {1: (3000, 5000), 2: (7500, 10000), 3: (12500, 15000), 4: (17500, 20000), 5: (30000, 40000)}
-                                    # dinars for levels 2 and 3 by tier; level 1 comes with the man
+                                    # dinars for levels 2 and 3 by tier, for all its kinds at once; level 1 comes
+                                    # with the man
 
 custom_screen_shop = 1              # $custom_screen: what opens once John's conversation is over
 custom_screen_names = 2
